@@ -175,6 +175,26 @@ export default function CostingView(){
                     <p style={{fontSize:'11px',color:C.faint}}>{'£'+(h.sell||0).toFixed(2)+' sell · '+'£'+(h.cost||0).toFixed(2)+' cost'}</p>
                     {isEditing&&<p style={{fontSize:'10px',color:C.gold,marginTop:'4px',fontWeight:700}}>Currently editing</p>}
                   </button>
+                {/* Link to recipe */}
+                <div style={{padding:'8px 16px',borderTop:'1px solid '+C.border,background:C.surface2+'80'}}>
+                  <select
+                    value={state.recipes.find((r:any)=>r.linkedCostingId===h.id)?.id||''}
+                    onChange={e=>{
+                      const recipeId=e.target.value;
+                      state.recipes.forEach((r:any)=>{if(r.linkedCostingId===h.id)actions.updRecipe(r.id,{linkedCostingId:null});});
+                      if(recipeId)actions.updRecipe(recipeId,{linkedCostingId:h.id});
+                    }}
+                    onClick={e=>e.stopPropagation()}
+                    style={{width:'100%',background:C.surface,border:'1px solid '+C.border,color:C.text,fontSize:'11px',padding:'5px 8px',outline:'none',cursor:'pointer',borderRadius:'2px'}}
+                  >
+                    <option value=''>Link to recipe...</option>
+                    {state.recipes.map((r:any)=>(
+                      <option key={r.id} value={r.id}>
+                        {r.title}{r.linkedCostingId===h.id?' ✓':''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                   {deleteId===h.id?(
                     <div style={{padding:'8px 16px',borderTop:'1px solid '+C.border,display:'flex',alignItems:'center',gap:'8px',background:C.red+'08'}}>
                       <p style={{fontSize:'11px',color:C.red,flex:1}}>Delete?</p>
