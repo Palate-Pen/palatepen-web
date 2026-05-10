@@ -180,30 +180,26 @@ export default function RecipesView() {
               </div>
             </div>
 
-            {/* Assign dropdown */}
-            {assigningCosting && (
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid ' + C.border, background: C.surface2 }}>
-                <p style={{ fontSize: '11px', color: C.faint, marginBottom: '8px' }}>Select a saved costing to link to this recipe:</p>
-                {state.gpHistory.length === 0 ? (
-                  <p style={{ fontSize: '12px', color: C.faint }}>No saved costings yet. Go to Costing to create one.</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '240px', overflow: 'auto' }}>
-                    {state.gpHistory.map((h: any) => (
-                      <button key={h.id} onClick={() => assignCosting(h.id)}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: C.surface, border: '1px solid ' + (h.id === sel.linkedCostingId ? C.gold : C.border), cursor: 'pointer', borderRadius: '3px', textAlign: 'left' }}>
-                        <span style={{ fontSize: '13px', color: C.text }}>{h.name}</span>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <span style={{ fontSize: '12px', color: gpColor(h.pct||0, h.target||gpTarget, C), fontWeight: 700 }}>{(h.pct||0).toFixed(1)}%</span>
-                          <span style={{ fontSize: '11px', color: C.faint }}>{sym}{(h.sell||0).toFixed(2)} sell</span>
-                          {h.id === sel.linkedCostingId && <span style={{ fontSize: '9px', color: C.gold, fontWeight: 700 }}>CURRENT</span>}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <button onClick={() => setAssigningCosting(false)} style={{ marginTop: '8px', fontSize: '11px', color: C.dim, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
-              </div>
-            )}
+            {/* Costing select */}
+            <div style={{ padding: '10px 16px', borderBottom: '1px solid ' + C.border, background: C.surface2, display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <label style={{ fontSize: '11px', color: C.faint, whiteSpace: 'nowrap', flexShrink: 0 }}>Linked costing:</label>
+              <select
+                value={sel.linkedCostingId || ''}
+                onChange={e => {
+                  const val = e.target.value;
+                  actions.updRecipe(sel.id, { linkedCostingId: val || null });
+                  setSel({ ...sel, linkedCostingId: val || null });
+                }}
+                style={{ flex: 1, background: C.surface, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '7px 10px', outline: 'none', cursor: 'pointer', borderRadius: '3px' }}
+              >
+                <option value=''>— No costing linked —</option>
+                {state.gpHistory.map((h: any) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name} — {(h.pct || 0).toFixed(1)}% GP · £{(h.sell || 0).toFixed(2)} sell
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {linkedCosting ? (
               <div>
