@@ -107,26 +107,9 @@ export default function MisePage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24 px-8 md:px-16 border-t border-mise-border">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-baseline gap-5 mb-16">
-            <span className="text-xs font-bold tracking-widest uppercase text-mise-gold">Features</span>
-            <h2 className="font-fraunces font-light text-mise-text" style={{fontSize:'clamp(28px,4vw,48px)'}}>Everything you <i>need</i></h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-mise-border">
-            {features.map(f=>(
-              <div key={f.n} className="bg-mise-bg p-8 hover:bg-mise-surface transition-colors group">
-                <div className="flex justify-between items-start mb-6">
-                  <span className="text-xs font-bold tracking-widest text-mise-gold">{f.n}</span>
-                  {f.pro&&<span className="text-xs font-bold tracking-widest uppercase text-mise-bg bg-mise-gold px-2 py-0.5">Pro</span>}
-                </div>
-                <h3 className="font-fraunces font-light text-2xl text-mise-text mb-3 group-hover:text-mise-gold transition-colors">{f.title}</h3>
-                <p className="text-sm text-mise-dim leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Promo */}
+      <section id="features" className="border-t border-mise-border">
+        <MisePromo/>
       </section>
 
       {/* Mockups */}
@@ -176,10 +159,6 @@ export default function MisePage() {
           </div>
         </div>
       
-      {/* Promo */}
-      <section style={{background:'#0E0C0A',padding:'0'}}>
-        <MisePromo/>
-      </section>
       </section>
 
       {/* Footer */}
