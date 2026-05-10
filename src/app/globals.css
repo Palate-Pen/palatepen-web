@@ -3,11 +3,28 @@
 @tailwind utilities;
 
 :root {
-  --font-fraunces: 'Fraunces', serif;
-  --font-epilogue: 'Epilogue', sans-serif;
+  --cream: #FAF7F2;
+  --ink: #1A1A18;
+  --mustard: #D4A017;
+  --teal: #2A7D6F;
+  --slate: #7A7A72;
 }
 
 html { scroll-behavior: smooth; }
 
-.font-fraunces { font-family: var(--font-fraunces); }
-.font-epilogue { font-family: var(--font-epilogue); }
+body {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up { animation: fadeUp 0.8s ease forwards; }
+.fade-up-1 { animation: fadeUp 0.8s ease 0.1s forwards; opacity: 0; }
+.fade-up-2 { animation: fadeUp 0.8s ease 0.3s forwards; opacity: 0; }
+.fade-up-3 { animation: fadeUp 0.8s ease 0.5s forwards; opacity: 0; }
+.fade-up-4 { animation: fadeUp 0.8s ease 0.7s forwards; opacity: 0; }
+.fade-up-5 { animation: fadeUp 0.8s ease 0.9s forwards; opacity: 0; }
