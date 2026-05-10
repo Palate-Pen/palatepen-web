@@ -67,6 +67,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updNote: (id:string, data:any) => dispatch({ type:'UPD_NOTE', id, data }),
     delNote: (id:string) => dispatch({ type:'DEL_NOTE', id }),
     addGP: (d:any) => dispatch({ type:'ADD_GP', item:{ id:uid(), savedAt:Date.now(), ...d } }),
+updGP: (id,data)=>dispatch({type:'UPD_GP',id,data}),
     delGP: (id:string) => dispatch({ type:'DEL_GP', id }),
     updProfile: (data:any) => dispatch({ type:'UPD_PROFILE', data }),
     addStock: (d:any) => dispatch({ type:'ADD_STOCK', item:{ id:uid(), createdAt:Date.now(), currentQty:0, ...d } }),
