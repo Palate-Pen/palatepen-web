@@ -1,0 +1,19 @@
+
+/* Font scaling classes applied to body */
+body.font-sm { font-size: 12px; }
+body.font-md { font-size: 14px; }
+body.font-lg { font-size: 16px; }
+
+/* Scale all text relative to body font size */
+body.font-sm *, body.font-md *, body.font-lg * {
+  font-size: inherit;
+}
+
+/* But preserve specific overrides for headings */
+body.font-sm .mise-heading { font-size: 24px !important; }
+body.font-md .mise-heading { font-size: 28px !important; }
+body.font-lg .mise-heading { font-size: 34px !important; }
+
+body.font-sm .mise-subheading { font-size: 18px !important; }
+body.font-md .mise-subheading { font-size: 22px !important; }
+body.font-lg .mise-subheading { font-size: 26px !important; }
