@@ -72,7 +72,7 @@ export default function ComingSoon() {
               <p style={{ fontFamily: 'system-ui,sans-serif', fontSize: '14px', color: '#2A7D6F' }}>You&apos;re on the list. We&apos;ll be in touch.</p>
             </div>
           ) : (
-            <form onSubmit={submit} style={{ display: 'flex', gap: '0', maxWidth: '420px', margin: '0 auto', flexWrap: 'wrap', justifyContent: 'center', gap: '8px' }}>
+            <form onSubmit={submit} style={{ display: 'flex', gap: '8px', maxWidth: '420px', margin: '0 auto', flexWrap: 'wrap', justifyContent: 'center' }}>
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="Your email address"
