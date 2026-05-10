@@ -155,7 +155,7 @@ export default function CostingView(){
         </div>
       </div>
       <div style={{width:historyOpen?'272px':'40px',borderLeft:'1px solid '+C.border,background:C.surface,display:'flex',flexDirection:'column',transition:'width 0.2s',overflow:'hidden',flexShrink:0}}>
-        <button onClick={()=>setHistoryOpen(!historyOpen)} style={{display:'flex',alignItems:'center',gap:'8px',padding:'16px',borderBottom:'1px solid '+C.border,background:'none',border:'none',cursor:'pointer',color:C.dim,whiteSpace:'nowrap',width:'100%',borderBottom:'1px solid '+C.border}}>
+        <button onClick={()=>setHistoryOpen(!historyOpen)} style={{display:'flex',alignItems:'center',gap:'8px',padding:'16px',borderBottom:'1px solid '+C.border,background:'none',border:'none',cursor:'pointer',color:C.dim,whiteSpace:'nowrap',width:'100%'}}>
           <span style={{fontSize:'16px',transform:historyOpen?'rotate(0deg)':'rotate(180deg)',transition:'transform 0.2s'}}>›</span>
           {historyOpen&&<span style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>History ({state.gpHistory.length})</span>}
         </button>
