@@ -23,6 +23,10 @@ export default function RecipesView() {
 
   const [search, setSearch] = useState('');
   const [sel, setSel] = useState<any>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCat, setEditCat] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCat, setNewCat] = useState('Main');
@@ -34,7 +38,6 @@ export default function RecipesView() {
     (r.category||'').toLowerCase().includes(search.toLowerCase())
   );
 
-  // Find linked costing for selected recipe
   const linkedCosting = sel
     ? state.gpHistory.find((h: any) =>
         h.name?.toLowerCase() === sel.title?.toLowerCase() ||
@@ -42,116 +45,154 @@ export default function RecipesView() {
       )
     : null;
 
-  function save() {
+  function openEdit() {
+    setEditTitle(sel.title || '');
+    setEditCat(sel.category || 'Main');
+    setEditNotes(sel.notes || '');
+    setEditMode(true);
+  }
+
+  function saveEdit() {
+    actions.updRecipe(sel.id, { title: editTitle.trim(), category: editCat, notes: editNotes });
+    setSel({ ...sel, title: editTitle.trim(), category: editCat, notes: editNotes });
+    setEditMode(false);
+  }
+
+  function addRecipe() {
     if (!newTitle.trim()) return;
     actions.addRecipe({ title: newTitle.trim(), category: newCat, notes: newNotes });
     setShowAdd(false); setNewTitle(''); setNewCat('Main'); setNewNotes('');
   }
 
-  const inp: any = {
-    width: '100%', background: C.surface2, border: '1px solid ' + C.border,
-    color: C.text, fontSize: '13px', padding: '9px 12px', outline: 'none',
-    fontFamily: 'system-ui,sans-serif', boxSizing: 'border-box',
-  };
+  const inp: any = { width: '100%', background: C.surface2, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '9px 12px', outline: 'none', fontFamily: 'system-ui,sans-serif', boxSizing: 'border-box' };
+  const bigInp: any = { ...inp, background: 'transparent', fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', border: 'none', borderBottom: '1px solid ' + C.border, paddingBottom: '12px', marginBottom: '20px' };
 
-  // ── RECIPE DETAIL ────────────────────────────────────────
+  // ── RECIPE DETAIL ──────────────────────────────────────────
   if (sel) return (
     <div style={{ padding: '32px', maxWidth: '920px', fontFamily: 'system-ui,sans-serif', color: C.text }}>
-      <button onClick={() => setSel(null)} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer', marginBottom: '20px', display: 'block' }}>
-        ← Recipe Library
-      </button>
 
-      <input value={sel.title} onChange={e => actions.updRecipe(sel.id, { title: e.target.value })}
-        style={{ width: '100%', background: 'transparent', fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', color: C.text, border: 'none', borderBottom: '1px solid ' + C.border, paddingBottom: '12px', marginBottom: '20px', outline: 'none', boxSizing: 'border-box' }} />
-
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px' }}>
-        {[sel.category, sel.imported?.servings ? 'Serves ' + sel.imported.servings : null, sel.imported?.prepTime ? 'Prep: ' + sel.imported.prepTime : null].filter(Boolean).map((t: string) => (
-          <span key={t} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '18', border: '0.5px solid ' + C.gold + '30', padding: '4px 10px', borderRadius: '2px' }}>{t}</span>
-        ))}
-      </div>
-
-      {/* COSTING PANEL */}
-      <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', marginBottom: '28px', overflow: 'hidden' }}>
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Costing</p>
-          {linkedCosting && (
-            <p style={{ fontSize: '11px', color: C.faint }}>Last updated {new Date(linkedCosting.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <button onClick={() => { setSel(null); setEditMode(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
+          ← Recipe Library
+        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {editMode ? (
+            <>
+              <button onClick={() => setEditMode(false)} style={{ fontSize: '11px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>Cancel</button>
+              <button onClick={saveEdit} style={{ fontSize: '11px', fontWeight: 700, color: C.bg, background: C.gold, border: 'none', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>Save Changes</button>
+            </>
+          ) : (
+            <button onClick={openEdit} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+              Edit Recipe
+            </button>
           )}
         </div>
+      </div>
 
-        {linkedCosting ? (
-          <div>
-            {/* GP summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: '1px solid ' + C.border }}>
-              {[
-                { l: 'Sell', v: sym + (linkedCosting.sell||0).toFixed(2) },
-                { l: 'Cost/Cover', v: sym + (linkedCosting.cost||0).toFixed(2) },
-                { l: 'GP £', v: sym + (linkedCosting.gp||0).toFixed(2) },
-                { l: 'GP %', v: (linkedCosting.pct||0).toFixed(1) + '%', highlight: true },
-              ].map((cell, i) => (
-                <div key={cell.l} style={{ padding: '14px', textAlign: 'center', borderRight: i < 3 ? '1px solid ' + C.border : 'none' }}>
-                  <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>{cell.l}</p>
-                  <p style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: cell.highlight ? gpColor(linkedCosting.pct||0, linkedCosting.target||gpTarget, C) : C.text }}>{cell.v}</p>
-                </div>
-              ))}
-            </div>
+      {/* Title */}
+      {editMode ? (
+        <input value={editTitle} onChange={e => setEditTitle(e.target.value)} style={bigInp} />
+      ) : (
+        <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', color: C.text, borderBottom: '1px solid ' + C.border, paddingBottom: '12px', marginBottom: '20px' }}>{sel.title}</h1>
+      )}
 
-            {/* GP benchmark bar */}
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border }}>
-              {[
-                { l: 'This dish', v: linkedCosting.pct||0, c: gpColor(linkedCosting.pct||0, linkedCosting.target||gpTarget, C) },
-                { l: 'Target ' + (linkedCosting.target||gpTarget) + '%', v: linkedCosting.target||gpTarget, c: C.greenLight },
-                { l: 'Industry min 65%', v: 65, c: C.faint },
-              ].map(b => (
-                <div key={b.l} style={{ marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: C.faint, marginBottom: '3px' }}>
-                    <span>{b.l}</span><span style={{ color: b.c }}>{b.v.toFixed(1)}%</span>
-                  </div>
-                  <div style={{ height: '3px', background: C.surface3, borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '3px', background: b.c, borderRadius: '2px', width: Math.min(Math.max(b.v, 0), 100) + '%' }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* Category + tags */}
+      {editMode ? (
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '8px' }}>Category</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {CATS.map(c => (
+              <button key={c} onClick={() => setEditCat(c)} style={{ fontSize: '12px', padding: '6px 12px', border: '1px solid ' + (editCat === c ? C.gold : C.border), color: editCat === c ? C.gold : C.dim, background: editCat === c ? C.gold + '10' : 'transparent', cursor: 'pointer', borderRadius: '2px' }}>{c}</button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px' }}>
+          {[sel.category, sel.imported?.servings ? 'Serves ' + sel.imported.servings : null, sel.imported?.prepTime ? 'Prep: ' + sel.imported.prepTime : null].filter(Boolean).map((t: string) => (
+            <span key={t} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '18', border: '0.5px solid ' + C.gold + '30', padding: '4px 10px', borderRadius: '2px' }}>{t}</span>
+          ))}
+        </div>
+      )}
 
-            {/* Ingredient breakdown */}
-            {(linkedCosting.ingredients||[]).length > 0 && (
-              <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '8px', padding: '10px 16px', background: C.surface2, borderBottom: '1px solid ' + C.border }}>
-                  {['Ingredient','Qty','Cost/unit','Line cost'].map(h => (
-                    <p key={h} style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint }}>{h}</p>
-                  ))}
-                </div>
-                {linkedCosting.ingredients.map((ing: any) => (
-                  <div key={ing.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '8px', padding: '10px 16px', borderBottom: '1px solid ' + C.border, alignItems: 'center' }}>
-                    <p style={{ fontSize: '13px', color: C.text }}>{ing.name}</p>
-                    <p style={{ fontSize: '13px', color: C.dim }}>{ing.qty}{ing.unit}</p>
-                    <p style={{ fontSize: '13px', color: C.dim }}>{sym}{(ing.price||0).toFixed(2)}</p>
-                    <p style={{ fontSize: '13px', color: C.gold }}>{sym}{(ing.line||0).toFixed(3)}</p>
+      {/* COSTING PANEL */}
+      {!editMode && (
+        <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', marginBottom: '28px', overflow: 'hidden' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Costing</p>
+            {linkedCosting && <p style={{ fontSize: '11px', color: C.faint }}>Last updated {new Date(linkedCosting.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>}
+          </div>
+          {linkedCosting ? (
+            <div>
+              {/* GP summary row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: '1px solid ' + C.border }}>
+                {[
+                  { l: 'Sell', v: sym + (linkedCosting.sell||0).toFixed(2) },
+                  { l: 'Cost/Cover', v: sym + (linkedCosting.cost||0).toFixed(2) },
+                  { l: 'GP £', v: sym + (linkedCosting.gp||0).toFixed(2) },
+                  { l: 'GP %', v: (linkedCosting.pct||0).toFixed(1) + '%', highlight: true },
+                ].map((cell, i) => (
+                  <div key={cell.l} style={{ padding: '14px', textAlign: 'center', borderRight: i < 3 ? '1px solid ' + C.border : 'none' }}>
+                    <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>{cell.l}</p>
+                    <p style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: cell.highlight ? gpColor(linkedCosting.pct||0, linkedCosting.target||gpTarget, C) : C.text }}>{cell.v}</p>
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* GP advice */}
-            <div style={{ padding: '12px 16px', background: (linkedCosting.pct||0) >= (linkedCosting.target||gpTarget) ? C.green + '08' : C.red + '06' }}>
-              <p style={{ fontSize: '12px', color: (linkedCosting.pct||0) >= (linkedCosting.target||gpTarget) ? C.greenLight : C.red }}>
-                {(linkedCosting.pct||0) >= (linkedCosting.target||gpTarget)
-                  ? 'On target — GP of ' + (linkedCosting.pct||0).toFixed(1) + '% meets your ' + (linkedCosting.target||gpTarget) + '% goal.'
-                  : 'Below target — price at ' + sym + (linkedCosting.cost / (1 - (linkedCosting.target||gpTarget) / 100)).toFixed(2) + ' to hit ' + (linkedCosting.target||gpTarget) + '%.'}
-              </p>
+              {/* Benchmark bars */}
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border }}>
+                {[
+                  { l: 'This dish', v: linkedCosting.pct||0, c: gpColor(linkedCosting.pct||0, linkedCosting.target||gpTarget, C) },
+                  { l: 'Target ' + (linkedCosting.target||gpTarget) + '%', v: linkedCosting.target||gpTarget, c: C.greenLight },
+                  { l: 'Industry min 65%', v: 65, c: C.faint },
+                ].map(b => (
+                  <div key={b.l} style={{ marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: C.faint, marginBottom: '3px' }}>
+                      <span>{b.l}</span><span style={{ color: b.c }}>{b.v.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: '3px', background: C.surface3, borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '3px', background: b.c, width: Math.min(Math.max(b.v, 0), 100) + '%', borderRadius: '2px' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Ingredients table */}
+              {(linkedCosting.ingredients||[]).length > 0 && (
+                <div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '8px', padding: '10px 16px', background: C.surface2, borderBottom: '1px solid ' + C.border }}>
+                    {['Ingredient','Qty','Cost/unit','Line cost'].map(h => (
+                      <p key={h} style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint }}>{h}</p>
+                    ))}
+                  </div>
+                  {linkedCosting.ingredients.map((ing: any) => (
+                    <div key={ing.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '8px', padding: '10px 16px', borderBottom: '1px solid ' + C.border, alignItems: 'center' }}>
+                      <p style={{ fontSize: '13px', color: C.text }}>{ing.name}</p>
+                      <p style={{ fontSize: '13px', color: C.dim }}>{ing.qty}{ing.unit}</p>
+                      <p style={{ fontSize: '13px', color: C.dim }}>{sym}{(ing.price||0).toFixed(2)}</p>
+                      <p style={{ fontSize: '13px', color: C.gold }}>{sym}{(ing.line||0).toFixed(3)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* GP advice */}
+              <div style={{ padding: '12px 16px', background: (linkedCosting.pct||0) >= (linkedCosting.target||gpTarget) ? C.green + '08' : C.red + '06' }}>
+                <p style={{ fontSize: '12px', color: (linkedCosting.pct||0) >= (linkedCosting.target||gpTarget) ? C.greenLight : C.red }}>
+                  {(linkedCosting.pct||0) >= (linkedCosting.target||gpTarget)
+                    ? 'On target — GP of ' + (linkedCosting.pct||0).toFixed(1) + '% meets your ' + (linkedCosting.target||gpTarget) + '% goal.'
+                    : 'Below target — price at ' + sym + (linkedCosting.cost / (1 - (linkedCosting.target||gpTarget) / 100)).toFixed(2) + ' to hit ' + (linkedCosting.target||gpTarget) + '%.'}
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-            <p style={{ fontSize: '13px', color: C.faint, marginBottom: '12px' }}>No costing saved for this recipe yet.</p>
-            <p style={{ fontSize: '12px', color: C.faint }}>Go to Costing, enter &ldquo;{sel.title}&rdquo; as the dish name, and save — it will appear here automatically.</p>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+              <p style={{ fontSize: '13px', color: C.faint, marginBottom: '8px' }}>No costing saved for this recipe yet.</p>
+              <p style={{ fontSize: '12px', color: C.faint }}>Go to Costing, save a calculation named &ldquo;{sel.title}&rdquo; and it will appear here automatically.</p>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Ingredients from import */}
-      {sel.imported?.ingredients?.length > 0 && (
+      {/* Ingredients list */}
+      {!editMode && sel.imported?.ingredients?.length > 0 && (
         <div style={{ marginBottom: '24px' }}>
           <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '12px' }}>Ingredients</p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -166,7 +207,7 @@ export default function RecipesView() {
       )}
 
       {/* Method */}
-      {sel.imported?.method?.length > 0 && (
+      {!editMode && sel.imported?.method?.length > 0 && (
         <div style={{ marginBottom: '24px' }}>
           <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '12px' }}>Method</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -182,35 +223,42 @@ export default function RecipesView() {
         </div>
       )}
 
-      {/* Chef notes */}
+      {/* Chef notes — editable in both modes */}
       <div style={{ marginBottom: '24px' }}>
         <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>Chef&apos;s Notes</p>
-        <textarea value={sel.notes} onChange={e => actions.updRecipe(sel.id, { notes: e.target.value })}
-          placeholder="Techniques, adaptations, ideas..." rows={4} style={{ ...inp, resize: 'none' }} />
+        <textarea
+          value={editMode ? editNotes : sel.notes}
+          onChange={e => editMode ? setEditNotes(e.target.value) : actions.updRecipe(sel.id, { notes: e.target.value })}
+          placeholder="Techniques, adaptations, ideas..."
+          rows={4}
+          style={{ ...inp, resize: 'none' }}
+        />
       </div>
 
       {/* Delete */}
-      <div style={{ borderTop: '1px solid ' + C.border, paddingTop: '20px' }}>
-        {deleteId === sel.id ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <p style={{ fontSize: '13px', color: C.red }}>Delete this recipe?</p>
-            <button onClick={() => setDeleteId(null)} style={{ fontSize: '12px', color: C.dim, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={() => { actions.delRecipe(sel.id); setSel(null); setDeleteId(null); }}
-              style={{ fontSize: '12px', fontWeight: 700, color: '#fff', background: C.red, border: 'none', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
-              Confirm Delete
+      {!editMode && (
+        <div style={{ borderTop: '1px solid ' + C.border, paddingTop: '20px' }}>
+          {deleteId === sel.id ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <p style={{ fontSize: '13px', color: C.red }}>Delete this recipe?</p>
+              <button onClick={() => setDeleteId(null)} style={{ fontSize: '12px', color: C.dim, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => { actions.delRecipe(sel.id); setSel(null); setDeleteId(null); }}
+                style={{ fontSize: '12px', fontWeight: 700, color: '#fff', background: C.red, border: 'none', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+                Confirm Delete
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setDeleteId(sel.id)}
+              style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.red, border: '1px solid ' + C.red, background: 'transparent', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+              Delete Recipe
             </button>
-          </div>
-        ) : (
-          <button onClick={() => setDeleteId(sel.id)}
-            style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.red, border: '1px solid ' + C.red, background: 'transparent', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
-            Delete Recipe
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 
-  // ── RECIPE LIST ──────────────────────────────────────────
+  // ── RECIPE LIST ────────────────────────────────────────────
   return (
     <div style={{ padding: '32px', fontFamily: 'system-ui,sans-serif', color: C.text }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
@@ -238,7 +286,7 @@ export default function RecipesView() {
               h.name?.toLowerCase() === r.title?.toLowerCase() || h.linkedRecipeId === r.id
             );
             return (
-              <button key={r.id} onClick={() => setSel(r)}
+              <button key={r.id} onClick={() => { setSel(r); setEditMode(false); }}
                 style={{ textAlign: 'left', background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: '20px', cursor: 'pointer' }}>
                 <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: C.text, marginBottom: '8px' }}>{r.title}</h3>
                 {r.imported?.description && (
@@ -292,7 +340,7 @@ export default function RecipesView() {
             </div>
             <div style={{ display: 'flex', gap: '10px', padding: '16px 20px', borderTop: '1px solid ' + C.border }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, fontSize: '12px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '10px', cursor: 'pointer', borderRadius: '2px' }}>Cancel</button>
-              <button onClick={save} disabled={!newTitle.trim()}
+              <button onClick={addRecipe} disabled={!newTitle.trim()}
                 style={{ flex: 1, fontSize: '12px', fontWeight: 700, background: C.gold, color: C.bg, border: 'none', padding: '10px', cursor: 'pointer', borderRadius: '2px', opacity: !newTitle.trim() ? 0.4 : 1 }}>
                 Save Recipe
               </button>
