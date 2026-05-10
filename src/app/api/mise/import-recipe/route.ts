@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(req: NextRequest) {
+  try {
+    const { url } = await req.json();
+    if (!url) return NextResponse.json({ error: 'URL required' }, { status: 400 });
+
+    const pageRes = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!pageRes.ok) return NextResponse.json({ error: 'Could not load that page' }, { status: 400 });
+
+    const html = await pageRes.text();
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .slice(0, 12000);
+
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: 'Extract recipe. Return ONLY JSON: {"title":"","description":"","servings":"","prepTime":"","cookTime":"","ingredients":[],"method":[],"chefNotes":"","category":"Main"}. If no recipe: {"error":"No recipe found"}\n\n' + text }],
+      }),
+    });
+
+    const data = await apiRes.json();
+    const parsed = JSON.parse((data.content?.[0]?.text || '{}').replace(/```json|```/g, '').trim());
+    if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    return NextResponse.json(parsed);
+  } catch(e) {
+    return NextResponse.json({ error: 'Import failed' }, { status: 500 });
+  }
+}
