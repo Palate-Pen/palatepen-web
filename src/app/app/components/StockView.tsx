@@ -108,6 +108,35 @@ export default function StockView() {
     URL.revokeObjectURL(url);
   }
 
+  
+  function downloadReport(usageItems: any[], date: string) {
+    const rows = [
+      ['Stock Report — ' + date],
+      [''],
+      ['Item', 'Unit', 'Unit Price', 'Prev Qty', 'Curr Qty', 'Usage', 'Usage Value', 'Closing Value'],
+      ...usageItems.map((i: any) => [
+        i.name,
+        i.unit,
+        i.price ? sym + i.price.toFixed(2) : '—',
+        i.prev,
+        i.currentQty || 0,
+        i.usage.toFixed(2),
+        sym + i.usageValue.toFixed(2),
+        sym + i.value.toFixed(2),
+      ]),
+      [''],
+      ['Total closing stock value', '', '', '', '', '', '', sym + usageItems.reduce((a: number, i: any) => a + i.value, 0).toFixed(2)],
+    ];
+    const csv = rows.map(r => r.map((cell: any) => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'stock-report-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function saveItem() {
     if (!addName.trim()) return;
     const bankMatch = bank.find((b:any)=>b.name.toLowerCase()===addName.toLowerCase());
@@ -150,6 +179,7 @@ export default function StockView() {
           </div>
           <div style={{display:'flex',gap:'8px'}}>
             <button onClick={()=>window.print()} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Print</button>
+              <button onClick={()=>downloadReport(usageItems, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}))} style={{fontSize:'11px',fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.gold}40`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Download CSV</button>
               <button onClick={()=>downloadReport(usageItems, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}))} style={{fontSize:'11px',fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.gold}40`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Download CSV</button>
             <button onClick={()=>setView('list')} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px'}}>Done</button>
           </div>

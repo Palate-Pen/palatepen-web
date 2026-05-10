@@ -3,7 +3,6 @@ import{useState,useRef}from'react';
 import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
-import{supabase}from'@/lib/supabase';
 import{dark,light}from'@/lib/theme';
 
 export default function InvoicesView(){
