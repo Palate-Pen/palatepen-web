@@ -4,10 +4,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Palate & Pen brand
-        cream: '#FAF7F2', paper: '#F3EFE7', ink: '#1A1A18',
-        mustard: '#D4A017', teal: '#2A7D6F', slate: '#7A7A72',
-        // Mise web palette — web-optimised (slightly lighter than mobile)
+        cream: '#FAF7F2',
+        paper: '#F3EFE7',
+        ink: '#1A1A18',
+        'ink-soft': '#3D3D39',
+        mustard: '#D4A017',
+        'mustard-pale': '#F5E9C0',
+        teal: '#2A7D6F',
+        'teal-pale': '#C8E6E1',
+        slate: '#7A7A72',
         'mise-bg': '#141210',
         'mise-surface': '#1C1A17',
         'mise-surface2': '#242118',

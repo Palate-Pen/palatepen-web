@@ -2,15 +2,29 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="border-t border-ink/10 px-6 md:px-14 py-8 bg-cream">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-        <span className="font-fraunces font-light text-xl text-ink">Palate <i className="text-mustard">&</i> Pen</span>
-        <div className="flex gap-8">
-          {[['Services','/services'],['About','/about'],['Mise','/mise'],['Blog','/blog'],['Contact','/contact']].map(([l,h])=>(
-            <Link key={h} href={h} className="font-epilogue text-xs text-slate hover:text-ink transition-colors tracking-wide">{l}</Link>
-          ))}
+    <footer className="bg-ink border-t border-white/5">
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div>
+            <div className="font-fraunces text-xl font-light text-cream mb-2">
+              Palate <span className="italic text-mustard">&amp;</span> Pen
+            </div>
+            <p className="font-epilogue text-xs text-white/40 max-w-xs leading-relaxed">Menu design and food consultancy. London, UK.</p>
+          </div>
+          <div className="flex flex-wrap gap-x-8 gap-y-3">
+            {[['About','/about'],['Services','/services'],['Mise','/mise'],['Blog','/blog'],['Contact','/contact']].map(([l,h]) => (
+              <Link key={h} href={h} className="font-epilogue text-xs text-white/40 hover:text-white/70 transition-colors tracking-widest uppercase">{l}</Link>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 text-right">
+            <a href="https://instagram.com/palate.pen" target="_blank" rel="noopener noreferrer" className="font-epilogue text-xs text-mustard hover:text-yellow-400 transition-colors tracking-widest uppercase">@palate.pen</a>
+            <span className="font-epilogue text-xs text-white/30">hello@palateandpen.co.uk</span>
+          </div>
         </div>
-        <span className="font-epilogue text-xs text-slate tracking-widest uppercase">hello@palateandpen.co.uk</span>
+        <div className="border-t border-white/5 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center gap-2">
+          <span className="font-epilogue text-xs text-white/20">&copy; 2026 Palate &amp; Pen. All rights reserved.</span>
+          <Link href="/mise/app" className="font-epilogue text-xs text-white/30 hover:text-mustard transition-colors tracking-widest uppercase">Open Mise App</Link>
+        </div>
       </div>
     </footer>
   );
