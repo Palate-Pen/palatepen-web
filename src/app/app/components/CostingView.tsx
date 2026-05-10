@@ -143,7 +143,20 @@ export default function CostingView(){
           )}
           <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'10px'}}>Add Ingredient</p>
           <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr auto',gap:'8px',alignItems:'end'}}>
-            <input value={ingName} onChange={e=>setIngName(e.target.value)} onBlur={e=>autofillPrice(e.target.value)} placeholder="Name" style={inp}/>
+            <div style={{position:'relative'}}>
+              <input value={ingName} onChange={e=>{setIngName(e.target.value);autofillPrice(e.target.value);}} placeholder="Search ingredients bank..." style={{...inp,width:'100%'}}/>
+              {ingName.length>1&&state.ingredientsBank.filter((b:any)=>b.name.toLowerCase().includes(ingName.toLowerCase())&&b.name.toLowerCase()!==ingName.toLowerCase()).slice(0,6).length>0&&(
+                <div style={{position:'absolute',top:'100%',left:0,right:0,background:C.surface,border:'1px solid '+C.gold+'60',borderTop:'none',zIndex:50,maxHeight:'200px',overflow:'auto',borderRadius:'0 0 3px 3px',boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>
+                  {state.ingredientsBank.filter((b:any)=>b.name.toLowerCase().includes(ingName.toLowerCase())&&b.name.toLowerCase()!==ingName.toLowerCase()).slice(0,6).map((b:any)=>(
+                    <button key={b.id} onMouseDown={e=>{e.preventDefault();setIngName(b.name);setIngUnit(b.unit||'kg');setIngPrice(String(b.unitPrice||''));}}
+                      style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 12px',background:'none',border:'none',borderBottom:'1px solid '+C.border,cursor:'pointer',textAlign:'left',transition:'background 0.1s'}}>
+                      <span style={{fontSize:'13px',color:C.text}}>{b.name}</span>
+                      <span style={{fontSize:'12px',color:C.gold,fontWeight:600}}>£{(b.unitPrice||0).toFixed(2)}/{b.unit}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <input type="number" value={ingQty} onChange={e=>setIngQty(e.target.value)} placeholder="Qty" style={inp}/>
             <select value={ingUnit} onChange={e=>setIngUnit(e.target.value)} style={{...inp,cursor:'pointer'}}>{UNITS.map(u=><option key={u} value={u}>{u}</option>)}</select>
             <input type="number" value={ingPrice} onChange={e=>setIngPrice(e.target.value)} placeholder={sym+'/'+ingUnit} style={inp}/>
