@@ -136,6 +136,33 @@ export default function RecipesView() {
           </div>
         )}
 
+        {/* LINKED NOTES */}
+        {!editMode && (() => {
+          const linkedNotes = (sel.linkedNoteIds||[]).map((id: string) => state.notes.find((n: any) => n.id === id)).filter(Boolean);
+          if (!linkedNotes.length) return null;
+          return (
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '10px' }}>Linked Notes</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {linkedNotes.map((note: any) => (
+                  <div key={note.id} style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', overflow: 'hidden' }}>
+                    <button onClick={() => setExpandedNotes(prev => ({ ...prev, [note.id]: !prev[note.id] }))}
+                      style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                      <span style={{ fontSize: '14px', color: C.text }}>{note.title || 'Untitled'}</span>
+                      <span style={{ fontSize: '16px', color: C.faint }}>{expandedNotes[note.id] ? '−' : '+'}</span>
+                    </button>
+                    {expandedNotes[note.id] && (
+                      <div style={{ padding: '12px 16px 16px', borderTop: '1px solid ' + C.border }}>
+                        <p style={{ fontSize: '13px', color: C.dim, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{note.content || 'No content yet.'}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* COSTING PANEL */}
         {!editMode && (
           <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', marginBottom: '28px', overflow: 'hidden' }}>
