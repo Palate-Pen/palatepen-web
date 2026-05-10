@@ -109,33 +109,6 @@ export default function StockView() {
   }
 
   
-  function downloadReport(usageItems: any[], date: string) {
-    const rows = [
-      ['Stock Report — ' + date],
-      [''],
-      ['Item', 'Unit', 'Unit Price', 'Prev Qty', 'Curr Qty', 'Usage', 'Usage Value', 'Closing Value'],
-      ...usageItems.map((i: any) => [
-        i.name,
-        i.unit,
-        i.price ? sym + i.price.toFixed(2) : '—',
-        i.prev,
-        i.currentQty || 0,
-        i.usage.toFixed(2),
-        sym + i.usageValue.toFixed(2),
-        sym + i.value.toFixed(2),
-      ]),
-      [''],
-      ['Total closing stock value', '', '', '', '', '', '', sym + usageItems.reduce((a: number, i: any) => a + i.value, 0).toFixed(2)],
-    ];
-    const csv = rows.map(r => r.map((cell: any) => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'stock-report-' + new Date().toISOString().slice(0, 10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   function saveItem() {
     if (!addName.trim()) return;
