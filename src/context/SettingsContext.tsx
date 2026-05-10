@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { dark, light } from '@/lib/theme';
 
 export interface Settings {
@@ -27,6 +27,7 @@ function resolveTheme(theme: string): 'dark' | 'light' {
 function applyToDOM(s: Settings) {
   if (typeof document === 'undefined') return;
   const C = s.resolved === 'light' ? light : dark;
+
   const vars: Record<string, string> = {
     '--mise-bg': C.bg, '--mise-surface': C.surface, '--mise-surface2': C.surface2,
     '--mise-surface3': C.surface3, '--mise-text': C.text, '--mise-dim': C.dim,
@@ -38,8 +39,13 @@ function applyToDOM(s: Settings) {
   Object.entries(vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
   document.body.style.background = C.bg;
   document.body.style.color = C.text;
-  const sizes: Record<string, string> = { sm: '12px', md: '14px', lg: '16px' };
-  document.body.style.fontSize = sizes[s.fontSize] || '14px';
+
+  // Apply zoom to scale all hardcoded pixel values proportionally
+  const zooms: Record<string, string> = { sm: '0.9', md: '1', lg: '1.12' };
+  const appEl = document.getElementById('mise-app-root');
+  if (appEl) {
+    (appEl.style as any).zoom = zooms[s.fontSize] || '1';
+  }
 }
 
 function loadFromStorage(): Settings {
@@ -50,9 +56,7 @@ function loadFromStorage(): Settings {
     const parsed = JSON.parse(raw);
     const resolved = resolveTheme(parsed.theme || 'dark');
     return { ...defaults, ...parsed, resolved };
-  } catch {
-    return defaults;
-  }
+  } catch { return defaults; }
 }
 
 function saveToStorage(s: Settings) {
@@ -61,20 +65,12 @@ function saveToStorage(s: Settings) {
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-  // Initialise synchronously from localStorage to avoid flash
-  const [settings, setSettings] = useState<Settings>(() => {
-    const loaded = loadFromStorage();
-    return loaded;
-  });
-  const mounted = useRef(false);
+  const [settings, setSettings] = useState<Settings>(defaults);
 
   useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      const loaded = loadFromStorage();
-      setSettings(loaded);
-      applyToDOM(loaded);
-    }
+    const loaded = loadFromStorage();
+    setSettings(loaded);
+    applyToDOM(loaded);
   }, []);
 
   function update(partial: Partial<Settings>) {
