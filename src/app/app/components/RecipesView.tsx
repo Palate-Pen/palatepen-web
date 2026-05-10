@@ -173,9 +173,9 @@ export default function RecipesView() {
                 {linkedCosting ? (
                   <button onClick={removeCosting} style={{ fontSize: '10px', color: C.faint, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Remove link</button>
                 ) : null}
-                <button onClick={() => setAssigningCosting(true)}
+                <button onClick={() => setAssigningCosting(v => !v)}
                   style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
-                  {linkedCosting ? 'Change' : 'Assign Costing'}
+                  {assigningCosting ? 'Cancel' : linkedCosting ? 'Change' : '+ Assign Costing'}
                 </button>
               </div>
             </div>
