@@ -111,7 +111,7 @@ export default function CostingView(){
         </div>
         {s>0&&(
           <div style={{background:C.surface,border:'1px solid '+C.border,borderRadius:'4px',padding:'16px',marginBottom:'16px'}}>
-            {[{l:'Your GP',v:pct,c:gpColor(pct,tgt,C)},{l:'Target '+tgt+'%',v:tgt,c:C.greenLight},{l:'Industry min 65%',v:65,c:C.faint}].map(b=>(
+            {[{l:'Your GP',v:pct,c:gpColor(pct,tgt,C)},{l:'Target '+tgt+'%',v:tgt,c:C.greenLight},{l:'Business min '+(tgt-10)+'%',v:tgt-10,c:C.faint}].map(b=>(
               <div key={b.l} style={{marginBottom:'10px'}}>
                 <div style={{display:'flex',justifyContent:'space-between',fontSize:'11px',color:C.faint,marginBottom:'4px'}}><span>{b.l}</span><span style={{color:b.c}}>{b.v.toFixed(1)}%</span></div>
                 <div style={{height:'4px',background:C.surface3,borderRadius:'2px',overflow:'hidden'}}><div style={{height:'4px',background:b.c,borderRadius:'2px',width:Math.min(Math.max(b.v,0),100)+'%',transition:'width 0.3s'}}></div></div>
