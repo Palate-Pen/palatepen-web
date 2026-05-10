@@ -104,10 +104,26 @@ export default function CostingView(){
             </div>
           ))}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'16px'}}>
-          {[['Dish Name',dish,(v:string)=>setDish(v),'e.g. Pan-seared Salmon','text'],['Selling Price ('+sym+' excl. VAT)',sell,(v:string)=>setSell(v),'0.00','number'],['GP Target %',target,(v:string)=>setTarget(v),String(gpTarget),'number'],['Covers / Portions',portions,(v:string)=>setPortions(v),'1','number']].map(([lbl,val,setter,ph,type]:any)=>(
-            <div key={lbl}><label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>{lbl}</label><input type={type} value={val} onChange={e=>setter(e.target.value)} placeholder={ph} style={inp}/></div>
-          ))}
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'16px'}}>
+          {/* Dish name with recipe autocomplete */}
+          <div style={{position:'relative'}}>
+            <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>Dish Name</label>
+            <input value={dish} onChange={e=>setDish(e.target.value)} placeholder="Search recipes or enter dish name..." style={{...inp,width:'100%'}}/>
+            {dish.length>1&&state.recipes.filter((r:any)=>r.title.toLowerCase().includes(dish.toLowerCase())&&r.title.toLowerCase()!==dish.toLowerCase()).slice(0,6).length>0&&(
+              <div style={{position:'absolute',top:'100%',left:0,right:0,background:C.surface,border:'1px solid '+C.gold+'60',borderTop:'none',zIndex:50,maxHeight:'200px',overflow:'auto',borderRadius:'0 0 3px 3px',boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>
+                {state.recipes.filter((r:any)=>r.title.toLowerCase().includes(dish.toLowerCase())&&r.title.toLowerCase()!==dish.toLowerCase()).slice(0,6).map((r:any)=>(
+                  <button key={r.id} onMouseDown={e=>{e.preventDefault();setDish(r.title);}}
+                    style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 12px',background:'none',border:'none',borderBottom:'1px solid '+C.border,cursor:'pointer',textAlign:'left'}}>
+                    <span style={{fontSize:'13px',color:C.text}}>{r.title}</span>
+                    <span style={{fontSize:'11px',color:C.faint}}>{r.category}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div><label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>Selling Price ({sym} excl. VAT)</label><input type="number" value={sell} onChange={e=>setSell(e.target.value)} placeholder="0.00" style={inp}/></div>
+          <div><label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>GP Target %</label><input type="number" value={target} onChange={e=>setTarget(e.target.value)} placeholder={String(gpTarget)} style={inp}/></div>
+          <div><label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>Covers / Portions</label><input type="number" value={portions} onChange={e=>setPortions(e.target.value)} placeholder="1" style={inp}/></div>
         </div>
         {s>0&&(
           <div style={{background:C.surface,border:'1px solid '+C.border,borderRadius:'4px',padding:'16px',marginBottom:'16px'}}>
