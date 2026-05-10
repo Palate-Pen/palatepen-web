@@ -8,18 +8,15 @@ const epilogue = Epilogue({ subsets:['latin'], weight:['300','400','500','700'],
 export const metadata: Metadata = {
   title: 'Palate & Pen — Menu Design & Food Consultancy',
   description: 'We make your menu as good as your food.',
-  icons: {
-    icon: [
-      { url: '/pp-favicon.png', type: 'image/png', sizes: '64x64' },
-    ],
-    shortcut: '/pp-favicon.png',
-    apple: '/pp-favicon.png',
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/png" href="/pp-favicon.png" sizes="64x64" />
+        <link rel="shortcut icon" href="/pp-favicon.png" />
+      </head>
       <body className={`${fraunces.variable} ${epilogue.variable} bg-cream text-ink antialiased font-epilogue`}>
         {children}
       </body>
