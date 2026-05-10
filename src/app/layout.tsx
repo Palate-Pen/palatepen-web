@@ -7,9 +7,13 @@ const epilogue = Epilogue({ subsets:['latin'], weight:['300','400','500','700'],
 
 export const metadata: Metadata = {
   title: 'Palate & Pen — Menu Design & Food Consultancy',
-  description: 'We make your menu as good as your food. Menu design, culinary consulting, GP strategy and kitchen operations.',
+  description: 'We make your menu as good as your food.',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/pp-favicon.png', type: 'image/png', sizes: '64x64' },
+    ],
+    shortcut: '/pp-favicon.png',
+    apple: '/pp-favicon.png',
   },
 };
 
