@@ -4,6 +4,7 @@ import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
+import{supabase}from'@/lib/supabase';
 
 export default function InvoicesView(){
   const{state:appState,actions:appActions}=useApp();
