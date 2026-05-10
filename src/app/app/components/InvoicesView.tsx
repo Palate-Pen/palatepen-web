@@ -24,7 +24,7 @@ export default function InvoicesView(){
   const[deleteId,setDeleteId]=useState<string|null>(null);
   const[selectedInvoice,setSelectedInvoice]=useState<any>(null);
   const fileRef=useRef<HTMLInputElement>(null);
-  const apiKey=(appState.profile||{}).anthropicKey||'';
+  // API key is server-side only — we send the user's session token for Pro verification
 
   async function handleFile(file:File){
     if(tier!=='pro'){alert('Invoice scanning requires Pro.');return;}
@@ -35,7 +35,7 @@ export default function InvoicesView(){
       let binary='';bytes.forEach(b=>binary+=String.fromCharCode(b));
       const base64=btoa(binary);
       const mediaType=file.type;
-      const res=await fetch('/api/mise/scan-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64,mediaType,apiKey})});
+      const res=await fetch('/api/mise/scan-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64,mediaType,userToken:await supabase.auth.getSession().then(r=>r.data.session?.access_token||'')})});
       const data=await res.json();
       processScanResults(data.items||[],file.name);
     }catch(e){alert('Scan failed. Check your API key in admin.');setScanning(false);}
