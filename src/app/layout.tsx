@@ -8,6 +8,11 @@ const epilogue = Epilogue({ subsets:['latin'], weight:['300','400','500','700'],
 export const metadata: Metadata = {
   title: 'Palate & Pen — Menu Design & Food Consultancy',
   description: 'We make your menu as good as your food.',
+  icons: {
+    icon: '/pp-favicon.png',
+    shortcut: '/pp-favicon.png',
+    apple: '/pp-favicon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
