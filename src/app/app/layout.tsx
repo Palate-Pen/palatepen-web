@@ -6,13 +6,6 @@ import { SettingsProvider } from '@/context/SettingsContext';
 export const metadata: Metadata = {
   title: 'Mise — Professional Chef Toolkit',
   description: 'Recipe library, costing calculator, invoice scanning and stock management for working chefs.',
-  icons: {
-    icon: [
-      { url: '/mise-favicon.svg', type: 'image/svg+xml' },
-    ],
-    shortcut: '/mise-favicon.svg',
-    apple: '/mise-favicon.svg',
-  },
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +13,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <AuthProvider>
       <AppProvider>
         <SettingsProvider>
+          <head>
+            <link rel="icon" type="image/svg+xml" href="/mise-favicon.svg" />
+            <link rel="shortcut icon" href="/mise-favicon.svg" />
+          </head>
           {children}
         </SettingsProvider>
       </AppProvider>
