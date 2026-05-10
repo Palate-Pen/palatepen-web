@@ -177,14 +177,8 @@ export default function MisePage() {
         </div>
       
       {/* Promo */}
-      <section style={{background:'#0E0C0A',padding:'80px 0'}}>
-        <div style={{maxWidth:'900px',margin:'0 auto',padding:'0 40px'}}>
-          <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'3px',textTransform:'uppercase',color:'#C8960A',textAlign:'center',marginBottom:'16px'}}>See it in action</p>
-          <h2 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'clamp(28px,4vw,44px)',color:'#FAF7F2',textAlign:'center',marginBottom:'40px',lineHeight:'1.1'}}>
-            Everything a working kitchen needs,<br/><em style={{fontStyle:'italic',color:'#C8960A'}}>in one place.</em>
-          </h2>
-          <MisePromo/>
-        </div>
+      <section style={{background:'#0E0C0A',padding:'0'}}>
+        <MisePromo/>
       </section>
       </section>
 
