@@ -32,6 +32,7 @@ export default function RecipesView() {
   const [newCat, setNewCat] = useState('Main');
   const [newNotes, setNewNotes] = useState('');
   const [deleteId, setDeleteId] = useState<string|null>(null);
+  const [expandedNotes, setExpandedNotes] = useState<Record<string,boolean>>({});
   const [assigningCosting, setAssigningCosting] = useState(false);
 
   const filtered = state.recipes.filter((r: any) =>
