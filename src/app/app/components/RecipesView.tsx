@@ -25,6 +25,10 @@ const ALLERGENS: { key: string; label: string; short: string }[] = [
   { key: 'molluscs',   label: 'Molluscs',   short: 'MO' },
 ];
 
+// FIR sub-types — UK law requires naming the specific tree nut and cereal
+const NUT_TYPES = ['Almond','Hazelnut','Walnut','Cashew','Pecan','Brazil nut','Pistachio','Macadamia'];
+const GLUTEN_TYPES = ['Wheat','Rye','Barley','Oats','Spelt','Kamut'];
+
 function gpColor(pct: number, target: number, C: any) {
   if (pct >= target) return C.greenLight;
   if (pct >= 65) return C.gold;
@@ -51,6 +55,7 @@ export default function RecipesView() {
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [expandedNotes, setExpandedNotes] = useState<Record<string,boolean>>({});
   const [assigningCosting, setAssigningCosting] = useState(false);
+  const [showCompliance, setShowCompliance] = useState(false);
 
   const filtered = state.recipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -328,7 +333,13 @@ export default function RecipesView() {
 
         {/* Allergens */}
         <div style={{ marginBottom: '24px' }}>
-          <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>Allergens — Contains</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Allergens — Contains</p>
+            <button onClick={() => setShowCompliance(true)}
+              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+              Run Compliance Check
+            </button>
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
             {ALLERGENS.map(a => {
               const contains = (sel.allergens?.contains || []).includes(a.key);
@@ -338,7 +349,7 @@ export default function RecipesView() {
                     const cur = (sel.allergens?.contains || []) as string[];
                     const next = contains ? cur.filter(k => k !== a.key) : [...cur, a.key];
                     const others = (sel.allergens?.mayContain || []).filter((k: string) => k !== a.key);
-                    actions.updRecipe(sel.id, { allergens: { contains: next, mayContain: others } });
+                    actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), contains: next, mayContain: others } });
                   }}
                   style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + (contains ? C.red : C.border), color: contains ? C.red : C.dim, background: contains ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: contains ? 700 : 400 }}>
                   {a.label}
@@ -346,6 +357,57 @@ export default function RecipesView() {
               );
             })}
           </div>
+
+          {/* Sub-types: name the nut */}
+          {(sel.allergens?.contains || []).includes('nuts') && (
+            <div style={{ marginBottom: '14px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
+              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '6px' }}>
+                ⚠ Name the nut <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— UK FIR requires specifying which tree nut</span>
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {NUT_TYPES.map(n => {
+                  const on = (sel.allergens?.nutTypes || []).includes(n);
+                  return (
+                    <button key={n}
+                      onClick={() => {
+                        const cur = (sel.allergens?.nutTypes || []) as string[];
+                        const next = on ? cur.filter(k => k !== n) : [...cur, n];
+                        actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), nutTypes: next } });
+                      }}
+                      style={{ fontSize: '11px', padding: '4px 9px', border: '1px solid ' + (on ? C.red : C.border), color: on ? C.red : C.dim, background: on ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: on ? 700 : 400 }}>
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sub-types: name the cereal */}
+          {(sel.allergens?.contains || []).includes('gluten') && (
+            <div style={{ marginBottom: '14px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
+              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '6px' }}>
+                ⚠ Name the cereal <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— UK FIR requires specifying the gluten-containing cereal</span>
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {GLUTEN_TYPES.map(g => {
+                  const on = (sel.allergens?.glutenTypes || []).includes(g);
+                  return (
+                    <button key={g}
+                      onClick={() => {
+                        const cur = (sel.allergens?.glutenTypes || []) as string[];
+                        const next = on ? cur.filter(k => k !== g) : [...cur, g];
+                        actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), glutenTypes: next } });
+                      }}
+                      style={{ fontSize: '11px', padding: '4px 9px', border: '1px solid ' + (on ? C.red : C.border), color: on ? C.red : C.dim, background: on ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: on ? 700 : 400 }}>
+                      {g}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>May Contain — Cross-contamination warning</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {ALLERGENS.map(a => {
@@ -357,7 +419,7 @@ export default function RecipesView() {
                   onClick={() => {
                     const cur = (sel.allergens?.mayContain || []) as string[];
                     const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
-                    actions.updRecipe(sel.id, { allergens: { contains: sel.allergens?.contains || [], mayContain: next } });
+                    actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), mayContain: next } });
                   }}
                   style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (contains ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: contains ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: contains ? 0.4 : 1 }}>
                   {a.label}
@@ -398,6 +460,111 @@ export default function RecipesView() {
             )}
           </div>
         )}
+
+        {/* Compliance modal */}
+        {showCompliance && (() => {
+          const linked = getLinkedCosting(sel);
+          const importedCount = sel.imported?.ingredients?.length || 0;
+          const linkedCount = linked?.ingredients?.length || 0;
+          const ingTotal = Math.max(importedCount, linkedCount);
+          const contains = sel.allergens?.contains || [];
+          const mayContain = sel.allergens?.mayContain || [];
+          const nutTypes = sel.allergens?.nutTypes || [];
+          const glutenTypes = sel.allergens?.glutenTypes || [];
+
+          type Status = 'pass' | 'warn' | 'fail';
+          const checks: { label: string; status: Status; detail: string; source: string }[] = [
+            {
+              source: "Natasha's Law",
+              label: 'Recipe has a name',
+              status: sel.title ? 'pass' : 'fail',
+              detail: sel.title ? sel.title : 'Add a recipe title — required on the label',
+            },
+            {
+              source: "Natasha's Law",
+              label: 'Full ingredient list',
+              status: ingTotal > 0 ? 'pass' : 'fail',
+              detail: ingTotal > 0
+                ? `${ingTotal} ingredients (${importedCount > 0 ? 'imported' : 'from linked costing'})`
+                : 'PPDS food must show every ingredient. Import the recipe or link a costing.',
+            },
+            {
+              source: 'FIR 2014',
+              label: 'Allergens reviewed',
+              status: (contains.length + mayContain.length) > 0 ? 'pass' : (ingTotal > 0 ? 'warn' : 'pass'),
+              detail: (contains.length + mayContain.length) > 0
+                ? `${contains.length} contains, ${mayContain.length} may contain`
+                : 'No allergens tagged — confirm the recipe truly contains none',
+            },
+          ];
+          if (contains.includes('nuts')) {
+            checks.push({
+              source: 'FIR 2014',
+              label: 'Tree nut named',
+              status: nutTypes.length > 0 ? 'pass' : 'fail',
+              detail: nutTypes.length > 0
+                ? nutTypes.join(', ')
+                : 'UK law requires naming the specific nut (almond, walnut, etc.). Pick at least one.',
+            });
+          }
+          if (contains.includes('gluten')) {
+            checks.push({
+              source: 'FIR 2014',
+              label: 'Gluten cereal named',
+              status: glutenTypes.length > 0 ? 'pass' : 'fail',
+              detail: glutenTypes.length > 0
+                ? glutenTypes.join(', ')
+                : 'UK law requires naming the cereal (wheat, rye, barley, oats, spelt, kamut). Pick at least one.',
+            });
+          }
+
+          const fails = checks.filter(c => c.status === 'fail').length;
+          const warns = checks.filter(c => c.status === 'warn').length;
+          const compliant = fails === 0;
+          const statusColor = fails > 0 ? C.red : (warns > 0 ? C.gold : C.greenLight);
+          const iconFor = (s: Status) => s === 'pass' ? '✓' : s === 'warn' ? '⚠' : '✗';
+          const colorFor = (s: Status) => s === 'pass' ? C.greenLight : s === 'warn' ? C.gold : C.red;
+
+          return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
+              <div style={{ background: C.surface, border: '1px solid ' + C.border, width: '100%', maxWidth: '560px', maxHeight: '90vh', overflow: 'auto', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid ' + C.border }}>
+                  <div>
+                    <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: C.text }}>Allergen Compliance</h3>
+                    <p style={{ fontSize: '12px', color: C.faint, marginTop: '2px' }}>UK FIR 2014 + Natasha&apos;s Law</p>
+                  </div>
+                  <button onClick={() => setShowCompliance(false)} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
+                </div>
+
+                <div style={{ padding: '16px 20px', background: statusColor + '14', borderBottom: '1px solid ' + C.border }}>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: statusColor, letterSpacing: '0.5px' }}>
+                    {compliant ? '✓ Compliant' : `✗ Not compliant — ${fails} issue${fails === 1 ? '' : 's'}`}
+                    {warns > 0 && <span style={{ color: C.gold, marginLeft: 8, fontWeight: 400 }}>+ {warns} warning{warns === 1 ? '' : 's'}</span>}
+                  </p>
+                </div>
+
+                <div style={{ padding: '12px 20px' }}>
+                  {checks.map((c, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '12px', padding: '12px 0', borderBottom: i < checks.length - 1 ? '0.5px solid ' + C.border : 'none' }}>
+                      <span style={{ fontSize: '18px', color: colorFor(c.status), lineHeight: 1, flexShrink: 0, width: '20px', textAlign: 'center' }}>{iconFor(c.status)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+                          <span style={{ fontSize: '13px', color: C.text, fontWeight: 500 }}>{c.label}</span>
+                          <span style={{ fontSize: '10px', color: C.faint, letterSpacing: 0.5, textTransform: 'uppercase' }}>{c.source}</span>
+                        </div>
+                        <p style={{ fontSize: '12px', color: c.status === 'fail' ? C.red : C.faint, lineHeight: 1.5 }}>{c.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ padding: '12px 20px', borderTop: '1px solid ' + C.border, fontSize: '11px', color: C.faint, lineHeight: 1.6 }}>
+                  Checks the 14 UK FIR allergens, name-the-nut and name-the-cereal rules, and Natasha&apos;s Law PPDS labelling requirements (recipe name + full ingredient list). Always verify with your EHO if in doubt.
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   }
