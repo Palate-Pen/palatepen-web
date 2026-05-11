@@ -3,21 +3,7 @@ import { useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
-
-// Brand-locked palette per spec
-const C = {
-  bg: '#0E0C0A',
-  surface: '#1C1A17',
-  surface2: '#242118',
-  border: '#35302A',
-  text: '#F0E8DC',
-  dim: '#C0B8AC',
-  faint: '#7A7470',
-  gold: '#C8960A',
-  amber: '#E8AE20',
-  green: '#5AAA6A',
-  red: '#C84040',
-};
+import { dark, light } from '@/lib/theme';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -26,14 +12,27 @@ function greeting(): string {
   return 'Good evening';
 }
 
-function gpColor(pct: number, target: number): string {
-  if (pct >= target) return C.green;
-  if (pct >= 65) return C.amber;
+function gpColor(pct: number, target: number, C: any): string {
+  if (pct >= target) return C.greenLight;
+  if (pct >= 65) return C.gold;
   return C.red;
 }
 
+function fmtRelative(ts: number): string {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 interface Card {
-  id: string;          // sidebar tab id
+  id: string;
   icon: string;
   title: string;
   subtitle: string;
@@ -43,7 +42,8 @@ interface Card {
 export default function DashboardView({ setTab }: { setTab: (t: string) => void }) {
   const { state } = useApp();
   const { user, tier } = useAuth();
-  useSettings();
+  const { settings } = useSettings();
+  const C = settings.resolved === 'light' ? light : dark;
 
   const profile = state.profile || {};
   const sym = profile.currencySymbol || '£';
@@ -84,11 +84,10 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
         return false;
       }),
       recentRecipes: [...recipes].sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 5),
-      recentAlerts: priceAlerts.slice(0, 5),
+      recentAlerts: [...priceAlerts].sort((a: any, b: any) => (b.detectedAt || 0) - (a.detectedAt || 0)).slice(0, 5),
     };
   }, [state]);
 
-  // Look up GP for a recipe via its linked costing
   function recipeGP(r: any): number | null {
     let c = null;
     if (r.linkedCostingId) c = stats.gpHistory.find((h: any) => h.id === r.linkedCostingId);
@@ -128,29 +127,64 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
 
       {/* Quick stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
-        <QuickStat label="Recipes" value={String(stats.recipes.length)} />
-        <QuickStat label="Average GP" value={stats.gpHistory.length > 0 ? `${stats.avgGP.toFixed(1)}%` : '—'} accent={stats.gpHistory.length > 0 ? gpColor(stats.avgGP, gpTarget) : undefined} />
-        <QuickStat label="Stock value" value={`${sym}${stats.stockValue.toFixed(0)}`} />
-        <QuickStat label="Price alerts" value={String(stats.priceAlerts.length)} accent={stats.priceAlerts.length > 0 ? C.red : undefined} />
+        <QuickStat C={C} label="Recipes" value={String(stats.recipes.length)} />
+        <QuickStat C={C} label="Average GP" value={stats.gpHistory.length > 0 ? `${stats.avgGP.toFixed(1)}%` : '—'} accent={stats.gpHistory.length > 0 ? gpColor(stats.avgGP, gpTarget, C) : undefined} />
+        <QuickStat C={C} label="Stock value" value={`${sym}${stats.stockValue.toFixed(0)}`} />
+        <QuickStat C={C} label="Price alerts" value={String(stats.priceAlerts.length)} accent={stats.priceAlerts.length > 0 ? C.red : undefined} />
       </div>
 
-      {/* Price alerts banner */}
+      {/* Price alerts banner — full detail per change */}
       {stats.recentAlerts.length > 0 && (
         <div style={{ background: C.red + '12', border: '1px solid ' + C.red + '40', borderRadius: '4px', padding: '14px 18px', marginBottom: '20px' }}>
-          <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.red, marginBottom: '10px' }}>
-            ⚠ Price changes ({stats.priceAlerts.length})
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
+            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.red }}>
+              ⚠ Recent price changes
+            </p>
+            <button onClick={() => setTab('invoices')}
+              style={{ fontSize: '11px', color: C.red, background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+              View all {stats.priceAlerts.length} →
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {stats.recentAlerts.map((a: any, i: number) => {
-              const pct = typeof a.changePct === 'number' ? a.changePct
+              const oldP = typeof a.oldPrice === 'number' ? a.oldPrice : null;
+              const newP = typeof a.newPrice === 'number' ? a.newPrice : null;
+              const change = typeof a.change === 'number' ? a.change : (oldP != null && newP != null ? newP - oldP : null);
+              const pct = typeof a.pct === 'number' ? a.pct
+                       : typeof a.changePct === 'number' ? a.changePct
                        : typeof a.percentChange === 'number' ? a.percentChange
-                       : null;
+                       : (oldP && newP ? ((newP - oldP) / oldP) * 100 : null);
+              const isUp = (pct ?? change ?? 0) > 0;
               return (
-                <div key={a.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                  <span style={{ color: C.text }}>{a.name || a.ingredient || '(unnamed)'}</span>
-                  {pct != null && (
-                    <span style={{ color: C.red, fontWeight: 600 }}>{pct > 0 ? '+' : ''}{pct.toFixed(1)}%</span>
-                  )}
+                <div key={a.id || i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 1fr auto', gap: '12px', alignItems: 'center', padding: '8px 10px', background: C.surface, border: '0.5px solid ' + C.border, borderRadius: '3px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: '13px', color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name || a.ingredient || '(unnamed)'}</p>
+                    {a.unit && <p style={{ fontSize: '10px', color: C.faint }}>per {a.unit}</p>}
+                  </div>
+                  <div>
+                    {oldP != null && newP != null ? (
+                      <p style={{ fontSize: '13px', color: C.dim }}>
+                        <span style={{ color: C.faint, textDecoration: 'line-through' }}>{sym}{oldP.toFixed(2)}</span>
+                        <span style={{ margin: '0 6px', color: C.faint }}>→</span>
+                        <span style={{ color: C.text, fontWeight: 600 }}>{sym}{newP.toFixed(2)}</span>
+                      </p>
+                    ) : (
+                      <p style={{ fontSize: '12px', color: C.faint }}>price changed</p>
+                    )}
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    {pct != null && (
+                      <p style={{ fontSize: '13px', fontWeight: 700, color: isUp ? C.red : C.greenLight }}>
+                        {isUp ? '+' : ''}{pct.toFixed(1)}%
+                      </p>
+                    )}
+                    {change != null && (
+                      <p style={{ fontSize: '10px', color: C.faint }}>
+                        {isUp ? '+' : ''}{sym}{Math.abs(change).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                  <p style={{ fontSize: '10px', color: C.faint, whiteSpace: 'nowrap' }}>{fmtRelative(a.detectedAt)}</p>
                 </div>
               );
             })}
@@ -200,7 +234,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {stats.recentRecipes.map((r: any) => {
                 const gp = recipeGP(r);
-                const col = gp != null ? gpColor(gp, gpTarget) : C.faint;
+                const col = gp != null ? gpColor(gp, gpTarget, C) : C.faint;
                 return (
                   <button key={r.id} onClick={() => setTab('recipes')}
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', padding: '6px 0', cursor: 'pointer', textAlign: 'left', borderBottom: '0.5px solid ' + C.border }}>
@@ -234,7 +268,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
                   <button key={s.id} onClick={() => setTab('stock')}
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', padding: '6px 0', cursor: 'pointer', textAlign: 'left', borderBottom: '0.5px solid ' + C.border }}>
                     <span style={{ fontSize: '13px', color: C.text }}>{s.name}</span>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: isCrit ? C.red : C.amber }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: isCrit ? C.red : C.gold }}>
                       {cur}{s.unit || ''} {!isNaN(par) && `/ par ${par}${s.unit || ''}`}
                     </span>
                   </button>
@@ -251,7 +285,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   );
 }
 
-function QuickStat({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function QuickStat({ C, label, value, accent }: { C: any; label: string; value: string; accent?: string }) {
   return (
     <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: '18px 20px' }}>
       <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>{label}</p>

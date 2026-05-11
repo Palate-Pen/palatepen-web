@@ -25,6 +25,20 @@ export default function App() {
   const { settings } = useSettings();
   const [tab, setTab] = useState('dashboard');
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Restore sidebar collapsed state from localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const v = window.localStorage.getItem('palatable_sidebar_collapsed');
+      if (v === '1') setSidebarCollapsed(true);
+    } catch {}
+  }, []);
+  function toggleSidebar(b: boolean) {
+    setSidebarCollapsed(b);
+    try { window.localStorage.setItem('palatable_sidebar_collapsed', b ? '1' : '0'); } catch {}
+  }
 
   // Auto-refresh session after Stripe payment
   useEffect(() => {
@@ -82,8 +96,8 @@ export default function App() {
 
   return (
     <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
-      <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} />
-      <main style={{ flex: 1, marginLeft: '224px', minHeight: '100vh', overflow: 'auto', color: C.text }}>
+      <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} collapsed={sidebarCollapsed} setCollapsed={toggleSidebar} />
+      <main style={{ flex: 1, marginLeft: sidebarCollapsed ? '64px' : '224px', minHeight: '100vh', overflow: 'auto', color: C.text, transition: 'margin-left 0.18s ease' }}>
         {views[tab] || <DashboardView setTab={setTab} />}
       </main>
       <div style={{

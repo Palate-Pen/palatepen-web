@@ -21,24 +21,62 @@ const NAV: NavItem[] = [
 const PAID_TIERS = ['pro', 'kitchen', 'group'];
 const PRO_GATED = ['invoices', 'stock'];
 
-export default function Sidebar({ tab, setTab, onUpgrade }: { tab: string; setTab: (t: string) => void; onUpgrade: () => void }) {
+export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapsed }: {
+  tab: string;
+  setTab: (t: string) => void;
+  onUpgrade: () => void;
+  collapsed: boolean;
+  setCollapsed: (b: boolean) => void;
+}) {
   const { tier } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const isPaid = PAID_TIERS.includes(tier);
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
+  const width = collapsed ? 64 : 224;
 
   return (
-    <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 0, width: '224px', background: C.surface, borderRight: '1px solid ' + C.border, display: 'flex', flexDirection: 'column', zIndex: 40 }}>
-      {/* Brand */}
-      <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid ' + C.border }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
-          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '22px', letterSpacing: '5px' }}>ALATABLE</span>
-        </div>
-        <p style={{ fontSize: '10px', color: C.faint, letterSpacing: '1px', textTransform: 'uppercase' }}>By Palate &amp; Pen</p>
+    <aside style={{
+      position: 'fixed', left: 0, top: 0, bottom: 0,
+      width: width + 'px', background: C.surface, borderRight: '1px solid ' + C.border,
+      display: 'flex', flexDirection: 'column', zIndex: 40,
+      transition: 'width 0.18s ease',
+    }}>
+      {/* Brand + collapse toggle */}
+      <div style={{
+        padding: collapsed ? '20px 0 16px' : '20px 16px 16px',
+        borderBottom: '1px solid ' + C.border,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '4px',
+      }}>
+        {collapsed ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px', marginLeft: '2px' }}></div>
+          </div>
+        ) : (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '22px', letterSpacing: '5px' }}>ALATABLE</span>
+            </div>
+            <p style={{ fontSize: '10px', color: C.faint, letterSpacing: '1px', textTransform: 'uppercase' }}>By Palate &amp; Pen</p>
+          </div>
+        )}
       </div>
+
+      {/* Collapse toggle bar */}
+      <button onClick={() => setCollapsed(!collapsed)}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        style={{
+          background: 'transparent', border: 'none', borderBottom: '1px solid ' + C.border,
+          color: C.faint, fontSize: '12px', cursor: 'pointer',
+          padding: '6px 0', textAlign: collapsed ? 'center' : 'right',
+          paddingRight: collapsed ? 0 : '14px',
+        }}>
+        {collapsed ? '›' : '‹'}
+      </button>
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
@@ -51,10 +89,13 @@ export default function Sidebar({ tab, setTab, onUpgrade }: { tab: string; setTa
               key={item.id}
               onClick={() => { if (!disabled) setTab(item.id); }}
               disabled={disabled}
-              title={disabled ? 'Coming soon' : ''}
+              title={collapsed ? (disabled ? item.label + ' (coming soon)' : item.label) : (disabled ? 'Coming soon' : '')}
               style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '9px 12px', borderRadius: '4px', textAlign: 'left',
+                display: 'flex', alignItems: 'center',
+                gap: collapsed ? 0 : '10px',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                padding: collapsed ? '10px 0' : '9px 12px',
+                borderRadius: '4px', textAlign: 'left',
                 background: active ? C.gold + '18' : 'transparent',
                 border: active ? '0.5px solid ' + C.gold + '30' : '0.5px solid transparent',
                 color: active ? C.gold : (disabled ? C.faint : C.dim),
@@ -62,19 +103,32 @@ export default function Sidebar({ tab, setTab, onUpgrade }: { tab: string; setTa
                 cursor: disabled ? 'default' : 'pointer',
                 width: '100%',
                 opacity: disabled ? 0.55 : 1,
+                position: 'relative',
               }}
             >
-              <span style={{ width: '18px', display: 'inline-block', textAlign: 'center', fontSize: '13px', color: active ? C.gold : C.faint, fontFamily: 'Georgia,serif' }}>{item.icon}</span>
-              <span style={{ flex: 1 }}>{item.label}</span>
-              {disabled && (
+              <span style={{
+                width: '18px', display: 'inline-block', textAlign: 'center',
+                fontSize: '13px', color: active ? C.gold : C.faint,
+                fontFamily: 'Georgia,serif', flexShrink: 0,
+              }}>{item.icon}</span>
+              {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+              {!collapsed && disabled && (
                 <span style={{ fontSize: '9px', fontWeight: 700, color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   Soon
                 </span>
               )}
-              {!disabled && proGate && (
+              {!collapsed && !disabled && proGate && (
                 <span style={{ fontSize: '9px', fontWeight: 700, color: C.gold, background: C.gold + '18', border: '0.5px solid ' + C.gold + '30', padding: '1px 5px', borderRadius: '2px' }}>
                   Pro
                 </span>
+              )}
+              {/* Tiny dot indicator on collapsed gated/coming-soon items */}
+              {collapsed && (disabled || proGate) && (
+                <span style={{
+                  position: 'absolute', top: 6, right: 8,
+                  width: 5, height: 5, borderRadius: '50%',
+                  background: disabled ? C.faint : C.gold,
+                }} />
               )}
             </button>
           );
@@ -82,18 +136,38 @@ export default function Sidebar({ tab, setTab, onUpgrade }: { tab: string; setTa
       </nav>
 
       {/* Tier card */}
-      <div style={{ padding: '12px 8px 16px' }}>
+      <div style={{ padding: collapsed ? '10px 6px 14px' : '12px 8px 16px' }}>
         {isPaid ? (
-          <div style={{ background: C.gold + '12', border: '0.5px solid ' + C.gold + '30', borderRadius: '4px', padding: '10px 12px' }}>
-            <p style={{ fontSize: '10px', fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '2px' }}>{tierLabel}</p>
-            <p style={{ fontSize: '11px', color: C.faint }}>All features active</p>
+          <div style={{
+            background: C.gold + '12', border: '0.5px solid ' + C.gold + '30',
+            borderRadius: '4px',
+            padding: collapsed ? '8px 4px' : '10px 12px',
+            textAlign: collapsed ? 'center' : 'left',
+          }}>
+            <p style={{ fontSize: collapsed ? '9px' : '10px', fontWeight: 700, color: C.gold, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: collapsed ? 0 : '2px' }}>
+              {collapsed ? tierLabel.slice(0, 3) : tierLabel}
+            </p>
+            {!collapsed && <p style={{ fontSize: '11px', color: C.faint }}>All features active</p>}
           </div>
         ) : (
-          <div style={{ background: C.surface2, border: '0.5px solid ' + C.border, borderRadius: '4px', padding: '10px 12px' }}>
-            <p style={{ fontSize: '10px', fontWeight: 700, color: C.faint, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>Free</p>
-            <button onClick={onUpgrade} style={{ width: '100%', background: C.gold, color: C.bg, fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', padding: '6px', border: 'none', cursor: 'pointer', borderRadius: '2px' }}>
-              Upgrade — from £25/mo
-            </button>
+          <div style={{
+            background: C.surface2, border: '0.5px solid ' + C.border,
+            borderRadius: '4px',
+            padding: collapsed ? '8px 4px' : '10px 12px',
+            textAlign: collapsed ? 'center' : 'left',
+          }}>
+            <p style={{ fontSize: collapsed ? '9px' : '10px', fontWeight: 700, color: C.faint, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: collapsed ? 0 : '4px' }}>Free</p>
+            {!collapsed && (
+              <button onClick={onUpgrade} style={{ width: '100%', background: C.gold, color: C.bg, fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', padding: '6px', border: 'none', cursor: 'pointer', borderRadius: '2px' }}>
+                Upgrade — from £25/mo
+              </button>
+            )}
+            {collapsed && (
+              <button onClick={onUpgrade} title="Upgrade — from £25/mo"
+                style={{ width: '100%', background: C.gold, color: C.bg, fontSize: '11px', fontWeight: 700, padding: '4px 0', border: 'none', cursor: 'pointer', borderRadius: '2px', marginTop: '4px' }}>
+                ↑
+              </button>
+            )}
           </div>
         )}
       </div>
