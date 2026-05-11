@@ -35,7 +35,7 @@ export function profileDiff(before: any, after: any): Record<string, { from: any
   const out: Record<string, { from: any; to: any }> = {};
   const b = before && typeof before === 'object' ? before : {};
   const a = after && typeof after === 'object' ? after : {};
-  const keys = new Set([...Object.keys(b), ...Object.keys(a)]);
+  const keys = Array.from(new Set<string>([...Object.keys(b), ...Object.keys(a)]));
   for (const k of keys) {
     if (JSON.stringify(b[k]) !== JSON.stringify(a[k])) {
       out[k] = { from: b[k] ?? null, to: a[k] ?? null };
