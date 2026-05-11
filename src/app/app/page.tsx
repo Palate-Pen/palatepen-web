@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar';
 import RecipesView from './components/RecipesView';
 import NotebookView from './components/NotebookView';
 import CostingView from './components/CostingView';
+import MenuBuilderView from './components/MenuBuilderView';
 import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
 import BankView from './components/BankView';
@@ -61,6 +62,7 @@ export default function App() {
     recipes: <RecipesView />,
     notebook: <NotebookView />,
     costing: <CostingView />,
+    menus: <MenuBuilderView />,
     invoices: <InvoicesView />,
     stock: <StockView />,
     bank: <BankView />,

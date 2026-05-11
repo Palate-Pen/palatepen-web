@@ -6,7 +6,7 @@ import{migrateCategory}from'@/lib/categorize';
 type SaveStatus='idle'|'saving'|'saved'|'error';
 const DEFAULT_PROFILE={name:'',location:'',currency:'GBP',currencySymbol:'£',units:'metric',gpTarget:72,tier:'free',stockDay:1,stockFrequency:'weekly'};
 export const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-const init={recipes:[],notes:[],gpHistory:[],ingredientsBank:[],invoices:[],priceAlerts:[],stockItems:[],profile:DEFAULT_PROFILE,ready:false};
+const init={recipes:[],notes:[],gpHistory:[],ingredientsBank:[],invoices:[],priceAlerts:[],stockItems:[],menus:[],profile:DEFAULT_PROFILE,ready:false};
 function reducer(state:any,action:any):any{
   switch(action.type){
     case 'LOAD':return{...state,...action.data,ready:true};
@@ -33,6 +33,9 @@ function reducer(state:any,action:any):any{
     case 'ADD_INVOICE':return{...state,invoices:[action.item,...state.invoices]};
     case 'DEL_INVOICE':return{...state,invoices:state.invoices.filter((i:any)=>i.id!==action.id)};
     case 'ADD_ALERTS':return{...state,priceAlerts:[...action.items,...state.priceAlerts].slice(0,50)};
+    case 'ADD_MENU':return{...state,menus:[action.item,...(state.menus||[])]};
+    case 'UPD_MENU':return{...state,menus:(state.menus||[]).map((m:any)=>m.id===action.id?{...m,...action.data,updatedAt:Date.now()}:m)};
+    case 'DEL_MENU':return{...state,menus:(state.menus||[]).filter((m:any)=>m.id!==action.id)};
     default:return state;
   }
 }
@@ -56,7 +59,7 @@ export function AppProvider({children}:{children:React.ReactNode}){
       if(error){console.error('[user_data load]',error.message,error.code);return;}
       if(data){
         const migrate=(arr:any[])=>arr.map(i=>i?.category?{...i,category:migrateCategory(i.category)}:i);
-        dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:migrate(data.ingredients_bank||[]),invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:migrate(data.stock_items||[]),profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});
+        dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:migrate(data.ingredients_bank||[]),invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:migrate(data.stock_items||[]),menus:data.menus||[],profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});
       }else{
         // Trigger normally creates a row, but belt-and-braces in case it didn't fire
         const profile={...DEFAULT_PROFILE,name:user?.user_metadata?.name||''};
@@ -81,6 +84,7 @@ export function AppProvider({children}:{children:React.ReactNode}){
       recipes:s.recipes,notes:s.notes,gp_history:s.gpHistory,
       ingredients_bank:s.ingredientsBank,invoices:s.invoices,
       price_alerts:s.priceAlerts,stock_items:s.stockItems,
+      menus:s.menus||[],
       profile:s.profile,updated_at:new Date().toISOString(),
     },{onConflict:'user_id'});
     if(error){
@@ -130,6 +134,9 @@ export function AppProvider({children}:{children:React.ReactNode}){
     addInvoice:(d:any)=>dispatch({type:'ADD_INVOICE',item:{id:uid(),...d}}),
     delInvoice:(id:string)=>dispatch({type:'DEL_INVOICE',id}),
     addAlerts:(items:any[])=>dispatch({type:'ADD_ALERTS',items}),
+    addMenu:(d:any)=>dispatch({type:'ADD_MENU',item:{id:uid(),name:d.name||'Untitled menu',description:d.description||'',recipeIds:d.recipeIds||[],createdAt:Date.now(),updatedAt:Date.now()}}),
+    updMenu:(id:string,data:any)=>dispatch({type:'UPD_MENU',id,data}),
+    delMenu:(id:string)=>dispatch({type:'DEL_MENU',id}),
   };
   return <Ctx.Provider value={{state,actions,saveStatus}}>{children}</Ctx.Provider>;
 }

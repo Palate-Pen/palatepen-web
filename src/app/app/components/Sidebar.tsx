@@ -2,7 +2,7 @@
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
-const NAV=[{id:'recipes',label:'Recipes'},{id:'notebook',label:'Notebook'},{id:'costing',label:'Costing'},{id:'invoices',label:'Invoices'},{id:'stock',label:'Stock'},{id:'bank',label:'Bank'},{id:'profile',label:'Profile'},{id:'settings',label:'Settings'}];
+const NAV=[{id:'recipes',label:'Recipes'},{id:'notebook',label:'Notebook'},{id:'costing',label:'Costing'},{id:'menus',label:'Menus'},{id:'invoices',label:'Invoices'},{id:'stock',label:'Stock'},{id:'bank',label:'Bank'},{id:'profile',label:'Profile'},{id:'settings',label:'Settings'}];
 const PAID_TIERS=['pro','kitchen','group'];
 export default function Sidebar({tab,setTab,onUpgrade}:{tab:string;setTab:(t:string)=>void;onUpgrade:()=>void}){
   const{tier}=useAuth();
