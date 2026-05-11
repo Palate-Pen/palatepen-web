@@ -2,7 +2,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ADMIN_PASSWORD } from '@/lib/admin';
 
-const PRO_PRICE = 25;
 
 function authHeaders(): HeadersInit {
   return { 'Authorization': `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' };
@@ -211,7 +210,7 @@ export default function AdminPage() {
 
   function exportCSV() {
     const rows = [
-      ['user_id', 'name', 'email', 'tier', 'location', 'currency', 'gp_target', 'recipes', 'notes', 'costings', 'stock', 'invoices', 'created_at', 'updated_at'],
+      ['user_id', 'name', 'email', 'tier', 'comp', 'location', 'currency', 'gp_target', 'recipes', 'notes', 'costings', 'stock', 'invoices', 'created_at', 'updated_at'],
       ...users.map(u => {
         const p = parseProfile(u.profile);
         return [
@@ -219,6 +218,7 @@ export default function AdminPage() {
           p.name || '',
           p.email || '',
           p.tier || 'free',
+          p.comp ? 'true' : 'false',
           p.location || '',
           p.currency || '',
           p.gpTarget ?? '',
@@ -248,16 +248,24 @@ export default function AdminPage() {
   // ---------- derived ----------
   const stats = useMemo(() => {
     const total = users.length;
-    const pro = users.filter(u => parseProfile(u.profile).tier === 'pro').length;
-    const free = total - pro;
+    let pro = 0, kitchen = 0, group = 0, comp = 0, mrr = 0;
     let recipes = 0, notes = 0, costings = 0, invoices = 0;
     for (const u of users) {
+      const p = parseProfile(u.profile);
+      const t = p.tier || 'free';
+      if (t === 'pro') pro++;
+      else if (t === 'kitchen') kitchen++;
+      else if (t === 'group') group++;
+      if (p.comp && t !== 'free') comp++;
+      if (!p.comp) mrr += TIER_PRICES[t] || 0;
       recipes += parseArr(u.recipes).length;
       notes += parseArr(u.notes).length;
       costings += parseArr(u.gp_history).length;
       invoices += parseArr(u.invoices).length;
     }
-    return { total, pro, free, recipes, notes, costings, invoices, mrr: pro * PRO_PRICE };
+    const paid = pro + kitchen + group;
+    const free = total - paid;
+    return { total, pro, kitchen, group, paid, free, comp, recipes, notes, costings, invoices, mrr };
   }, [users]);
 
   const orphans = useMemo(() => {
@@ -463,23 +471,35 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string 
   );
 }
 
-function Tier({ tier, large }: { tier: string; large?: boolean }) {
-  const isPro = tier === 'pro';
+const TIER_PRICES: Record<string, number> = { free: 0, pro: 25, kitchen: 59, group: 129 };
+const PAID_TIERS = ['pro', 'kitchen', 'group'];
+
+function Tier({ tier, comp, large }: { tier: string; comp?: boolean; large?: boolean }) {
+  const isPaid = PAID_TIERS.includes(tier);
   return (
-    <span style={{
-      fontSize: large ? 11 : 9, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase',
-      color: isPro ? C.gold : C.faint,
-      background: isPro ? C.goldSoft : C.panel2,
-      border: `1px solid ${isPro ? C.goldBorder : C.border}`,
-      padding: large ? '4px 9px' : '2px 7px', borderRadius: 3,
-    }}>{tier || 'free'}</span>
+    <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+      <span style={{
+        fontSize: large ? 11 : 9, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase',
+        color: isPaid ? C.gold : C.faint,
+        background: isPaid ? C.goldSoft : C.panel2,
+        border: `1px solid ${isPaid ? C.goldBorder : C.border}`,
+        padding: large ? '4px 9px' : '2px 7px', borderRadius: 3,
+      }}>{tier || 'free'}</span>
+      {comp && (
+        <span style={{
+          fontSize: large ? 10 : 8, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase',
+          color: C.green, background: C.greenSoft, border: `1px solid ${C.green}`,
+          padding: large ? '3px 7px' : '2px 5px', borderRadius: 3,
+        }}>Comp</span>
+      )}
+    </span>
   );
 }
 
 function Overview({
   stats, signupSeries, recentSignups, topByRecipes, authUsersCount, orphans, initing, onInitialize, onJump,
 }: {
-  stats: { total: number; pro: number; free: number; recipes: number; notes: number; costings: number; invoices: number; mrr: number };
+  stats: { total: number; pro: number; kitchen: number; group: number; paid: number; free: number; comp: number; recipes: number; notes: number; costings: number; invoices: number; mrr: number };
   signupSeries: number[];
   recentSignups: any[];
   topByRecipes: any[];
@@ -497,14 +517,21 @@ function Overview({
     <div style={{ maxWidth: 1100 }}>
       <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 26, marginBottom: 20 }}>Overview</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 12 }}>
         <StatCard label="Total Users" value={stats.total} accent />
-        <StatCard label="Pro" value={stats.pro} sub={`${stats.total ? Math.round(stats.pro / stats.total * 100) : 0}% conversion`} />
+        <StatCard label="Paid" value={stats.paid} sub={stats.comp ? `${stats.comp} comp · ${stats.paid - stats.comp} paying` : `${stats.total ? Math.round(stats.paid / stats.total * 100) : 0}% conversion`} />
         <StatCard label="Free" value={stats.free} />
-        <StatCard label="MRR (est.)" value={`£${stats.mrr}`} sub={`@ £${PRO_PRICE}/mo per Pro`} accent />
+        <StatCard label="MRR (est.)" value={`£${stats.mrr}`} sub={stats.comp ? `excludes ${stats.comp} comp` : `Pro £25 · Kitchen £59 · Group £129`} accent />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 24 }}>
+        <StatCard label="Pro" value={stats.pro} />
+        <StatCard label="Kitchen" value={stats.kitchen} />
+        <StatCard label="Group" value={stats.group} />
+        <StatCard label="Comp" value={stats.comp} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12, marginBottom: 24 }}>
         <StatCard label="Total Recipes" value={stats.recipes} />
         <StatCard label="Total Notes" value={stats.notes} />
         <StatCard label="Total Costings" value={stats.costings} />
@@ -587,7 +614,7 @@ function Overview({
                   <div style={{ fontSize: 13, color: C.text, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name || 'No name'}</div>
                   <div style={{ fontSize: 11, color: C.faint }}>{relTime(u.created_at)}</div>
                 </div>
-                <Tier tier={p.tier || 'free'} />
+                <Tier tier={p.tier || 'free'} comp={!!p.comp} />
               </button>
             );
           })}
@@ -604,7 +631,7 @@ function Overview({
                   <div style={{ fontSize: 13, color: C.text, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name || 'No name'}</div>
                   <div style={{ fontSize: 11, color: C.faint }}>{n} recipe{n === 1 ? '' : 's'}</div>
                 </div>
-                <Tier tier={p.tier || 'free'} />
+                <Tier tier={p.tier || 'free'} comp={!!p.comp} />
               </button>
             );
           })}
@@ -696,7 +723,7 @@ function Users(props: {
                       {p.email || u.user_id.slice(0, 24) + '…'}
                     </div>
                   </div>
-                  <Tier tier={p.tier || 'free'} />
+                  <Tier tier={p.tier || 'free'} comp={!!p.comp} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingLeft: 42, fontSize: 11, color: C.faint }}>
                   <span>{recipes} recipe{recipes === 1 ? '' : 's'} &middot; {notes} note{notes === 1 ? '' : 's'}</span>
@@ -779,12 +806,20 @@ function UserDetail({
           {editProfile.email && (
             <a href={`mailto:${editProfile.email}`} style={btnGhost(false)} title={`Email ${editProfile.email}`}>Email</a>
           )}
-          <button
-            onClick={() => onQuickTier(editProfile.tier === 'pro' ? 'free' : 'pro')}
-            style={{ ...btnGhost(false), color: C.gold, borderColor: C.goldBorder }}
-          >
-            {editProfile.tier === 'pro' ? 'Downgrade' : 'Upgrade'}
-          </button>
+          {(() => {
+            const isCompPro = editProfile.tier === 'pro' && editProfile.comp;
+            return isCompPro ? (
+              <span style={{ fontSize: 11, color: C.green, background: C.greenSoft, padding: '6px 10px', borderRadius: 4, border: `1px solid ${C.green}` }}>Comp Pro</span>
+            ) : (
+              <button
+                onClick={() => setEditProfile({ ...editProfile, tier: 'pro', comp: true })}
+                style={{ ...btnGhost(false), color: C.green, borderColor: C.green }}
+                title="Sets tier to Pro and marks as comp (no Stripe). Click Save to apply."
+              >
+                Grant free Pro
+              </button>
+            );
+          })()}
           <button onClick={onSave} disabled={saving}
             style={{ background: C.gold, color: '#FFFFFF', border: 'none', fontSize: 12, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', padding: '8px 18px', cursor: 'pointer', borderRadius: 4, opacity: saving ? 0.6 : 1 }}>
             {saving ? 'Saving…' : 'Save'}
@@ -815,10 +850,22 @@ function UserDetail({
             <label style={lbl}>Subscription Tier</label>
             <select value={editProfile.tier || 'free'} onChange={e => setEditProfile({ ...editProfile, tier: e.target.value })} style={input}>
               <option value="free">Free</option>
-              <option value="pro">Pro</option>
+              <option value="pro">Pro — £25/mo</option>
+              <option value="kitchen">Kitchen — £59/mo</option>
+              <option value="group">Group — £129/mo</option>
             </select>
           </div>
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, padding: '10px 12px', background: editProfile.comp ? C.greenSoft : C.panel, border: `1px solid ${editProfile.comp ? C.green : C.border}`, borderRadius: 4, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={!!editProfile.comp}
+            onChange={e => setEditProfile({ ...editProfile, comp: e.target.checked })}
+            style={{ accentColor: C.green, margin: 0 }}
+          />
+          <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>Free upgrade — no Stripe charge expected</span>
+          <span style={{ marginLeft: 'auto', fontSize: 11, color: C.faint }}>Excluded from MRR</span>
+        </label>
       </div>
 
       {/* preview lists */}
@@ -1108,7 +1155,7 @@ function Settings({ stats, onRefresh, loading }: { stats: any; onRefresh: () => 
       <SettingCard title="Environment">
         <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.7 }}>
           <div>Supabase URL: <code style={{ fontFamily: 'monospace', fontSize: 11 }}>{process.env.NEXT_PUBLIC_SUPABASE_URL}</code></div>
-          <div>Pro price (used for MRR): <code style={{ fontFamily: 'monospace', fontSize: 11 }}>£{PRO_PRICE}/mo</code></div>
+          <div>Tier prices (used for MRR): <code style={{ fontFamily: 'monospace', fontSize: 11 }}>Pro £{TIER_PRICES.pro} · Kitchen £{TIER_PRICES.kitchen} · Group £{TIER_PRICES.group}</code> per month. Comp accounts excluded.</div>
         </div>
       </SettingCard>
     </div>
