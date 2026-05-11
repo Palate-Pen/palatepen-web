@@ -26,7 +26,9 @@ Palatable by Palate & Pen — Back office work you can stomach. A professional c
 
 ## Issue Tracking
 
-Roadmap items are mirrored as GitHub Issues at https://github.com/Palate-Pen/palatepen-web/issues, labelled `Phase-1` through `Phase-6` plus `Website`, `Payments`, and `Bug`. Use those for granular work tracking; the Roadmap section below is the high-level summary.
+GitHub Issues at https://github.com/Palate-Pen/palatepen-web/issues are reserved for **bugs and problems we hit, with the fix documented inline**. Each issue should describe the symptom, the root cause once known, and the resolution (commit SHA / PR / behaviour change). Apply the `Bug` label by default; add `Website` or `Payments` if it scopes there.
+
+The forward-looking work list lives in the Roadmap section of this file — not in Issues. Tick the box and add a Progress Log entry when something ships.
 
 ## Roadmap
 
