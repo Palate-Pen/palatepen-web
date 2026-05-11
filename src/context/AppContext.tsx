@@ -45,51 +45,60 @@ function reducer(state:any,action:any):any{
     case 'DEL_MENU':return{...state,menus:(state.menus||[]).filter((m:any)=>m.id!==action.id)};
     case 'ADD_WASTE':return{...state,wasteLog:[action.item,...(state.wasteLog||[])]};
     case 'DEL_WASTE':return{...state,wasteLog:(state.wasteLog||[]).filter((w:any)=>w.id!==action.id)};
+    case 'RESET':return init;
     default:return state;
   }
 }
 const Ctx=createContext<any>(null);
 export function AppProvider({children}:{children:React.ReactNode}){
-  const{user}=useAuth();
-  const userId=user?.id;
+  const{currentAccount}=useAuth();
+  const accountId=currentAccount?.id||null;
+  const ownerUserId=currentAccount?.owner_user_id||null;
   const[state,dispatch]=useReducer(reducer,init);
   const[saveStatus,setSaveStatus]=useState<SaveStatus>('idle');
   const stateRef=useRef(state);
   stateRef.current=state;
 
-  // Load user_data once per user_id (NOT on every auth event — token refresh
-  // changes the user object reference, which previously re-loaded and
-  // overwrote unsaved local edits).
+  // Load user_data once per account_id. The legacy load was keyed by user.id;
+  // multi-user means data lives at the account, so a Chef on their employer's
+  // account reads/writes the owner's row. We deliberately depend on the id,
+  // not the object reference — token refresh changes user/currentAccount
+  // references but not their ids.
   useEffect(()=>{
-    if(!userId){dispatch({type:'LOAD',data:{}});return;}
+    if(!accountId){dispatch({type:'RESET'});return;}
     let cancelled=false;
-    supabase.from('user_data').select('*').eq('user_id',userId).maybeSingle().then(({data,error})=>{
+    dispatch({type:'RESET'});
+    supabase.from('user_data').select('*').eq('account_id',accountId).maybeSingle().then(({data,error})=>{
       if(cancelled)return;
       if(error){console.error('[user_data load]',error.message,error.code);return;}
       if(data){
         const migrate=(arr:any[])=>arr.map(i=>i?.category?{...i,category:migrateCategory(i.category)}:i);
         dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:migrate(data.ingredients_bank||[]),invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:migrate(data.stock_items||[]),menus:data.menus||[],wasteLog:data.waste_log||[],profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});
       }else{
-        // Trigger normally creates a row, but belt-and-braces in case it didn't fire
-        const profile={...DEFAULT_PROFILE,name:user?.user_metadata?.name||''};
-        supabase.from('user_data').insert({user_id:userId,recipes:[],notes:[],gp_history:[],ingredients_bank:[],invoices:[],price_alerts:[],stock_items:[],profile}).then(({error})=>{
-          if(error)console.error('[user_data init]',error.message);
-        });
+        // Trigger normally creates a row, but belt-and-braces in case it didn't fire.
+        // user_id on the row is always the account owner, NOT necessarily the editor.
+        const profile={...DEFAULT_PROFILE,name:currentAccount?.name||''};
+        if(ownerUserId){
+          supabase.from('user_data').insert({user_id:ownerUserId,account_id:accountId,recipes:[],notes:[],gp_history:[],ingredients_bank:[],invoices:[],price_alerts:[],stock_items:[],profile}).then(({error})=>{
+            if(error)console.error('[user_data init]',error.message);
+          });
+        }
         dispatch({type:'LOAD',data:{profile}});
       }
     });
     return()=>{cancelled=true;};
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[userId]);
+  },[accountId]);
 
-  // Persist async with error handling. Shorter debounce so refresh-after-edit
-  // is much less likely to lose changes.
+  // Persist async with error handling. Always writes user_id = account owner so
+  // the unique key resolves to the same physical row regardless of editor.
   async function persist(){
-    if(!stateRef.current.ready||!userId)return;
+    if(!stateRef.current.ready||!accountId||!ownerUserId)return;
     setSaveStatus('saving');
     const s=stateRef.current;
     const{error}=await supabase.from('user_data').upsert({
-      user_id:userId,
+      user_id:ownerUserId,
+      account_id:accountId,
       recipes:s.recipes,notes:s.notes,gp_history:s.gpHistory,
       ingredients_bank:s.ingredientsBank,invoices:s.invoices,
       price_alerts:s.priceAlerts,stock_items:s.stockItems,
@@ -106,22 +115,22 @@ export function AppProvider({children}:{children:React.ReactNode}){
   }
 
   useEffect(()=>{
-    if(!state.ready||!userId)return;
+    if(!state.ready||!accountId)return;
     const t=window.setTimeout(persist,500);
     return()=>window.clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[state,userId]);
+  },[state,accountId]);
 
   // Flush pending writes when the tab becomes hidden (most common path before
   // a refresh / tab close). Best-effort — sendBeacon would be sync but doesn't
   // support the Supabase auth header, so a regular fetch is the next-best.
   useEffect(()=>{
-    if(!userId)return;
+    if(!accountId)return;
     const onHide=()=>{ if(document.visibilityState==='hidden'&&stateRef.current.ready) persist(); };
     document.addEventListener('visibilitychange',onHide);
     return()=>document.removeEventListener('visibilitychange',onHide);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[userId]);
+  },[accountId]);
   const actions={
     addRecipe:(d:any)=>dispatch({type:'ADD_RECIPE',item:{id:uid(),tags:[],linkedNoteIds:[],notes:'',url:'',createdAt:Date.now(),...d}}),
     updRecipe:(id:string,data:any)=>dispatch({type:'UPD_RECIPE',id,data}),

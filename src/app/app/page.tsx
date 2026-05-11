@@ -23,7 +23,7 @@ import SettingsView from './components/SettingsView';
 import UpgradeModal from './components/UpgradeModal';
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, currentAccount } = useAuth();
   const { state, saveStatus } = useApp();
   const { settings } = useSettings();
   const [tab, setTab] = useState('dashboard');
@@ -62,7 +62,7 @@ export default function App() {
 
   const C = settings.resolved === 'light' ? light : dark;
 
-  if (loading || !state.ready) return (
+  const loader = (
     <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -74,7 +74,9 @@ export default function App() {
     </div>
   );
 
+  if (loading) return loader;
   if (!user) return <AuthPage />;
+  if (!currentAccount || !state.ready) return loader;
 
   const views: Record<string, React.ReactNode> = {
     dashboard: <DashboardView setTab={setTab} />,

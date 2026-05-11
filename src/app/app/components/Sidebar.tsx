@@ -1,4 +1,5 @@
 'use client';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
@@ -29,12 +30,26 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   collapsed: boolean;
   setCollapsed: (b: boolean) => void;
 }) {
-  const { tier } = useAuth();
+  const { tier, accounts, currentAccount, currentRole, switchAccount } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const isPaid = PAID_TIERS.includes(tier);
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const width = collapsed ? 64 : 224;
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) setAccountMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [accountMenuOpen]);
+
+  const showSwitcher = accounts.length > 1 && currentAccount;
+  const roleLabel = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : '';
 
   return (
     <aside style={{
@@ -66,6 +81,74 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
           </div>
         )}
       </div>
+
+      {/* Account switcher — visible when user is in >1 account */}
+      {showSwitcher && (
+        <div ref={accountMenuRef} style={{ position: 'relative', borderBottom: '1px solid ' + C.border }}>
+          <button onClick={() => setAccountMenuOpen(o => !o)}
+            title={collapsed ? currentAccount!.name + ' · ' + roleLabel : ''}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              gap: collapsed ? 0 : '8px',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              padding: collapsed ? '10px 0' : '10px 14px',
+              background: accountMenuOpen ? C.surface2 : 'transparent',
+              border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <span style={{
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: C.gold + '22', color: C.gold,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '11px', fontWeight: 700, fontFamily: 'Georgia,serif', flexShrink: 0,
+            }}>{(currentAccount!.name || '?').charAt(0).toUpperCase()}</span>
+            {!collapsed && (
+              <>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '12px', color: C.text, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentAccount!.name}</p>
+                  <p style={{ fontSize: '9px', color: C.faint, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700 }}>{roleLabel}</p>
+                </div>
+                <span style={{ fontSize: '10px', color: C.faint }}>{accountMenuOpen ? '▴' : '▾'}</span>
+              </>
+            )}
+          </button>
+          {accountMenuOpen && (
+            <div style={{
+              position: 'absolute', top: '100%', left: collapsed ? '64px' : 0, right: collapsed ? 'auto' : 0,
+              minWidth: collapsed ? '220px' : 'auto',
+              background: C.surface, border: '1px solid ' + C.border, borderRadius: '3px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.18)', zIndex: 50, overflow: 'hidden',
+            }}>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.faint, padding: '8px 12px 4px' }}>Switch account</p>
+              {accounts.map(m => {
+                const active = m.account.id === currentAccount!.id;
+                return (
+                  <button key={m.account.id}
+                    onClick={() => { switchAccount(m.account.id); setAccountMenuOpen(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      width: '100%', padding: '8px 12px', background: active ? C.gold + '12' : 'transparent',
+                      border: 'none', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{
+                      width: '18px', height: '18px', borderRadius: '50%',
+                      background: C.gold + '22', color: C.gold,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '10px', fontWeight: 700, fontFamily: 'Georgia,serif', flexShrink: 0,
+                    }}>{(m.account.name || '?').charAt(0).toUpperCase()}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', color: C.text, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.account.name}</p>
+                      <p style={{ fontSize: '9px', color: C.faint, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{m.role}</p>
+                    </div>
+                    {active && <span style={{ fontSize: '12px', color: C.gold }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Collapse toggle — gold dot + label */}
       <button onClick={() => setCollapsed(!collapsed)}
