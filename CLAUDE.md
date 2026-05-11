@@ -49,9 +49,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Remove business min GP bar from CostingView
 - [x] Allergen tracking
 - [x] Nutritional information
-- [ ] Make the P logo in the sidebar a home button that navigates back to the dashboard
-- [ ] Fix duplicate CSV download button in stock report viewer
-- [ ] Prevent duplicate stock lines — stop the same ingredient being added twice to stock
+- [x] Make the P logo in the sidebar a home button that navigates back to the dashboard
+- [x] Fix duplicate CSV download button in stock report viewer
+- [x] Prevent duplicate stock lines — stop the same ingredient being added twice to stock
 
 ### Phase 2 — Pro Feature Depth
 
@@ -160,7 +160,6 @@ When completing any roadmap item, add an entry here with the date, what was done
 
 ## Known Issues
 
-- **Duplicate CSV download button in stock count report viewer.** Two identical "Download CSV" buttons render side-by-side in `StockView.tsx` (the report-screen header block — both invoke `downloadReport(usageItems, ...)`). Remove the duplicate.
 - **Menu Designer layout broken in mobile view.** `MenuDesigner.tsx` (the full-screen overlay opened from a menu detail) was built around the desktop A4 preview + side controls panel and hasn't been touched in the mobile responsive pass. Below 768px the controls + preview overlap and become unusable. Needs a mobile layout — either stack controls above preview, or make controls a slide-up sheet over the preview, then hide the overlay's print preview at small widths.
 
 ## Important Notes

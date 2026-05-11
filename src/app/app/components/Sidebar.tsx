@@ -67,13 +67,17 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
       display: 'flex', flexDirection: 'column', zIndex: 40,
       transition: 'width 0.18s ease',
     }}>
-      {/* Brand + collapse toggle */}
-      <div style={{
-        padding: collapsed ? '20px 0 16px' : '20px 16px 16px',
-        borderBottom: '1px solid ' + C.border,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: '4px',
-      }}>
+      {/* Brand → home. Click takes the user to the dashboard tab. */}
+      <button onClick={() => setTab('dashboard')}
+        title="Back to dashboard"
+        style={{
+          padding: collapsed ? '20px 0 16px' : '20px 16px 16px',
+          borderBottom: '1px solid ' + C.border,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '4px', width: '100%',
+          background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+        }}
+      >
         {collapsed ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
             <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
@@ -89,7 +93,7 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
             <p style={{ fontSize: '10px', color: C.faint, letterSpacing: '1px', textTransform: 'uppercase' }}>By Palate &amp; Pen</p>
           </div>
         )}
-      </div>
+      </button>
 
       {/* Account switcher — visible when user is in >1 account */}
       {showSwitcher && (

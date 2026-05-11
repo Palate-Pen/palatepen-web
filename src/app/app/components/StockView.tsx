@@ -169,9 +169,14 @@ export default function StockView() {
   
 
   function saveItem() {
-    if (!addName.trim()) return;
+    const trimmed = addName.trim();
+    if (!trimmed) return;
+    // Block dupes by case-insensitive name — same ingredient counted twice
+    // would distort closing stock value and make variance reports nonsense.
+    const dupe = stock.find((s:any) => (s.name || '').toLowerCase().trim() === trimmed.toLowerCase());
+    if (dupe) { alert('"' + trimmed + '" is already in your stock list.'); return; }
     const bankMatch = bank.find((b:any)=>b.name.toLowerCase()===addName.toLowerCase());
-    actions.addStock({name:addName.trim(),unit:addUnit,category:addCategory,parLevel:parseFloat(addPar)||null,minLevel:parseFloat(addMin)||null,unitPrice:bankMatch?.unitPrice||null,currentQty:null,lastCounted:null});
+    actions.addStock({name:trimmed,unit:addUnit,category:addCategory,parLevel:parseFloat(addPar)||null,minLevel:parseFloat(addMin)||null,unitPrice:bankMatch?.unitPrice||null,currentQty:null,lastCounted:null});
     setAddName(''); setAddUnit('kg'); setAddPar(''); setAddMin(''); setAddCategory('Other'); setShowAdd(false);
   }
 
@@ -456,16 +461,30 @@ export default function StockView() {
               <input value={bankSearch} onChange={e=>setBankSearch(e.target.value)} placeholder="Search ingredients..." style={input} />
             </div>
             <div style={{overflow:'auto',flex:1}}>
-              {bank.filter((b:any)=>b.name.toLowerCase().includes(bankSearch.toLowerCase())).map((b:any)=>(
-                <button key={b.id} onClick={()=>{ setAddName(b.name); setAddUnit(b.unit||'kg'); setAddCategory(b.category||'Other'); setShowBankPicker(false); setBankSearch(''); setShowAdd(true); }}
-                  style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px',borderBottom:`1px solid ${C.border}`,background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
-                  <div>
-                    <p style={{fontSize:'14px',color:C.text}}>{b.name}</p>
-                    <p style={{fontSize:'11px',color:C.faint}}>{b.unit} · {b.supplier}</p>
-                  </div>
-                  <span style={{fontSize:'13px',color:C.gold}}>{sym}{(b.unitPrice||0).toFixed(2)}</span>
-                </button>
-              ))}
+              {(() => {
+                // Build a case-insensitive set of names already in stock so
+                // bank items that are already counted appear visibly disabled
+                // and can't be re-added (the dupe check in saveItem also
+                // backstops via the From-Bank → Add-Item flow).
+                const inStock = new Set((stock || []).map((s:any) => (s.name || '').toLowerCase().trim()));
+                const filtered = bank.filter((b:any) => (b.name || '').toLowerCase().includes(bankSearch.toLowerCase()));
+                if (filtered.length === 0) return <p style={{fontSize:'12px',color:C.faint,padding:'24px',textAlign:'center'}}>No matching ingredients</p>;
+                return filtered.map((b:any) => {
+                  const dupe = inStock.has((b.name || '').toLowerCase().trim());
+                  return (
+                    <button key={b.id} disabled={dupe}
+                      onClick={() => { if (dupe) return; setAddName(b.name); setAddUnit(b.unit||'kg'); setAddCategory(b.category||'Other'); setShowBankPicker(false); setBankSearch(''); setShowAdd(true); }}
+                      title={dupe ? 'Already in stock' : ''}
+                      style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px',borderBottom:`1px solid ${C.border}`,background:'none',border:'none',cursor:dupe?'not-allowed':'pointer',textAlign:'left',opacity:dupe?0.45:1}}>
+                      <div>
+                        <p style={{fontSize:'14px',color:C.text}}>{b.name}</p>
+                        <p style={{fontSize:'11px',color:C.faint}}>{b.unit} · {b.supplier}{dupe ? ' · in stock' : ''}</p>
+                      </div>
+                      <span style={{fontSize:'13px',color:dupe?C.faint:C.gold}}>{sym}{(b.unitPrice||0).toFixed(2)}</span>
+                    </button>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
