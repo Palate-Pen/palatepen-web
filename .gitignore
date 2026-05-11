@@ -7,3 +7,4 @@ dist/
 .scripts/auth-state.json
 .scripts/*.png
 .claude/
+next-env.d.ts
