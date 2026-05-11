@@ -5,12 +5,14 @@ import{useAuth}from'@/context/AuthContext';
 import{useApp}from'@/context/AppContext';
 import{dark,light}from'@/lib/theme';
 import{usePerms}from'@/lib/perms';
+import{useIsMobile}from'@/lib/useIsMobile';
 
 export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{settings,update}=useSettings();
   const{user,tier,signOut}=useAuth();
   const{state,actions}=useApp();
   const perms=usePerms();
+  const isMobile=useIsMobile();
   const C=settings.resolved==='light'?light:dark;
   const profile=state.profile||{};
   const[saved,setSaved]=useState(false);
@@ -38,7 +40,7 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const sec:any={fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'16px'};
 
   return(
-    <div style={{padding:'32px',maxWidth:'680px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',maxWidth:'680px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'32px'}}>
         <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Settings</h1>
         <p style={{fontSize:'11px',letterSpacing:'0.8px',textTransform:'uppercase',color:saved?C.greenLight:C.faint,padding:'10px 0',transition:'color 0.2s'}}>

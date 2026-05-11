@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import { useIsMobile } from '@/lib/useIsMobile';
 import NotificationsTab from './NotificationsTab';
 
 interface NavItem { id: string; label: string; icon: string; comingSoon?: boolean; }
@@ -34,6 +35,7 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
 }) {
   const { tier, accounts, currentAccount, currentRole, switchAccount } = useAuth();
   const canBill = currentRole === 'owner';
+  const isMobile = useIsMobile();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const isPaid = PAID_TIERS.includes(tier);
@@ -53,6 +55,10 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
 
   const showSwitcher = accounts.length > 1 && currentAccount;
   const roleLabel = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : '';
+
+  // Defend against direct mount on mobile — page.tsx already gates this.
+  // Hooks above always run regardless so rules of hooks stay intact.
+  if (isMobile) return null;
 
   return (
     <aside style={{

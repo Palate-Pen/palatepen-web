@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -44,6 +45,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   const { user, tier } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
+  const isMobile = useIsMobile();
 
   const profile = state.profile || {};
   const sym = profile.currencySymbol || '£';
@@ -113,7 +115,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   ];
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'system-ui,sans-serif', padding: '32px' }}>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'system-ui,sans-serif', padding: isMobile ? '20px 16px' : '32px' }}>
       {/* Greeting */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>
@@ -132,7 +134,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
       </div>
 
       {/* Quick stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         <QuickStat C={C} label="Recipes" value={String(stats.recipes.length)} />
         <QuickStat C={C} label="Average GP" value={stats.gpHistory.length > 0 ? `${stats.avgGP.toFixed(1)}%` : '—'} accent={stats.gpHistory.length > 0 ? gpColor(stats.avgGP, gpTarget, C) : undefined} />
         <QuickStat C={C} label="Stock value" value={`${sym}${stats.stockValue.toFixed(0)}`} />
@@ -199,7 +201,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
       )}
 
       {/* Feature grid 4×2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
         {cards.map(card => (
           <button key={card.id}
             onClick={() => { if (!card.comingSoon) setTab(card.id); }}
@@ -230,7 +232,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
       </div>
 
       {/* Two columns: Recent recipes + Stock alerts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
         {/* Recent recipes */}
         <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: '20px' }}>
           <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.faint, marginBottom: '14px' }}>Recent recipes</p>

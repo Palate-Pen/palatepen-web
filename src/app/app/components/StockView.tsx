@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { CATEGORIES, guessCategory } from '@/lib/categorize';
+import { useIsMobile } from '@/lib/useIsMobile';
 
 function getStatus(qty: number|null, par: number|null, min: number|null) {
   if (qty===null||par===null) return 'unknown';
@@ -25,6 +26,7 @@ export default function StockView() {
   const { tier } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
+  const isMobile = useIsMobile();
   const sym = (state.profile||{}).currencySymbol||'\u00a3';
   const bank = state.ingredientsBank||[];
   const stock = state.stockItems||[];
@@ -200,21 +202,20 @@ export default function StockView() {
     const totalUsageValue = usageItems.reduce((a:number,i:any)=>a+i.usageValue,0);
 
     return (
-      <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+      <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+        <div style={{display:'flex',flexDirection:isMobile?'column':'row',justifyContent:'space-between',alignItems:isMobile?'stretch':'center',gap:isMobile?'12px':0,marginBottom:'24px'}}>
           <div>
             <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Stock Report</h1>
             <p style={{fontSize:'12px',color:C.faint}}>{new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
           </div>
-          <div style={{display:'flex',gap:'8px'}}>
-            <button onClick={()=>window.print()} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Print</button>
-              <button onClick={()=>downloadReport(usageItems, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}))} style={{fontSize:'11px',fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.gold}40`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Download CSV</button>
-              <button onClick={()=>downloadReport(usageItems, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}))} style={{fontSize:'11px',fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.gold}40`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Download CSV</button>
-            <button onClick={()=>setView('list')} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px'}}>Done</button>
+          <div style={{display:'flex',gap:'8px',flexDirection:isMobile?'column':'row'}}>
+            <button onClick={()=>window.print()} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>Print</button>
+            <button onClick={()=>downloadReport(usageItems, new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}))} style={{fontSize:'11px',fontWeight:700,color:C.gold,background:C.goldDim,border:`1px solid ${C.gold}40`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>Download CSV</button>
+            <button onClick={()=>setView('list')} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>Done</button>
           </div>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',marginBottom:'24px'}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:'12px',marginBottom:'24px'}}>
           {[
             {l:'Closing Stock Value',v:`${sym}${totalCurrentValue.toFixed(2)}`},
             {l:'Usage Value',v:`${sym}${totalUsageValue.toFixed(2)}`},
@@ -227,8 +228,8 @@ export default function StockView() {
           ))}
         </div>
 
-        <div style={{...card,overflow:'hidden'}}>
-          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'10px 16px',background:C.surface2,borderBottom:`1px solid ${C.border}`,gap:'8px'}}>
+        <div style={{...card,overflow:isMobile?'auto':'hidden'}}>
+          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'10px 16px',background:C.surface2,borderBottom:`1px solid ${C.border}`,gap:'8px',minWidth:isMobile?'620px':undefined}}>
             {['Item','Unit Price','Prev Qty','Curr Qty','Usage','Value'].map(h=>(
               <p key={h} style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint}}>{h}</p>
             ))}
@@ -260,7 +261,7 @@ export default function StockView() {
 
   // Count mode
   if (view==='count') return (
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
         <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Stock Count</h1>
         <div style={{display:'flex',gap:'8px'}}>
@@ -310,22 +311,22 @@ export default function StockView() {
 
   // List view
   return (
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:'24px'}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+      <div style={{display:'flex',flexDirection:isMobile?'column':'row',justifyContent:'space-between',alignItems:isMobile?'stretch':'start',gap:isMobile?'12px':0,marginBottom:'24px'}}>
         <div>
           <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Stock</h1>
           <p style={{fontSize:'12px',color:C.faint}}>Next stock take: {nextStockDate()} · Total value: {sym}{totalValue.toFixed(2)}</p>
         </div>
-        <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
-          {stock.length>0&&<button onClick={startCount} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px'}}>Start Count</button>}
-          {uncategorizedCount>0&&<button onClick={autoCategorize} title={`Assign categories to ${uncategorizedCount} uncategorized item${uncategorizedCount>1?'s':''}`} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Auto-categorize ({uncategorizedCount})</button>}
-          <button onClick={()=>setShowBankPicker(true)} style={{fontSize:'11px',color:C.gold,background:`${C.gold}12`,border:`1px solid ${C.gold}30`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>From Bank</button>
-          <button onClick={()=>setShowAdd(true)} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>+ Add Item</button>
+        <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:isMobile?'stretch':'flex-end',flexDirection:isMobile?'column':'row'}}>
+          {stock.length>0&&<button onClick={startCount} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>Start Count</button>}
+          {uncategorizedCount>0&&<button onClick={autoCategorize} title={`Assign categories to ${uncategorizedCount} uncategorized item${uncategorizedCount>1?'s':''}`} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>Auto-categorize ({uncategorizedCount})</button>}
+          <button onClick={()=>setShowBankPicker(true)} style={{fontSize:'11px',color:C.gold,background:`${C.gold}12`,border:`1px solid ${C.gold}30`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>From Bank</button>
+          <button onClick={()=>setShowAdd(true)} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px',width:isMobile?'100%':'auto'}}>+ Add Item</button>
         </div>
       </div>
 
       {stock.length>0&&(
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'3px',marginBottom:'20px',background:C.border}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:'3px',marginBottom:'20px',background:C.border}}>
           {[{l:'Total',v:summary.total,c:C.text,k:'all'},{l:'Good',v:summary.good,c:C.greenLight,k:'good'},{l:'Low',v:summary.low,c:C.gold,k:'low'},{l:'Critical',v:summary.critical,c:C.red,k:'critical'}].map(b=>(
             <button key={b.k} onClick={()=>setFilter(b.k)} style={{background:filter===b.k?C.surface2:C.surface,padding:'14px',textAlign:'center',border:'none',cursor:'pointer',borderBottom:filter===b.k?`2px solid ${C.gold}`:'2px solid transparent'}}>
               <p style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'24px',color:b.c,marginBottom:'4px'}}>{b.v}</p>

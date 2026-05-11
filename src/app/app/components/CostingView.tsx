@@ -4,6 +4,7 @@ import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
 import{usePerms}from'@/lib/perms';
+import{useIsMobile}from'@/lib/useIsMobile';
 import{dark,light}from'@/lib/theme';
 const UNITS=['kg','g','L','ml','each','bunch','tbsp','oz','lb'];
 function gpColor(pct:number,target:number,C:any){if(pct>=target)return C.greenLight;if(pct>=65)return C.gold;return C.red;}
@@ -13,6 +14,10 @@ export default function CostingView(){
   const perms=usePerms();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
+  const isMobile=useIsMobile();
+  // History sidebar defaults to open on desktop. On mobile it's a slide-up
+  // sheet that should start closed; collapse on first mobile detect.
+  useEffect(()=>{if(isMobile)setHistoryOpen(false);},[isMobile]);
   const profile=state.profile||{};
   const sym=profile.currencySymbol||'£';
   const gpTarget=profile.gpTarget||72;
@@ -102,8 +107,8 @@ export default function CostingView(){
   }
   const inp={width:'100%',background:C.surface2,border:'1px solid '+C.border,color:C.text,fontSize:'13px',padding:'9px 12px',outline:'none',fontFamily:'system-ui,sans-serif',boxSizing:'border-box' as const};
   return(
-    <div style={{display:'flex',height:'100vh',fontFamily:'system-ui,sans-serif',overflow:'hidden'}}>
-      <div style={{flex:1,overflow:'auto',padding:'32px'}}>
+    <div style={{display:'flex',height:'100vh',fontFamily:'system-ui,sans-serif',overflow:'hidden',position:'relative'}}>
+      <div style={{flex:1,overflow:'auto',padding:isMobile?'20px 16px 100px':'32px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'}}>
           <div>
             <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Costing</h1>
@@ -126,7 +131,7 @@ export default function CostingView(){
             <p style={{fontSize:'12px',color:C.red}}>GP of {pct.toFixed(1)}% is below your {tgt}% target. Price at {sym}{(cost/(1-tgt/100)).toFixed(2)} to hit target.</p>
           </div>
         )}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',border:'1px solid '+C.border,borderRadius:'4px',overflow:'hidden',marginBottom:'20px'}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',border:'1px solid '+C.border,borderRadius:'4px',overflow:'hidden',marginBottom:'20px'}}>
           {[{l:'Sell',v:s>0?sym+s.toFixed(2):'—',c:C.text},{l:'Cost/Cover',v:cost>0?sym+cost.toFixed(2):'—',c:C.text},{l:'GP',v:s>0?sym+gp.toFixed(2):'—',c:C.text},{l:'GP %',v:s>0?pct.toFixed(1)+'%':'—',c:gpColor(pct,tgt,C)}].map((r,i)=>(
             <div key={r.l} style={{padding:'14px',textAlign:'center',background:C.surface,borderRight:i<3?'1px solid '+C.border:'none'}}>
               <p style={{fontSize:'10px',letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint,marginBottom:'6px'}}>{r.l}</p>
@@ -191,7 +196,7 @@ export default function CostingView(){
             </div>
           )}
           <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'10px'}}>Add Ingredient</p>
-          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr auto',gap:'8px',alignItems:'end'}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'2fr 1fr 1fr 1fr auto',gap:'8px',alignItems:'end'}}>
             <div style={{position:'relative'}}>
               <input value={ingName} onChange={e=>{setIngName(e.target.value);setPickedRecipeId(null);autofillPrice(e.target.value);}} placeholder="Search bank or recipes..." style={{...inp,width:'100%'}}/>
               {(()=>{
@@ -237,6 +242,7 @@ export default function CostingView(){
           )}
         </div>
       </div>
+      {!isMobile && (
       <div style={{width:historyOpen?'272px':'40px',borderLeft:'1px solid '+C.border,background:C.surface,display:'flex',flexDirection:'column',transition:'width 0.2s',overflow:'hidden',flexShrink:0}}>
         <button onClick={()=>setHistoryOpen(!historyOpen)} style={{display:'flex',alignItems:'center',gap:'8px',padding:'16px',borderBottom:'1px solid '+C.border,background:'none',border:'none',cursor:'pointer',color:C.dim,whiteSpace:'nowrap',width:'100%'}}>
           <span style={{fontSize:'16px',transform:historyOpen?'rotate(0deg)':'rotate(180deg)',transition:'transform 0.2s'}}>›</span>
@@ -293,6 +299,45 @@ export default function CostingView(){
           </div>
         )}
       </div>
+      )}
+      {/* Mobile: floating History FAB + slide-up sheet */}
+      {isMobile && (
+        <>
+          <button onClick={()=>setHistoryOpen(true)}
+            style={{position:'fixed',right:16,bottom:80,zIndex:55,background:C.gold,color:C.bg,border:'none',borderRadius:'50%',width:56,height:56,boxShadow:'0 6px 16px rgba(0,0,0,0.35)',fontSize:'20px',fontFamily:'Georgia,serif',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            ☰
+          </button>
+          {historyOpen && (
+            <div onClick={()=>setHistoryOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:60,display:'flex',alignItems:'flex-end'}}>
+              <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxHeight:'85vh',background:C.surface,borderTop:'1px solid '+C.border,borderRadius:'12px 12px 0 0',display:'flex',flexDirection:'column',paddingBottom:'env(safe-area-inset-bottom)'}}>
+                <div style={{display:'flex',justifyContent:'center',padding:'8px 0'}}>
+                  <span style={{width:'36px',height:'4px',borderRadius:'2px',background:C.border}} />
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 16px 12px',borderBottom:'1px solid '+C.border}}>
+                  <p style={{fontSize:'14px',fontWeight:700,color:C.text}}>History ({state.gpHistory.length})</p>
+                  <button onClick={()=>setHistoryOpen(false)} style={{background:'transparent',border:'none',color:C.faint,fontSize:'20px',cursor:'pointer'}}>×</button>
+                </div>
+                <div style={{overflow:'auto',flex:1}}>
+                  {state.gpHistory.length===0?<p style={{fontSize:'12px',color:C.faint,padding:'24px',textAlign:'center'}}>No saved costings yet</p>:
+                  state.gpHistory.map((h:any)=>{
+                    const col=gpColor(h.pct||0,h.target||72,C);
+                    const isEditing=editingId===h.id;
+                    return(
+                      <button key={h.id} onClick={()=>{loadHistory(h);setHistoryOpen(false);}} style={{width:'100%',padding:'14px 16px',background:isEditing?C.gold+'08':'transparent',border:'none',borderBottom:'0.5px solid '+C.border,cursor:'pointer',textAlign:'left'}}>
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'4px'}}>
+                          <p style={{fontSize:'13px',color:isEditing?C.gold:C.text,fontWeight:isEditing?700:400,flex:1,paddingRight:'8px'}}>{h.name}</p>
+                          <p style={{fontSize:'16px',color:col,fontFamily:'Georgia,serif',fontWeight:300,flexShrink:0}}>{(h.pct||0).toFixed(1)}%</p>
+                        </div>
+                        <p style={{fontSize:'11px',color:C.faint}}>{'£'+(h.sell||0).toFixed(2)+' sell · '+'£'+(h.cost||0).toFixed(2)+' cost'}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

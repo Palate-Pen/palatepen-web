@@ -6,6 +6,7 @@ import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 import{supabase}from'@/lib/supabase';
 import{CATEGORIES,guessCategory}from'@/lib/categorize';
+import{useIsMobile}from'@/lib/useIsMobile';
 
 export default function InvoicesView(){
   const{state:appState,actions:appActions}=useApp();
@@ -13,6 +14,7 @@ export default function InvoicesView(){
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
   const isPaid=['pro','kitchen','group'].includes(tier);
+  const isMobile=useIsMobile();
   const sym=(appState.profile||{}).currencySymbol||'£';
   const bank=appState.ingredientsBank||[];
   const alerts=appState.priceAlerts||[];
@@ -132,7 +134,7 @@ export default function InvoicesView(){
     const navBtn={fontSize:'14px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'6px 12px',cursor:'pointer',borderRadius:'2px'};
     const tabBtn=(active:boolean)=>({fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase' as const,background:active?C.gold:C.surface2,color:active?C.bg:C.dim,border:active?'none':'1px solid '+C.border,padding:'8px 16px',cursor:'pointer',borderRadius:'2px'});
     return(
-      <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+      <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
           <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Reports</h1>
           <button onClick={()=>setView('bank')} style={{fontSize:'11px',color:C.gold,background:C.goldDim,border:'1px solid '+C.gold+'40',padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>← Ingredients Bank</button>
@@ -148,7 +150,7 @@ export default function InvoicesView(){
             <button onClick={()=>setReportOffset(Math.min(0,reportOffset+1))} disabled={reportOffset>=0} style={{...navBtn,opacity:reportOffset>=0?0.4:1,cursor:reportOffset>=0?'default':'pointer'}}>→</button>
           </div>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'12px',marginBottom:'20px'}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:'12px',marginBottom:'20px'}}>
           {[
             {l:'Total Spend',v:`${sym}${totalSpend.toFixed(2)}`,c:C.gold},
             {l:'Invoices',v:String(inPeriod.length),c:C.text},
@@ -164,7 +166,7 @@ export default function InvoicesView(){
         {inPeriod.length===0?(
           <div style={{textAlign:'center',padding:'60px 0'}}><p style={{fontSize:'13px',color:C.faint}}>No invoices in this period.</p></div>
         ):(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'20px'}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:'16px',marginBottom:'20px'}}>
             <div style={{...card,overflow:'hidden'}}>
               <div style={{padding:'12px 16px',borderBottom:'1px solid '+C.border}}><p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint}}>Spend by Supplier</p></div>
               {supplierRows.map(([sup,v])=>(
@@ -216,7 +218,7 @@ export default function InvoicesView(){
 
   // ── DETAIL VIEW ────────────────────────────────────────────
   if(view==='detail'&&selectedInvoice)return(
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <button onClick={()=>{setView('history');setSelectedInvoice(null);}} style={{fontSize:'13px',color:C.gold,background:'none',border:'none',cursor:'pointer',marginBottom:'20px',display:'block'}}>
         ← Invoice History
       </button>
@@ -294,7 +296,7 @@ Invoices scanned after this update will show full details.</p>
 
   // ── HISTORY VIEW ───────────────────────────────────────────
   if(view==='history')return(
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
         <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Invoice History</h1>
         <button onClick={()=>setView('bank')} style={{fontSize:'11px',color:C.gold,background:C.goldDim,border:'1px solid '+C.gold+'40',padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>← Ingredients Bank</button>
@@ -339,7 +341,7 @@ Invoices scanned after this update will show full details.</p>
 
   // ── REVIEW VIEW ────────────────────────────────────────────
   if(view==='review')return(
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
         <div>
           <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Review Scan</h1>
@@ -383,7 +385,7 @@ Invoices scanned after this update will show full details.</p>
 
   // ── BANK VIEW (default) ────────────────────────────────────
   return(
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:'24px'}}>
         <div>
           <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Invoices &amp; Ingredients Bank</h1>

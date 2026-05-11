@@ -3,17 +3,19 @@ import{useState}from'react';
 import{useApp}from'@/context/AppContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
+import{useIsMobile}from'@/lib/useIsMobile';
 export default function NotebookView(){
   const{state,actions}=useApp();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
+  const isMobile=useIsMobile();
   const[sel,setSel]=useState<any>(null);
   const[search,setSearch]=useState('');
   const[deleteId,setDeleteId]=useState<string|null>(null);
   const filtered=state.notes.filter((n:any)=>(n.title||'').toLowerCase().includes(search.toLowerCase())||(n.content||'').toLowerCase().includes(search.toLowerCase()));
   function createNote(){const note=actions.addNote({});setSel(note);}
   if(sel)return(
-    <div style={{padding:'32px',maxWidth:'760px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',maxWidth:'760px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <button onClick={()=>setSel(null)} style={{fontSize:'13px',color:C.gold,background:'none',border:'none',cursor:'pointer',marginBottom:'20px',display:'flex',alignItems:'center',gap:'6px'}}>← Notebook</button>
       <input value={sel.title} onChange={e=>{actions.updNote(sel.id,{title:e.target.value});setSel({...sel,title:e.target.value});}} placeholder="Idea title..."
         style={{width:'100%',background:'transparent',fontFamily:'Georgia,serif',fontWeight:300,fontSize:'32px',color:C.text,border:'none',borderBottom:'1px solid '+C.border,paddingBottom:'12px',marginBottom:'28px',outline:'none',boxSizing:'border-box'}}/>
@@ -50,7 +52,7 @@ export default function NotebookView(){
     </div>
   );
   return(
-    <div style={{padding:'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:'24px'}}>
         <div>
           <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Idea Notebook</h1>
@@ -63,7 +65,7 @@ export default function NotebookView(){
       {filtered.length===0?(
         <div style={{textAlign:'center',padding:'60px 0'}}><p style={{fontSize:'13px',color:C.faint}}>No ideas yet. Tap + New Note to start.</p></div>
       ):(
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:'8px'}}>
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill,minmax(280px,1fr))',gap:'8px'}}>
           {filtered.map((n:any)=>(
             <button key={n.id} onClick={()=>setSel(n)} style={{textAlign:'left',background:C.surface,border:'1px solid '+C.border,borderRadius:'4px',padding:'20px',cursor:'pointer',transition:'border-color 0.15s'}}>
               <h3 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'18px',color:C.text,marginBottom:'8px'}}>{n.title||'Untitled'}</h3>

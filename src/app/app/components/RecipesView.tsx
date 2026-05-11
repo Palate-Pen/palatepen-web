@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useApp, uid } from '@/context/AppContext';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
@@ -129,6 +130,7 @@ export default function RecipesView() {
   const { user } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
+  const isMobile = useIsMobile();
   const sym = (state.profile||{}).currencySymbol || '£';
   const gpTarget = (state.profile||{}).gpTarget || 72;
 
@@ -394,7 +396,7 @@ export default function RecipesView() {
     const linkedCosting = getLinkedCosting(sel);
 
     return (
-      <div style={{ padding: '32px', maxWidth: '920px', fontFamily: 'system-ui,sans-serif', color: C.text }}>
+      <div style={{ padding: isMobile ? '20px 16px' : '32px', maxWidth: '920px', fontFamily: 'system-ui,sans-serif', color: C.text }}>
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -1211,14 +1213,20 @@ export default function RecipesView() {
 
   // ── RECIPE LIST ────────────────────────────────────────────
   return (
-    <div style={{ padding: '32px', fontFamily: 'system-ui,sans-serif', color: C.text }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '24px' }}>
+    <div style={{ padding: isMobile ? '20px 16px' : '32px', fontFamily: 'system-ui,sans-serif', color: C.text }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'start',
+        gap: isMobile ? '12px' : 0,
+        marginBottom: '24px',
+      }}>
         <div>
           <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Recipe Library</h1>
           <p style={{ fontSize: '12px', color: C.faint }}>{state.recipes.length} recipe{state.recipes.length !== 1 ? 's' : ''} saved</p>
         </div>
         <button onClick={() => setShowAdd(true)}
-          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
+          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px', width: isMobile ? '100%' : 'auto' }}>
           + Add Recipe
         </button>
       </div>
@@ -1231,7 +1239,7 @@ export default function RecipesView() {
           <p style={{ fontSize: '13px', color: C.faint }}>No recipes yet. Add your first one.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))', gap: '8px' }}>
           {filtered.map((r: any) => {
             const costing = getLinkedCosting(r);
             return (
