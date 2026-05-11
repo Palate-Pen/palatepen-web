@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { dark, light } from '@/lib/theme';
 import AuthPage from './components/AuthPage';
 import Sidebar from './components/Sidebar';
+import DashboardView from './components/DashboardView';
 import RecipesView from './components/RecipesView';
 import NotebookView from './components/NotebookView';
 import CostingView from './components/CostingView';
@@ -22,7 +23,7 @@ export default function App() {
   const { user, loading } = useAuth();
   const { state, saveStatus } = useApp();
   const { settings } = useSettings();
-  const [tab, setTab] = useState('recipes');
+  const [tab, setTab] = useState('dashboard');
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Auto-refresh session after Stripe payment
@@ -59,6 +60,7 @@ export default function App() {
   if (!user) return <AuthPage />;
 
   const views: Record<string, React.ReactNode> = {
+    dashboard: <DashboardView setTab={setTab} />,
     recipes: <RecipesView />,
     notebook: <NotebookView />,
     costing: <CostingView />,
@@ -82,7 +84,7 @@ export default function App() {
     <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
       <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} />
       <main style={{ flex: 1, marginLeft: '224px', minHeight: '100vh', overflow: 'auto', color: C.text }}>
-        {views[tab] || <RecipesView />}
+        {views[tab] || <DashboardView setTab={setTab} />}
       </main>
       <div style={{
         position: 'fixed', bottom: 16, right: 16, zIndex: 60,
