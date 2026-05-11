@@ -82,7 +82,11 @@ export default function InvitePage({ params }: { params: { token: string } }) {
         ) : !user ? (
           <>
             <p style={{ fontSize: '12px', color: C.dim, marginBottom: '16px' }}>Sign in or create an account to accept this invite.</p>
-            <a href={'/app?invite=' + params.token} style={{ display: 'inline-block', background: C.gold, color: C.bg, fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', padding: '12px 28px', textDecoration: 'none', borderRadius: '3px' }}>
+            <a
+              href={'/app?invite=' + params.token}
+              onClick={() => { try { window.sessionStorage.setItem('palatable_pending_invite', params.token); } catch {} }}
+              style={{ display: 'inline-block', background: C.gold, color: C.bg, fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', padding: '12px 28px', textDecoration: 'none', borderRadius: '3px' }}
+            >
               Sign in to continue
             </a>
           </>
