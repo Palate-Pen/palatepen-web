@@ -6,7 +6,7 @@ import{migrateCategory}from'@/lib/categorize';
 type SaveStatus='idle'|'saving'|'saved'|'error';
 const DEFAULT_PROFILE={name:'',location:'',currency:'GBP',currencySymbol:'£',units:'metric',gpTarget:72,tier:'free',stockDay:1,stockFrequency:'weekly'};
 export const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-const init={recipes:[],notes:[],gpHistory:[],ingredientsBank:[],invoices:[],priceAlerts:[],stockItems:[],menus:[],profile:DEFAULT_PROFILE,ready:false};
+const init={recipes:[],notes:[],gpHistory:[],ingredientsBank:[],invoices:[],priceAlerts:[],stockItems:[],menus:[],wasteLog:[],profile:DEFAULT_PROFILE,ready:false};
 function reducer(state:any,action:any):any{
   switch(action.type){
     case 'LOAD':return{...state,...action.data,ready:true};
@@ -36,6 +36,8 @@ function reducer(state:any,action:any):any{
     case 'ADD_MENU':return{...state,menus:[action.item,...(state.menus||[])]};
     case 'UPD_MENU':return{...state,menus:(state.menus||[]).map((m:any)=>m.id===action.id?{...m,...action.data,updatedAt:Date.now()}:m)};
     case 'DEL_MENU':return{...state,menus:(state.menus||[]).filter((m:any)=>m.id!==action.id)};
+    case 'ADD_WASTE':return{...state,wasteLog:[action.item,...(state.wasteLog||[])]};
+    case 'DEL_WASTE':return{...state,wasteLog:(state.wasteLog||[]).filter((w:any)=>w.id!==action.id)};
     default:return state;
   }
 }
@@ -59,7 +61,7 @@ export function AppProvider({children}:{children:React.ReactNode}){
       if(error){console.error('[user_data load]',error.message,error.code);return;}
       if(data){
         const migrate=(arr:any[])=>arr.map(i=>i?.category?{...i,category:migrateCategory(i.category)}:i);
-        dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:migrate(data.ingredients_bank||[]),invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:migrate(data.stock_items||[]),menus:data.menus||[],profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});
+        dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:migrate(data.ingredients_bank||[]),invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:migrate(data.stock_items||[]),menus:data.menus||[],wasteLog:data.waste_log||[],profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});
       }else{
         // Trigger normally creates a row, but belt-and-braces in case it didn't fire
         const profile={...DEFAULT_PROFILE,name:user?.user_metadata?.name||''};
@@ -84,7 +86,7 @@ export function AppProvider({children}:{children:React.ReactNode}){
       recipes:s.recipes,notes:s.notes,gp_history:s.gpHistory,
       ingredients_bank:s.ingredientsBank,invoices:s.invoices,
       price_alerts:s.priceAlerts,stock_items:s.stockItems,
-      menus:s.menus||[],
+      menus:s.menus||[],waste_log:s.wasteLog||[],
       profile:s.profile,updated_at:new Date().toISOString(),
     },{onConflict:'user_id'});
     if(error){
@@ -137,6 +139,8 @@ export function AppProvider({children}:{children:React.ReactNode}){
     addMenu:(d:any)=>dispatch({type:'ADD_MENU',item:{id:uid(),name:d.name||'Untitled menu',description:d.description||'',recipeIds:d.recipeIds||[],createdAt:Date.now(),updatedAt:Date.now()}}),
     updMenu:(id:string,data:any)=>dispatch({type:'UPD_MENU',id,data}),
     delMenu:(id:string)=>dispatch({type:'DEL_MENU',id}),
+    addWaste:(d:any)=>dispatch({type:'ADD_WASTE',item:{id:uid(),createdAt:Date.now(),...d}}),
+    delWaste:(id:string)=>dispatch({type:'DEL_WASTE',id}),
   };
   return <Ctx.Provider value={{state,actions,saveStatus}}>{children}</Ctx.Provider>;
 }

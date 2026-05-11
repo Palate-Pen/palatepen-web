@@ -15,6 +15,7 @@ import MenuBuilderView from './components/MenuBuilderView';
 import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
 import BankView from './components/BankView';
+import WasteView from './components/WasteView';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
 import UpgradeModal from './components/UpgradeModal';
@@ -82,6 +83,7 @@ export default function App() {
     invoices: <InvoicesView />,
     stock: <StockView />,
     bank: <BankView />,
+    waste: <WasteView />,
     profile: <ProfileView />,
     settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
   };

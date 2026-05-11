@@ -60,6 +60,11 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
     const priceAlerts = state.priceAlerts || [];
     const invoices = state.invoices || [];
     const menus = state.menus || [];
+    const wasteLog = state.wasteLog || [];
+    const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+    const wasteCost7d = wasteLog
+      .filter((w: any) => (w.createdAt || 0) >= weekAgo)
+      .reduce((a: number, w: any) => a + (parseFloat(w.totalCost) || 0), 0);
 
     const validGP = gpHistory.filter((g: any) => typeof g.pct === 'number' && g.pct > 0);
     const avgGP = validGP.length > 0 ? validGP.reduce((a: number, g: any) => a + g.pct, 0) / validGP.length : 0;
@@ -71,9 +76,10 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
     }, 0);
 
     return {
-      recipes, notes, gpHistory, stockItems, priceAlerts, invoices, menus,
+      recipes, notes, gpHistory, stockItems, priceAlerts, invoices, menus, wasteLog,
       avgGP,
       stockValue,
+      wasteCost7d,
       lowStock: stockItems.filter((s: any) => {
         const cur = parseFloat(s.currentQty);
         const min = parseFloat(s.minLevel);
@@ -102,7 +108,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
     { id: 'menus',    icon: '🍽', title: 'Menus',    subtitle: `${stats.menus.length} menu${stats.menus.length === 1 ? '' : 's'}` },
     { id: 'invoices', icon: '🧾', title: 'Invoices', subtitle: `${stats.invoices.length} scanned` },
     { id: 'stock',    icon: '📦', title: 'Stock',    subtitle: `${stats.stockItems.length} items · ${sym}${stats.stockValue.toFixed(0)}` },
-    { id: 'waste',    icon: '🗑', title: 'Waste',    subtitle: 'Track waste cost', comingSoon: true },
+    { id: 'waste',    icon: '🗑', title: 'Waste',    subtitle: stats.wasteLog.length > 0 ? `${sym}${stats.wasteCost7d.toFixed(0)} last 7d` : 'No waste logged yet' },
     { id: 'reports',  icon: '📊', title: 'Reports',  subtitle: 'GP, sales, waste trends', comingSoon: true },
   ];
 

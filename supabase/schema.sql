@@ -12,6 +12,7 @@ create table if not exists public.user_data (
   price_alerts jsonb default '[]'::jsonb,
   stock_items jsonb default '[]'::jsonb,
   menus jsonb default '[]'::jsonb,
+  waste_log jsonb default '[]'::jsonb,
   profile jsonb default '{}'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()

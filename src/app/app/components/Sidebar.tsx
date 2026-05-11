@@ -14,7 +14,7 @@ const NAV: NavItem[] = [
   { id: 'invoices',  label: 'Invoices',  icon: '🧾' },
   { id: 'stock',     label: 'Stock',     icon: '📦' },
   { id: 'bank',      label: 'Bank',      icon: '🏦' },
-  { id: 'waste',     label: 'Waste',     icon: '🗑', comingSoon: true },
+  { id: 'waste',     label: 'Waste',     icon: '🗑' },
   { id: 'settings',  label: 'Settings',  icon: '⚙' },
 ];
 
