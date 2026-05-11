@@ -51,3 +51,42 @@ create policy "Blog posts are publicly readable" on public.blog_posts
 create index if not exists user_data_user_id_idx on public.user_data(user_id);
 create index if not exists blog_posts_slug_idx on public.blog_posts(slug);
 create index if not exists blog_posts_published_idx on public.blog_posts(published);
+
+-- Auto-create a user_data row when a new auth.users row is inserted.
+-- Source of truth lives in supabase/migrations/001_handle_new_user.sql.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.user_data (
+    user_id,
+    recipes, notes, gp_history, ingredients_bank, invoices, price_alerts, stock_items,
+    profile
+  ) values (
+    new.id,
+    '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, '[]'::jsonb,
+    jsonb_build_object(
+      'name',           coalesce(new.raw_user_meta_data->>'name', ''),
+      'email',          coalesce(new.email, ''),
+      'tier',           coalesce(new.raw_user_meta_data->>'tier', 'free'),
+      'location',       '',
+      'currency',       'GBP',
+      'currencySymbol', '£',
+      'units',          'metric',
+      'gpTarget',       72,
+      'stockDay',       1,
+      'stockFrequency', 'weekly'
+    )
+  )
+  on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
