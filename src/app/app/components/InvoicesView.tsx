@@ -12,6 +12,7 @@ export default function InvoicesView(){
   const{tier}=useAuth();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
+  const isPaid=['pro','kitchen','group'].includes(tier);
   const sym=(appState.profile||{}).currencySymbol||'£';
   const bank=appState.ingredientsBank||[];
   const alerts=appState.priceAlerts||[];
@@ -31,7 +32,7 @@ export default function InvoicesView(){
   // API key is server-side only — we send the user's session token for Pro verification
 
   async function handleFile(file:File){
-    if(tier!=='pro'){alert('Invoice scanning requires Pro.');return;}
+    if(!isPaid){alert('Invoice scanning requires Pro, Kitchen, or Group.');return;}
     setScanning(true);
     try{
       const arrayBuffer=await file.arrayBuffer();
@@ -406,16 +407,16 @@ Invoices scanned after this update will show full details.</p>
           <button onClick={()=>setView('history')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>
             History {invoices.length>0&&<span style={{marginLeft:'4px',fontSize:'10px',background:C.border,padding:'1px 5px',borderRadius:'2px'}}>{invoices.length}</span>}
           </button>
-          <button onClick={()=>fileRef.current?.click()} disabled={scanning||tier!=='pro'}
-            style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px',opacity:(scanning||tier!=='pro')?0.5:1}}>
-            {scanning?'Scanning...':(tier!=='pro'?'Pro Required':'+ Upload Invoice')}
+          <button onClick={()=>fileRef.current?.click()} disabled={scanning||!isPaid}
+            style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px',opacity:(scanning||!isPaid)?0.5:1}}>
+            {scanning?'Scanning...':(!isPaid?'Paid Plan Required':'+ Upload Invoice')}
           </button>
           <input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFile(f);e.target.value='';}}/>
         </div>
       </div>
-      {tier!=='pro'&&(
+      {!isPaid&&(
         <div style={{background:C.gold+'10',border:'1px solid '+C.gold+'30',borderRadius:'4px',padding:'14px 16px',marginBottom:'16px'}}>
-          <p style={{fontSize:'13px',color:C.gold}}>Invoice scanning requires Pro. Upgrade to unlock.</p>
+          <p style={{fontSize:'13px',color:C.gold}}>Invoice scanning is included on Pro, Kitchen, and Group plans. Upgrade to unlock.</p>
         </div>
       )}
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search ingredients or supplier..."
