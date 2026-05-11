@@ -125,7 +125,7 @@ export default function PalatablePromo() {
                       </div>
                     ))}
                   </div>
-                  {[{ l: 'This dish', v: 73.9, c: green }, { l: 'Target 72%', v: 72, c: green }, { l: 'Business min 62%', v: 62, c: faint }].map((b, i) => (
+                  {[{ l: 'This dish', v: 73.9, c: green }, { l: 'Target 72%', v: 72, c: green }].map((b, i) => (
                     <div key={i} style={{ marginBottom: '7px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: faint, marginBottom: '3px' }}>
                         <span>{b.l}</span><span style={{ color: b.c }}>{b.v.toFixed(1)}%</span>
