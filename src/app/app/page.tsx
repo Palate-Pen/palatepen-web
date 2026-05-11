@@ -17,7 +17,6 @@ import StockView from './components/StockView';
 import BankView from './components/BankView';
 import WasteView from './components/WasteView';
 import ReportsView from './components/ReportsView';
-import NotificationsBell from './components/NotificationsBell';
 import RoleBanner from './components/RoleBanner';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
@@ -130,7 +129,6 @@ export default function App() {
         <RoleBanner />
         {views[tab] || <DashboardView setTab={setTab} />}
       </main>
-      <NotificationsBell setTab={setTab} />
       <div style={{
         position: 'fixed', bottom: 16, right: 16, zIndex: 60,
         fontSize: 11, fontWeight: 600, letterSpacing: 0.5,

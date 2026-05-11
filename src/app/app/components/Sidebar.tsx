@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import NotificationsTab from './NotificationsTab';
 
 interface NavItem { id: string; label: string; icon: string; comingSoon?: boolean; }
 
@@ -239,6 +240,12 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
           );
         })}
       </nav>
+
+      {/* Notifications — sits above the tier card so unread badge is always
+          near the brand without crowding nav items. Pops out to the right. */}
+      <div style={{ padding: collapsed ? '0 6px 4px' : '0 8px 4px', borderTop: '1px solid ' + C.border, paddingTop: '8px' }}>
+        <NotificationsTab collapsed={collapsed} setTab={setTab} />
+      </div>
 
       {/* Tier card */}
       <div style={{ padding: collapsed ? '10px 6px 14px' : '12px 8px 16px' }}>
