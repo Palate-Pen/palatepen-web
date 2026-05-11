@@ -217,7 +217,9 @@ export default function RecipesView() {
       });
       const json = await res.json();
       if (!res.ok || json.error) {
-        setImportError(json.error || `Import failed (HTTP ${res.status})`);
+        if (json.debug) console.error('[import-recipe] debug:', json.debug);
+        const dbg = json.debug?.rawSnippet || json.debug?.jsonStr || json.debug?.apiError;
+        setImportError(json.error + (dbg ? ` — Claude said: ${String(dbg).slice(0, 200)}` : '') || `Import failed (HTTP ${res.status})`);
       } else {
         setImportedData(json);
         if (json.title) setNewTitle(json.title);

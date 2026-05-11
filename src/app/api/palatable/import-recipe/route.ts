@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
+        max_tokens: 4000,
         messages: [{ role: 'user', content: `Extract the recipe from the source below. Return ONE JSON object with this exact shape and nothing else (no prose before or after, no markdown fences):
 
 {
@@ -138,12 +138,25 @@ ${sourceBlock}` }],
     });
 
     const data = await apiRes.json();
+    if (!apiRes.ok || data.type === 'error') {
+      const apiMsg = data.error?.message || data.message || 'unknown';
+      return NextResponse.json({
+        error: `Anthropic API error (HTTP ${apiRes.status}): ${apiMsg}`,
+        debug: { apiStatus: apiRes.status, apiError: data.error, apiType: data.type },
+      }, { status: 502 });
+    }
     const rawText = data.content?.[0]?.text || '';
+    const stopReason = data.stop_reason;
     const jsonStr = extractFirstJson(rawText);
     if (!jsonStr) {
       return NextResponse.json({
-        error: 'AI response could not be parsed',
-        debug: { rawSnippet: rawText.slice(0, 400), apiError: data.error?.message },
+        error: 'AI response could not be parsed' + (stopReason && stopReason !== 'end_turn' ? ` (stop_reason: ${stopReason})` : ''),
+        debug: {
+          stopReason,
+          rawLength: rawText.length,
+          rawSnippet: rawText.slice(0, 600),
+          modelUsed: data.model,
+        },
       }, { status: 502 });
     }
     let parsed: any;
