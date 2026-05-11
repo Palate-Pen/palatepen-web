@@ -847,9 +847,63 @@ function UserDetail({
 
 function Settings({ stats, onRefresh, loading }: { stats: any; onRefresh: () => void; loading: boolean }) {
   const [show, setShow] = useState(false);
+  const [diagRunning, setDiagRunning] = useState(false);
+  const [diagResult, setDiagResult] = useState<any>(null);
+
+  async function runSignupDiagnostic() {
+    setDiagRunning(true);
+    setDiagResult(null);
+    try {
+      const res = await fetch('/api/admin/diagnostics/test-signup', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' },
+      });
+      const json = await res.json();
+      setDiagResult({ httpOk: res.ok, ...json });
+    } catch (e: any) {
+      setDiagResult({ httpOk: false, error: e?.message || 'Network error' });
+    }
+    setDiagRunning(false);
+  }
+
   return (
     <div style={{ maxWidth: 720 }}>
       <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 26, marginBottom: 20 }}>Settings</h1>
+
+      <SettingCard title="Signup → user_data trigger">
+        <p style={{ fontSize: 12, color: C.dim, marginBottom: 12 }}>
+          Creates a fake auth user, waits for the <code style={{ fontFamily: 'monospace', fontSize: 11 }}>on_auth_user_created</code> trigger
+          to seed a <code style={{ fontFamily: 'monospace', fontSize: 11 }}>user_data</code> row, then deletes both. Confirms new signups
+          are wired end-to-end.
+        </p>
+        <button onClick={runSignupDiagnostic} disabled={diagRunning} style={btnGhost(diagRunning)}>
+          {diagRunning ? 'Running…' : 'Run signup test'}
+        </button>
+        {diagResult && (
+          <div style={{
+            marginTop: 12, padding: 12, borderRadius: 4,
+            background: diagResult.ok ? C.greenSoft : C.redSoft,
+            border: `1px solid ${diagResult.ok ? C.green : C.red}`,
+            fontSize: 12, color: diagResult.ok ? C.green : C.red,
+          }}>
+            {diagResult.ok ? (
+              <>
+                <strong>✓ Trigger fired</strong> in {diagResult.elapsedMs}ms<br />
+                <span style={{ color: C.dim }}>
+                  Seeded profile: name=&quot;{diagResult.profileSeeded?.name}&quot;,
+                  email=&quot;{diagResult.profileSeeded?.email}&quot;,
+                  tier=&quot;{diagResult.profileSeeded?.tier}&quot;
+                </span>
+              </>
+            ) : (
+              <>
+                <strong>✗ Failed</strong> {diagResult.stage ? `(stage: ${diagResult.stage})` : ''}<br />
+                <span style={{ color: C.dim }}>{diagResult.error || 'Trigger did not fire within 3s'}</span>
+              </>
+            )}
+          </div>
+        )}
+      </SettingCard>
 
       <SettingCard title="Admin password">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
