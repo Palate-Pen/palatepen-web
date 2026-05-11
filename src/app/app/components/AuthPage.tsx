@@ -63,8 +63,12 @@ export default function AuthPage() {
     if (!name || !email || !password) { setError('Please fill in all fields'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true); setError('');
-    try { await signUp(email, password, name); setSuccess('Check your email to confirm, then sign in.'); setMode('signin'); }
-    catch (e: any) { setError(e.message || 'Sign up failed'); }
+    try {
+      let skipPersonal = false;
+      try { skipPersonal = !!window.sessionStorage.getItem('palatable_pending_invite'); } catch {}
+      await signUp(email, password, name, { skipPersonal });
+      setSuccess('Check your email to confirm, then sign in.'); setMode('signin');
+    } catch (e: any) { setError(e.message || 'Sign up failed'); }
     setLoading(false);
   }
 

@@ -24,7 +24,7 @@ interface AuthCtxType {
   switchAccount: (id: string) => void;
   refreshAccounts: () => Promise<void>;
   signIn: (e: string, p: string) => Promise<void>;
-  signUp: (e: string, p: string, n: string) => Promise<void>;
+  signUp: (e: string, p: string, n: string, opts?: { skipPersonal?: boolean }) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -99,8 +99,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   }
-  async function signUp(email: string, password: string, name: string) {
-    const { error } = await supabase.auth.signUp({ email, password, options: { data: { name, tier: 'free' } } });
+  async function signUp(email: string, password: string, name: string, opts?: { skipPersonal?: boolean }) {
+    const meta: Record<string, string> = { name, tier: 'free' };
+    if (opts?.skipPersonal) meta.skipPersonal = 'true';
+    const { error } = await supabase.auth.signUp({ email, password, options: { data: meta } });
     if (error) throw error;
   }
   async function signOut() {
