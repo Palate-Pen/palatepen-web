@@ -49,6 +49,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Remove business min GP bar from CostingView
 - [x] Allergen tracking
 - [x] Nutritional information
+- [ ] Make the P logo in the sidebar a home button that navigates back to the dashboard
+- [ ] Fix duplicate CSV download button in stock report viewer
+- [ ] Prevent duplicate stock lines — stop the same ingredient being added twice to stock
 
 ### Phase 2 — Pro Feature Depth
 
@@ -61,6 +64,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Traffic light labelling
 - [x] Calorie counts per dish and portion
 - [x] Dish spec sheets (printable)
+- [ ] Change printable stock count sheet to a summary report format showing totals, variances and category breakdowns rather than a raw line list
+- [ ] Create a custom icon set for the Palatable website replacing generic icons with bespoke food and kitchen themed icons
+- [ ] Make menu backgrounds more graphic and custom with imagery or textured treatments
 
 ### Phase 3 — Kitchen and Group Tier
 
@@ -73,6 +79,8 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] Group-level reporting across all sites
 - [ ] Demand forecasting
 - [ ] Inter-site stock transfer
+- [ ] Group outlets in dashboard to show summary information per outlet including GP, stock value and alerts
+- [ ] Allow Group tier users to create and manage multiple restaurants, pubs and outlets under one account
 
 ### Phase 4 — Digital and Integration
 
@@ -94,7 +102,15 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] Recipe cost simulator
 - [ ] Supplier performance tracking
 
-### Phase 6 — Mobile
+### Mobile — Responsive Web Polish
+
+Near-term tweaks to the responsive web layout (≤768px). Distinct from the native iOS/Android effort below.
+
+- [ ] Move alerts out of main navigation on mobile into a More tab
+- [ ] Show invoice scanning prominently on mobile home screen
+- [ ] Fix menu designer layout in mobile view
+
+### Phase 6 — Mobile (Native)
 
 - [ ] iOS app
 - [ ] Android app
@@ -144,7 +160,8 @@ When completing any roadmap item, add an entry here with the date, what was done
 
 ## Known Issues
 
-Document any bugs or issues found during development here.
+- **Duplicate CSV download button in stock count report viewer.** Two identical "Download CSV" buttons render side-by-side in `StockView.tsx` (the report-screen header block — both invoke `downloadReport(usageItems, ...)`). Remove the duplicate.
+- **Menu Designer layout broken in mobile view.** `MenuDesigner.tsx` (the full-screen overlay opened from a menu detail) was built around the desktop A4 preview + side controls panel and hasn't been touched in the mobile responsive pass. Below 768px the controls + preview overlap and become unusable. Needs a mobile layout — either stack controls above preview, or make controls a slide-up sheet over the preview, then hide the overlay's print preview at small widths.
 
 ## Important Notes
 
