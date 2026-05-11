@@ -39,10 +39,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string; us
   if (target.role === 'owner') {
     return NextResponse.json({ error: 'Cannot demote the owner. Transfer ownership first.' }, { status: 400 });
   }
-  // Manager cannot promote to a role above their own
-  if (auth.role === 'manager' && newRole === 'owner') {
-    return NextResponse.json({ error: 'Managers cannot grant owner role' }, { status: 403 });
-  }
 
   const { error } = await supabase.from('account_members').update({ role: newRole }).eq('account_id', accountId).eq('user_id', params.userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
