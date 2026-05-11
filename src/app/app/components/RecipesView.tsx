@@ -840,6 +840,22 @@ export default function RecipesView() {
                       )}
                     </section>
 
+                    {/* Method */}
+                    {(sel.imported?.method?.length > 0 || sel.notes?.trim()) && (
+                      <section style={{ marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Method</h2>
+                        {sel.imported?.method?.length > 0 ? (
+                          <ol style={{ paddingLeft: '24px', margin: 0 }}>
+                            {sel.imported.method.map((step: string, i: number) => (
+                              <li key={i} style={{ fontSize: '12px', color: '#222', padding: '4px 0', lineHeight: 1.55 }}>{step}</li>
+                            ))}
+                          </ol>
+                        ) : (
+                          <p style={{ fontSize: '12px', color: '#222', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{sel.notes}</p>
+                        )}
+                      </section>
+                    )}
+
                     {/* Allergens */}
                     <section style={{ marginBottom: '20px' }}>
                       <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Allergens — Contains</h2>
