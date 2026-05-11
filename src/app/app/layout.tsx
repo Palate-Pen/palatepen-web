@@ -4,12 +4,12 @@ import { AppProvider } from '@/context/AppContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 
 export const metadata: Metadata = {
-  title: 'Mise — Professional Chef Toolkit',
-  description: 'Recipe library, costing calculator, invoice scanning and stock management for working chefs.',
+  title: 'Palatable — Back Office Work You Can Stomach',
+  description: 'Back office work you can stomach. Recipes, costing, invoices and stock — all in one place.',
   icons: {
-    icon: '/mise-favicon.png',
-    shortcut: '/mise-favicon.png',
-    apple: '/mise-favicon.png',
+    icon: '/palatable-favicon.png',
+    shortcut: '/palatable-favicon.png',
+    apple: '/palatable-favicon.png',
   },
 };
 

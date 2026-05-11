@@ -1,10 +1,10 @@
-import MisePromo from '@/components/MisePromo';
+import PalatablePromo from '@/components/PalatablePromo';
 import Link from 'next/link';
-import MiseMockups from '@/components/MiseMockups';
+import PalatableMockups from '@/components/PalatableMockups';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Mise — Professional Chef Toolkit | Palate & Pen',
+  title: 'Palatable — Back Office Work You Can Stomach | Palate & Pen',
   description: 'Recipe library, GP calculator, invoice scanning, stock counting. The professional toolkit built for working chefs.',
 };
 
@@ -44,9 +44,9 @@ export default function MisePage() {
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="flex items-center gap-2 mb-10">
-              <span className="font-fraunces font-bold italic text-mise-text leading-none" style={{fontSize:'96px',letterSpacing:'-4px'}}>M</span>
+              <span className="font-fraunces font-bold italic text-mise-text leading-none" style={{fontSize:'96px',letterSpacing:'-4px'}}>P</span>
               <div className="rounded-full bg-mise-gold" style={{width:'18px',height:'18px',marginBottom:'34px'}}></div>
-              <span className="font-fraunces font-light text-mise-text" style={{fontSize:'96px',letterSpacing:'20px'}}>ISE</span>
+              <span className="font-fraunces font-light text-mise-text" style={{fontSize:'96px',letterSpacing:'20px'}}>ALATABLE</span>
             </div>
             <p className="text-xs font-medium tracking-widest uppercase text-mise-gold mb-5">By Palate &amp; Pen</p>
             <h1 className="font-fraunces font-light leading-tight text-mise-text mb-8" style={{fontSize:'clamp(36px,5vw,64px)'}}>
@@ -80,9 +80,9 @@ export default function MisePage() {
               <div className="flex h-72">
                 <div className="w-48 bg-mise-surface2 border-r border-mise-border p-3 flex flex-col gap-1">
                   <div className="flex items-center gap-1 px-2 py-2 mb-2 border-b border-mise-border">
-                    <span className="font-fraunces font-bold italic text-mise-text text-xl" style={{letterSpacing:'-1px'}}>M</span>
+                    <span className="font-fraunces font-bold italic text-mise-text text-xl" style={{letterSpacing:'-1px'}}>P</span>
                     <div className="w-2 h-2 rounded-full bg-mise-gold" style={{marginBottom:'7px'}}></div>
-                    <span className="font-fraunces font-light text-mise-text text-xl" style={{letterSpacing:'4px'}}>ISE</span>
+                    <span className="font-fraunces font-light text-mise-text text-xl" style={{letterSpacing:'4px'}}>ALATABLE</span>
                   </div>
                   {[{label:'Recipes',active:true},{label:'Notebook',active:false},{label:'GP Calc',active:false},{label:'Invoices',active:false},{label:'Stock',active:false},{label:'Profile',active:false}].map(item=>(
                     <div key={item.label} className={`flex items-center gap-2 px-3 py-2 rounded text-xs ${item.active?'bg-mise-gold/10 text-mise-gold border border-mise-gold/20':'text-mise-faint'}`}>
@@ -109,11 +109,11 @@ export default function MisePage() {
 
       {/* Promo */}
       <section id="features" className="border-t border-mise-border">
-        <MisePromo/>
+        <PalatablePromo/>
       </section>
 
       {/* Mockups */}
-      <MiseMockups />
+      <PalatableMockups />
 
       {/* Pricing */}
       <section id="pricing" className="py-24 px-8 md:px-16 border-t border-mise-border">

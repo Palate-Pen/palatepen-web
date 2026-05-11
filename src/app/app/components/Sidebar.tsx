@@ -12,9 +12,9 @@ export default function Sidebar({tab,setTab}:{tab:string;setTab:(t:string)=>void
     <aside style={{position:'fixed',left:0,top:0,bottom:0,width:'224px',background:C.surface,borderRight:'1px solid '+C.border,display:'flex',flexDirection:'column',zIndex:40}}>
       <div style={{padding:'20px 16px 16px',borderBottom:'1px solid '+C.border}}>
         <div style={{display:'flex',alignItems:'center',gap:'4px',marginBottom:'4px'}}>
-          <span style={{fontFamily:'Georgia,serif',fontWeight:700,fontStyle:'italic',color:C.text,fontSize:'22px',letterSpacing:'-1px'}}>M</span>
+          <span style={{fontFamily:'Georgia,serif',fontWeight:700,fontStyle:'italic',color:C.text,fontSize:'22px',letterSpacing:'-1px'}}>P</span>
           <div style={{width:'6px',height:'6px',borderRadius:'50%',background:C.gold,marginBottom:'7px'}}></div>
-          <span style={{fontFamily:'Georgia,serif',fontWeight:300,color:C.text,fontSize:'22px',letterSpacing:'5px'}}>ISE</span>
+          <span style={{fontFamily:'Georgia,serif',fontWeight:300,color:C.text,fontSize:'22px',letterSpacing:'5px'}}>ALATABLE</span>
         </div>
         <p style={{fontSize:'10px',color:C.faint,letterSpacing:'1px',textTransform:'uppercase'}}>By Palate &amp; Pen</p>
       </div>

@@ -81,7 +81,7 @@ export default function AdminPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '40px' }}>
           <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#F0E8DC', fontSize: '28px' }}>M</span>
           <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#C8960A', marginBottom: '10px' }}></div>
-          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#F0E8DC', fontSize: '28px', letterSpacing: '5px' }}>ISE</span>
+          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#F0E8DC', fontSize: '28px', letterSpacing: '5px' }}>ALATABLE</span>
           <span style={{ marginLeft: '12px', fontSize: '11px', color: '#7A7470', letterSpacing: '1px', textTransform: 'uppercase' }}>Admin</span>
         </div>
         <input type="password" value={pw} onChange={e => setPw(e.target.value)}
@@ -112,7 +112,7 @@ export default function AdminPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
             <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#F0E8DC', fontSize: '20px' }}>M</span>
             <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#C8960A', marginBottom: '7px' }}></div>
-            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#F0E8DC', fontSize: '20px', letterSpacing: '4px' }}>ISE</span>
+            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#F0E8DC', fontSize: '20px', letterSpacing: '4px' }}>ALATABLE</span>
           </div>
           <span style={{ color: '#35302A' }}>|</span>
           <span style={{ fontSize: '11px', color: '#7A7470', letterSpacing: '1px', textTransform: 'uppercase' }}>Admin Dashboard</span>

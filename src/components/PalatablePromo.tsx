@@ -80,7 +80,7 @@ export default function PalatablePromo() {
             </div>
             <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '3px', textTransform: 'uppercase', color: gold, marginBottom: '20px' }}>By Palate &amp; Pen</p>
             <h2 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '40px', lineHeight: '1.1', color: text, marginBottom: '16px' }}>
-              The professional chef&apos;s<br /><em style={{ fontStyle: 'italic', color: gold }}>back office work you can stomach.</em>
+              The professional chef&apos;s<br /><em style={{ fontStyle: 'italic', color: gold }}>toolkit, reimagined.</em>
             </h2>
             <p style={{ fontSize: '14px', color: dim, letterSpacing: '1px' }}>Recipes · Costing · Invoices · Stock</p>
           </div>

@@ -95,9 +95,9 @@ export default function AuthPage(){
 function Logo(){
   return(
     <div style={{display:'flex',alignItems:'center',gap:'4px'}}>
-      <span style={{fontFamily:'Georgia,serif',fontWeight:700,fontStyle:'italic',color:dark.text,fontSize:'26px',letterSpacing:'-1px'}}>M</span>
+      <span style={{fontFamily:'Georgia,serif',fontWeight:700,fontStyle:'italic',color:dark.text,fontSize:'26px',letterSpacing:'-1px'}}>P</span>
       <div style={{width:'7px',height:'7px',borderRadius:'50%',background:dark.gold,marginBottom:'9px'}}></div>
-      <span style={{fontFamily:'Georgia,serif',fontWeight:300,color:dark.text,fontSize:'26px',letterSpacing:'5px'}}>ISE</span>
+      <span style={{fontFamily:'Georgia,serif',fontWeight:300,color:dark.text,fontSize:'26px',letterSpacing:'5px'}}>ALATABLE</span>
     </div>
   );
 }

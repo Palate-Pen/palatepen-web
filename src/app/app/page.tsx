@@ -25,9 +25,9 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '36px', letterSpacing: '-2px' }}>M</span>
+          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '36px', letterSpacing: '-2px' }}>P</span>
           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: C.gold, marginBottom: '12px' }}></div>
-          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '36px', letterSpacing: '8px' }}>ISE</span>
+          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '36px', letterSpacing: '8px' }}>ALATABLE</span>
         </div>
       </div>
     </div>
@@ -46,7 +46,7 @@ export default function App() {
   };
 
   return (
-    <div id="mise-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
+    <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
       <Sidebar tab={tab} setTab={setTab} />
       <main style={{ flex: 1, marginLeft: '224px', minHeight: '100vh', overflow: 'auto', color: C.text }}>
         {views[tab] || <RecipesView />}

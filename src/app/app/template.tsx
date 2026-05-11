@@ -9,11 +9,11 @@ export default function AppTemplate({ children }: { children: React.ReactNode })
     const link = document.createElement('link');
     link.rel = 'icon';
     link.type = 'image/png';
-    link.href = '/mise-favicon.png';
+    link.href = '/palatable-favicon.png';
     document.head.appendChild(link);
     const shortcut = document.createElement('link');
     shortcut.rel = 'shortcut icon';
-    shortcut.href = '/mise-favicon.png';
+    shortcut.href = '/palatable-favicon.png';
     document.head.appendChild(shortcut);
   }, []);
   return <>{children}</>;

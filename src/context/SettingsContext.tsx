@@ -8,7 +8,7 @@ export interface Settings {
   resolved: 'dark' | 'light';
 }
 
-const STORAGE_KEY = 'mise_settings_v2';
+const STORAGE_KEY = 'palatable_settings_v2';
 const defaults: Settings = { theme: 'dark', fontSize: 'md', resolved: 'dark' };
 
 const Ctx = createContext<{
@@ -42,7 +42,7 @@ function applyToDOM(s: Settings) {
 
   // Apply zoom to scale all hardcoded pixel values proportionally
   const zooms: Record<string, string> = { sm: '0.9', md: '1', lg: '1.12' };
-  const appEl = document.getElementById('mise-app-root');
+  const appEl = document.getElementById('palatable-app-root');
   if (appEl) {
     (appEl.style as any).zoom = zooms[s.fontSize] || '1';
   }
