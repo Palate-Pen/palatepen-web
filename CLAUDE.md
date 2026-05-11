@@ -105,8 +105,12 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Project initiated, full stack live
 - Stripe integrated with Pro/Kitchen/Group tiers
 - Palatable brand locked in (renamed from Mise)
-- Admin panel built
+- Admin panel built (Overview/Users/Audit/Settings, light theme, gold accent)
 - Anthropic API wired server-side
+- on_auth_user_created Postgres trigger: signup auto-creates user_data row (migration 001), with email backfill (002) and admin_audit_log table (003)
+- Comp-tier mechanism in admin: tier dropdown (Free/Pro/Kitchen/Group) + "Free upgrade — no Stripe charge" toggle; profile.comp excluded from MRR
+- Audit log: server-side audit() helper records update_user / initialize_user / delete_user / test_signup with before→after diff, viewable in Audit tab with action filter + per-user filter
+- Diagnosed Next.js fetch cache issue masking admin GET reads (see Important Notes)
 
 ## Known Issues
 
@@ -120,3 +124,6 @@ Document any bugs or issues found during development here.
 - Stripe webhook endpoint: app.palateandpen.co.uk/api/stripe/webhook
 - Invoice scanning requires Pro tier — checked server-side
 - Demo account: jack@palateandpen.co.uk (Pro tier)
+- **supabase-js + Next.js fetch cache**: supabase-js calls global `fetch()` internally, and Next.js auto-caches GET `fetch()` calls in route handlers — even with `dynamic = 'force-dynamic'`. Symptom: server-side reads return phantom rows that no longer exist in Postgres. Fix: pass a custom `global.fetch` to `createClient` that wraps `fetch` with `cache: 'no-store'`. Centralized as `svc()` in `src/lib/admin.ts` — use it for any admin/server-role Supabase client. (Writes via PATCH/POST/DELETE are not cached, so this only affects GETs.)
+- supabase-js `.insert(...)` without `.select()` can resolve before PostgREST commits when RLS is enabled. The shared `audit()` helper uses `.insert(...).select().single()` so the await fully round-trips.
+- Sensitive Vercel env vars (Stripe, Supabase service role, Anthropic) cannot be pulled to local `.env.local`. To run admin/server routes locally that need them, paste manually. Pulled values come back as empty strings.
