@@ -19,7 +19,7 @@ import UpgradeModal from './components/UpgradeModal';
 
 export default function App() {
   const { user, loading } = useAuth();
-  const { state } = useApp();
+  const { state, saveStatus } = useApp();
   const { settings } = useSettings();
   const [tab, setTab] = useState('recipes');
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -68,12 +68,28 @@ export default function App() {
     settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
   };
 
+  const saveStyles: Record<string, React.CSSProperties> = {
+    saving: { color: C.faint, background: C.surface, border: '1px solid ' + C.border },
+    saved:  { color: C.greenLight, background: C.greenLight + '14', border: '1px solid ' + C.greenLight + '40' },
+    error:  { color: C.red, background: C.red + '14', border: '1px solid ' + C.red },
+    idle:   { display: 'none' },
+  };
+  const saveText: Record<string, string> = { saving: 'Saving…', saved: '✓ Saved', error: '✗ Save failed', idle: '' };
+
   return (
     <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
       <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} />
       <main style={{ flex: 1, marginLeft: '224px', minHeight: '100vh', overflow: 'auto', color: C.text }}>
         {views[tab] || <RecipesView />}
       </main>
+      <div style={{
+        position: 'fixed', bottom: 16, right: 16, zIndex: 60,
+        fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
+        padding: '6px 12px', borderRadius: 4,
+        ...saveStyles[saveStatus],
+      }}>
+        {saveText[saveStatus]}
+      </div>
     {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );
