@@ -1,6 +1,7 @@
 'use client';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { dark, light } from '@/lib/theme';
+import { useApp } from './AppContext';
 
 export interface Settings {
   theme: 'dark' | 'light' | 'system';
@@ -40,7 +41,6 @@ function applyToDOM(s: Settings) {
   document.body.style.background = C.bg;
   document.body.style.color = C.text;
 
-  // Apply zoom to scale all hardcoded pixel values proportionally
   const zooms: Record<string, string> = { sm: '0.9', md: '1', lg: '1.12' };
   const appEl = document.getElementById('palatable-app-root');
   if (appEl) {
@@ -48,15 +48,13 @@ function applyToDOM(s: Settings) {
   }
 }
 
-function loadFromStorage(): Settings {
-  if (typeof window === 'undefined') return defaults;
+function loadFromStorage(): Partial<Settings> | null {
+  if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaults;
-    const parsed = JSON.parse(raw);
-    const resolved = resolveTheme(parsed.theme || 'dark');
-    return { ...defaults, ...parsed, resolved };
-  } catch { return defaults; }
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
 }
 
 function saveToStorage(s: Settings) {
@@ -65,13 +63,42 @@ function saveToStorage(s: Settings) {
 }
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const { state, actions } = useApp();
   const [settings, setSettings] = useState<Settings>(defaults);
+  const hasAppliedProfileRef = useRef(false);
 
+  // 1. On mount: read from localStorage (instant, per-origin cache).
   useEffect(() => {
-    const loaded = loadFromStorage();
-    setSettings(loaded);
-    applyToDOM(loaded);
+    const cached = loadFromStorage();
+    if (cached) {
+      const next: Settings = { ...defaults, ...cached, resolved: resolveTheme(cached.theme || 'dark') };
+      setSettings(next);
+      applyToDOM(next);
+    } else {
+      applyToDOM(defaults);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 2. When the user's profile loads from Supabase, prefer profile.uiSettings
+  //    over the local cache. This makes settings roam across devices/origins.
+  //    Only apply once per app load to avoid overwriting in-flight edits.
+  useEffect(() => {
+    if (!state.ready || hasAppliedProfileRef.current) return;
+    const cloud = state.profile?.uiSettings;
+    if (cloud && (cloud.theme || cloud.fontSize)) {
+      const next: Settings = {
+        theme: cloud.theme || settings.theme,
+        fontSize: cloud.fontSize || settings.fontSize,
+        resolved: resolveTheme(cloud.theme || settings.theme),
+      };
+      setSettings(next);
+      applyToDOM(next);
+      saveToStorage(next);
+    }
+    hasAppliedProfileRef.current = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.ready, state.profile?.uiSettings]);
 
   function update(partial: Partial<Settings>) {
     setSettings(prev => {
@@ -79,6 +106,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       next.resolved = resolveTheme(next.theme);
       saveToStorage(next);
       applyToDOM(next);
+      // Persist to user_data.profile.uiSettings so it roams across devices.
+      if (state.ready && actions?.updProfile) {
+        actions.updProfile({ uiSettings: { theme: next.theme, fontSize: next.fontSize } });
+      }
       return next;
     });
   }
