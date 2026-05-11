@@ -6,6 +6,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 
+type Background = 'plain' | 'linen' | 'botanical' | 'deco';
+
 interface Design {
   logo?: { url: string; path: string } | null;
   accentColor: string;
@@ -15,6 +17,7 @@ interface Design {
   showPrices: boolean;
   showDescriptions: boolean;
   sectionStyle: 'category' | 'flat';
+  background: Background;
 }
 
 const DEFAULT_DESIGN: Design = {
@@ -26,7 +29,15 @@ const DEFAULT_DESIGN: Design = {
   showPrices: true,
   showDescriptions: true,
   sectionStyle: 'category',
+  background: 'plain',
 };
+
+const BACKGROUNDS: { id: Background; label: string }[] = [
+  { id: 'plain',     label: 'Plain' },
+  { id: 'linen',     label: 'Linen' },
+  { id: 'botanical', label: 'Botanical' },
+  { id: 'deco',      label: 'Art Deco' },
+];
 
 const CATEGORY_ORDER = ['Starter', 'Main', 'Sauce', 'Bread', 'Pastry', 'Dessert', 'Stock', 'Snack', 'Other'];
 
@@ -228,6 +239,32 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
                 </div>
               </div>
 
+              <div>
+                <label style={lbl}>Background</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  {BACKGROUNDS.map(b => {
+                    const active = design.background === b.id;
+                    return (
+                      <button key={b.id} onClick={() => update({ background: b.id })}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'stretch',
+                          padding: 0, background: 'transparent',
+                          border: '1px solid ' + (active ? C.gold : C.border),
+                          color: active ? C.gold : C.dim,
+                          cursor: 'pointer', borderRadius: '3px', overflow: 'hidden',
+                        }}>
+                        <div style={{ height: '52px', background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
+                          <BackgroundLayer bg={b.id} accent={design.accentColor} mini />
+                        </div>
+                        <span style={{ fontSize: '11px', fontWeight: active ? 700 : 500, padding: '6px', textAlign: 'center' }}>
+                          {b.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <Toggle C={C} label="Show prices" value={design.showPrices} onChange={v => update({ showPrices: v })} />
               <Toggle C={C} label="Show descriptions" value={design.showDescriptions} onChange={v => update({ showDescriptions: v })} />
 
@@ -258,8 +295,12 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
               width: '210mm', minHeight: '297mm',
               padding: '16mm', boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
               fontFamily: 'Georgia, serif',
+              position: 'relative', overflow: 'hidden',
             }}>
-              <MenuPreview design={design} dishes={dishes} sym={sym} />
+              <BackgroundLayer bg={design.background} accent={design.accentColor} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <MenuPreview design={design} dishes={dishes} sym={sym} />
+              </div>
             </div>
           </div>
         </div>
@@ -359,4 +400,79 @@ function Toggle({ C, label, value, onChange }: { C: any; label: string; value: b
       </button>
     </label>
   );
+}
+
+// Inline SVG background layer. Drawn behind the menu content (zIndex 0).
+// `mini` collapses everything down to a thumbnail-friendly viewBox.
+function BackgroundLayer({ bg, accent, mini }: { bg: Background; accent: string; mini?: boolean }) {
+  if (bg === 'plain') return null;
+  const inset: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 };
+
+  if (bg === 'linen') {
+    // Subtle dot pattern — prints as a barely-there texture
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id={`linen-${mini ? 'm' : 'p'}`} width={mini ? 6 : 14} height={mini ? 6 : 14} patternUnits="userSpaceOnUse">
+            <circle cx={mini ? 3 : 7} cy={mini ? 3 : 7} r={mini ? 0.4 : 0.7} fill="#000" opacity="0.07" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#linen-${mini ? 'm' : 'p'})`} />
+      </svg>
+    );
+  }
+
+  if (bg === 'botanical') {
+    // Two corner sprigs — top-left and bottom-right, drawn as outline strokes
+    // in the accent colour at low opacity.
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="none">
+        {/* Top-left sprig */}
+        <g transform="translate(8, 8)" fill="none" stroke={accent} strokeWidth="0.4" opacity="0.25" strokeLinecap="round">
+          <path d="M0 28 Q6 18 14 14 T28 0" />
+          <ellipse cx="6" cy="22" rx="3" ry="1.5" transform="rotate(-30 6 22)" fill={accent} fillOpacity="0.18" />
+          <ellipse cx="11" cy="17" rx="3" ry="1.5" transform="rotate(-30 11 17)" fill={accent} fillOpacity="0.18" />
+          <ellipse cx="16" cy="13" rx="3" ry="1.5" transform="rotate(-30 16 13)" fill={accent} fillOpacity="0.18" />
+          <ellipse cx="22" cy="8"  rx="3" ry="1.5" transform="rotate(-30 22 8)"  fill={accent} fillOpacity="0.18" />
+        </g>
+        {/* Bottom-right sprig (mirrored) */}
+        <g transform="translate(202, 289) rotate(180)" fill="none" stroke={accent} strokeWidth="0.4" opacity="0.25" strokeLinecap="round">
+          <path d="M0 28 Q6 18 14 14 T28 0" />
+          <ellipse cx="6" cy="22" rx="3" ry="1.5" transform="rotate(-30 6 22)" fill={accent} fillOpacity="0.18" />
+          <ellipse cx="11" cy="17" rx="3" ry="1.5" transform="rotate(-30 11 17)" fill={accent} fillOpacity="0.18" />
+          <ellipse cx="16" cy="13" rx="3" ry="1.5" transform="rotate(-30 16 13)" fill={accent} fillOpacity="0.18" />
+          <ellipse cx="22" cy="8"  rx="3" ry="1.5" transform="rotate(-30 22 8)"  fill={accent} fillOpacity="0.18" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (bg === 'deco') {
+    // Three horizontal pinstripes top + bottom, plus a thin centred ornament
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="none">
+        {/* Top stripes */}
+        <line x1="8" y1="6"   x2="202" y2="6"   stroke={accent} strokeWidth="0.6" opacity="0.7" />
+        <line x1="8" y1="9"   x2="202" y2="9"   stroke={accent} strokeWidth="0.25" opacity="0.55" />
+        <line x1="8" y1="11"  x2="202" y2="11"  stroke={accent} strokeWidth="0.15" opacity="0.4" />
+        {/* Bottom stripes */}
+        <line x1="8" y1="291" x2="202" y2="291" stroke={accent} strokeWidth="0.6" opacity="0.7" />
+        <line x1="8" y1="288" x2="202" y2="288" stroke={accent} strokeWidth="0.25" opacity="0.55" />
+        <line x1="8" y1="286" x2="202" y2="286" stroke={accent} strokeWidth="0.15" opacity="0.4" />
+        {/* Top centre ornament */}
+        <g transform="translate(105, 8)" stroke={accent} strokeWidth="0.4" fill="none" opacity="0.7">
+          <line x1="-10" y1="0" x2="-2"  y2="0" />
+          <line x1="2"   y1="0" x2="10"  y2="0" />
+          <circle cx="0" cy="0" r="1.2" />
+        </g>
+        {/* Bottom centre ornament */}
+        <g transform="translate(105, 289)" stroke={accent} strokeWidth="0.4" fill="none" opacity="0.7">
+          <line x1="-10" y1="0" x2="-2"  y2="0" />
+          <line x1="2"   y1="0" x2="10"  y2="0" />
+          <circle cx="0" cy="0" r="1.2" />
+        </g>
+      </svg>
+    );
+  }
+  return null;
 }
