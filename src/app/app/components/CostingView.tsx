@@ -27,6 +27,25 @@ export default function CostingView(){
   const[deleteId,setDeleteId]=useState<string|null>(null);
   const[editingId,setEditingId]=useState<string|null>(null);
   const[priceAlerts,setPriceAlerts]=useState<string[]>([]);
+  const[pickedRecipeId,setPickedRecipeId]=useState<string|null>(null);
+
+  // Helper: find a recipe's linked costing (by explicit id or matching name)
+  function recipeCosting(r:any):any|null{
+    if(!r) return null;
+    if(r.linkedCostingId) return state.gpHistory.find((h:any)=>h.id===r.linkedCostingId)||null;
+    return state.gpHistory.find((h:any)=>(h.name||'').toLowerCase().trim()===(r.title||'').toLowerCase().trim())||null;
+  }
+  // Recipes that match the typed name AND have a costable linked costing
+  function recipeMatches(query:string){
+    const q=query.toLowerCase();
+    if(q.length<2) return [];
+    return (state.recipes||[]).filter((r:any)=>{
+      if((r.title||'').toLowerCase()===q) return false;
+      if(!(r.title||'').toLowerCase().includes(q)) return false;
+      const lc=recipeCosting(r);
+      return lc && lc.cost>0 && (lc.portions||0)>0;
+    }).slice(0,4);
+  }
   const s=parseFloat(sell)||0;
   const p=parseInt(portions)||1;
   const totalCost=ings.reduce((a,b)=>a+b.line,0);
@@ -62,8 +81,10 @@ export default function CostingView(){
     let line=qty*price;
     if(ingUnit==='g')line=(qty/1000)*price;
     if(ingUnit==='ml')line=(qty/1000)*price;
-    setIngs(prev=>[...prev,{id:Date.now().toString(),name:ingName,qty,unit:ingUnit,price,line}]);
-    setIngName('');setIngQty('');setIngPrice('');
+    const ing:any={id:Date.now().toString(),name:ingName,qty,unit:ingUnit,price,line};
+    if(pickedRecipeId) ing.sourceRecipeId=pickedRecipeId;
+    setIngs(prev=>[...prev,ing]);
+    setIngName('');setIngQty('');setIngPrice('');setPickedRecipeId(null);
   }
   function autofillPrice(name:string){const m=state.ingredientsBank.find((b:any)=>b.name.toLowerCase()===name.toLowerCase());if(m?.unitPrice)setIngPrice(String(m.unitPrice));}
   function saveCosting(){
@@ -151,7 +172,10 @@ export default function CostingView(){
               </div>
               {ings.map(ing=>(
                 <div key={ing.id} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 32px',padding:'10px 12px',borderTop:'1px solid '+C.border,gap:'8px',alignItems:'center'}}>
-                  <p style={{fontSize:'13px',color:C.text}}>{ing.name}</p>
+                  <div style={{display:'flex',alignItems:'center',gap:'6px',flexWrap:'wrap'}}>
+                    {ing.sourceRecipeId&&<span title="Cost from sub-recipe" style={{fontSize:'9px',fontWeight:700,letterSpacing:'0.5px',color:C.gold,background:C.gold+'18',border:'0.5px solid '+C.gold+'40',padding:'1px 5px',borderRadius:'2px'}}>RECIPE</span>}
+                    <p style={{fontSize:'13px',color:C.text}}>{ing.name}</p>
+                  </div>
                   <p style={{fontSize:'13px',color:C.dim}}>{ing.qty}{ing.unit}</p>
                   <p style={{fontSize:'13px',color:C.dim}}>{sym}{ing.price.toFixed(2)}</p>
                   <p style={{fontSize:'13px',color:C.gold}}>{sym}{ing.line.toFixed(3)}</p>
@@ -167,18 +191,39 @@ export default function CostingView(){
           <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'10px'}}>Add Ingredient</p>
           <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr auto',gap:'8px',alignItems:'end'}}>
             <div style={{position:'relative'}}>
-              <input value={ingName} onChange={e=>{setIngName(e.target.value);autofillPrice(e.target.value);}} placeholder="Search ingredients bank..." style={{...inp,width:'100%'}}/>
-              {ingName.length>1&&state.ingredientsBank.filter((b:any)=>b.name.toLowerCase().includes(ingName.toLowerCase())&&b.name.toLowerCase()!==ingName.toLowerCase()).slice(0,6).length>0&&(
-                <div style={{position:'absolute',top:'100%',left:0,right:0,background:C.surface,border:'1px solid '+C.gold+'60',borderTop:'none',zIndex:50,maxHeight:'200px',overflow:'auto',borderRadius:'0 0 3px 3px',boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>
-                  {state.ingredientsBank.filter((b:any)=>b.name.toLowerCase().includes(ingName.toLowerCase())&&b.name.toLowerCase()!==ingName.toLowerCase()).slice(0,6).map((b:any)=>(
-                    <button key={b.id} onMouseDown={e=>{e.preventDefault();setIngName(b.name);setIngUnit(b.unit||'kg');setIngPrice(String(b.unitPrice||''));}}
-                      style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 12px',background:'none',border:'none',borderBottom:'1px solid '+C.border,cursor:'pointer',textAlign:'left',transition:'background 0.1s'}}>
-                      <span style={{fontSize:'13px',color:C.text}}>{b.name}</span>
-                      <span style={{fontSize:'12px',color:C.gold,fontWeight:600}}>£{(b.unitPrice||0).toFixed(2)}/{b.unit}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <input value={ingName} onChange={e=>{setIngName(e.target.value);setPickedRecipeId(null);autofillPrice(e.target.value);}} placeholder="Search bank or recipes..." style={{...inp,width:'100%'}}/>
+              {(()=>{
+                const bankM=state.ingredientsBank.filter((b:any)=>b.name.toLowerCase().includes(ingName.toLowerCase())&&b.name.toLowerCase()!==ingName.toLowerCase()).slice(0,6);
+                const recM=recipeMatches(ingName);
+                if(ingName.length<2||(bankM.length===0&&recM.length===0)) return null;
+                return (
+                  <div style={{position:'absolute',top:'100%',left:0,right:0,background:C.surface,border:'1px solid '+C.gold+'60',borderTop:'none',zIndex:50,maxHeight:'260px',overflow:'auto',borderRadius:'0 0 3px 3px',boxShadow:'0 4px 12px rgba(0,0,0,0.3)'}}>
+                    {recM.length>0&&<p style={{fontSize:'9px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',color:C.gold,padding:'6px 12px',background:C.gold+'08'}}>Sub-recipes</p>}
+                    {recM.map((r:any)=>{
+                      const lc=recipeCosting(r);
+                      const cpp=lc.cost/(lc.portions||1);
+                      return (
+                        <button key={r.id} onMouseDown={e=>{e.preventDefault();setIngName(r.title);setIngUnit('each');setIngPrice(cpp.toFixed(3));setPickedRecipeId(r.id);}}
+                          style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 12px',background:'none',border:'none',borderBottom:'1px solid '+C.border,cursor:'pointer',textAlign:'left'}}>
+                          <span style={{fontSize:'13px',color:C.text,display:'flex',alignItems:'center',gap:'6px'}}>
+                            <span style={{fontSize:'9px',fontWeight:700,letterSpacing:'0.5px',color:C.gold,background:C.gold+'18',border:'0.5px solid '+C.gold+'40',padding:'1px 5px',borderRadius:'2px'}}>RECIPE</span>
+                            {r.title}
+                          </span>
+                          <span style={{fontSize:'12px',color:C.gold,fontWeight:600}}>{sym}{cpp.toFixed(2)}/portion</span>
+                        </button>
+                      );
+                    })}
+                    {bankM.length>0&&recM.length>0&&<p style={{fontSize:'9px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',color:C.faint,padding:'6px 12px',background:C.surface2}}>Ingredients</p>}
+                    {bankM.map((b:any)=>(
+                      <button key={b.id} onMouseDown={e=>{e.preventDefault();setIngName(b.name);setIngUnit(b.unit||'kg');setIngPrice(String(b.unitPrice||''));setPickedRecipeId(null);}}
+                        style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 12px',background:'none',border:'none',borderBottom:'1px solid '+C.border,cursor:'pointer',textAlign:'left',transition:'background 0.1s'}}>
+                        <span style={{fontSize:'13px',color:C.text}}>{b.name}</span>
+                        <span style={{fontSize:'12px',color:C.gold,fontWeight:600}}>£{(b.unitPrice||0).toFixed(2)}/{b.unit}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
             <input type="number" value={ingQty} onChange={e=>setIngQty(e.target.value)} placeholder="Qty" style={inp}/>
             <select value={ingUnit} onChange={e=>setIngUnit(e.target.value)} style={{...inp,cursor:'pointer'}}>{UNITS.map(u=><option key={u} value={u}>{u}</option>)}</select>

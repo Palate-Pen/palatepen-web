@@ -657,6 +657,31 @@ export default function RecipesView() {
           );
         })()}
 
+        {/* Used in — dishes that consume this recipe as a sub-recipe */}
+        {(() => {
+          const usedIn = (state.gpHistory || []).filter((h: any) =>
+            (h.ingredients || []).some((ing: any) => ing.sourceRecipeId === sel.id)
+          );
+          if (usedIn.length === 0) return null;
+          return (
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>
+                Used in <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal', color: C.faint }}>({usedIn.length} dish{usedIn.length === 1 ? '' : 'es'} use this as a sub-recipe)</span>
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {usedIn.map((h: any) => (
+                  <span key={h.id} style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + C.gold + '40', color: C.gold, background: C.gold + '10', borderRadius: '2px' }}>
+                    {h.name} <span style={{ color: C.faint, marginLeft: '4px' }}>· {(h.pct || 0).toFixed(1)}% GP</span>
+                  </span>
+                ))}
+              </div>
+              <p style={{ fontSize: '11px', color: C.faint, marginTop: '6px' }}>
+                If you change this recipe&apos;s costing, re-open these dishes in the Costing tab to refresh their cost from the new sub-recipe price.
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Chef notes */}
         <div style={{ marginBottom: '24px' }}>
           <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>Chef&apos;s Notes</p>
