@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { isAuthorized } from '@/lib/admin';
+import { isAuthorized, audit } from '@/lib/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,6 +54,11 @@ export async function POST(req: Request) {
     const elapsedMs = Date.now() - start;
     const profile = typeof row?.profile === 'string' ? JSON.parse(row.profile) : (row?.profile ?? null);
 
+    await audit(req, supabase, 'test_signup', userId, {
+      ok: !!row,
+      elapsedMs,
+      testEmail,
+    });
     return NextResponse.json({
       ok: !!row,
       triggerFired: !!row,

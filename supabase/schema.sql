@@ -47,10 +47,24 @@ alter table public.blog_posts enable row level security;
 create policy "Blog posts are publicly readable" on public.blog_posts
   for select using (published = true);
 
+-- Admin audit log (service-role only)
+create table if not exists public.admin_audit_log (
+  id uuid default gen_random_uuid() primary key,
+  action text not null,
+  target_user_id uuid,
+  details jsonb default '{}'::jsonb,
+  ip text,
+  user_agent text,
+  created_at timestamptz default now()
+);
+alter table public.admin_audit_log enable row level security;
+
 -- Indexes
 create index if not exists user_data_user_id_idx on public.user_data(user_id);
 create index if not exists blog_posts_slug_idx on public.blog_posts(slug);
 create index if not exists blog_posts_published_idx on public.blog_posts(published);
+create index if not exists admin_audit_log_created_idx on public.admin_audit_log(created_at desc);
+create index if not exists admin_audit_log_target_idx on public.admin_audit_log(target_user_id);
 
 -- Auto-create a user_data row when a new auth.users row is inserted.
 -- Source of truth lives in supabase/migrations/001_handle_new_user.sql.

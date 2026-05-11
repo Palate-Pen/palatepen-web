@@ -27,7 +27,7 @@ const C = {
   redSoft: 'rgba(184,48,48,0.10)',
 };
 
-type Section = 'overview' | 'users' | 'settings';
+type Section = 'overview' | 'users' | 'audit' | 'settings';
 type TierFilter = 'all' | 'free' | 'pro';
 type SortBy = 'newest' | 'oldest' | 'recipes' | 'updated';
 
@@ -67,6 +67,8 @@ export default function AdminPage() {
   const [section, setSection] = useState<Section>('overview');
   const [users, setUsers] = useState<any[]>([]);
   const [authUsers, setAuthUsers] = useState<any[]>([]);
+  const [audit, setAudit] = useState<any[]>([]);
+  const [auditFilterUser, setAuditFilterUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadErr, setLoadErr] = useState('');
   const [initing, setIniting] = useState<string | null>(null);
@@ -85,18 +87,17 @@ export default function AdminPage() {
     setLoading(true);
     setLoadErr('');
     try {
-      const [u, a] = await Promise.all([
+      const [u, a, ad] = await Promise.all([
         fetch('/api/admin/users', { headers: authHeaders(), cache: 'no-store' }).then(r => r.json().then(j => ({ ok: r.ok, j }))),
         fetch('/api/admin/auth-users', { headers: authHeaders(), cache: 'no-store' }).then(r => r.json().then(j => ({ ok: r.ok, j }))),
+        fetch('/api/admin/audit?limit=200', { headers: authHeaders(), cache: 'no-store' }).then(r => r.json().then(j => ({ ok: r.ok, j }))),
       ]);
       if (!u.ok) setLoadErr(u.j.error || 'Failed to load users');
       else setUsers(u.j.users || []);
-      if (!a.ok) {
-        if (!u.ok) setLoadErr((u.j.error || 'users') + ' / ' + (a.j.error || 'auth-users'));
-        else setLoadErr('auth-users: ' + (a.j.error || 'failed'));
-      } else {
-        setAuthUsers(a.j.users || []);
-      }
+      if (a.ok) setAuthUsers(a.j.users || []);
+      else if (u.ok) setLoadErr('auth-users: ' + (a.j.error || 'failed'));
+      if (ad.ok) setAudit(ad.j.entries || []);
+      // audit failure is non-fatal — table may not exist yet
     } catch (e: any) {
       setLoadErr(e?.message || 'Network error');
     }
@@ -354,6 +355,7 @@ export default function AdminPage() {
           {([
             { id: 'overview', label: 'Overview', count: '' },
             { id: 'users', label: 'Users', count: String(users.length) },
+            { id: 'audit', label: 'Audit', count: audit.length ? String(audit.length) : '' },
             { id: 'settings', label: 'Settings', count: '' },
           ] as { id: Section; label: string; count: string }[]).map(item => (
             <button
@@ -413,6 +415,20 @@ export default function AdminPage() {
               confirmDelete={confirmDelete}
               setConfirmDelete={setConfirmDelete}
               onDelete={deleteUser}
+            />
+          )}
+          {section === 'audit' && (
+            <Audit
+              entries={audit}
+              users={users}
+              filterUser={auditFilterUser}
+              setFilterUser={setAuditFilterUser}
+              onJumpToUser={(userId) => {
+                const u = users.find(x => x.user_id === userId);
+                if (u) { setSection('users'); selectUser(u); }
+              }}
+              onRefresh={load}
+              loading={loading}
             />
           )}
           {section === 'settings' && (
@@ -843,6 +859,171 @@ function UserDetail({
       </div>
     </div>
   );
+}
+
+function Audit({
+  entries, users, filterUser, setFilterUser, onJumpToUser, onRefresh, loading,
+}: {
+  entries: any[];
+  users: any[];
+  filterUser: string | null;
+  setFilterUser: (u: string | null) => void;
+  onJumpToUser: (userId: string) => void;
+  onRefresh: () => void;
+  loading: boolean;
+}) {
+  const [actionFilter, setActionFilter] = useState<string>('all');
+
+  const userById = useMemo(() => {
+    const m = new Map<string, any>();
+    for (const u of users) m.set(u.user_id, u);
+    return m;
+  }, [users]);
+
+  const filtered = useMemo(() => {
+    return entries.filter(e => {
+      if (filterUser && e.target_user_id !== filterUser) return false;
+      if (actionFilter !== 'all' && e.action !== actionFilter) return false;
+      return true;
+    });
+  }, [entries, filterUser, actionFilter]);
+
+  const actions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of entries) set.add(e.action);
+    return Array.from(set).sort();
+  }, [entries]);
+
+  return (
+    <div style={{ maxWidth: 1100 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 26 }}>Audit Log</h1>
+        <button onClick={onRefresh} disabled={loading} style={btnGhost(loading)}>{loading ? 'Refreshing…' : 'Refresh'}</button>
+      </div>
+
+      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16, marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginRight: 6 }}>Action</span>
+          {(['all', ...actions] as string[]).map(a => (
+            <button key={a} onClick={() => setActionFilter(a)} style={chip(actionFilter === a)}>
+              {a === 'all' ? 'All' : a.replace(/_/g, ' ')}
+            </button>
+          ))}
+          {filterUser && (
+            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: C.dim }}>
+                Filtering to user <code style={{ fontFamily: 'monospace', fontSize: 11 }}>{filterUser.slice(0, 8)}…</code>
+              </span>
+              <button onClick={() => setFilterUser(null)} style={btnGhost(false)}>Clear</button>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, padding: 40, textAlign: 'center', color: C.faint, fontSize: 13 }}>
+          {entries.length === 0
+            ? 'No audit entries yet — actions you take in the admin will appear here.'
+            : 'No entries match the current filters.'}
+        </div>
+      ) : (
+        <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, overflow: 'hidden' }}>
+          {filtered.map((e, i) => {
+            const u = e.target_user_id ? userById.get(e.target_user_id) : null;
+            const p = u ? parseProfile(u.profile) : null;
+            return (
+              <div key={e.id || i} style={{
+                display: 'grid', gridTemplateColumns: '180px 160px 1fr auto', gap: 12,
+                padding: '12px 16px', borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : 'none',
+                alignItems: 'center',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, color: C.text }}>{relTime(e.created_at)}</div>
+                  <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(e.created_at, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                <div>
+                  <ActionBadge action={e.action} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  {u ? (
+                    <button onClick={() => onJumpToUser(e.target_user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+                      <div style={{ fontSize: 13, color: C.gold, fontWeight: 500 }}>{p?.name || p?.email || e.target_user_id?.slice(0, 8) + '…'}</div>
+                    </button>
+                  ) : e.target_user_id ? (
+                    <div style={{ fontSize: 13, color: C.faint, fontFamily: 'monospace' }}>{e.target_user_id.slice(0, 8)}… <span style={{ color: C.faint }}>(deleted)</span></div>
+                  ) : (
+                    <div style={{ fontSize: 13, color: C.faint }}>—</div>
+                  )}
+                  <DetailsLine action={e.action} details={e.details} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                  {e.target_user_id && !filterUser && (
+                    <button onClick={() => setFilterUser(e.target_user_id)} style={{ ...btnGhost(false), fontSize: 10, padding: '4px 8px' }}>
+                      Filter user
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActionBadge({ action }: { action: string }) {
+  const palette: Record<string, { fg: string; bg: string; border: string }> = {
+    update_user:     { fg: C.gold,  bg: C.goldSoft,  border: C.goldBorder },
+    initialize_user: { fg: C.green, bg: C.greenSoft, border: C.green },
+    delete_user:     { fg: C.red,   bg: C.redSoft,   border: C.red },
+    test_signup:     { fg: C.dim,   bg: C.panel2,    border: C.border },
+  };
+  const c = palette[action] || { fg: C.dim, bg: C.panel2, border: C.border };
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase',
+      color: c.fg, background: c.bg, border: `1px solid ${c.border}`,
+      padding: '3px 8px', borderRadius: 3,
+    }}>{action.replace(/_/g, ' ')}</span>
+  );
+}
+
+function DetailsLine({ action, details }: { action: string; details: any }) {
+  const d = details || {};
+  if (action === 'update_user' && d.diff) {
+    const fields = Object.entries(d.diff as Record<string, { from: any; to: any }>);
+    return (
+      <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>
+        {fields.length === 0 ? 'no changes' : fields.map(([k, v]) => (
+          <span key={k} style={{ marginRight: 12 }}>
+            <code style={{ fontFamily: 'monospace', color: C.dim }}>{k}</code>{': '}
+            <span style={{ color: C.faint }}>{shortVal(v.from)}</span>
+            {' → '}
+            <span style={{ color: C.text }}>{shortVal(v.to)}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+  if (action === 'initialize_user' && d.seeded) {
+    return <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>seeded {d.seeded.email || d.seeded.name || '(unnamed)'}</div>;
+  }
+  if (action === 'delete_user') {
+    const p = d.profile_snapshot;
+    return <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>was {p?.email || p?.name || '(unknown)'}</div>;
+  }
+  if (action === 'test_signup') {
+    return <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>{d.ok ? `trigger fired in ${d.elapsedMs}ms` : 'trigger did not fire'}</div>;
+  }
+  return null;
+}
+
+function shortVal(v: any): string {
+  if (v === null || v === undefined) return '∅';
+  if (typeof v === 'string') return v.length > 30 ? `"${v.slice(0, 30)}…"` : `"${v}"`;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return JSON.stringify(v).slice(0, 30);
 }
 
 function Settings({ stats, onRefresh, loading }: { stats: any; onRefresh: () => void; loading: boolean }) {

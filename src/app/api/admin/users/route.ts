@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { isAuthorized } from '@/lib/admin';
+import { isAuthorized, audit } from '@/lib/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,5 +49,8 @@ export async function POST(req: Request) {
     .select()
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await audit(req, supabase, 'initialize_user', userId, {
+    seeded: { name: profile.name, email: profile.email, tier: profile.tier },
+  });
   return NextResponse.json({ user: data });
 }
