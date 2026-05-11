@@ -12,7 +12,14 @@ function reducer(state:any,action:any):any{
     case 'LOAD':return{...state,...action.data,ready:true};
     case 'ADD_RECIPE':return{...state,recipes:[action.item,...state.recipes]};
     case 'UPD_RECIPE':return{...state,recipes:state.recipes.map((r:any)=>r.id===action.id?{...r,...action.data}:r)};
-    case 'DEL_RECIPE':return{...state,recipes:state.recipes.filter((r:any)=>r.id!==action.id)};
+    case 'DEL_RECIPE':{
+      const menus=(state.menus||[]).map((m:any)=>{
+        const recipeIds=(m.recipeIds||[]).filter((id:string)=>id!==action.id);
+        const salesData={...(m.salesData||{})};delete salesData[action.id];
+        return{...m,recipeIds,salesData};
+      });
+      return{...state,recipes:state.recipes.filter((r:any)=>r.id!==action.id),menus};
+    }
     case 'ADD_NOTE':return{...state,notes:[action.item,...state.notes]};
     case 'UPD_NOTE':return{...state,notes:state.notes.map((n:any)=>n.id===action.id?{...n,...action.data}:n)};
     case 'DEL_NOTE':return{...state,notes:state.notes.filter((n:any)=>n.id!==action.id)};

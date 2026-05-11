@@ -123,6 +123,15 @@ export default function MenuBuilderView() {
     actions.updMenu(sel.id, { recipeIds: (sel.recipeIds || []).filter((id: string) => id !== recipeId) });
   }
 
+  function cleanOrphans() {
+    if (!sel) return;
+    const valid = new Set(state.recipes.map((r: any) => r.id));
+    const recipeIds = (sel.recipeIds || []).filter((id: string) => valid.has(id));
+    const salesData: Record<string, number> = {};
+    Object.entries(sel.salesData || {}).forEach(([k, v]) => { if (valid.has(k)) salesData[k] = v as number; });
+    actions.updMenu(sel.id, { recipeIds, salesData });
+  }
+
   function moveRecipe(recipeId: string, dir: -1 | 1) {
     if (!sel) return;
     const ids = [...(sel.recipeIds || [])];
@@ -253,6 +262,21 @@ export default function MenuBuilderView() {
             </div>
           )}
 
+          {(() => {
+            const orphanCount = stats.dishes.filter((d: any) => !d.recipe).length;
+            if (orphanCount === 0) return null;
+            return (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '8px 12px', background: C.red + '0c', border: '0.5px solid ' + C.red + '40', borderRadius: '3px' }}>
+                <span style={{ fontSize: '12px', color: C.red }}>
+                  {orphanCount} {orphanCount === 1 ? 'dish references a recipe' : 'dishes reference recipes'} that no longer exist.
+                </span>
+                <button onClick={cleanOrphans} style={{ fontSize: '11px', fontWeight: 600, color: C.red, background: 'transparent', border: '0.5px solid ' + C.red + '60', padding: '4px 10px', borderRadius: '2px', cursor: 'pointer', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  Clean up
+                </button>
+              </div>
+            );
+          })()}
+
           {stats.dishes.length === 0 ? (
             <p style={{ fontSize: '13px', color: C.faint, padding: '20px', textAlign: 'center', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px' }}>
               No dishes yet. Click <strong style={{ color: C.gold }}>+ Add Dish</strong> to start building this menu.
@@ -267,13 +291,24 @@ export default function MenuBuilderView() {
                 <span style={{ textAlign: 'right' }}>GP</span>
                 <span></span>
               </div>
-              {stats.dishes.map((d: any, i: number) => (
-                <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '24px 2fr 1fr 1fr 1fr 80px', gap: '8px', padding: '10px 12px', borderTop: '1px solid ' + C.border, alignItems: 'center' }}>
+              {stats.dishes.map((d: any, i: number) => {
+                const orphan = !d.recipe;
+                return (
+                <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '24px 2fr 1fr 1fr 1fr 80px', gap: '8px', padding: '10px 12px', borderTop: '1px solid ' + C.border, alignItems: 'center', background: orphan ? C.red + '08' : 'transparent' }}>
                   <span style={{ fontSize: '11px', color: C.faint, textAlign: 'right' }}>{i + 1}</span>
                   <div>
-                    <span style={{ fontSize: '13px', color: C.text }}>{d.recipe?.title || '(deleted recipe)'}</span>
-                    {d.recipe?.locked && <span title="Locked recipe" style={{ marginLeft: '6px', fontSize: '11px' }}>🔒</span>}
-                    {d.recipe?.category && <span style={{ marginLeft: '8px', fontSize: '10px', color: C.faint }}>{d.recipe.category}</span>}
+                    {orphan ? (
+                      <>
+                        <span style={{ fontSize: '13px', color: C.red, fontStyle: 'italic' }}>Recipe no longer exists</span>
+                        <span style={{ marginLeft: '8px', fontSize: '9px', fontWeight: 700, color: C.red, background: C.red + '14', border: '0.5px solid ' + C.red + '40', padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Removed</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '13px', color: C.text }}>{d.recipe.title}</span>
+                        {d.recipe.locked && <span title="Locked recipe" style={{ marginLeft: '6px', fontSize: '11px' }}>🔒</span>}
+                        {d.recipe.category && <span style={{ marginLeft: '8px', fontSize: '10px', color: C.faint }}>{d.recipe.category}</span>}
+                      </>
+                    )}
                   </div>
                   <span style={{ fontSize: '13px', color: C.dim, textAlign: 'right' }}>{d.costing ? sym + d.costing.sell.toFixed(2) : '—'}</span>
                   <span style={{ fontSize: '13px', color: C.dim, textAlign: 'right' }}>{d.costing ? sym + d.costing.cost.toFixed(2) : '—'}</span>
@@ -286,10 +321,11 @@ export default function MenuBuilderView() {
                     <button onClick={() => moveRecipe(d.id, 1)} disabled={i === stats.dishes.length - 1} title="Move down"
                       style={{ background: 'none', border: 'none', color: i === stats.dishes.length - 1 ? C.faint : C.dim, cursor: i === stats.dishes.length - 1 ? 'default' : 'pointer', fontSize: '13px', padding: '0 4px', opacity: i === stats.dishes.length - 1 ? 0.3 : 1 }}>↓</button>
                     <button onClick={() => removeRecipe(d.id)} title="Remove from menu"
-                      style={{ background: 'none', border: 'none', color: C.faint, cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}>×</button>
+                      style={{ background: 'none', border: 'none', color: orphan ? C.red : C.faint, cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}>×</button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
