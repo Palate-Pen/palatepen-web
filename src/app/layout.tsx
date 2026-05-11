@@ -8,20 +8,12 @@ const epilogue = Epilogue({ subsets:['latin'], weight:['300','400','500','700'],
 export const metadata: Metadata = {
   title: 'Palate & Pen — Menu Design & Food Consultancy',
   description: 'We make your menu as good as your food.',
-  icons: {
-    icon: '/pp-favicon.png',
-    shortcut: '/pp-favicon.png',
-    apple: '/pp-favicon.png',
-  },
+  // Favicon is auto-generated from src/app/icon.svg via Next.js App Router conventions.
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" type="image/png" href="/pp-favicon.png" sizes="64x64" />
-        <link rel="shortcut icon" href="/pp-favicon.png" />
-      </head>
       <body className={`${fraunces.variable} ${epilogue.variable} bg-cream text-ink antialiased font-epilogue`}>
         {children}
       </body>
