@@ -148,6 +148,8 @@ export default function RecipesView() {
   const [photoError, setPhotoError] = useState('');
   const [importError, setImportError] = useState('');
   const [importedData, setImportedData] = useState<any>(null);
+  const [newPhotoFile, setNewPhotoFile] = useState<File | null>(null);
+  const [newPhotoPreview, setNewPhotoPreview] = useState<string>('');
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [expandedNotes, setExpandedNotes] = useState<Record<string,boolean>>({});
   const [assigningCosting, setAssigningCosting] = useState(false);
@@ -203,6 +205,15 @@ export default function RecipesView() {
     setShowAdd(false);
     setNewTitle(''); setNewCat('Main'); setNewNotes('');
     setImportUrl(''); setImportError(''); setImportedData(null); setImporting(false);
+    if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview);
+    setNewPhotoFile(null); setNewPhotoPreview('');
+  }
+
+  function pickNewPhoto(file: File | null) {
+    if (newPhotoPreview) URL.revokeObjectURL(newPhotoPreview);
+    if (!file) { setNewPhotoFile(null); setNewPhotoPreview(''); return; }
+    setNewPhotoFile(file);
+    setNewPhotoPreview(URL.createObjectURL(file));
   }
 
   async function importRecipe() {
@@ -294,9 +305,12 @@ export default function RecipesView() {
     actions.updRecipe(sel.id, { photoUrl: null, photoPath: null });
   }
 
-  function addRecipe() {
+  async function addRecipe() {
     if (!newTitle.trim()) return;
-    const recipe: any = { title: newTitle.trim(), category: newCat, notes: newNotes };
+    // Pre-generate id so we can upload the photo to a known path while the
+    // recipe row is being saved in parallel.
+    const newId = uid();
+    const recipe: any = { id: newId, title: newTitle.trim(), category: newCat, notes: newNotes };
     if (importedData) {
       recipe.url = importUrl.trim();
       recipe.imported = {
@@ -309,7 +323,25 @@ export default function RecipesView() {
       };
     }
     actions.addRecipe(recipe);
+
+    // Capture the photo file before the form is reset, then upload + patch.
+    const photoFile = newPhotoFile;
     resetAddForm();
+    if (photoFile && user?.id) {
+      try {
+        const blob = await resizePhoto(photoFile);
+        const ts = Date.now();
+        const path = `${user.id}/${newId}-${ts}.jpg`;
+        const { error: upErr } = await supabase.storage.from('recipe-photos').upload(path, blob, {
+          contentType: 'image/jpeg', upsert: true, cacheControl: '3600',
+        });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from('recipe-photos').getPublicUrl(path);
+        actions.updRecipe(newId, { photoUrl: pub.publicUrl, photoPath: path });
+      } catch (e: any) {
+        console.error('[recipe photo upload]', e?.message);
+      }
+    }
   }
 
   const inp: any = { width: '100%', background: C.surface2, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '9px 12px', outline: 'none', fontFamily: 'system-ui,sans-serif', boxSizing: 'border-box' };
@@ -1251,6 +1283,31 @@ export default function RecipesView() {
                     </button>
                   ))}
                 </div>
+              </div>
+              <div>
+                <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '6px' }}>Photo (optional)</label>
+                {newPhotoPreview ? (
+                  <div style={{ position: 'relative', borderRadius: '3px', overflow: 'hidden', border: '1px solid ' + C.border }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={newPhotoPreview} alt="Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ position: 'absolute', top: '6px', right: '6px', display: 'flex', gap: '6px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.text, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.2)', padding: '5px 9px', borderRadius: '2px', cursor: 'pointer' }}>
+                        Replace
+                        <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0] || null; pickNewPhoto(f); e.target.value = ''; }} style={{ display: 'none' }} />
+                      </label>
+                      <button onClick={() => pickNewPhoto(null)}
+                        style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.text, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.2)', padding: '5px 9px', cursor: 'pointer', borderRadius: '2px' }}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '20px', background: C.surface2, border: '1px dashed ' + C.border, borderRadius: '3px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '12px', color: C.dim }}>📷 Add a photo</span>
+                    <span style={{ fontSize: '10px', color: C.faint }}>JPEG or PNG, auto-resized after save</span>
+                    <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0] || null; pickNewPhoto(f); e.target.value = ''; }} style={{ display: 'none' }} />
+                  </label>
+                )}
               </div>
               <div>
                 <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '6px' }}>Chef&apos;s Notes</label>
