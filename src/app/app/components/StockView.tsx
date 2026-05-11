@@ -42,6 +42,37 @@ export default function StockView() {
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [bankSearch, setBankSearch] = useState('');
   const [showBankPicker, setShowBankPicker] = useState(false);
+  const [editId, setEditId] = useState<string|null>(null);
+  const [editName, setEditName] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editUnitPrice, setEditUnitPrice] = useState('');
+  const [editParLevel, setEditParLevel] = useState('');
+  const [editMinLevel, setEditMinLevel] = useState('');
+
+  function startEdit(item:any) {
+    setEditId(item.id);
+    setEditName(item.name||'');
+    setEditUnit(item.unit||'');
+    setEditUnitPrice(item.unitPrice!=null?String(item.unitPrice):'');
+    setEditParLevel(item.parLevel!=null?String(item.parLevel):'');
+    setEditMinLevel(item.minLevel!=null?String(item.minLevel):'');
+  }
+
+  function cancelEdit() {
+    setEditId(null);
+  }
+
+  function saveEdit() {
+    if (!editId||!editName.trim()) return;
+    actions.updStock(editId,{
+      name:editName.trim(),
+      unit:editUnit.trim()||'each',
+      unitPrice:editUnitPrice===''?null:parseFloat(editUnitPrice),
+      parLevel:editParLevel===''?null:parseFloat(editParLevel),
+      minLevel:editMinLevel===''?null:parseFloat(editMinLevel),
+    });
+    setEditId(null);
+  }
 
   const summary = {
     total: stock.length,
@@ -279,8 +310,27 @@ export default function StockView() {
             const bankItem = bank.find((b:any)=>b.name.toLowerCase()===item.name.toLowerCase());
             const price = bankItem?.unitPrice || item.unitPrice || 0;
             const value = (item.currentQty||0)*price;
+            const isEditing = editId===item.id;
+            if (isEditing) {
+              return (
+                <div key={item.id} style={{...card,padding:'16px'}}>
+                  <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr',gap:'10px',marginBottom:'12px'}}>
+                    {([['Name',editName,setEditName,'text'],['Unit',editUnit,setEditUnit,'text'],['Unit Price',editUnitPrice,setEditUnitPrice,'number'],['Par Level',editParLevel,setEditParLevel,'number'],['Min Level',editMinLevel,setEditMinLevel,'number']] as any[]).map(([lbl,val,setter,t])=>(
+                      <div key={lbl}>
+                        <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>{lbl}</label>
+                        <input type={t} value={val} onChange={(e:any)=>setter(e.target.value)} style={input} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',justifyContent:'flex-end',gap:'8px'}}>
+                    <button onClick={cancelEdit} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Cancel</button>
+                    <button onClick={saveEdit} disabled={!editName.trim()} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px',opacity:!editName.trim()?0.4:1}}>Save</button>
+                  </div>
+                </div>
+              );
+            }
             return (
-              <div key={item.id} style={{...card,padding:'16px',display:'flex',alignItems:'center',gap:'12px'}}>
+              <div key={item.id} onClick={()=>{ if(deleteId!==item.id) startEdit(item); }} style={{...card,padding:'16px',display:'flex',alignItems:'center',gap:'12px',cursor:'pointer'}}>
                 <div style={{width:'8px',height:'8px',borderRadius:'50%',background:sc,flexShrink:0}}></div>
                 <div style={{flex:1}}>
                   <p style={{fontSize:'14px',color:C.text,marginBottom:'3px'}}>{item.name}</p>
@@ -293,12 +343,12 @@ export default function StockView() {
                 </div>
                 <span style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:sc}}>{status==='unknown'?'—':status}</span>
                 {deleteId===item.id?(
-                  <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'8px'}} onClick={e=>e.stopPropagation()}>
                     <button onClick={()=>setDeleteId(null)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer'}}>Cancel</button>
                     <button onClick={()=>{ actions.delStock(item.id); setDeleteId(null); }} style={{fontSize:'11px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'5px 10px',cursor:'pointer',borderRadius:'2px'}}>Confirm</button>
                   </div>
                 ):(
-                  <button onClick={()=>setDeleteId(item.id)} style={{color:C.faint,background:'none',border:'none',cursor:'pointer',fontSize:'18px',padding:'0 4px'}}>×</button>
+                  <button onClick={e=>{ e.stopPropagation(); setDeleteId(item.id); }} style={{color:C.faint,background:'none',border:'none',cursor:'pointer',fontSize:'18px',padding:'0 4px'}}>×</button>
                 )}
               </div>
             );
