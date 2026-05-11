@@ -51,9 +51,12 @@ function reducer(state:any,action:any):any{
 }
 const Ctx=createContext<any>(null);
 export function AppProvider({children}:{children:React.ReactNode}){
-  const{currentAccount}=useAuth();
+  const{user,currentAccount}=useAuth();
   const accountId=currentAccount?.id||null;
   const ownerUserId=currentAccount?.owner_user_id||null;
+  const editorUserId=user?.id||null;
+  const editorRef=useRef<string|null>(editorUserId);
+  editorRef.current=editorUserId;
   const[state,dispatch]=useReducer(reducer,init);
   const[saveStatus,setSaveStatus]=useState<SaveStatus>('idle');
   const stateRef=useRef(state);
@@ -131,31 +134,35 @@ export function AppProvider({children}:{children:React.ReactNode}){
     return()=>document.removeEventListener('visibilitychange',onHide);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[accountId]);
+  // editor() reads via ref so token-refresh user-object swaps don't tear
+  // the addedBy stamp. Stored on every newly-created item to power the
+  // owner-only My Team contributions view.
+  const editor=()=>editorRef.current;
   const actions={
-    addRecipe:(d:any)=>dispatch({type:'ADD_RECIPE',item:{id:uid(),tags:[],linkedNoteIds:[],notes:'',url:'',createdAt:Date.now(),...d}}),
+    addRecipe:(d:any)=>dispatch({type:'ADD_RECIPE',item:{id:uid(),tags:[],linkedNoteIds:[],notes:'',url:'',createdAt:Date.now(),addedBy:editor(),...d}}),
     updRecipe:(id:string,data:any)=>dispatch({type:'UPD_RECIPE',id,data}),
     delRecipe:(id:string)=>dispatch({type:'DEL_RECIPE',id}),
-    addNote:(d:any)=>{const item={id:uid(),title:'New Idea',content:'',linkedRecipeIds:[],createdAt:Date.now(),...d};dispatch({type:'ADD_NOTE',item});return item;},
+    addNote:(d:any)=>{const item={id:uid(),title:'New Idea',content:'',linkedRecipeIds:[],createdAt:Date.now(),addedBy:editor(),...d};dispatch({type:'ADD_NOTE',item});return item;},
     updNote:(id:string,data:any)=>dispatch({type:'UPD_NOTE',id,data}),
     delNote:(id:string)=>dispatch({type:'DEL_NOTE',id}),
-    addGP:(d:any)=>dispatch({type:'ADD_GP',item:{id:uid(),savedAt:Date.now(),...d}}),
+    addGP:(d:any)=>dispatch({type:'ADD_GP',item:{id:uid(),savedAt:Date.now(),addedBy:editor(),...d}}),
     updGP:(id:string,data:any)=>dispatch({type:'UPD_GP',id,data}),
     delGP:(id:string)=>dispatch({type:'DEL_GP',id}),
     updProfile:(data:any)=>dispatch({type:'UPD_PROFILE',data}),
-    addStock:(d:any)=>dispatch({type:'ADD_STOCK',item:{id:uid(),createdAt:Date.now(),currentQty:null,...d}}),
+    addStock:(d:any)=>dispatch({type:'ADD_STOCK',item:{id:uid(),createdAt:Date.now(),currentQty:null,addedBy:editor(),...d}}),
     updStock:(id:string,data:any)=>dispatch({type:'UPD_STOCK',id,data}),
     delStock:(id:string)=>dispatch({type:'DEL_STOCK',id}),
-    upsertBank:(items:any[])=>dispatch({type:'UPSERT_BANK',items}),
+    upsertBank:(items:any[])=>dispatch({type:'UPSERT_BANK',items:items.map((it:any)=>({addedBy:editor(),...it}))}),
     updBank:(id:string,data:any)=>dispatch({type:'UPD_BANK',id,data}),
     delBank:(id:string)=>dispatch({type:'DEL_BANK',id}),
-    addBank:(d:any)=>dispatch({type:'UPSERT_BANK',items:[{name:d.name,unit:d.unit||'kg',category:d.category||'Other',unitPrice:d.unitPrice??null,allergens:d.allergens||{contains:[],nutTypes:[],glutenTypes:[]},nutrition:d.nutrition||{}}]}),
-    addInvoice:(d:any)=>dispatch({type:'ADD_INVOICE',item:{id:uid(),...d}}),
+    addBank:(d:any)=>dispatch({type:'UPSERT_BANK',items:[{name:d.name,unit:d.unit||'kg',category:d.category||'Other',unitPrice:d.unitPrice??null,allergens:d.allergens||{contains:[],nutTypes:[],glutenTypes:[]},nutrition:d.nutrition||{},addedBy:editor()}]}),
+    addInvoice:(d:any)=>dispatch({type:'ADD_INVOICE',item:{id:uid(),addedBy:editor(),...d}}),
     delInvoice:(id:string)=>dispatch({type:'DEL_INVOICE',id}),
     addAlerts:(items:any[])=>dispatch({type:'ADD_ALERTS',items}),
-    addMenu:(d:any)=>dispatch({type:'ADD_MENU',item:{id:uid(),name:d.name||'Untitled menu',description:d.description||'',recipeIds:d.recipeIds||[],createdAt:Date.now(),updatedAt:Date.now()}}),
+    addMenu:(d:any)=>dispatch({type:'ADD_MENU',item:{id:uid(),name:d.name||'Untitled menu',description:d.description||'',recipeIds:d.recipeIds||[],createdAt:Date.now(),updatedAt:Date.now(),addedBy:editor()}}),
     updMenu:(id:string,data:any)=>dispatch({type:'UPD_MENU',id,data}),
     delMenu:(id:string)=>dispatch({type:'DEL_MENU',id}),
-    addWaste:(d:any)=>dispatch({type:'ADD_WASTE',item:{id:uid(),createdAt:Date.now(),...d}}),
+    addWaste:(d:any)=>dispatch({type:'ADD_WASTE',item:{id:uid(),createdAt:Date.now(),addedBy:editor(),...d}}),
     delWaste:(id:string)=>dispatch({type:'DEL_WASTE',id}),
   };
   return <Ctx.Provider value={{state,actions,saveStatus}}>{children}</Ctx.Provider>;

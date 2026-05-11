@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { id: 'bank',      label: 'Bank',      icon: '🏦' },
   { id: 'waste',     label: 'Waste',     icon: '🗑' },
   { id: 'reports',   label: 'Reports',   icon: '📊' },
+  { id: 'team',      label: 'My Team',   icon: '◎' },  // owner-only, Kitchen/Group — filtered below
   { id: 'settings',  label: 'Settings',  icon: '⚙' },
 ];
 
@@ -180,7 +181,11 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
-        {NAV.map(item => {
+        {NAV.filter(item => {
+          // My Team is owner-only and only on Kitchen/Group tiers
+          if (item.id === 'team') return currentRole === 'owner' && (tier === 'kitchen' || tier === 'group');
+          return true;
+        }).map(item => {
           const proGate = PRO_GATED.includes(item.id) && !isPaid;
           const active = tab === item.id;
           const disabled = !!item.comingSoon;

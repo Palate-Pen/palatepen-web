@@ -21,6 +21,7 @@ import NotificationsBell from './components/NotificationsBell';
 import RoleBanner from './components/RoleBanner';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
+import MyTeamView from './components/MyTeamView';
 import UpgradeModal from './components/UpgradeModal';
 
 export default function App() {
@@ -109,6 +110,7 @@ export default function App() {
     bank: <BankView />,
     waste: <WasteView />,
     reports: <ReportsView setTab={setTab} />,
+    team: <MyTeamView />,
     profile: <ProfileView />,
     settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
   };
