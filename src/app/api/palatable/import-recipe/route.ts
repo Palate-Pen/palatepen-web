@@ -57,9 +57,25 @@ function extractFirstJson(s: string): string | null {
   return null;
 }
 
+const SCHEMA_PROMPT = `Extract the recipe from the source below. Return ONE JSON object with this exact shape and nothing else (no prose before or after, no markdown fences):
+
+{
+  "title": "the dish name",
+  "description": "a 1-2 sentence overview, or empty string",
+  "servings": "e.g. \\"4\\" or \\"6 portions\\", or empty string",
+  "prepTime": "e.g. \\"20 min\\", or empty string",
+  "cookTime": "e.g. \\"45 min\\", or empty string",
+  "ingredients": ["one ingredient line per array entry, each including quantity and unit, e.g. \\"200g plain flour\\""],
+  "method": ["one step per array entry, in order, each a complete instruction"],
+  "chefNotes": "any tips or variations the author included, or empty string",
+  "category": "one of: Starter, Main, Dessert, Sauce, Bread, Pastry, Stock, Snack, Other"
+}
+
+If the source has no recipe, return exactly: {"error":"No recipe found in this source"}`;
+
 export async function POST(req: NextRequest) {
   try {
-    const { url, userToken } = await req.json();
+    const { url, userToken, base64, mediaType, text: pastedText } = await req.json();
 
     // Verify user is on a paid tier (pro/kitchen/group)
     const supabase = createClient(
@@ -77,34 +93,61 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'API not configured' }, { status: 500 });
 
-    if (!url) return NextResponse.json({ error: 'URL required' }, { status: 400 });
+    if (!url && !base64 && !pastedText) {
+      return NextResponse.json({ error: 'Provide a URL, file, or text' }, { status: 400 });
+    }
 
-    // Fetch with a realistic UA — BBC Good Food, Delicious, etc. block "Mozilla/5.0" alone.
-    const pageRes = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-        'Accept-Language': 'en-GB,en;q=0.9',
-      },
-      redirect: 'follow',
-    });
-    if (!pageRes.ok) return NextResponse.json({ error: `Could not load that page (HTTP ${pageRes.status})` }, { status: 400 });
+    // Build the message content for Claude based on which input we got
+    let messageContent: any;
+    let metaSource: string;
 
-    const html = await pageRes.text();
-    const jsonLd = findRecipeJsonLd(html);
+    if (base64 && mediaType) {
+      // File upload — image or PDF, sent directly to Claude vision
+      const isPdf = mediaType === 'application/pdf';
+      const isImage = mediaType.startsWith('image/');
+      if (!isPdf && !isImage) {
+        return NextResponse.json({ error: 'Unsupported file type — use PDF or image (JPG/PNG/WebP)' }, { status: 400 });
+      }
+      messageContent = [
+        isPdf
+          ? { type: 'document', source: { type: 'base64', media_type: mediaType, data: base64 } }
+          : { type: 'image',    source: { type: 'base64', media_type: mediaType, data: base64 } },
+        { type: 'text', text: SCHEMA_PROMPT + '\n\nSource: the attached ' + (isPdf ? 'document' : 'image') + '.' },
+      ];
+      metaSource = isPdf ? 'pdf' : 'image';
+    } else if (pastedText) {
+      // Plain text paste (or .txt file read client-side)
+      messageContent = SCHEMA_PROMPT + '\n\nSource (pasted text):\n' + pastedText.slice(0, 14000);
+      metaSource = 'text';
+    } else {
+      // URL fetch — original path
+      const pageRes = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+          'Accept-Language': 'en-GB,en;q=0.9',
+        },
+        redirect: 'follow',
+      });
+      if (!pageRes.ok) return NextResponse.json({ error: `Could not load that page (HTTP ${pageRes.status})` }, { status: 400 });
 
-    // Strip scripts/styles after JSON-LD extraction so we still have a text fallback
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;|&amp;|&quot;|&#39;|&lt;|&gt;/gi, m => ({ '&nbsp;': ' ', '&amp;': '&', '&quot;': '"', '&#39;': "'", '&lt;': '<', '&gt;': '>' } as any)[m.toLowerCase()] || m)
-      .replace(/\s+/g, ' ')
-      .slice(0, 14000);
+      const html = await pageRes.text();
+      const jsonLd = findRecipeJsonLd(html);
 
-    const sourceBlock = jsonLd
-      ? `Structured recipe data (schema.org JSON-LD) extracted from the page:\n${JSON.stringify(jsonLd).slice(0, 20000)}\n\nFor reference, page text excerpt:\n${text.slice(0, 4000)}`
-      : `Page text:\n${text}`;
+      const text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;|&amp;|&quot;|&#39;|&lt;|&gt;/gi, m => ({ '&nbsp;': ' ', '&amp;': '&', '&quot;': '"', '&#39;': "'", '&lt;': '<', '&gt;': '>' } as any)[m.toLowerCase()] || m)
+        .replace(/\s+/g, ' ')
+        .slice(0, 14000);
+
+      const sourceBlock = jsonLd
+        ? `Structured recipe data (schema.org JSON-LD) extracted from the page:\n${JSON.stringify(jsonLd).slice(0, 20000)}\n\nFor reference, page text excerpt:\n${text.slice(0, 4000)}`
+        : `Page text:\n${text}`;
+      messageContent = SCHEMA_PROMPT + '\n\nSource:\n' + sourceBlock;
+      metaSource = jsonLd ? 'json-ld' : 'page-text';
+    }
 
     const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -116,24 +159,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 4000,
-        messages: [{ role: 'user', content: `Extract the recipe from the source below. Return ONE JSON object with this exact shape and nothing else (no prose before or after, no markdown fences):
-
-{
-  "title": "the dish name",
-  "description": "a 1-2 sentence overview, or empty string",
-  "servings": "e.g. \\"4\\" or \\"6 portions\\", or empty string",
-  "prepTime": "e.g. \\"20 min\\", or empty string",
-  "cookTime": "e.g. \\"45 min\\", or empty string",
-  "ingredients": ["one ingredient line per array entry, each including quantity and unit, e.g. \\"200g plain flour\\""],
-  "method": ["one step per array entry, in order, each a complete instruction"],
-  "chefNotes": "any tips or variations the author included, or empty string",
-  "category": "one of: Starter, Main, Dessert, Sauce, Bread, Pastry, Stock, Snack, Other"
-}
-
-If the source has no recipe, return exactly: {"error":"No recipe found on this page"}
-
-Source:
-${sourceBlock}` }],
+        messages: [{ role: 'user', content: messageContent }],
       }),
     });
 
@@ -172,7 +198,7 @@ ${sourceBlock}` }],
     return NextResponse.json({
       ...parsed,
       _meta: {
-        source: jsonLd ? 'json-ld' : 'page-text',
+        source: metaSource,
         ingredientsFound: parsed.ingredients?.length ?? 0,
         methodFound: parsed.method?.length ?? 0,
       },

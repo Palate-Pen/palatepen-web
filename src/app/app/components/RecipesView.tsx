@@ -216,18 +216,61 @@ export default function RecipesView() {
     setNewPhotoPreview(URL.createObjectURL(file));
   }
 
-  async function importRecipe() {
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => {
+        const result = r.result as string;
+        // strip "data:<mime>;base64,"
+        const i = result.indexOf(',');
+        resolve(i >= 0 ? result.slice(i + 1) : result);
+      };
+      r.onerror = () => reject(new Error('Could not read file'));
+      r.readAsDataURL(file);
+    });
+  }
+  function fileToText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result || ''));
+      r.onerror = () => reject(new Error('Could not read file'));
+      r.readAsText(file);
+    });
+  }
+
+  async function importRecipe(opts?: { file?: File }) {
     const url = importUrl.trim();
-    if (!url) return;
+    const file = opts?.file;
+    if (!url && !file) return;
     setImporting(true);
     setImportError('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userToken = session?.access_token || '';
+
+      let body: any = { userToken };
+      if (file) {
+        const isText = file.type.startsWith('text/') || /\.(txt|md|csv)$/i.test(file.name);
+        const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        const isImage = file.type.startsWith('image/');
+        if (isText) {
+          body.text = await fileToText(file);
+        } else if (isPdf || isImage) {
+          body.base64 = await fileToBase64(file);
+          body.mediaType = file.type || (isPdf ? 'application/pdf' : 'image/jpeg');
+        } else {
+          setImportError('Unsupported file type — use PDF, image (JPG/PNG/WebP) or text');
+          setImporting(false);
+          return;
+        }
+      } else {
+        body.url = url;
+      }
+
       const res = await fetch('/api/palatable/import-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, userToken }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (!res.ok || json.error) {
@@ -1238,12 +1281,13 @@ export default function RecipesView() {
               <button onClick={resetAddForm} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
             </div>
 
-            {/* Import from URL */}
+            {/* Import from URL or file */}
             <div style={{ padding: '16px 20px', background: C.gold + '08', borderBottom: '1px solid ' + C.border }}>
-              <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.gold, display: 'block', marginBottom: '6px' }}>
-                Import from URL <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— Claude reads the page and fills the fields below</span>
+              <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.gold, display: 'block', marginBottom: '8px' }}>
+                Import with AI <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— Claude reads a URL or file and fills the fields below</span>
               </label>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              {/* URL row */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                 <input
                   type="url"
                   value={importUrl}
@@ -1253,17 +1297,39 @@ export default function RecipesView() {
                   style={{ ...inp, flex: 1 }}
                   disabled={importing}
                 />
-                <button onClick={importRecipe} disabled={!importUrl.trim() || importing}
+                <button onClick={() => importRecipe()} disabled={!importUrl.trim() || importing}
                   style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '0 16px', cursor: importing || !importUrl.trim() ? 'default' : 'pointer', borderRadius: '2px', opacity: importing || !importUrl.trim() ? 0.5 : 1, whiteSpace: 'nowrap' }}>
-                  {importing ? 'Reading…' : 'Import'}
+                  {importing ? 'Reading…' : 'Import URL'}
                 </button>
               </div>
+              {/* File row */}
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 12px', background: C.surface, border: '1px dashed ' + C.gold + '50',
+                borderRadius: '2px', cursor: importing ? 'wait' : 'pointer',
+                fontSize: '12px', color: C.dim,
+              }}>
+                <span style={{ fontSize: '14px' }}>📄</span>
+                <span style={{ flex: 1 }}>{importing ? 'Reading file…' : 'Or upload a file — PDF, image (JPG/PNG/WebP), or text'}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.gold }}>Choose file</span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/*,text/*,.txt,.md,.csv"
+                  onChange={e => {
+                    const f = e.target.files?.[0];
+                    e.target.value = '';
+                    if (f) importRecipe({ file: f });
+                  }}
+                  disabled={importing}
+                  style={{ display: 'none' }}
+                />
+              </label>
               {importError && (
                 <p style={{ fontSize: '11px', color: C.red, marginTop: '8px' }}>{importError}</p>
               )}
               {importedData && !importError && (
                 <p style={{ fontSize: '11px', color: C.greenLight, marginTop: '8px' }}>
-                  ✓ Imported · {importedData.ingredients?.length || 0} ingredients · {importedData.method?.length || 0} steps{importedData.servings ? ' · serves ' + importedData.servings : ''}
+                  ✓ Imported{importedData._meta?.source ? ' from ' + importedData._meta.source : ''} · {importedData.ingredients?.length || 0} ingredients · {importedData.method?.length || 0} steps{importedData.servings ? ' · serves ' + importedData.servings : ''}
                 </p>
               )}
             </div>
