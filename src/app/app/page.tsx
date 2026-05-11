@@ -12,6 +12,7 @@ import NotebookView from './components/NotebookView';
 import CostingView from './components/CostingView';
 import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
+import BankView from './components/BankView';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
 import UpgradeModal from './components/UpgradeModal';
@@ -62,6 +63,7 @@ export default function App() {
     costing: <CostingView />,
     invoices: <InvoicesView />,
     stock: <StockView />,
+    bank: <BankView />,
     profile: <ProfileView />,
     settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
   };

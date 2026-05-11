@@ -26,6 +26,7 @@ function reducer(state:any,action:any):any{
       action.items.forEach((item:any)=>{const idx=bank.findIndex((e:any)=>e.name.toLowerCase()===item.name.toLowerCase());if(idx>=0)bank[idx]={...bank[idx],...item};else bank.push({id:uid(),...item});});
       return{...state,ingredientsBank:bank};
     }
+    case 'UPD_BANK':return{...state,ingredientsBank:state.ingredientsBank.map((i:any)=>i.id===action.id?{...i,...action.data}:i)};
     case 'DEL_BANK':return{...state,ingredientsBank:state.ingredientsBank.filter((i:any)=>i.id!==action.id)};
     case 'ADD_INVOICE':return{...state,invoices:[action.item,...state.invoices]};
     case 'DEL_INVOICE':return{...state,invoices:state.invoices.filter((i:any)=>i.id!==action.id)};
@@ -64,7 +65,9 @@ export function AppProvider({children}:{children:React.ReactNode}){
     updStock:(id:string,data:any)=>dispatch({type:'UPD_STOCK',id,data}),
     delStock:(id:string)=>dispatch({type:'DEL_STOCK',id}),
     upsertBank:(items:any[])=>dispatch({type:'UPSERT_BANK',items}),
+    updBank:(id:string,data:any)=>dispatch({type:'UPD_BANK',id,data}),
     delBank:(id:string)=>dispatch({type:'DEL_BANK',id}),
+    addBank:(d:any)=>dispatch({type:'UPSERT_BANK',items:[{name:d.name,unit:d.unit||'kg',category:d.category||'Other',unitPrice:d.unitPrice??null,allergens:d.allergens||{contains:[],nutTypes:[],glutenTypes:[]},nutrition:d.nutrition||{}}]}),
     addInvoice:(d:any)=>dispatch({type:'ADD_INVOICE',item:{id:uid(),...d}}),
     delInvoice:(id:string)=>dispatch({type:'DEL_INVOICE',id}),
     addAlerts:(items:any[])=>dispatch({type:'ADD_ALERTS',items}),

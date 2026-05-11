@@ -29,6 +29,70 @@ const ALLERGENS: { key: string; label: string; short: string }[] = [
 const NUT_TYPES = ['Almond','Hazelnut','Walnut','Cashew','Pecan','Brazil nut','Pistachio','Macadamia'];
 const GLUTEN_TYPES = ['Wheat','Rye','Barley','Oats','Spelt','Kamut'];
 
+const NUTRITION_FIELDS: { key: string; label: string; unit: string }[] = [
+  { key: 'kcal',      label: 'Energy',         unit: 'kcal' },
+  { key: 'kj',        label: 'Energy',         unit: 'kJ' },
+  { key: 'fat',       label: 'Fat',            unit: 'g' },
+  { key: 'saturates', label: 'of which saturates', unit: 'g' },
+  { key: 'carbs',     label: 'Carbohydrate',   unit: 'g' },
+  { key: 'sugars',    label: 'of which sugars', unit: 'g' },
+  { key: 'protein',   label: 'Protein',        unit: 'g' },
+  { key: 'salt',      label: 'Salt',           unit: 'g' },
+  { key: 'fibre',     label: 'Fibre',          unit: 'g' },
+];
+
+// Convert a (qty, unit) pair into grams/ml so we can scale per-100 nutrition.
+// Returns null if we can't make sense of the unit (e.g. 'ea').
+function toGrams(qty: number, unit: string | undefined): number | null {
+  const u = (unit || '').toLowerCase();
+  if (u === 'g' || u === 'ml') return qty;
+  if (u === 'kg' || u === 'l') return qty * 1000;
+  return null; // 'ea', 'dozen', 'case', etc. — can't compute without weight
+}
+
+// Compute allergens + nutrition for a recipe from its linked costing's ingredients
+// matched against the bank.
+function computeFromBank(costing: any, bank: any[]) {
+  const result = {
+    contains: new Set<string>(),
+    nutTypes: new Set<string>(),
+    glutenTypes: new Set<string>(),
+    nutrition: {} as Record<string, number>,
+    matched: 0,
+    unmatched: [] as string[],
+    nutritionCoverage: 0, // grams of ingredients we could compute nutrition for
+    nutritionTotal: 0,    // grams of ingredients in the recipe overall
+  };
+  if (!costing?.ingredients?.length) return result;
+  for (const ing of costing.ingredients) {
+    const name = (ing.name || '').toLowerCase().trim();
+    const bankItem = bank.find((b: any) => (b.name || '').toLowerCase().trim() === name);
+    if (!bankItem) {
+      result.unmatched.push(ing.name || '(unnamed)');
+      continue;
+    }
+    result.matched++;
+    (bankItem.allergens?.contains || []).forEach((k: string) => result.contains.add(k));
+    (bankItem.allergens?.nutTypes || []).forEach((k: string) => result.nutTypes.add(k));
+    (bankItem.allergens?.glutenTypes || []).forEach((k: string) => result.glutenTypes.add(k));
+    const grams = toGrams(parseFloat(ing.qty) || 0, ing.unit);
+    if (grams !== null) result.nutritionTotal += grams;
+    if (grams !== null && bankItem.nutrition) {
+      const scale = grams / 100;
+      let any = false;
+      NUTRITION_FIELDS.forEach(f => {
+        const v = parseFloat(bankItem.nutrition[f.key]);
+        if (!isNaN(v)) {
+          result.nutrition[f.key] = (result.nutrition[f.key] || 0) + v * scale;
+          any = true;
+        }
+      });
+      if (any) result.nutritionCoverage += grams;
+    }
+  }
+  return result;
+}
+
 function gpColor(pct: number, target: number, C: any) {
   if (pct >= target) return C.greenLight;
   if (pct >= 65) return C.gold;
@@ -331,103 +395,125 @@ export default function RecipesView() {
           </div>
         )}
 
-        {/* Allergens */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Allergens — Contains</p>
-            <button onClick={() => setShowCompliance(true)}
-              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
-              Run Compliance Check
-            </button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-            {ALLERGENS.map(a => {
-              const contains = (sel.allergens?.contains || []).includes(a.key);
-              return (
-                <button key={a.key}
-                  onClick={() => {
-                    const cur = (sel.allergens?.contains || []) as string[];
-                    const next = contains ? cur.filter(k => k !== a.key) : [...cur, a.key];
-                    const others = (sel.allergens?.mayContain || []).filter((k: string) => k !== a.key);
-                    actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), contains: next, mayContain: others } });
-                  }}
-                  style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + (contains ? C.red : C.border), color: contains ? C.red : C.dim, background: contains ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: contains ? 700 : 400 }}>
-                  {a.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* Allergens (computed from bank via linked costing) + Nutrition + May Contain */}
+        {(() => {
+          const linked = getLinkedCosting(sel);
+          const computed = computeFromBank(linked, state.ingredientsBank || []);
+          const portions = parseFloat(linked?.portions) || 1;
+          const containsArr = Array.from(computed.contains);
+          const nutTypesArr = Array.from(computed.nutTypes);
+          const glutenTypesArr = Array.from(computed.glutenTypes);
 
-          {/* Sub-types: name the nut */}
-          {(sel.allergens?.contains || []).includes('nuts') && (
-            <div style={{ marginBottom: '14px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
-              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '6px' }}>
-                ⚠ Name the nut <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— UK FIR requires specifying which tree nut</span>
-              </p>
+          return (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Allergens — Contains <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(computed from Bank)</span></p>
+                <button onClick={() => setShowCompliance(true)}
+                  style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                  Run Compliance Check
+                </button>
+              </div>
+
+              {!linked ? (
+                <p style={{ fontSize: '12px', color: C.faint, padding: '12px', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', marginBottom: '14px' }}>
+                  Link a costing above to compute allergens and nutrition from the ingredients.
+                </p>
+              ) : computed.matched === 0 ? (
+                <p style={{ fontSize: '12px', color: C.faint, padding: '12px', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', marginBottom: '14px' }}>
+                  None of the {linked.ingredients?.length || 0} costing ingredients match a Bank entry. Add them to the Bank tab to see allergens here.
+                </p>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                    {containsArr.length === 0 && <span style={{ fontSize: '12px', color: C.faint }}>No allergens in any of the {computed.matched} matched ingredients.</span>}
+                    {containsArr.map(k => {
+                      const a = ALLERGENS.find(x => x.key === k);
+                      return a && <span key={k} style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + C.red, color: C.red, background: C.red + '12', borderRadius: '2px', fontWeight: 700 }}>{a.label}</span>;
+                    })}
+                  </div>
+                  {nutTypesArr.length > 0 && (
+                    <div style={{ marginBottom: '10px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
+                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '4px' }}>Tree nuts: <span style={{ color: C.text, fontWeight: 400 }}>{nutTypesArr.join(', ')}</span></p>
+                    </div>
+                  )}
+                  {glutenTypesArr.length > 0 && (
+                    <div style={{ marginBottom: '10px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
+                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '4px' }}>Cereals: <span style={{ color: C.text, fontWeight: 400 }}>{glutenTypesArr.join(', ')}</span></p>
+                    </div>
+                  )}
+                  {computed.unmatched.length > 0 && (
+                    <p style={{ fontSize: '11px', color: C.gold, marginBottom: '14px' }}>
+                      ⚠ {computed.unmatched.length} ingredient{computed.unmatched.length === 1 ? '' : 's'} not in Bank — allergens may be incomplete: {computed.unmatched.slice(0, 5).join(', ')}{computed.unmatched.length > 5 ? '…' : ''}
+                    </p>
+                  )}
+                </>
+              )}
+
+              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px', marginTop: '16px' }}>May Contain — Cross-contamination warning <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(per-recipe)</span></p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {NUT_TYPES.map(n => {
-                  const on = (sel.allergens?.nutTypes || []).includes(n);
+                {ALLERGENS.map(a => {
+                  const may = (sel.allergens?.mayContain || []).includes(a.key);
+                  const computedHas = computed.contains.has(a.key);
                   return (
-                    <button key={n}
+                    <button key={a.key} disabled={computedHas}
+                      title={computedHas ? 'Already in computed Contains list' : ''}
                       onClick={() => {
-                        const cur = (sel.allergens?.nutTypes || []) as string[];
-                        const next = on ? cur.filter(k => k !== n) : [...cur, n];
-                        actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), nutTypes: next } });
+                        const cur = (sel.allergens?.mayContain || []) as string[];
+                        const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
+                        actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), mayContain: next } });
                       }}
-                      style={{ fontSize: '11px', padding: '4px 9px', border: '1px solid ' + (on ? C.red : C.border), color: on ? C.red : C.dim, background: on ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: on ? 700 : 400 }}>
-                      {n}
+                      style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (computedHas ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: computedHas ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: computedHas ? 0.4 : 1 }}>
+                      {a.label}
                     </button>
                   );
                 })}
               </div>
             </div>
-          )}
+          );
+        })()}
 
-          {/* Sub-types: name the cereal */}
-          {(sel.allergens?.contains || []).includes('gluten') && (
-            <div style={{ marginBottom: '14px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
-              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '6px' }}>
-                ⚠ Name the cereal <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— UK FIR requires specifying the gluten-containing cereal</span>
+        {/* Nutrition (computed) */}
+        {(() => {
+          const linked = getLinkedCosting(sel);
+          const computed = computeFromBank(linked, state.ingredientsBank || []);
+          if (!linked || computed.matched === 0) return null;
+          const portions = parseFloat(linked.portions) || 1;
+          const hasAny = NUTRITION_FIELDS.some(f => computed.nutrition[f.key] != null);
+          if (!hasAny) {
+            return (
+              <div style={{ marginBottom: '24px', padding: '14px', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px' }}>
+                <p style={{ fontSize: '12px', color: C.faint }}>No nutrition data — fill in nutrition fields on Bank ingredients (per 100g/ml) to see totals here.</p>
+              </div>
+            );
+          }
+          const coveragePct = computed.nutritionTotal > 0 ? Math.round((computed.nutritionCoverage / computed.nutritionTotal) * 100) : 0;
+          return (
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>
+                Nutrition <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(per portion · {portions} portion{portions === 1 ? '' : 's'} total)</span>
               </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {GLUTEN_TYPES.map(g => {
-                  const on = (sel.allergens?.glutenTypes || []).includes(g);
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                {NUTRITION_FIELDS.map(f => {
+                  const total = computed.nutrition[f.key];
+                  if (total == null) return null;
+                  const perPortion = total / portions;
                   return (
-                    <button key={g}
-                      onClick={() => {
-                        const cur = (sel.allergens?.glutenTypes || []) as string[];
-                        const next = on ? cur.filter(k => k !== g) : [...cur, g];
-                        actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), glutenTypes: next } });
-                      }}
-                      style={{ fontSize: '11px', padding: '4px 9px', border: '1px solid ' + (on ? C.red : C.border), color: on ? C.red : C.dim, background: on ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: on ? 700 : 400 }}>
-                      {g}
-                    </button>
+                    <div key={f.key} style={{ background: C.surface2, border: '0.5px solid ' + C.border, padding: '10px 12px', borderRadius: '3px' }}>
+                      <p style={{ fontSize: '10px', color: C.faint, marginBottom: '4px' }}>{f.label}</p>
+                      <p style={{ fontSize: '15px', color: C.text, fontWeight: 600 }}>{perPortion.toFixed(f.unit === 'g' ? 1 : 0)}<span style={{ fontSize: '10px', color: C.faint, fontWeight: 400, marginLeft: '3px' }}>{f.unit}</span></p>
+                      <p style={{ fontSize: '10px', color: C.faint, marginTop: '2px' }}>total {total.toFixed(f.unit === 'g' ? 1 : 0)}{f.unit}</p>
+                    </div>
                   );
                 })}
               </div>
+              {coveragePct < 100 && (
+                <p style={{ fontSize: '11px', color: C.gold, marginTop: '8px' }}>
+                  ⚠ Nutrition computed from {coveragePct}% of recipe weight. Add nutrition data to remaining Bank ingredients for accuracy.
+                </p>
+              )}
             </div>
-          )}
-
-          <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>May Contain — Cross-contamination warning</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {ALLERGENS.map(a => {
-              const may = (sel.allergens?.mayContain || []).includes(a.key);
-              const contains = (sel.allergens?.contains || []).includes(a.key);
-              return (
-                <button key={a.key} disabled={contains}
-                  title={contains ? 'Already in Contains list' : ''}
-                  onClick={() => {
-                    const cur = (sel.allergens?.mayContain || []) as string[];
-                    const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
-                    actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), mayContain: next } });
-                  }}
-                  style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (contains ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: contains ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: contains ? 0.4 : 1 }}>
-                  {a.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Chef notes */}
         <div style={{ marginBottom: '24px' }}>
@@ -464,13 +550,14 @@ export default function RecipesView() {
         {/* Compliance modal */}
         {showCompliance && (() => {
           const linked = getLinkedCosting(sel);
+          const computed = computeFromBank(linked, state.ingredientsBank || []);
           const importedCount = sel.imported?.ingredients?.length || 0;
           const linkedCount = linked?.ingredients?.length || 0;
           const ingTotal = Math.max(importedCount, linkedCount);
-          const contains = sel.allergens?.contains || [];
+          const contains = Array.from(computed.contains);
           const mayContain = sel.allergens?.mayContain || [];
-          const nutTypes = sel.allergens?.nutTypes || [];
-          const glutenTypes = sel.allergens?.glutenTypes || [];
+          const nutTypes = Array.from(computed.nutTypes);
+          const glutenTypes = Array.from(computed.glutenTypes);
 
           type Status = 'pass' | 'warn' | 'fail';
           const checks: { label: string; status: Status; detail: string; source: string }[] = [
@@ -489,12 +576,22 @@ export default function RecipesView() {
                 : 'PPDS food must show every ingredient. Import the recipe or link a costing.',
             },
             {
+              source: 'Palate & Pen',
+              label: 'Ingredients linked to Bank',
+              status: linkedCount === 0 ? 'fail' : (computed.unmatched.length === 0 ? 'pass' : 'warn'),
+              detail: linkedCount === 0
+                ? 'Allergens cannot be computed without a linked costing'
+                : computed.unmatched.length === 0
+                  ? `All ${computed.matched} ingredients matched`
+                  : `${computed.unmatched.length} not in Bank: ${computed.unmatched.slice(0, 3).join(', ')}${computed.unmatched.length > 3 ? '…' : ''}`,
+            },
+            {
               source: 'FIR 2014',
               label: 'Allergens reviewed',
-              status: (contains.length + mayContain.length) > 0 ? 'pass' : (ingTotal > 0 ? 'warn' : 'pass'),
+              status: (contains.length + mayContain.length) > 0 ? 'pass' : (computed.matched > 0 ? 'warn' : 'pass'),
               detail: (contains.length + mayContain.length) > 0
-                ? `${contains.length} contains, ${mayContain.length} may contain`
-                : 'No allergens tagged — confirm the recipe truly contains none',
+                ? `${contains.length} contains (computed), ${mayContain.length} may contain`
+                : 'No allergens detected — confirm Bank entries are tagged correctly',
             },
           ];
           if (contains.includes('nuts')) {
@@ -504,7 +601,7 @@ export default function RecipesView() {
               status: nutTypes.length > 0 ? 'pass' : 'fail',
               detail: nutTypes.length > 0
                 ? nutTypes.join(', ')
-                : 'UK law requires naming the specific nut (almond, walnut, etc.). Pick at least one.',
+                : 'UK law requires naming the specific nut. Open the Bank tab and tag the relevant ingredient.',
             });
           }
           if (contains.includes('gluten')) {
@@ -514,7 +611,7 @@ export default function RecipesView() {
               status: glutenTypes.length > 0 ? 'pass' : 'fail',
               detail: glutenTypes.length > 0
                 ? glutenTypes.join(', ')
-                : 'UK law requires naming the cereal (wheat, rye, barley, oats, spelt, kamut). Pick at least one.',
+                : 'UK law requires naming the cereal. Open the Bank tab and tag the relevant ingredient.',
             });
           }
 
