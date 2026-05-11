@@ -31,6 +31,7 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   setCollapsed: (b: boolean) => void;
 }) {
   const { tier, accounts, currentAccount, currentRole, switchAccount } = useAuth();
+  const canBill = currentRole === 'owner';
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const isPaid = PAID_TIERS.includes(tier);
@@ -256,12 +257,12 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
             textAlign: collapsed ? 'center' : 'left',
           }}>
             <p style={{ fontSize: collapsed ? '9px' : '10px', fontWeight: 700, color: C.faint, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: collapsed ? 0 : '4px' }}>Free</p>
-            {!collapsed && (
+            {!collapsed && canBill && (
               <button onClick={onUpgrade} style={{ width: '100%', background: C.gold, color: C.bg, fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', padding: '6px', border: 'none', cursor: 'pointer', borderRadius: '2px' }}>
                 Upgrade — from £25/mo
               </button>
             )}
-            {collapsed && (
+            {collapsed && canBill && (
               <button onClick={onUpgrade} title="Upgrade — from £25/mo"
                 style={{ width: '100%', background: C.gold, color: C.bg, fontSize: '11px', fontWeight: 700, padding: '4px 0', border: 'none', cursor: 'pointer', borderRadius: '2px', marginTop: '4px' }}>
                 ↑

@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
+import { usePerms } from '@/lib/perms';
 import { dark, light } from '@/lib/theme';
 import MenuDesigner from './MenuDesigner';
 
@@ -14,7 +15,9 @@ function gpColor(pct: number, target: number, C: any) {
 export default function MenuBuilderView() {
   const { state, actions } = useApp();
   const { settings } = useSettings();
+  const perms = usePerms();
   const C = settings.resolved === 'light' ? light : dark;
+  const canEdit = perms.canEditMenus;
   const sym = (state.profile || {}).currencySymbol || '£';
   const gpTarget = (state.profile || {}).gpTarget || 72;
   const menus = state.menus || [];
@@ -169,12 +172,14 @@ export default function MenuBuilderView() {
           <button onClick={() => { setSelId(null); setPicking(false); setConfirmDelete(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
             ← Menus
           </button>
-          <button onClick={() => setShowDesigner(true)}
-            disabled={(sel.recipeIds || []).length === 0}
-            title={(sel.recipeIds || []).length === 0 ? 'Add at least one dish first' : 'Open Menu Designer'}
-            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: (sel.recipeIds || []).length === 0 ? C.faint : C.gold, background: (sel.recipeIds || []).length === 0 ? 'transparent' : C.gold + '14', border: '1px solid ' + ((sel.recipeIds || []).length === 0 ? C.border : C.gold + '40'), padding: '8px 14px', cursor: (sel.recipeIds || []).length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: (sel.recipeIds || []).length === 0 ? 0.5 : 1 }}>
-            🎨 Menu Designer
-          </button>
+          {canEdit && (
+            <button onClick={() => setShowDesigner(true)}
+              disabled={(sel.recipeIds || []).length === 0}
+              title={(sel.recipeIds || []).length === 0 ? 'Add at least one dish first' : 'Open Menu Designer'}
+              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: (sel.recipeIds || []).length === 0 ? C.faint : C.gold, background: (sel.recipeIds || []).length === 0 ? 'transparent' : C.gold + '14', border: '1px solid ' + ((sel.recipeIds || []).length === 0 ? C.border : C.gold + '40'), padding: '8px 14px', cursor: (sel.recipeIds || []).length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: (sel.recipeIds || []).length === 0 ? 0.5 : 1 }}>
+              🎨 Menu Designer
+            </button>
+          )}
         </div>
 
         {showDesigner && <MenuDesigner menuId={sel.id} onClose={() => setShowDesigner(false)} />}
@@ -232,10 +237,12 @@ export default function MenuBuilderView() {
         <div style={{ marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Dishes ({stats.dishes.length})</p>
-            <button onClick={() => { setPicking(v => !v); setPickQuery(''); }}
-              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '6px 12px', cursor: 'pointer', borderRadius: '2px' }}>
-              {picking ? 'Cancel' : '+ Add Dish'}
-            </button>
+            {canEdit && (
+              <button onClick={() => { setPicking(v => !v); setPickQuery(''); }}
+                style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '6px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                {picking ? 'Cancel' : '+ Add Dish'}
+              </button>
+            )}
           </div>
 
           {picking && (
@@ -316,12 +323,14 @@ export default function MenuBuilderView() {
                     {d.costing ? (d.costing.pct || 0).toFixed(1) + '%' : 'uncosted'}
                   </span>
                   <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => moveRecipe(d.id, -1)} disabled={i === 0} title="Move up"
-                      style={{ background: 'none', border: 'none', color: i === 0 ? C.faint : C.dim, cursor: i === 0 ? 'default' : 'pointer', fontSize: '13px', padding: '0 4px', opacity: i === 0 ? 0.3 : 1 }}>↑</button>
-                    <button onClick={() => moveRecipe(d.id, 1)} disabled={i === stats.dishes.length - 1} title="Move down"
-                      style={{ background: 'none', border: 'none', color: i === stats.dishes.length - 1 ? C.faint : C.dim, cursor: i === stats.dishes.length - 1 ? 'default' : 'pointer', fontSize: '13px', padding: '0 4px', opacity: i === stats.dishes.length - 1 ? 0.3 : 1 }}>↓</button>
-                    <button onClick={() => removeRecipe(d.id)} title="Remove from menu"
-                      style={{ background: 'none', border: 'none', color: orphan ? C.red : C.faint, cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}>×</button>
+                    {canEdit && (<>
+                      <button onClick={() => moveRecipe(d.id, -1)} disabled={i === 0} title="Move up"
+                        style={{ background: 'none', border: 'none', color: i === 0 ? C.faint : C.dim, cursor: i === 0 ? 'default' : 'pointer', fontSize: '13px', padding: '0 4px', opacity: i === 0 ? 0.3 : 1 }}>↑</button>
+                      <button onClick={() => moveRecipe(d.id, 1)} disabled={i === stats.dishes.length - 1} title="Move down"
+                        style={{ background: 'none', border: 'none', color: i === stats.dishes.length - 1 ? C.faint : C.dim, cursor: i === stats.dishes.length - 1 ? 'default' : 'pointer', fontSize: '13px', padding: '0 4px', opacity: i === stats.dishes.length - 1 ? 0.3 : 1 }}>↓</button>
+                      <button onClick={() => removeRecipe(d.id)} title="Remove from menu"
+                        style={{ background: 'none', border: 'none', color: orphan ? C.red : C.faint, cursor: 'pointer', fontSize: '14px', padding: '0 4px' }}>×</button>
+                    </>)}
                   </div>
                 </div>
                 );
@@ -433,7 +442,8 @@ export default function MenuBuilderView() {
           );
         })()}
 
-        {/* Danger */}
+        {/* Danger — manager+ only */}
+        {canEdit && (
         <div style={{ borderTop: '1px solid ' + C.border, paddingTop: '20px', marginTop: '24px' }}>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
@@ -450,6 +460,7 @@ export default function MenuBuilderView() {
             </div>
           )}
         </div>
+        )}
       </div>
     );
   }
@@ -462,10 +473,12 @@ export default function MenuBuilderView() {
           <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Menus</h1>
           <p style={{ fontSize: '12px', color: C.faint }}>{menus.length} menu{menus.length === 1 ? '' : 's'} saved</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
-          + Add Menu
-        </button>
+        {canEdit && (
+          <button onClick={() => setShowAdd(true)}
+            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
+            + Add Menu
+          </button>
+        )}
       </div>
 
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search menus..." style={{ ...inp, marginBottom: '20px', maxWidth: '400px' }} />
@@ -473,7 +486,7 @@ export default function MenuBuilderView() {
       {filtered.length === 0 ? (
         <div style={{ background: C.surface, border: '1px dashed ' + C.border, borderRadius: '4px', padding: '48px 24px', textAlign: 'center' }}>
           <p style={{ fontSize: '14px', color: C.faint, marginBottom: '12px' }}>{menus.length === 0 ? 'No menus yet' : 'No matches'}</p>
-          {menus.length === 0 && (
+          {canEdit && menus.length === 0 && (
             <button onClick={() => setShowAdd(true)} style={{ fontSize: '12px', fontWeight: 700, color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
               Create your first menu
             </button>

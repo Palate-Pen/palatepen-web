@@ -4,12 +4,14 @@ import{useSettings}from'@/context/SettingsContext';
 import{useAuth}from'@/context/AuthContext';
 import{useApp}from'@/context/AppContext';
 import{dark,light}from'@/lib/theme';
+import{usePerms}from'@/lib/perms';
 import TeamSection from './TeamSection';
 
 export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{settings,update}=useSettings();
   const{user,tier,signOut}=useAuth();
   const{state,actions}=useApp();
+  const perms=usePerms();
   const C=settings.resolved==='light'?light:dark;
   const profile=state.profile||{};
   const[saved,setSaved]=useState(false);
@@ -23,6 +25,7 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
 
   useEffect(()=>{
     if(!mountedRef.current){mountedRef.current=true;return;}
+    if(!perms.canManageSettings)return;
     const t=setTimeout(()=>{
       actions.updProfile({name:name.trim(),location:location.trim(),gpTarget:parseFloat(gpTarget)||72,stockDay:parseInt(stockDay)||1,stockFrequency:stockFreq});
       setSaved(true);setTimeout(()=>setSaved(false),1500);
@@ -77,8 +80,8 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
       {/* Account */}
       <div style={card}>
         <p style={sec}>Account</p>
-        <div style={{marginBottom:'14px'}}><label style={lbl}>Your Name</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Jack Harrison" style={inp}/></div>
-        <div style={{marginBottom:'14px'}}><label style={lbl}>Location</label><input value={location} onChange={e=>setLocation(e.target.value)} placeholder="London, UK" style={inp}/></div>
+        <div style={{marginBottom:'14px'}}><label style={lbl}>Your Name</label><input value={name} onChange={e=>setName(e.target.value)} disabled={!perms.canManageSettings} placeholder="Jack Harrison" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/></div>
+        <div style={{marginBottom:'14px'}}><label style={lbl}>Location</label><input value={location} onChange={e=>setLocation(e.target.value)} disabled={!perms.canManageSettings} placeholder="London, UK" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/></div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderTop:'1px solid '+C.border,marginTop:'8px'}}>
           <div>
             <p style={{fontSize:'13px',color:C.text,marginBottom:'4px'}}>{user?.email}</p>
@@ -88,33 +91,35 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
               return <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:isPaid?C.gold:C.faint,background:(isPaid?C.gold:C.faint)+'18',border:'0.5px solid '+(isPaid?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{label}</span>;
             })()}
           </div>
-          {!['pro','kitchen','group'].includes(tier)&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>}
+          {!['pro','kitchen','group'].includes(tier)&&perms.canManageBilling&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>}
         </div>
       </div>
 
       <TeamSection onUpgrade={onUpgrade} />
 
-      {/* Defaults */}
-      <div style={card}>
-        <p style={sec}>Defaults</p>
-        <div style={{marginBottom:'14px'}}><label style={lbl}>Default GP Target %</label><input type="number" value={gpTarget} onChange={e=>setGpTarget(e.target.value)} placeholder="72" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>Industry benchmark: 65–75%</p></div>
-        <div style={{marginBottom:'14px'}}>
-          <label style={lbl}>Stock Take Frequency</label>
-          <select value={stockFreq} onChange={e=>setStockFreq(e.target.value)} style={{...inp,cursor:'pointer'}}>
-            <option value="weekly">Weekly</option>
-            <option value="fortnightly">Fortnightly</option>
-            <option value="monthly">Monthly</option>
-          </select>
+      {/* Defaults — manager+ only (account-wide settings) */}
+      {perms.canManageSettings && (
+        <div style={card}>
+          <p style={sec}>Defaults</p>
+          <div style={{marginBottom:'14px'}}><label style={lbl}>Default GP Target %</label><input type="number" value={gpTarget} onChange={e=>setGpTarget(e.target.value)} placeholder="72" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>Industry benchmark: 65–75%</p></div>
+          <div style={{marginBottom:'14px'}}>
+            <label style={lbl}>Stock Take Frequency</label>
+            <select value={stockFreq} onChange={e=>setStockFreq(e.target.value)} style={{...inp,cursor:'pointer'}}>
+              <option value="weekly">Weekly</option>
+              <option value="fortnightly">Fortnightly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div><label style={lbl}>Stock Take Day of Month (1–28)</label><input type="number" min={1} max={28} value={stockDay} onChange={e=>setStockDay(e.target.value)} placeholder="1" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>e.g. 1 = 1st of each month</p></div>
         </div>
-        <div><label style={lbl}>Stock Take Day of Month (1–28)</label><input type="number" min={1} max={28} value={stockDay} onChange={e=>setStockDay(e.target.value)} placeholder="1" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>e.g. 1 = 1st of each month</p></div>
-      </div>
+      )}
 
       {/* Danger */}
       <div style={{...card,border:'1px solid '+C.red+'30'}}>
         <p style={{...sec,color:C.red}}>Account Actions</p>
         <div style={{display:'flex',gap:'12px',flexWrap:'wrap',alignItems:'center'}}>
           <button onClick={()=>signOut()} style={{fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.dim,background:C.surface,border:'1px solid '+C.border,padding:'10px 20px',cursor:'pointer',borderRadius:'2px'}}>Sign Out</button>
-          {!deleteConfirm?(
+          {perms.canManageBilling&&(!deleteConfirm?(
             <button onClick={()=>setDeleteConfirm(true)} style={{fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.red,background:'transparent',border:'1px solid '+C.red,padding:'10px 20px',cursor:'pointer',borderRadius:'2px'}}>Delete Account</button>
           ):(
             <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
@@ -122,7 +127,7 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
               <button onClick={()=>setDeleteConfirm(false)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer',padding:'6px 10px'}}>Cancel</button>
               <button style={{fontSize:'12px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'10px 20px',cursor:'pointer',borderRadius:'2px'}}>Confirm Delete</button>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>

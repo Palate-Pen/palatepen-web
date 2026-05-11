@@ -74,6 +74,21 @@ export async function POST(req: NextRequest) {
         if (updateError) console.error('Profile update error:', updateError);
         else console.log('Tier updated to', tier, 'for user', userId);
       }
+
+      // Multi-user: tier + Stripe IDs live on accounts. Mirror to every account
+      // this user owns. (Personal-account aliasing means there's exactly one
+      // owned account today; this works the same when a user later owns
+      // several Group-tier accounts.)
+      const { error: accountError } = await supabase
+        .from('accounts')
+        .update({
+          tier,
+          stripe_customer_id: session.customer as string | null,
+          stripe_subscription_id: session.subscription as string | null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('owner_user_id', userId);
+      if (accountError) console.error('Account update error:', accountError);
     }
   }
 
@@ -81,24 +96,50 @@ export async function POST(req: NextRequest) {
     const sub = event.data.object as Stripe.Subscription;
     const customerId = sub.customer as string;
 
-    // Find user by stripe customer ID
-    const { data: { users }, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    if (!error && users) {
-      const user = users.find(u => u.user_metadata?.stripe_customer === customerId);
-      if (user) {
-        await supabase.auth.admin.updateUserById(user.id, {
-          user_metadata: { ...user.user_metadata, tier: 'free' },
+    // Prefer the accounts table for the lookup — it's now the source of truth
+    // for billing. Fall back to user_metadata for any legacy customers we
+    // haven't backfilled yet.
+    const { data: byAccount } = await supabase
+      .from('accounts')
+      .select('id, owner_user_id')
+      .eq('stripe_customer_id', customerId);
+
+    const accountIds = (byAccount || []).map(a => a.id);
+    const ownerIds = Array.from(new Set((byAccount || []).map(a => a.owner_user_id)));
+
+    if (accountIds.length === 0) {
+      const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      const fallback = users?.find(u => u.user_metadata?.stripe_customer === customerId);
+      if (fallback) ownerIds.push(fallback.id);
+    }
+
+    for (const ownerId of ownerIds) {
+      const { data: u } = await supabase.auth.admin.getUserById(ownerId);
+      if (u?.user) {
+        await supabase.auth.admin.updateUserById(ownerId, {
+          user_metadata: { ...u.user.user_metadata, tier: 'free' },
         });
-        const { data: userData } = await supabase
-          .from('user_data')
-          .select('profile')
-          .eq('user_id', user.id)
-          .single();
-        if (userData) {
-          let profile = userData.profile || {};
-          if (typeof profile === 'string') { try { profile = JSON.parse(profile); } catch { profile = {}; } }
-          await supabase.from('user_data').update({ profile: { ...profile, tier: 'free' } }).eq('user_id', user.id);
-        }
+      }
+      const { data: userData } = await supabase.from('user_data').select('profile').eq('user_id', ownerId).maybeSingle();
+      if (userData) {
+        let profile = userData.profile || {};
+        if (typeof profile === 'string') { try { profile = JSON.parse(profile); } catch { profile = {}; } }
+        await supabase.from('user_data').update({ profile: { ...profile, tier: 'free' } }).eq('user_id', ownerId);
+      }
+    }
+
+    if (accountIds.length > 0) {
+      await supabase
+        .from('accounts')
+        .update({ tier: 'free', stripe_subscription_id: null, updated_at: new Date().toISOString() })
+        .in('id', accountIds);
+    } else {
+      // Legacy fallback when no account row had the stripe_customer_id set yet
+      for (const ownerId of ownerIds) {
+        await supabase
+          .from('accounts')
+          .update({ tier: 'free', stripe_subscription_id: null, updated_at: new Date().toISOString() })
+          .eq('owner_user_id', ownerId);
       }
     }
   }

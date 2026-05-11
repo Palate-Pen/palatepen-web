@@ -18,6 +18,7 @@ import BankView from './components/BankView';
 import WasteView from './components/WasteView';
 import ReportsView from './components/ReportsView';
 import NotificationsBell from './components/NotificationsBell';
+import RoleBanner from './components/RoleBanner';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
 import UpgradeModal from './components/UpgradeModal';
@@ -145,6 +146,7 @@ export default function App() {
     <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
       <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} collapsed={sidebarCollapsed} setCollapsed={toggleSidebar} />
       <main style={{ flex: 1, marginLeft: sidebarCollapsed ? '64px' : '224px', minHeight: '100vh', overflow: 'auto', color: C.text, transition: 'margin-left 0.18s ease' }}>
+        <RoleBanner />
         {views[tab] || <DashboardView setTab={setTab} />}
       </main>
       <NotificationsBell setTab={setTab} />

@@ -3,12 +3,14 @@ import{useState,useEffect}from'react';
 import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
+import{usePerms}from'@/lib/perms';
 import{dark,light}from'@/lib/theme';
 const UNITS=['kg','g','L','ml','each','bunch','tbsp','oz','lb'];
 function gpColor(pct:number,target:number,C:any){if(pct>=target)return C.greenLight;if(pct>=65)return C.gold;return C.red;}
 export default function CostingView(){
   const{state,actions}=useApp();
   const{tier}=useAuth();
+  const perms=usePerms();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
   const profile=state.profile||{};
@@ -109,7 +111,7 @@ export default function CostingView(){
           </div>
           <div style={{display:'flex',gap:'8px'}}>
             <button onClick={clearForm} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>New</button>
-            <button onClick={saveCosting} disabled={!dish.trim()||!s} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px',opacity:(!dish.trim()||!s)?0.4:1}}>{editingId?'Update':'Save Costing'}</button>
+            <button onClick={saveCosting} disabled={!dish.trim()||!s||!perms.canEditPricing} title={!perms.canEditPricing?'Pricing edits require Manager role':''} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:perms.canEditPricing?'pointer':'not-allowed',borderRadius:'2px',opacity:(!dish.trim()||!s||!perms.canEditPricing)?0.4:1}}>{editingId?'Update':'Save Costing'}</button>
           </div>
         </div>
         {priceAlerts.length>0&&(
@@ -280,7 +282,7 @@ export default function CostingView(){
                     <div style={{padding:'8px 16px',borderTop:'1px solid '+C.border,display:'flex',alignItems:'center',gap:'8px',background:C.red+'08'}}>
                       <p style={{fontSize:'11px',color:C.red,flex:1}}>Delete?</p>
                       <button onClick={()=>setDeleteId(null)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer'}}>Cancel</button>
-                      <button onClick={()=>{actions.delGP(h.id);setDeleteId(null);if(editingId===h.id)clearForm();}} style={{fontSize:'11px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'4px 10px',cursor:'pointer',borderRadius:'2px'}}>Delete</button>
+                      <button onClick={()=>{if(!perms.canEditPricing)return;actions.delGP(h.id);setDeleteId(null);if(editingId===h.id)clearForm();}} disabled={!perms.canEditPricing} style={{fontSize:'11px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'4px 10px',cursor:perms.canEditPricing?'pointer':'not-allowed',borderRadius:'2px',opacity:perms.canEditPricing?1:0.5}}>Delete</button>
                     </div>
                   ):(
                     <button onClick={e=>{e.stopPropagation();setDeleteId(h.id);}} style={{width:'100%',padding:'6px 16px',background:'none',border:'none',borderTop:'1px solid '+C.border,cursor:'pointer',color:C.faint,fontSize:'11px',textAlign:'left'}}>Delete</button>
