@@ -1,6 +1,5 @@
 import PalatablePromo from '@/components/PalatablePromo';
 import Link from 'next/link';
-import PalatableMockups from '@/components/PalatableMockups';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -113,7 +112,7 @@ export default function MisePage() {
       </section>
 
       {/* Mockups */}
-      <PalatableMockups />
+      
 
       {/* Pricing */}
       <section id="pricing" className="py-24 px-8 md:px-16 border-t border-mise-border">
