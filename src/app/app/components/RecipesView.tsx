@@ -144,6 +144,7 @@ export default function RecipesView() {
   const [expandedNotes, setExpandedNotes] = useState<Record<string,boolean>>({});
   const [assigningCosting, setAssigningCosting] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
+  const [showSpec, setShowSpec] = useState(false);
 
   const filtered = state.recipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -432,10 +433,16 @@ export default function RecipesView() {
             <div style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Allergens — Contains <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(computed from Bank)</span></p>
-                <button onClick={() => setShowCompliance(true)}
-                  style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
-                  Run Compliance Check
-                </button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button onClick={() => setShowSpec(true)}
+                    style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                    Spec Sheet
+                  </button>
+                  <button onClick={() => setShowCompliance(true)}
+                    style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                    Compliance Check
+                  </button>
+                </div>
               </div>
 
               {!linked ? (
@@ -704,6 +711,192 @@ export default function RecipesView() {
                 </div>
               </div>
             </div>
+          );
+        })()}
+
+        {/* Spec sheet modal */}
+        {showSpec && (() => {
+          const linked = getLinkedCosting(sel);
+          const computed = computeFromBank(linked, state.ingredientsBank || []);
+          const portions = parseFloat(linked?.portions) || 1;
+          const containsArr = Array.from(computed.contains);
+          const nutTypesArr = Array.from(computed.nutTypes);
+          const glutenTypesArr = Array.from(computed.glutenTypes);
+          const mayContain = sel.allergens?.mayContain || [];
+          const dishGrams = computed.nutritionCoverage;
+          const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+          const sellPrice = linked ? parseFloat(linked.sell) || 0 : 0;
+          const gpPct = linked ? linked.pct : null;
+
+          return (
+            <>
+              {/* Print-only CSS — hides everything except the spec sheet. Recipe modal already printed
+                  but with edit chrome; this is a clean A4 layout. */}
+              <style>{`
+                @media print {
+                  body * { visibility: hidden !important; }
+                  #spec-sheet-print, #spec-sheet-print * { visibility: visible !important; }
+                  #spec-sheet-print { position: absolute; left: 0; top: 0; width: 100%; padding: 24px !important; background: white !important; color: #111 !important; }
+                  #spec-sheet-controls { display: none !important; }
+                  @page { size: A4; margin: 12mm; }
+                }
+              `}</style>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px', overflow: 'auto' }}>
+                <div style={{ width: '100%', maxWidth: '780px', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
+                  {/* Controls bar */}
+                  <div id="spec-sheet-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.surface, border: '1px solid ' + C.border, borderBottom: 'none', borderRadius: '4px 4px 0 0' }}>
+                    <p style={{ fontSize: '12px', color: C.faint }}>Spec Sheet · A4 print preview</p>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => window.print()}
+                        style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.bg, background: C.gold, border: 'none', padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                        Print
+                      </button>
+                      <button onClick={() => setShowSpec(false)}
+                        style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                        Close
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* The actual sheet — light theme always for print readability */}
+                  <div id="spec-sheet-print" style={{ background: '#FFFFFF', color: '#111', padding: '32px 40px', overflow: 'auto', fontFamily: 'system-ui,sans-serif', borderRadius: '0 0 4px 4px' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #DDD', paddingBottom: '14px', marginBottom: '18px' }}>
+                      <div>
+                        <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: '#111', marginBottom: '6px' }}>{sel.title || 'Untitled recipe'}</h1>
+                        <p style={{ fontSize: '12px', color: '#555' }}>{sel.category || 'Other'} · {portions} portion{portions === 1 ? '' : 's'}{sellPrice > 0 ? ` · sell ${(state.profile?.currencySymbol||'£')}${sellPrice.toFixed(2)}` : ''}{gpPct != null ? ` · GP ${gpPct.toFixed(1)}%` : ''}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+                          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: '20px' }}>P</span>
+                          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#C8960A', marginBottom: '7px' }}></div>
+                          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: '20px', letterSpacing: '4px' }}>ALATABLE</span>
+                        </div>
+                        <p style={{ fontSize: '10px', color: '#777', marginTop: '4px' }}>By Palate &amp; Pen</p>
+                      </div>
+                    </div>
+
+                    {/* Ingredients */}
+                    <section style={{ marginBottom: '20px' }}>
+                      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Ingredients</h2>
+                      {linked && linked.ingredients?.length > 0 ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                          {linked.ingredients.map((ing: any, i: number) => (
+                            <div key={i} style={{ fontSize: '13px', color: '#222', padding: '3px 0', display: 'flex', justifyContent: 'space-between', borderBottom: '0.5px dotted #DDD' }}>
+                              <span>{ing.name}</span>
+                              <span style={{ color: '#555' }}>{ing.qty}{ing.unit}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : sel.imported?.ingredients?.length > 0 ? (
+                        <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                          {sel.imported.ingredients.map((ing: string, i: number) => (
+                            <li key={i} style={{ fontSize: '13px', color: '#222', padding: '2px 0' }}>{ing}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No ingredients listed</p>
+                      )}
+                    </section>
+
+                    {/* Allergens */}
+                    <section style={{ marginBottom: '20px' }}>
+                      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Allergens — Contains</h2>
+                      {containsArr.length === 0 ? (
+                        <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>{computed.matched > 0 ? 'None detected in any of the ' + computed.matched + ' Bank-matched ingredients' : 'No Bank ingredients linked — allergens cannot be determined'}</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {containsArr.map(k => {
+                            const a = ALLERGENS.find(x => x.key === k);
+                            return a && <span key={k} style={{ fontSize: '11px', fontWeight: 700, color: '#C00', background: '#FEE', border: '1px solid #C00', padding: '4px 10px', borderRadius: '2px' }}>{a.label}</span>;
+                          })}
+                        </div>
+                      )}
+                      {nutTypesArr.length > 0 && (
+                        <p style={{ fontSize: '12px', color: '#222', marginTop: '8px' }}><strong style={{ color: '#C00' }}>Tree nuts:</strong> {nutTypesArr.join(', ')}</p>
+                      )}
+                      {glutenTypesArr.length > 0 && (
+                        <p style={{ fontSize: '12px', color: '#222', marginTop: '4px' }}><strong style={{ color: '#C00' }}>Cereals:</strong> {glutenTypesArr.join(', ')}</p>
+                      )}
+                      {mayContain.length > 0 && (
+                        <>
+                          <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginTop: '14px', marginBottom: '6px' }}>May Contain</h2>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {mayContain.map((k: string) => {
+                              const a = ALLERGENS.find(x => x.key === k);
+                              return a && <span key={k} style={{ fontSize: '11px', color: '#A77', border: '1px dashed #A77', padding: '3px 8px', borderRadius: '2px' }}>{a.label}</span>;
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </section>
+
+                    {/* Nutrition */}
+                    {(() => {
+                      const hasAny = NUTRITION_FIELDS.some(f => computed.nutrition[f.key] != null);
+                      if (!hasAny) {
+                        return (
+                          <section style={{ marginBottom: '20px' }}>
+                            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Nutrition</h2>
+                            <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>Nutrition data not available</p>
+                          </section>
+                        );
+                      }
+                      const lightCss = (l: Light | null) => {
+                        if (!l) return { fg: '#222', bg: 'transparent', bd: '#DDD' };
+                        if (l === 'low')  return { fg: '#1A6B2A', bg: '#E8F5EC', bd: '#1A6B2A' };
+                        if (l === 'med')  return { fg: '#A06800', bg: '#FFF4E0', bd: '#A06800' };
+                        return                  { fg: '#A00',     bg: '#FEE',     bd: '#A00' };
+                      };
+                      return (
+                        <section style={{ marginBottom: '20px' }}>
+                          <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Nutrition (per portion · {portions} portion{portions === 1 ? '' : 's'})</h2>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                            <thead>
+                              <tr style={{ background: '#F4F4F2', color: '#555' }}>
+                                <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600 }}>Nutrient</th>
+                                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 600 }}>Per portion</th>
+                                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 600 }}>Per 100g</th>
+                                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 600 }}>FOP</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {NUTRITION_FIELDS.map(f => {
+                                const total = computed.nutrition[f.key];
+                                if (total == null) return null;
+                                const perPortion = total / portions;
+                                const per100 = dishGrams > 0 ? (total * 100) / dishGrams : null;
+                                const light = per100 != null ? trafficLight(f.key, per100) : null;
+                                const c = lightCss(light);
+                                const decimals = f.unit === 'g' ? 1 : 0;
+                                return (
+                                  <tr key={f.key} style={{ borderBottom: '0.5px solid #EEE' }}>
+                                    <td style={{ padding: '6px 8px', color: '#222' }}>{f.label}</td>
+                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#222' }}>{perPortion.toFixed(decimals)}{f.unit}</td>
+                                    <td style={{ padding: '6px 8px', textAlign: 'right', color: '#555' }}>{per100 != null ? per100.toFixed(decimals) + f.unit : '—'}</td>
+                                    <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                                      {light ? (
+                                        <span style={{ fontSize: '10px', fontWeight: 700, color: c.fg, background: c.bg, border: '1px solid ' + c.bd, padding: '2px 6px', borderRadius: '2px' }}>{LIGHT_LABEL[light]}</span>
+                                      ) : <span style={{ color: '#AAA' }}>—</span>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </section>
+                      );
+                    })()}
+
+                    {/* Footer */}
+                    <div style={{ borderTop: '1px solid #DDD', paddingTop: '12px', marginTop: '20px', fontSize: '10px', color: '#888', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Generated by Palatable on {today}</span>
+                      <span>UK FIR 2014 + Natasha&apos;s Law · always verify with your EHO</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           );
         })()}
       </div>
