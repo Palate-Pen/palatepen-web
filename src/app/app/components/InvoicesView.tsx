@@ -39,7 +39,7 @@ export default function InvoicesView(){
       let binary='';bytes.forEach(b=>binary+=String.fromCharCode(b));
       const base64=btoa(binary);
       const mediaType=file.type;
-      const res=await fetch('/api/mise/scan-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64,mediaType,userToken:await supabase.auth.getSession().then(r=>r.data.session?.access_token||'')})});
+      const res=await fetch('/api/palatable/scan-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64,mediaType,userToken:await supabase.auth.getSession().then(r=>r.data.session?.access_token||'')})});
       const data=await res.json();
       processScanResults(data.items||[],file.name);
     }catch(e){alert('Scan failed. Check your API key in admin.');setScanning(false);}

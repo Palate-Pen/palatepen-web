@@ -77,7 +77,7 @@ export default function StockPost() {
 
             <p>After a month, you will wonder how you managed without it.</p>
 
-            <p>The Mise app includes a stock counter that does exactly this — set your par and minimum levels per ingredient, run your count, and see at a glance what is good, what is low, and what is critical. It is built for how kitchens actually work.</p>
+            <p>The Palatable app includes a stock counter that does exactly this — set your par and minimum levels per ingredient, run your count, and see at a glance what is good, what is low, and what is critical. It is built for how kitchens actually work.</p>
 
           </div>
         </div>
@@ -91,8 +91,8 @@ export default function StockPost() {
             </div>
             <div>
               <p className="font-epilogue text-xs font-bold tracking-widest uppercase text-teal mb-3">Try the stock counter</p>
-              <p className="font-epilogue font-light text-sm text-slate leading-relaxed mb-4 max-w-xs">Mise has a built-in stock counter with par levels. Free to try.</p>
-              <Link href="/mise/app" className="font-epilogue text-xs font-semibold tracking-widest uppercase border border-ink text-ink px-6 py-3 hover:bg-ink hover:text-cream transition-colors">Open Mise App</Link>
+              <p className="font-epilogue font-light text-sm text-slate leading-relaxed mb-4 max-w-xs">Palatable has a built-in stock counter with par levels. Free to try.</p>
+              <Link href="/palatable/app" className="font-epilogue text-xs font-semibold tracking-widest uppercase border border-ink text-ink px-6 py-3 hover:bg-ink hover:text-cream transition-colors">Open Palatable App</Link>
             </div>
           </div>
         </div>

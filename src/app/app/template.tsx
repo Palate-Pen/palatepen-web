@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 export default function AppTemplate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Override favicon for Mise app
+    // Override favicon for Palatable app
     const existing = document.querySelectorAll("link[rel*='icon']");
     existing.forEach(el => el.remove());
     const link = document.createElement('link');

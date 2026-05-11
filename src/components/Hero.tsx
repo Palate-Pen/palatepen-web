@@ -17,7 +17,7 @@ export default function Hero() {
           Real kitchen experience meets considered design and strategy — so your dishes sell themselves before a single bite.
         </p>
         <div className="flex gap-3 flex-wrap">
-          {['Menu Design','GP Strategy','Kitchen Ops','Mise App'].map(s=>(
+          {['Menu Design','GP Strategy','Kitchen Ops','Palatable App'].map(s=>(
             <span key={s} className="font-epilogue text-xs font-medium tracking-wider uppercase bg-ink text-cream px-4 py-2 hover:bg-teal transition-colors cursor-default">{s}</span>
           ))}
         </div>

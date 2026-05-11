@@ -10,10 +10,10 @@ body.font-sm *, body.font-md *, body.font-lg * {
 }
 
 /* But preserve specific overrides for headings */
-body.font-sm .mise-heading { font-size: 24px !important; }
-body.font-md .mise-heading { font-size: 28px !important; }
-body.font-lg .mise-heading { font-size: 34px !important; }
+body.font-sm .palatable-heading { font-size: 24px !important; }
+body.font-md .palatable-heading { font-size: 28px !important; }
+body.font-lg .palatable-heading { font-size: 34px !important; }
 
-body.font-sm .mise-subheading { font-size: 18px !important; }
-body.font-md .mise-subheading { font-size: 22px !important; }
-body.font-lg .mise-subheading { font-size: 26px !important; }
+body.font-sm .palatable-subheading { font-size: 18px !important; }
+body.font-md .palatable-subheading { font-size: 22px !important; }
+body.font-lg .palatable-subheading { font-size: 26px !important; }

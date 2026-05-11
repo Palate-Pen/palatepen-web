@@ -29,12 +29,12 @@ function applyToDOM(s: Settings) {
   const C = s.resolved === 'light' ? light : dark;
 
   const vars: Record<string, string> = {
-    '--mise-bg': C.bg, '--mise-surface': C.surface, '--mise-surface2': C.surface2,
-    '--mise-surface3': C.surface3, '--mise-text': C.text, '--mise-dim': C.dim,
-    '--mise-faint': C.faint, '--mise-gold': C.gold, '--mise-gold-light': C.goldLight,
-    '--mise-gold-dim': C.goldDim, '--mise-border': C.border,
-    '--mise-border-light': C.borderLight, '--mise-red': C.red,
-    '--mise-green': C.green, '--mise-green-light': C.greenLight,
+    '--palatable-bg': C.bg, '--palatable-surface': C.surface, '--palatable-surface2': C.surface2,
+    '--palatable-surface3': C.surface3, '--palatable-text': C.text, '--palatable-dim': C.dim,
+    '--palatable-faint': C.faint, '--palatable-gold': C.gold, '--palatable-gold-light': C.goldLight,
+    '--palatable-gold-dim': C.goldDim, '--palatable-border': C.border,
+    '--palatable-border-light': C.borderLight, '--palatable-red': C.red,
+    '--palatable-green': C.green, '--palatable-green-light': C.greenLight,
   };
   Object.entries(vars).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
   document.body.style.background = C.bg;

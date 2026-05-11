@@ -32,7 +32,7 @@ export default function ContactPage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16">
           <div>
             <p className="font-epilogue font-light text-base text-slate leading-relaxed mb-10">
-              Whether you need a new menu, a GP review, kitchen operations support, or want to know more about Mise — get in touch and we will respond within 24 hours.
+              Whether you need a new menu, a GP review, kitchen operations support, or want to know more about Palatable — get in touch and we will respond within 24 hours.
             </p>
             <div className="space-y-6">
               <div className="border-t border-ink/10 pt-5">

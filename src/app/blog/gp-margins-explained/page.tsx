@@ -65,7 +65,7 @@ export default function GPPost() {
 
             <p>You do not need a spreadsheet or an accountant to get started. You need three numbers for every dish on your menu: what it sells for, what the ingredients cost, and how many you sell in a week.</p>
 
-            <p>From those three numbers, you can calculate your GP per dish, identify your best and worst performers, and start making decisions. The Mise app was built to make exactly this kind of calculation fast and accessible — input your ingredients, your quantities, your unit costs, and it does the maths.</p>
+            <p>From those three numbers, you can calculate your GP per dish, identify your best and worst performers, and start making decisions. The Palatable app was built to make exactly this kind of calculation fast and accessible — input your ingredients, your quantities, your unit costs, and it does the maths.</p>
 
             <p>Start with your five best-selling dishes. Cost them properly. Calculate their GP. Then have an honest look at whether your menu is as profitable as it should be.</p>
 
@@ -83,8 +83,8 @@ export default function GPPost() {
             </div>
             <div>
               <p className="font-epilogue text-xs font-bold tracking-widest uppercase text-teal mb-3">Try it yourself</p>
-              <p className="font-epilogue font-light text-sm text-slate leading-relaxed mb-4 max-w-xs">The Mise app has a built-in GP calculator. Cost any dish in minutes.</p>
-              <Link href="/mise/app" className="font-epilogue text-xs font-semibold tracking-widest uppercase border border-ink text-ink px-6 py-3 hover:bg-ink hover:text-cream transition-colors">Open Mise App</Link>
+              <p className="font-epilogue font-light text-sm text-slate leading-relaxed mb-4 max-w-xs">The Palatable app has a built-in GP calculator. Cost any dish in minutes.</p>
+              <Link href="/palatable/app" className="font-epilogue text-xs font-semibold tracking-widest uppercase border border-ink text-ink px-6 py-3 hover:bg-ink hover:text-cream transition-colors">Open Palatable App</Link>
             </div>
           </div>
         </div>

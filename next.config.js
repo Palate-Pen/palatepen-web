@@ -17,5 +17,12 @@ const nextConfig = {
       ],
     };
   },
+  async redirects() {
+    return [
+      { source: '/mise', destination: '/palatable', permanent: true },
+      { source: '/mise/app', destination: '/app', permanent: true },
+      { source: '/api/mise/:path*', destination: '/api/palatable/:path*', permanent: true },
+    ];
+  },
 };
 module.exports = nextConfig;

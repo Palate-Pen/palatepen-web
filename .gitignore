@@ -9,3 +9,5 @@ dist/
 .claude/
 next-env.d.ts
 *.tsbuildinfo
+
+.env*.local

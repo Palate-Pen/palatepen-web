@@ -66,7 +66,7 @@ export default function AuthPage(){
       <div style={{width:'100%',maxWidth:'380px'}}>
         <div style={{marginBottom:'40px'}}><Logo/></div>
         <h2 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'26px',color:C.text,marginBottom:'6px'}}>{mode==='signin'?'Welcome back':'Create account'}</h2>
-        <p style={{fontSize:'13px',color:C.faint,marginBottom:'32px'}}>{mode==='signin'?'Sign in to Mise':'Start free — upgrade anytime'}</p>
+        <p style={{fontSize:'13px',color:C.faint,marginBottom:'32px'}}>{mode==='signin'?'Sign in to Palatable':'Start free — upgrade anytime'}</p>
         {error&&<div style={{background:'rgba(200,64,64,0.1)',border:'1px solid rgba(200,64,64,0.3)',color:C.red,fontSize:'13px',padding:'10px 14px',marginBottom:'16px',borderRadius:'2px'}}>{error}</div>}
         {success&&<div style={{background:'rgba(74,138,90,0.1)',border:'1px solid rgba(74,138,90,0.3)',color:C.greenLight,fontSize:'13px',padding:'10px 14px',marginBottom:'16px',borderRadius:'2px'}}>{success}</div>}
         <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>

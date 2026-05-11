@@ -12,7 +12,7 @@ export default function Footer() {
             <p className="font-epilogue text-xs text-white/40 max-w-xs leading-relaxed">Menu design and food consultancy. London, UK.</p>
           </div>
           <div className="flex flex-wrap gap-x-8 gap-y-3">
-            {[['About','/about'],['Services','/services'],['Mise','/mise'],['Blog','/blog'],['Contact','/contact']].map(([l,h]) => (
+            {[['About','/about'],['Services','/services'],['Palatable','/palatable'],['Blog','/blog'],['Contact','/contact']].map(([l,h]) => (
               <Link key={h} href={h} className="font-epilogue text-xs text-white/40 hover:text-white/70 transition-colors tracking-widest uppercase">{l}</Link>
             ))}
           </div>
@@ -23,7 +23,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-white/5 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center gap-2">
           <span className="font-epilogue text-xs text-white/20">&copy; 2026 Palate &amp; Pen. All rights reserved.</span>
-          <Link href="/mise/app" className="font-epilogue text-xs text-white/30 hover:text-mustard transition-colors tracking-widest uppercase">Open Mise App</Link>
+          <Link href="/palatable/app" className="font-epilogue text-xs text-white/30 hover:text-mustard transition-colors tracking-widest uppercase">Open Palatable App</Link>
         </div>
       </div>
     </footer>
