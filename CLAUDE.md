@@ -24,6 +24,10 @@ Palatable by Palate & Pen — Back office work you can stomach. A professional c
 - Colours: Ink #0E0C0A, Gold #C8960A, Cream #F0E8DC, Paper #FAF7F2
 - Tiers: Free / Pro £25pm / Kitchen £59pm / Group £129pm
 
+## Issue Tracking
+
+Roadmap items are mirrored as GitHub Issues at https://github.com/Palate-Pen/palatepen-web/issues, labelled `Phase-1` through `Phase-6` plus `Website`, `Payments`, and `Bug`. Use those for granular work tracking; the Roadmap section below is the high-level summary.
+
 ## Roadmap
 
 ### Phase 1 — Foundation (In Progress)
