@@ -41,6 +41,30 @@ const NUTRITION_FIELDS: { key: string; label: string; unit: string }[] = [
   { key: 'fibre',     label: 'Fibre',          unit: 'g' },
 ];
 
+// UK FOP traffic-light thresholds per 100g of finished food (2013 DH guidance).
+// Returns 'low' (green), 'med' (amber), 'high' (red), or null if no rule.
+type Light = 'low' | 'med' | 'high';
+const FOP: Record<string, [number, number]> = {
+  // [low/med boundary, med/high boundary]
+  fat:       [3.0, 17.5],
+  saturates: [1.5, 5.0],
+  sugars:    [5.0, 22.5],
+  salt:      [0.3, 1.5],
+};
+function trafficLight(key: string, valuePer100g: number): Light | null {
+  const t = FOP[key];
+  if (!t) return null;
+  if (valuePer100g <= t[0]) return 'low';
+  if (valuePer100g <= t[1]) return 'med';
+  return 'high';
+}
+const LIGHT_LABEL: Record<Light, string> = { low: 'LOW', med: 'MED', high: 'HIGH' };
+function lightColors(C: any, l: Light): { fg: string; bg: string; bd: string } {
+  if (l === 'low')  return { fg: C.greenLight, bg: C.greenLight + '18', bd: C.greenLight + '40' };
+  if (l === 'med')  return { fg: C.gold,       bg: C.gold + '18',       bd: C.gold + '40' };
+  return                  { fg: C.red,        bg: C.red + '18',        bd: C.red + '40' };
+}
+
 // Convert a (qty, unit) pair into grams/ml so we can scale per-100 nutrition.
 // Returns null if we can't make sense of the unit (e.g. 'ea').
 function toGrams(qty: number, unit: string | undefined): number | null {
@@ -487,30 +511,50 @@ export default function RecipesView() {
             );
           }
           const coveragePct = computed.nutritionTotal > 0 ? Math.round((computed.nutritionCoverage / computed.nutritionTotal) * 100) : 0;
+          // per-100g of finished dish — uses the weight we actually computed nutrition for
+          const dishGrams = computed.nutritionCoverage;
           return (
             <div style={{ marginBottom: '24px' }}>
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>
-                Nutrition <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(per portion · {portions} portion{portions === 1 ? '' : 's'} total)</span>
+                Nutrition <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(per portion · {portions} portion{portions === 1 ? '' : 's'} · UK FOP traffic lights apply per 100g)</span>
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                 {NUTRITION_FIELDS.map(f => {
                   const total = computed.nutrition[f.key];
                   if (total == null) return null;
                   const perPortion = total / portions;
+                  const per100 = dishGrams > 0 ? (total * 100) / dishGrams : null;
+                  const light = per100 != null ? trafficLight(f.key, per100) : null;
+                  const lc = light ? lightColors(C, light) : null;
+                  const decimals = f.unit === 'g' ? 1 : 0;
                   return (
-                    <div key={f.key} style={{ background: C.surface2, border: '0.5px solid ' + C.border, padding: '10px 12px', borderRadius: '3px' }}>
-                      <p style={{ fontSize: '10px', color: C.faint, marginBottom: '4px' }}>{f.label}</p>
-                      <p style={{ fontSize: '15px', color: C.text, fontWeight: 600 }}>{perPortion.toFixed(f.unit === 'g' ? 1 : 0)}<span style={{ fontSize: '10px', color: C.faint, fontWeight: 400, marginLeft: '3px' }}>{f.unit}</span></p>
-                      <p style={{ fontSize: '10px', color: C.faint, marginTop: '2px' }}>total {total.toFixed(f.unit === 'g' ? 1 : 0)}{f.unit}</p>
+                    <div key={f.key} style={{
+                      background: lc ? lc.bg : C.surface2,
+                      border: '0.5px solid ' + (lc ? lc.bd : C.border),
+                      padding: '10px 12px', borderRadius: '3px',
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                        <p style={{ fontSize: '10px', color: C.faint }}>{f.label}</p>
+                        {light && lc && (
+                          <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: 0.4, color: lc.fg, background: 'transparent', border: '0.5px solid ' + lc.fg, padding: '1px 5px', borderRadius: '2px' }}>
+                            {LIGHT_LABEL[light]}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '15px', color: lc ? lc.fg : C.text, fontWeight: 600 }}>{perPortion.toFixed(decimals)}<span style={{ fontSize: '10px', color: C.faint, fontWeight: 400, marginLeft: '3px' }}>{f.unit}</span></p>
+                      <p style={{ fontSize: '10px', color: C.faint, marginTop: '2px' }}>
+                        {per100 != null ? `${per100.toFixed(decimals)}${f.unit}/100g · ` : ''}total {total.toFixed(decimals)}{f.unit}
+                      </p>
                     </div>
                   );
                 })}
               </div>
-              {coveragePct < 100 && (
-                <p style={{ fontSize: '11px', color: C.gold, marginTop: '8px' }}>
-                  ⚠ Nutrition computed from {coveragePct}% of recipe weight. Add nutrition data to remaining Bank ingredients for accuracy.
-                </p>
-              )}
+              <p style={{ fontSize: '11px', color: C.faint, marginTop: '8px' }}>
+                Traffic lights follow UK Department of Health 2013 FOP guidance for fat, saturates, sugars, and salt per 100g.
+                {coveragePct < 100 && (
+                  <span style={{ color: C.gold }}> ⚠ Computed from {coveragePct}% of recipe weight — add nutrition data to remaining Bank ingredients for full accuracy.</span>
+                )}
+              </p>
             </div>
           );
         })()}
