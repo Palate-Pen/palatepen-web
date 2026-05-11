@@ -1,14 +1,12 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { ADMIN_PASSWORD } from '@/lib/admin';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-const ADMIN_PASSWORD = 'PalatePen2026!';
 const PRO_PRICE = 9;
+
+function authHeaders(): HeadersInit {
+  return { 'Authorization': `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' };
+}
 
 const C = {
   bg: '#F8F8F6',
@@ -84,16 +82,17 @@ export default function AdminPage() {
   async function load() {
     setLoading(true);
     setLoadErr('');
-    const { data, error } = await supabase
-      .from('user_data')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      setLoadErr(error.message);
-      setLoading(false);
-      return;
+    try {
+      const res = await fetch('/api/admin/users', { headers: authHeaders(), cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok) {
+        setLoadErr(json.error || `HTTP ${res.status}`);
+      } else {
+        setUsers(json.users || []);
+      }
+    } catch (e: any) {
+      setLoadErr(e?.message || 'Network error');
     }
-    setUsers(data || []);
     setLoading(false);
   }
 
@@ -113,18 +112,28 @@ export default function AdminPage() {
     setConfirmDelete(false);
   }
 
+  async function patchUser(userId: string, profile: any): Promise<{ ok: boolean; user?: any; error?: string }> {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ profile }),
+      });
+      const json = await res.json();
+      if (!res.ok) return { ok: false, error: json.error || `HTTP ${res.status}` };
+      return { ok: true, user: json.user };
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'Network error' };
+    }
+  }
+
   async function saveUser() {
     if (!sel) return;
     setSaving(true);
-    const { error } = await supabase
-      .from('user_data')
-      .update({ profile: editProfile, updated_at: new Date().toISOString() })
-      .eq('user_id', sel.user_id);
-    if (error) {
-      setMsg({ kind: 'err', text: error.message });
+    const r = await patchUser(sel.user_id, editProfile);
+    if (!r.ok) {
+      setMsg({ kind: 'err', text: r.error || 'Failed' });
     } else {
       setMsg({ kind: 'ok', text: 'Saved' });
-      const updated = { ...sel, profile: editProfile };
+      const updated = r.user || { ...sel, profile: editProfile };
       setSel(updated);
       setUsers(users.map(u => u.user_id === sel.user_id ? updated : u));
     }
@@ -134,16 +143,14 @@ export default function AdminPage() {
 
   async function quickSetTier(u: any, tier: string) {
     const profile = { ...parseProfile(u.profile), tier };
-    const { error } = await supabase
-      .from('user_data')
-      .update({ profile, updated_at: new Date().toISOString() })
-      .eq('user_id', u.user_id);
-    if (error) {
-      setMsg({ kind: 'err', text: error.message });
+    const r = await patchUser(u.user_id, profile);
+    if (!r.ok) {
+      setMsg({ kind: 'err', text: r.error || 'Failed' });
     } else {
-      setUsers(users.map(x => x.user_id === u.user_id ? { ...x, profile } : x));
+      const updated = r.user || { ...u, profile };
+      setUsers(users.map(x => x.user_id === u.user_id ? updated : x));
       if (sel?.user_id === u.user_id) {
-        setSel({ ...sel, profile });
+        setSel(updated);
         setEditProfile(profile);
       }
       setMsg({ kind: 'ok', text: `Set ${tier}` });
@@ -153,18 +160,22 @@ export default function AdminPage() {
 
   async function deleteUser() {
     if (!sel) return;
-    const { error } = await supabase
-      .from('user_data')
-      .delete()
-      .eq('user_id', sel.user_id);
-    if (error) {
-      setMsg({ kind: 'err', text: error.message });
-    } else {
-      setUsers(users.filter(u => u.user_id !== sel.user_id));
-      setSel(null);
-      setEditProfile({});
-      setConfirmDelete(false);
-      setMsg({ kind: 'ok', text: 'User data deleted' });
+    try {
+      const res = await fetch(`/api/admin/users/${sel.user_id}`, {
+        method: 'DELETE', headers: authHeaders(),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMsg({ kind: 'err', text: json.error || `HTTP ${res.status}` });
+      } else {
+        setUsers(users.filter(u => u.user_id !== sel.user_id));
+        setSel(null);
+        setEditProfile({});
+        setConfirmDelete(false);
+        setMsg({ kind: 'ok', text: 'User data deleted' });
+      }
+    } catch (e: any) {
+      setMsg({ kind: 'err', text: e?.message || 'Network error' });
     }
     setTimeout(() => setMsg(null), 3000);
   }
