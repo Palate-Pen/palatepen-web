@@ -158,7 +158,7 @@ export default function WasteView() {
         w.unitPrice, w.totalCost, w.notes || '',
       ]),
     ];
-    const csv = rows.map(r => r.map(c => {
+    const csv = rows.map((r: any[]) => r.map((c: any) => {
       const s = String(c ?? '');
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     }).join(',')).join('\n');
