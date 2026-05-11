@@ -66,16 +66,31 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
         )}
       </div>
 
-      {/* Collapse toggle bar */}
+      {/* Collapse toggle — gold dot + label */}
       <button onClick={() => setCollapsed(!collapsed)}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-end',
+          gap: '8px',
           background: 'transparent', border: 'none', borderBottom: '1px solid ' + C.border,
-          color: C.faint, fontSize: '12px', cursor: 'pointer',
-          padding: '6px 0', textAlign: collapsed ? 'center' : 'right',
-          paddingRight: collapsed ? 0 : '14px',
-        }}>
-        {collapsed ? '›' : '‹'}
+          color: C.faint, fontSize: '10px',
+          cursor: 'pointer',
+          padding: collapsed ? '10px 0' : '8px 14px',
+          letterSpacing: '0.8px',
+          textTransform: 'uppercase',
+          fontWeight: 700,
+          width: '100%',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = C.gold)}
+        onMouseLeave={e => (e.currentTarget.style.color = C.faint)}
+      >
+        {!collapsed && <span>Collapse</span>}
+        <span style={{
+          width: '9px', height: '9px', borderRadius: '50%',
+          background: C.gold, display: 'inline-block', flexShrink: 0,
+          boxShadow: '0 0 0 3px ' + C.gold + '20',
+        }} />
       </button>
 
       {/* Nav */}
