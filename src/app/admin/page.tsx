@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ADMIN_PASSWORD } from '@/lib/admin';
 
-const PRO_PRICE = 9;
+const PRO_PRICE = 25;
 
 function authHeaders(): HeadersInit {
   return { 'Authorization': `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' };

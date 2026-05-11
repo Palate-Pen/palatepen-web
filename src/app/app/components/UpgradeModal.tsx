@@ -22,7 +22,7 @@ const PLANS = [
     yearly: 590,
     monthlyKey: 'kitchen_monthly',
     yearlyKey: 'kitchen_yearly',
-    features: ['Up to 5 users', 'Everything in Pro', 'Team permissions', 'Supplier ordering', 'Waste tracking', 'Central kitchen'],
+    features: ['Up to 5 users', 'Everything in Pro', 'Team permissions', 'Supplier ordering', 'Waste tracking'],
   },
   {
     key: 'group',
@@ -31,7 +31,7 @@ const PLANS = [
     yearly: 1290,
     monthlyKey: 'group_monthly',
     yearlyKey: 'group_yearly',
-    features: ['Unlimited users', 'Multiple outlets', 'Central kitchen mgmt', 'Group reporting', 'POS integration'],
+    features: ['Unlimited users', 'Multiple outlets', 'Central kitchen management', 'Group reporting', 'POS integration'],
   },
 ];
 

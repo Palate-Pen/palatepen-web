@@ -121,40 +121,76 @@ export default function PalatablePage() {
             <span className="text-xs font-bold tracking-widest uppercase text-palatable-gold">Pricing</span>
             <h2 className="font-fraunces font-light text-palatable-text" style={{fontSize:'clamp(28px,4vw,48px)'}}>Simple, honest <i>pricing</i></h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
-            <div className="border border-palatable-border p-8">
-              <p className="text-xs font-bold tracking-widest uppercase text-palatable-faint mb-6">Free</p>
-              <p className="font-fraunces font-light text-palatable-text mb-1" style={{fontSize:'52px'}}>&pound;0<span className="text-xl text-palatable-faint">/mo</span></p>
-              <p className="text-sm text-palatable-faint mb-8">Get started, no card required</p>
-              <div className="space-y-3 mb-8">
-                {['5 saved recipes','10 notebook ideas','Basic GP calculator','Single device'].map(f=>(
-                  <div key={f} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-palatable-border-light flex-shrink-0"></div>
-                    <span className="text-sm text-palatable-dim">{f}</span>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                key: 'free',
+                name: 'Free',
+                price: '£0',
+                period: '/mo',
+                yearly: 'No card required',
+                features: ['5 recipes', 'Basic costing', '10 notebook ideas'],
+                cta: 'Get Started Free',
+                highlight: false,
+              },
+              {
+                key: 'pro',
+                name: 'Pro',
+                price: '£25',
+                period: '/mo',
+                yearly: 'or £249/year — save 17%',
+                features: ['Unlimited recipes', 'AI invoice scanning', 'Stock & par levels', 'Menu builder', 'Allergens & nutrition', 'Price alerts'],
+                cta: 'Start with Pro',
+                highlight: true,
+              },
+              {
+                key: 'kitchen',
+                name: 'Kitchen',
+                price: '£59',
+                period: '/mo',
+                yearly: 'or £590/year',
+                features: ['Up to 5 users', 'Everything in Pro', 'Team permissions', 'Supplier ordering', 'Waste tracking'],
+                cta: 'Choose Kitchen',
+                highlight: false,
+              },
+              {
+                key: 'group',
+                name: 'Group',
+                price: '£129',
+                period: '/mo',
+                yearly: 'or £1290/year',
+                features: ['Unlimited users', 'Multiple outlets', 'Central kitchen management', 'Group reporting', 'POS integration'],
+                cta: 'Choose Group',
+                highlight: false,
+              },
+            ].map(plan => (
+              <div key={plan.key} className={`p-7 relative flex flex-col ${plan.highlight ? 'border border-palatable-gold/40 bg-palatable-gold/5' : 'border border-palatable-border'}`}>
+                {plan.highlight && (
+                  <div className="absolute top-4 right-4 text-[10px] font-bold tracking-widest uppercase text-palatable-gold bg-palatable-gold/10 border border-palatable-gold/20 px-2 py-0.5">Most Popular</div>
+                )}
+                <p className={`text-xs font-bold tracking-widest uppercase mb-5 ${plan.highlight ? 'text-palatable-gold' : 'text-palatable-faint'}`}>{plan.name}</p>
+                <p className="font-fraunces font-light text-palatable-text mb-1" style={{ fontSize: '40px', lineHeight: 1 }}>
+                  {plan.price}<span className="text-base text-palatable-faint">{plan.period}</span>
+                </p>
+                <p className={`text-xs mb-6 ${plan.highlight ? 'text-palatable-gold' : 'text-palatable-faint'}`}>{plan.yearly}</p>
+                <div className="space-y-2.5 mb-8 flex-1">
+                  {plan.features.map(f => (
+                    <div key={f} className="flex items-center gap-2.5">
+                      <span className={`text-sm flex-shrink-0 ${plan.highlight ? 'text-palatable-gold' : 'text-palatable-dim'}`}>{plan.highlight ? '✓' : '·'}</span>
+                      <span className={`text-sm ${plan.highlight ? 'text-palatable-text' : 'text-palatable-dim'}`}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  href="/palatable/app"
+                  className={`block text-center text-xs font-semibold tracking-widest uppercase px-5 py-3 transition-colors ${plan.highlight
+                    ? 'bg-palatable-gold text-palatable-bg hover:bg-yellow-400'
+                    : 'border border-palatable-border-light text-palatable-dim hover:border-palatable-gold hover:text-palatable-gold'}`}
+                >
+                  {plan.cta}
+                </Link>
               </div>
-              <Link href="/palatable/app" className="block text-center text-xs font-medium tracking-widest uppercase border border-palatable-border-light text-palatable-dim px-6 py-3 hover:border-palatable-gold hover:text-palatable-gold transition-colors">
-                Get Started Free
-              </Link>
-            </div>
-            <div className="border border-palatable-gold/40 bg-palatable-gold/5 p-8 relative">
-              <div className="absolute top-4 right-4 text-xs font-bold tracking-widest uppercase text-palatable-gold bg-palatable-gold/10 border border-palatable-gold/20 px-3 py-1">Most Popular</div>
-              <p className="text-xs font-bold tracking-widest uppercase text-palatable-gold mb-6">Pro</p>
-              <p className="font-fraunces font-light text-palatable-text mb-1" style={{fontSize:'52px'}}>&pound;9.99<span className="text-xl text-palatable-faint">/mo</span></p>
-              <p className="text-sm text-palatable-gold mb-8">or &pound;99/year &mdash; save 17%</p>
-              <div className="space-y-3 mb-8">
-                {['Unlimited recipes & notes','AI invoice scanning','URL recipe import','Price change alerts','Stock counter with par levels','Cloud sync across all devices','Full GP history & analytics'].map(f=>(
-                  <div key={f} className="flex items-center gap-3">
-                    <span className="text-palatable-gold text-sm flex-shrink-0">&#10003;</span>
-                    <span className="text-sm text-palatable-text">{f}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/palatable/app" className="block text-center text-xs font-semibold tracking-widest uppercase bg-palatable-gold text-palatable-bg px-6 py-3 hover:bg-yellow-400 transition-colors">
-                Start Free Trial
-              </Link>
-            </div>
+            ))}
           </div>
         </div>
       

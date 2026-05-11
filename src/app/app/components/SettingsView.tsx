@@ -81,9 +81,13 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderTop:'1px solid '+C.border,marginTop:'8px'}}>
           <div>
             <p style={{fontSize:'13px',color:C.text,marginBottom:'4px'}}>{user?.email}</p>
-            <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:tier==='pro'?C.gold:C.faint,background:(tier==='pro'?C.gold:C.faint)+'18',border:'0.5px solid '+(tier==='pro'?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{tier==='pro'?'Pro':'Free'}</span>
+            {(()=>{
+              const isPaid=['pro','kitchen','group'].includes(tier);
+              const label=tier?tier.charAt(0).toUpperCase()+tier.slice(1):'Free';
+              return <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:isPaid?C.gold:C.faint,background:(isPaid?C.gold:C.faint)+'18',border:'0.5px solid '+(isPaid?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{label}</span>;
+            })()}
           </div>
-          {tier!=='pro'&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade to Pro</button>}
+          {!['pro','kitchen','group'].includes(tier)&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>}
         </div>
       </div>
 

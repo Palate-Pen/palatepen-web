@@ -3,11 +3,14 @@ import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 const NAV=[{id:'recipes',label:'Recipes'},{id:'notebook',label:'Notebook'},{id:'costing',label:'Costing'},{id:'invoices',label:'Invoices'},{id:'stock',label:'Stock'},{id:'profile',label:'Profile'},{id:'settings',label:'Settings'}];
+const PAID_TIERS=['pro','kitchen','group'];
 export default function Sidebar({tab,setTab,onUpgrade}:{tab:string;setTab:(t:string)=>void;onUpgrade:()=>void}){
   const{tier}=useAuth();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
   const PRO=['invoices','stock'];
+  const isPaid=PAID_TIERS.includes(tier);
+  const tierLabel=tier?tier.charAt(0).toUpperCase()+tier.slice(1):'Free';
   return(
     <aside style={{position:'fixed',left:0,top:0,bottom:0,width:'224px',background:C.surface,borderRight:'1px solid '+C.border,display:'flex',flexDirection:'column',zIndex:40}}>
       <div style={{padding:'20px 16px 16px',borderBottom:'1px solid '+C.border}}>
@@ -20,7 +23,7 @@ export default function Sidebar({tab,setTab,onUpgrade}:{tab:string;setTab:(t:str
       </div>
       <nav style={{flex:1,padding:'12px 8px',display:'flex',flexDirection:'column',gap:'2px'}}>
         {NAV.map(item=>{
-          const isPro=PRO.includes(item.id)&&tier!=='pro';
+          const isPro=PRO.includes(item.id)&&!isPaid;
           const active=tab===item.id;
           return(
             <button key={item.id} onClick={()=>setTab(item.id)} style={{display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',borderRadius:'4px',textAlign:'left',background:active?C.gold+'18':'transparent',border:active?'0.5px solid '+C.gold+'30':'0.5px solid transparent',color:active?C.gold:C.dim,fontSize:'13px',cursor:'pointer',width:'100%'}}>
@@ -32,15 +35,15 @@ export default function Sidebar({tab,setTab,onUpgrade}:{tab:string;setTab:(t:str
         })}
       </nav>
       <div style={{padding:'12px 8px 16px'}}>
-        {tier==='pro'?(
+        {isPaid?(
           <div style={{background:C.gold+'12',border:'0.5px solid '+C.gold+'30',borderRadius:'4px',padding:'10px 12px'}}>
-            <p style={{fontSize:'10px',fontWeight:700,color:C.gold,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'2px'}}>Pro</p>
+            <p style={{fontSize:'10px',fontWeight:700,color:C.gold,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'2px'}}>{tierLabel}</p>
             <p style={{fontSize:'11px',color:C.faint}}>All features active</p>
           </div>
         ):(
           <div style={{background:C.surface2,border:'0.5px solid '+C.border,borderRadius:'4px',padding:'10px 12px'}}>
             <p style={{fontSize:'10px',fontWeight:700,color:C.faint,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'4px'}}>Free</p>
-            <button onClick={onUpgrade} style={{width:'100%',background:C.gold,color:C.bg,fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',padding:'6px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — £25/mo</button>
+            <button onClick={onUpgrade} style={{width:'100%',background:C.gold,color:C.bg,fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',padding:'6px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>
           </div>
         )}
       </div>

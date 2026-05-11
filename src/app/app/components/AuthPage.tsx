@@ -47,7 +47,7 @@ export default function AuthPage(){
           </div>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',width:'100%',maxWidth:'480px'}}>
-          {[{tier:'Free',price:'£0',desc:'5 recipes, 10 notes, basic costing',hl:false},{tier:'Pro',price:'£9.99/mo',desc:'Unlimited + AI scanning + sync — or £99/yr',hl:true}].map(t=>(
+          {[{tier:'Free',price:'£0',desc:'5 recipes, basic costing, 10 notebook ideas',hl:false},{tier:'Pro',price:'£25/mo',desc:'Unlimited recipes, AI invoice scanning, stock & menu builder — or £249/yr',hl:true}].map(t=>(
             <div key={t.tier} style={{border:t.hl?'1px solid '+C.gold+'50':'1px solid '+C.border,background:t.hl?C.gold+'08':C.surface,padding:'20px'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
                 <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',color:t.hl?C.gold:C.faint}}>{t.tier}</span>
