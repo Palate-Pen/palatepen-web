@@ -16,6 +16,7 @@ import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
 import BankView from './components/BankView';
 import WasteView from './components/WasteView';
+import ReportsView from './components/ReportsView';
 import NotificationsBell from './components/NotificationsBell';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
@@ -85,6 +86,7 @@ export default function App() {
     stock: <StockView />,
     bank: <BankView />,
     waste: <WasteView />,
+    reports: <ReportsView setTab={setTab} />,
     profile: <ProfileView />,
     settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
   };

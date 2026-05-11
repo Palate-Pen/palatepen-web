@@ -109,7 +109,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
     { id: 'invoices', icon: '🧾', title: 'Invoices', subtitle: `${stats.invoices.length} scanned` },
     { id: 'stock',    icon: '📦', title: 'Stock',    subtitle: `${stats.stockItems.length} items · ${sym}${stats.stockValue.toFixed(0)}` },
     { id: 'waste',    icon: '🗑', title: 'Waste',    subtitle: stats.wasteLog.length > 0 ? `${sym}${stats.wasteCost7d.toFixed(0)} last 7d` : 'No waste logged yet' },
-    { id: 'reports',  icon: '📊', title: 'Reports',  subtitle: 'GP, sales, waste trends', comingSoon: true },
+    { id: 'reports',  icon: '📊', title: 'Reports',  subtitle: 'GP, waste, stock & menu engineering' },
   ];
 
   return (
