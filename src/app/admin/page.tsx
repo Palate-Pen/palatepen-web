@@ -66,8 +66,10 @@ export default function AdminPage() {
 
   const [section, setSection] = useState<Section>('overview');
   const [users, setUsers] = useState<any[]>([]);
+  const [authUsers, setAuthUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadErr, setLoadErr] = useState('');
+  const [initing, setIniting] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<TierFilter>('all');
@@ -83,17 +85,43 @@ export default function AdminPage() {
     setLoading(true);
     setLoadErr('');
     try {
-      const res = await fetch('/api/admin/users', { headers: authHeaders(), cache: 'no-store' });
-      const json = await res.json();
-      if (!res.ok) {
-        setLoadErr(json.error || `HTTP ${res.status}`);
+      const [u, a] = await Promise.all([
+        fetch('/api/admin/users', { headers: authHeaders(), cache: 'no-store' }).then(r => r.json().then(j => ({ ok: r.ok, j }))),
+        fetch('/api/admin/auth-users', { headers: authHeaders(), cache: 'no-store' }).then(r => r.json().then(j => ({ ok: r.ok, j }))),
+      ]);
+      if (!u.ok) setLoadErr(u.j.error || 'Failed to load users');
+      else setUsers(u.j.users || []);
+      if (!a.ok) {
+        if (!u.ok) setLoadErr((u.j.error || 'users') + ' / ' + (a.j.error || 'auth-users'));
+        else setLoadErr('auth-users: ' + (a.j.error || 'failed'));
       } else {
-        setUsers(json.users || []);
+        setAuthUsers(a.j.users || []);
       }
     } catch (e: any) {
       setLoadErr(e?.message || 'Network error');
     }
     setLoading(false);
+  }
+
+  async function initializeOrphan(authUser: any) {
+    setIniting(authUser.id);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST', headers: authHeaders(),
+        body: JSON.stringify({ userId: authUser.id, name: authUser.user_metadata?.name || '', email: authUser.email || '' }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMsg({ kind: 'err', text: json.error || `HTTP ${res.status}` });
+      } else {
+        setUsers([json.user, ...users]);
+        setMsg({ kind: 'ok', text: `Initialized ${authUser.email || authUser.id.slice(0, 8)}` });
+      }
+    } catch (e: any) {
+      setMsg({ kind: 'err', text: e?.message || 'Network error' });
+    }
+    setIniting(null);
+    setTimeout(() => setMsg(null), 3000);
   }
 
   function tryLogin() {
@@ -231,6 +259,11 @@ export default function AdminPage() {
     return { total, pro, free, recipes, notes, costings, invoices, mrr: pro * PRO_PRICE };
   }, [users]);
 
+  const orphans = useMemo(() => {
+    const dataIds = new Set(users.map(u => u.user_id));
+    return authUsers.filter(a => !dataIds.has(a.id));
+  }, [users, authUsers]);
+
   const signupSeries = useMemo(() => {
     const days = 30;
     const buckets: number[] = Array(days).fill(0);
@@ -349,7 +382,17 @@ export default function AdminPage() {
         {/* content */}
         <main style={{ flex: 1, padding: 24, overflow: 'auto' }}>
           {section === 'overview' && (
-            <Overview stats={stats} signupSeries={signupSeries} recentSignups={recentSignups} topByRecipes={topByRecipes} onJump={(u) => { setSection('users'); selectUser(u); }} />
+            <Overview
+              stats={stats}
+              signupSeries={signupSeries}
+              recentSignups={recentSignups}
+              topByRecipes={topByRecipes}
+              authUsersCount={authUsers.length}
+              orphans={orphans}
+              initing={initing}
+              onInitialize={initializeOrphan}
+              onJump={(u) => { setSection('users'); selectUser(u); }}
+            />
           )}
           {section === 'users' && (
             <Users
@@ -418,12 +461,16 @@ function Tier({ tier, large }: { tier: string; large?: boolean }) {
 }
 
 function Overview({
-  stats, signupSeries, recentSignups, topByRecipes, onJump,
+  stats, signupSeries, recentSignups, topByRecipes, authUsersCount, orphans, initing, onInitialize, onJump,
 }: {
   stats: { total: number; pro: number; free: number; recipes: number; notes: number; costings: number; invoices: number; mrr: number };
   signupSeries: number[];
   recentSignups: any[];
   topByRecipes: any[];
+  authUsersCount: number;
+  orphans: any[];
+  initing: string | null;
+  onInitialize: (authUser: any) => void;
   onJump: (u: any) => void;
 }) {
   const max = Math.max(1, ...signupSeries);
@@ -446,6 +493,55 @@ function Overview({
         <StatCard label="Total Notes" value={stats.notes} />
         <StatCard label="Total Costings" value={stats.costings} />
         <StatCard label="Total Invoices" value={stats.invoices} />
+      </div>
+
+      {/* Auth ↔ Data parity */}
+      <div style={{ background: C.panel, border: `1px solid ${orphans.length > 0 ? C.red : C.border}`, borderRadius: 6, padding: 20, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: orphans.length > 0 ? 16 : 0 }}>
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6 }}>Auth ↔ Data Parity</p>
+            <p style={{ fontSize: 13, color: C.dim }}>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 22, color: C.text, marginRight: 4 }}>{authUsersCount}</span>
+              auth users &middot;{' '}
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 22, color: C.text, marginRight: 4, marginLeft: 4 }}>{stats.total}</span>
+              data rows
+              {orphans.length > 0 && (
+                <>
+                  {' '}&middot;{' '}
+                  <span style={{ color: C.red, fontWeight: 600 }}>{orphans.length} orphan{orphans.length === 1 ? '' : 's'}</span>
+                </>
+              )}
+            </p>
+          </div>
+          {orphans.length === 0 && authUsersCount > 0 && (
+            <span style={{ fontSize: 12, color: C.green, background: C.greenSoft, padding: '4px 10px', borderRadius: 4 }}>In sync</span>
+          )}
+        </div>
+        {orphans.length > 0 && (
+          <div>
+            <p style={{ fontSize: 12, color: C.dim, marginBottom: 12 }}>
+              These users signed up but never opened the app, so they have no <code style={{ fontFamily: 'monospace', fontSize: 11, background: C.bg, padding: '1px 5px', borderRadius: 2 }}>user_data</code> row. Initialize one so they appear in the user list.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {orphans.map(o => (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                  <Avatar name={o.email || o.user_metadata?.name || o.id} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{o.user_metadata?.name || '(no name)'}</div>
+                    <div style={{ fontSize: 11, color: C.faint }}>
+                      {o.email || o.id.slice(0, 24)} &middot; signed up {fmtDate(o.created_at)}
+                      {o.last_sign_in_at && ` · last seen ${relTime(o.last_sign_in_at)}`}
+                    </div>
+                  </div>
+                  <button onClick={() => onInitialize(o)} disabled={initing === o.id}
+                    style={{ background: C.gold, color: '#FFFFFF', border: 'none', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', padding: '7px 12px', cursor: initing === o.id ? 'default' : 'pointer', borderRadius: 4, opacity: initing === o.id ? 0.6 : 1 }}>
+                    {initing === o.id ? 'Working…' : 'Initialize'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, padding: 20, marginBottom: 24 }}>
