@@ -5,8 +5,7 @@ import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 import{supabase}from'@/lib/supabase';
-
-const CATEGORIES = ['Meat & Fish','Dairy','Produce','Dry Goods','Beverages','Bakery','Frozen','Cleaning','Other'];
+import{CATEGORIES,guessCategory}from'@/lib/categorize';
 
 export default function InvoicesView(){
   const{state:appState,actions:appActions}=useApp();
@@ -260,6 +259,10 @@ Invoices scanned after this update will show full details.</p>
           <p style={{fontSize:'12px',color:C.faint}}>{bank.length} ingredients · {invoices.length} invoices scanned</p>
         </div>
         <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
+          {(()=>{const u=bank.filter((b:any)=>!b.category);if(!u.length)return null;return(
+            <button onClick={()=>appActions.upsertBank(u.map((b:any)=>({name:b.name,category:guessCategory(b.name)})))} title={`Assign categories to ${u.length} uncategorized item${u.length>1?'s':''}`}
+              style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Auto-categorize ({u.length})</button>
+          );})()}
           <button onClick={()=>setView('history')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>
             History {invoices.length>0&&<span style={{marginLeft:'4px',fontSize:'10px',background:C.border,padding:'1px 5px',borderRadius:'2px'}}>{invoices.length}</span>}
           </button>

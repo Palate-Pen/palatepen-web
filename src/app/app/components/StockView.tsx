@@ -4,8 +4,7 @@ import { useApp, uid } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
-
-const CATEGORIES = ['Meat & Fish','Dairy','Produce','Dry Goods','Beverages','Bakery','Frozen','Cleaning','Other'];
+import { CATEGORIES, guessCategory } from '@/lib/categorize';
 
 function getStatus(qty: number|null, par: number|null, min: number|null) {
   if (qty===null||par===null) return 'unknown';
@@ -124,6 +123,11 @@ export default function StockView() {
       if(v!==undefined&&v!=='') actions.updStock(i.id,{currentQty:parseFloat(v)||0,lastCounted:now,prevQty:prevCounts[i.id]||0});
     });
     setView('report');
+  }
+
+  const uncategorizedCount = stock.filter((i:any)=>!i.category).length;
+  function autoCategorize() {
+    stock.forEach((i:any)=>{ if(!i.category) actions.updStock(i.id,{category:guessCategory(i.name)}); });
   }
 
   
@@ -260,28 +264,42 @@ export default function StockView() {
         </div>
       </div>
       <p style={{fontSize:'13px',color:C.faint,marginBottom:'20px'}}>Enter current quantities. Leave blank to skip.</p>
-      <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-        {stock.map((i:any)=>{
-          const bankItem = bank.find((b:any)=>b.name.toLowerCase()===i.name.toLowerCase());
-          const price = bankItem?.unitPrice || i.unitPrice;
-          return (
-            <div key={i.id} style={{display:'flex',alignItems:'center',gap:'12px',background:C.surface,border:`1px solid ${C.border}`,borderRadius:'4px',padding:'14px 16px'}}>
-              <div style={{flex:1}}>
-                <p style={{fontSize:'14px',color:C.text,marginBottom:'3px'}}>{i.name}</p>
-                <p style={{fontSize:'11px',color:C.faint}}>Par: {i.parLevel??'—'} · Min: {i.minLevel??'—'} {i.unit}{price?` · ${sym}${price.toFixed(2)}/${i.unit}`:''}</p>
+      {(()=>{
+        const cg: Record<string, any[]> = {};
+        stock.forEach((i:any)=>{ const c=i.category||'Other'; (cg[c]=cg[c]||[]).push(i); });
+        const cats = CATEGORIES.filter(c=>cg[c]);
+        return (
+          <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
+            {cats.map(cat=>(
+              <div key={cat}>
+                <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px',paddingLeft:'4px'}}>{cat} <span style={{color:C.dim}}>· {cg[cat].length}</span></p>
+                <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                  {cg[cat].map((i:any)=>{
+                    const bankItem = bank.find((b:any)=>b.name.toLowerCase()===i.name.toLowerCase());
+                    const price = bankItem?.unitPrice || i.unitPrice;
+                    return (
+                      <div key={i.id} style={{display:'flex',alignItems:'center',gap:'12px',background:C.surface,border:`1px solid ${C.border}`,borderRadius:'4px',padding:'14px 16px'}}>
+                        <div style={{flex:1}}>
+                          <p style={{fontSize:'14px',color:C.text,marginBottom:'3px'}}>{i.name}</p>
+                          <p style={{fontSize:'11px',color:C.faint}}>Par: {i.parLevel??'—'} · Min: {i.minLevel??'—'} {i.unit}{price?` · ${sym}${price.toFixed(2)}/${i.unit}`:''}</p>
+                        </div>
+                        <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                          <input type="number" value={counts[i.id]||''} onChange={e=>setCounts(prev=>({...prev,[i.id]:e.target.value}))}
+                            placeholder="0" style={{width:'80px',background:C.surface2,border:`1px solid ${C.border}`,color:C.text,fontSize:'16px',padding:'8px 12px',outline:'none',textAlign:'center',fontFamily:'system-ui,sans-serif'}} />
+                          <p style={{fontSize:'12px',color:C.faint,width:'32px'}}>{i.unit}</p>
+                          {counts[i.id]&&price&&(
+                            <p style={{fontSize:'12px',color:C.gold,width:'64px'}}>{sym}{(parseFloat(counts[i.id])*price).toFixed(2)}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                <input type="number" value={counts[i.id]||''} onChange={e=>setCounts(prev=>({...prev,[i.id]:e.target.value}))}
-                  placeholder="0" style={{width:'80px',background:C.surface2,border:`1px solid ${C.border}`,color:C.text,fontSize:'16px',padding:'8px 12px',outline:'none',textAlign:'center',fontFamily:'system-ui,sans-serif'}} />
-                <p style={{fontSize:'12px',color:C.faint,width:'32px'}}>{i.unit}</p>
-                {counts[i.id]&&price&&(
-                  <p style={{fontSize:'12px',color:C.gold,width:'64px'}}>{sym}{(parseFloat(counts[i.id])*price).toFixed(2)}</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 
@@ -295,6 +313,7 @@ export default function StockView() {
         </div>
         <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
           {stock.length>0&&<button onClick={startCount} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px'}}>Start Count</button>}
+          {uncategorizedCount>0&&<button onClick={autoCategorize} title={`Assign categories to ${uncategorizedCount} uncategorized item${uncategorizedCount>1?'s':''}`} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Auto-categorize ({uncategorizedCount})</button>}
           <button onClick={()=>setShowBankPicker(true)} style={{fontSize:'11px',color:C.gold,background:`${C.gold}12`,border:`1px solid ${C.gold}30`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>From Bank</button>
           <button onClick={()=>setShowAdd(true)} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>+ Add Item</button>
         </div>
