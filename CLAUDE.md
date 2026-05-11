@@ -44,9 +44,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Stripe payments
 - [x] Admin panel
 - [x] Coming soon page
-- [ ] Stock inline editing
-- [ ] Stock and ingredient categories
-- [ ] Remove business min GP bar from CostingView
+- [x] Stock inline editing
+- [x] Stock and ingredient categories
+- [x] Remove business min GP bar from CostingView
 - [ ] Allergen tracking
 - [ ] Nutritional information
 
@@ -117,6 +117,7 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Comp-tier mechanism in admin: tier dropdown (Free/Pro/Kitchen/Group) + "Free upgrade — no Stripe charge" toggle; profile.comp excluded from MRR
 - Audit log: server-side audit() helper records update_user / initialize_user / delete_user / test_signup with before→after diff, viewable in Audit tab with action filter + per-user filter
 - Diagnosed Next.js fetch cache issue masking admin GET reads (see Important Notes)
+- Audit confirmed already-shipped Phase 1 items: stock inline editing, stock/ingredient categories, business-min-GP-bar removed from CostingView
 
 ## Known Issues
 
