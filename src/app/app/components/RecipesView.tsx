@@ -19,7 +19,6 @@ export default function RecipesView() {
   const C = settings.resolved === 'light' ? light : dark;
   const sym = (state.profile||{}).currencySymbol || '£';
   const gpTarget = (state.profile||{}).gpTarget || 72;
-  const businessMin = Math.max(gpTarget - 10, 50);
 
   const [search, setSearch] = useState('');
   const [sel, setSel] = useState<any>(null);
@@ -223,7 +222,6 @@ export default function RecipesView() {
                   {[
                     { l: 'This dish', v: linkedCosting.pct||0, c: gpColor(linkedCosting.pct||0, linkedCosting.target||gpTarget, C) },
                     { l: 'Target ' + (linkedCosting.target||gpTarget) + '%', v: linkedCosting.target||gpTarget, c: C.greenLight },
-                    { l: 'Business minimum ' + businessMin + '%', v: businessMin, c: C.faint },
                   ].map(b => (
                     <div key={b.l} style={{ marginBottom: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: C.faint, marginBottom: '3px' }}>
