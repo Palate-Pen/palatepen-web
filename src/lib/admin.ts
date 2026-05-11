@@ -9,6 +9,8 @@ export function isAuthorized(req: Request): boolean {
 }
 
 // Best-effort audit insert. Never throws — we don't want logging to fail the action.
+// Uses .select().single() so the insert is fully round-tripped (without it, the
+// promise can resolve before PostgREST commits, especially under RLS).
 export async function audit(
   req: Request,
   supabase: SupabaseClient,
@@ -17,15 +19,16 @@ export async function audit(
   details: Record<string, unknown> = {},
 ): Promise<void> {
   try {
-    await supabase.from('admin_audit_log').insert({
+    const { error } = await supabase.from('admin_audit_log').insert({
       action,
       target_user_id: targetUserId,
       details,
       ip: (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null,
       user_agent: req.headers.get('user-agent') || null,
-    });
-  } catch {
-    // swallow
+    }).select().single();
+    if (error) console.error('[audit] insert failed:', error.code, error.message);
+  } catch (e) {
+    console.error('[audit] insert threw:', e);
   }
 }
 
