@@ -8,3 +8,4 @@ dist/
 .scripts/*.png
 .claude/
 next-env.d.ts
+*.tsbuildinfo

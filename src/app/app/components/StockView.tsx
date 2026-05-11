@@ -5,6 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 
+const CATEGORIES = ['Meat & Fish','Dairy','Produce','Dry Goods','Beverages','Bakery','Frozen','Cleaning','Other'];
+
 function getStatus(qty: number|null, par: number|null, min: number|null) {
   if (qty===null||par===null) return 'unknown';
   if (qty<=(min||0)) return 'critical';
@@ -39,6 +41,8 @@ export default function StockView() {
   const [addUnit, setAddUnit] = useState('kg');
   const [addPar, setAddPar] = useState('');
   const [addMin, setAddMin] = useState('');
+  const [addCategory, setAddCategory] = useState('Other');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [bankSearch, setBankSearch] = useState('');
   const [showBankPicker, setShowBankPicker] = useState(false);
@@ -48,6 +52,7 @@ export default function StockView() {
   const [editUnitPrice, setEditUnitPrice] = useState('');
   const [editParLevel, setEditParLevel] = useState('');
   const [editMinLevel, setEditMinLevel] = useState('');
+  const [editCategory, setEditCategory] = useState('Other');
 
   function startEdit(item:any) {
     setEditId(item.id);
@@ -56,6 +61,7 @@ export default function StockView() {
     setEditUnitPrice(item.unitPrice!=null?String(item.unitPrice):'');
     setEditParLevel(item.parLevel!=null?String(item.parLevel):'');
     setEditMinLevel(item.minLevel!=null?String(item.minLevel):'');
+    setEditCategory(item.category||'Other');
   }
 
   function cancelEdit() {
@@ -70,6 +76,7 @@ export default function StockView() {
       unitPrice:editUnitPrice===''?null:parseFloat(editUnitPrice),
       parLevel:editParLevel===''?null:parseFloat(editParLevel),
       minLevel:editMinLevel===''?null:parseFloat(editMinLevel),
+      category:editCategory,
     });
     setEditId(null);
   }
@@ -90,9 +97,18 @@ export default function StockView() {
   const filtered = stock.filter((i:any)=>{
     const ms=(i.name||'').toLowerCase().includes(search.toLowerCase());
     if (!ms) return false;
+    if (categoryFilter!=='all' && (i.category||'Other')!==categoryFilter) return false;
     if (filter==='all') return true;
     return getStatus(i.currentQty,i.parLevel,i.minLevel)===filter;
   });
+
+  const grouped: Record<string, any[]> = {};
+  filtered.forEach((i:any)=>{
+    const cat = i.category || 'Other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(i);
+  });
+  const orderedCategories = CATEGORIES.filter(c => grouped[c]);
 
   function startCount() {
     const c: Record<string,string> = {};
@@ -144,8 +160,8 @@ export default function StockView() {
   function saveItem() {
     if (!addName.trim()) return;
     const bankMatch = bank.find((b:any)=>b.name.toLowerCase()===addName.toLowerCase());
-    actions.addStock({name:addName.trim(),unit:addUnit,parLevel:parseFloat(addPar)||null,minLevel:parseFloat(addMin)||null,unitPrice:bankMatch?.unitPrice||null,currentQty:null,lastCounted:null});
-    setAddName(''); setAddUnit('kg'); setAddPar(''); setAddMin(''); setShowAdd(false);
+    actions.addStock({name:addName.trim(),unit:addUnit,category:addCategory,parLevel:parseFloat(addPar)||null,minLevel:parseFloat(addMin)||null,unitPrice:bankMatch?.unitPrice||null,currentQty:null,lastCounted:null});
+    setAddName(''); setAddUnit('kg'); setAddPar(''); setAddMin(''); setAddCategory('Other'); setShowAdd(false);
   }
 
   const input: any = { width:'100%', background:C.surface2, border:`1px solid ${C.border}`, color:C.text, fontSize:'13px', padding:'9px 12px', outline:'none', fontFamily:'system-ui,sans-serif', boxSizing:'border-box' };
@@ -295,64 +311,79 @@ export default function StockView() {
         </div>
       )}
 
-      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search stock..."
-        style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'14px',padding:'12px 14px',outline:'none',fontFamily:'system-ui,sans-serif',marginBottom:'16px',boxSizing:'border-box'}} />
+      <div style={{display:'flex',gap:'8px',marginBottom:'16px'}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search stock..."
+          style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'14px',padding:'12px 14px',outline:'none',fontFamily:'system-ui,sans-serif',boxSizing:'border-box'}} />
+        <select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}
+          style={{width:'200px',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'14px',padding:'12px 14px',outline:'none',fontFamily:'system-ui,sans-serif',boxSizing:'border-box',cursor:'pointer'}}>
+          <option value="all">All Categories</option>
+          {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
 
       {filtered.length===0?(
         <div style={{textAlign:'center',padding:'60px 0'}}>
           <p style={{fontSize:'13px',color:C.faint}}>{stock.length===0?'No stock items yet. Add ingredients to track par levels and values.':'No items match that filter.'}</p>
         </div>
       ):(
-        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
-          {filtered.map((item:any)=>{
-            const status=getStatus(item.currentQty,item.parLevel,item.minLevel);
-            const sc=statusColor(status,C);
-            const bankItem = bank.find((b:any)=>b.name.toLowerCase()===item.name.toLowerCase());
-            const price = bankItem?.unitPrice || item.unitPrice || 0;
-            const value = (item.currentQty||0)*price;
-            const isEditing = editId===item.id;
-            if (isEditing) {
-              return (
-                <div key={item.id} style={{...card,padding:'16px'}}>
-                  <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr',gap:'10px',marginBottom:'12px'}}>
-                    {([['Name',editName,setEditName,'text'],['Unit',editUnit,setEditUnit,'text'],['Unit Price',editUnitPrice,setEditUnitPrice,'number'],['Par Level',editParLevel,setEditParLevel,'number'],['Min Level',editMinLevel,setEditMinLevel,'number']] as any[]).map(([lbl,val,setter,t])=>(
-                      <div key={lbl}>
-                        <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>{lbl}</label>
-                        <input type={t} value={val} onChange={(e:any)=>setter(e.target.value)} style={input} />
+        <div style={{display:'flex',flexDirection:'column',gap:'18px'}}>
+          {orderedCategories.map((cat:string)=>(
+            <div key={cat}>
+              <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px',paddingLeft:'4px'}}>{cat} <span style={{color:C.dim}}>· {grouped[cat].length}</span></p>
+              <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+                {grouped[cat].map((item:any)=>{
+                  const status=getStatus(item.currentQty,item.parLevel,item.minLevel);
+                  const sc=statusColor(status,C);
+                  const bankItem = bank.find((b:any)=>b.name.toLowerCase()===item.name.toLowerCase());
+                  const price = bankItem?.unitPrice || item.unitPrice || 0;
+                  const value = (item.currentQty||0)*price;
+                  const isEditing = editId===item.id;
+                  if (isEditing) {
+                    const lblStyle = {fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase' as const,color:C.faint,display:'block',marginBottom:'6px'};
+                    return (
+                      <div key={item.id} style={{...card,padding:'16px'}}>
+                        <div style={{display:'grid',gridTemplateColumns:'2fr 1.2fr 1fr 1fr 1fr 1fr',gap:'10px',marginBottom:'12px'}}>
+                          <div><label style={lblStyle}>Name</label><input value={editName} onChange={e=>setEditName(e.target.value)} style={input} /></div>
+                          <div><label style={lblStyle}>Category</label><select value={editCategory} onChange={e=>setEditCategory(e.target.value)} style={{...input,cursor:'pointer'}}>{CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                          <div><label style={lblStyle}>Unit</label><input value={editUnit} onChange={e=>setEditUnit(e.target.value)} style={input} /></div>
+                          <div><label style={lblStyle}>Unit Price</label><input type="number" value={editUnitPrice} onChange={e=>setEditUnitPrice(e.target.value)} style={input} /></div>
+                          <div><label style={lblStyle}>Par Level</label><input type="number" value={editParLevel} onChange={e=>setEditParLevel(e.target.value)} style={input} /></div>
+                          <div><label style={lblStyle}>Min Level</label><input type="number" value={editMinLevel} onChange={e=>setEditMinLevel(e.target.value)} style={input} /></div>
+                        </div>
+                        <div style={{display:'flex',justifyContent:'flex-end',gap:'8px'}}>
+                          <button onClick={cancelEdit} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Cancel</button>
+                          <button onClick={saveEdit} disabled={!editName.trim()} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px',opacity:!editName.trim()?0.4:1}}>Save</button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div style={{display:'flex',justifyContent:'flex-end',gap:'8px'}}>
-                    <button onClick={cancelEdit} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Cancel</button>
-                    <button onClick={saveEdit} disabled={!editName.trim()} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px',opacity:!editName.trim()?0.4:1}}>Save</button>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div key={item.id} onClick={()=>{ if(deleteId!==item.id) startEdit(item); }} style={{...card,padding:'16px',display:'flex',alignItems:'center',gap:'12px',cursor:'pointer'}}>
-                <div style={{width:'8px',height:'8px',borderRadius:'50%',background:sc,flexShrink:0}}></div>
-                <div style={{flex:1}}>
-                  <p style={{fontSize:'14px',color:C.text,marginBottom:'3px'}}>{item.name}</p>
-                  <p style={{fontSize:'11px',color:C.faint}}>
-                    {item.currentQty!==null?`${item.currentQty} ${item.unit}`:'Not counted'} · Par: {item.parLevel??'—'} · Min: {item.minLevel??'—'}
-                    {price?` · ${sym}${price.toFixed(2)}/${item.unit}`:''}
-                    {value>0?` · Value: ${sym}${value.toFixed(2)}`:''}
-                  </p>
-                  {item.lastCounted&&<p style={{fontSize:'10px',color:C.faint,marginTop:'2px'}}>Counted {Math.floor((Date.now()-item.lastCounted)/86400000)===0?'today':Math.floor((Date.now()-item.lastCounted)/86400000)+'d ago'}</p>}
-                </div>
-                <span style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:sc}}>{status==='unknown'?'—':status}</span>
-                {deleteId===item.id?(
-                  <div style={{display:'flex',alignItems:'center',gap:'8px'}} onClick={e=>e.stopPropagation()}>
-                    <button onClick={()=>setDeleteId(null)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer'}}>Cancel</button>
-                    <button onClick={()=>{ actions.delStock(item.id); setDeleteId(null); }} style={{fontSize:'11px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'5px 10px',cursor:'pointer',borderRadius:'2px'}}>Confirm</button>
-                  </div>
-                ):(
-                  <button onClick={e=>{ e.stopPropagation(); setDeleteId(item.id); }} style={{color:C.faint,background:'none',border:'none',cursor:'pointer',fontSize:'18px',padding:'0 4px'}}>×</button>
-                )}
+                    );
+                  }
+                  return (
+                    <div key={item.id} onClick={()=>{ if(deleteId!==item.id) startEdit(item); }} style={{...card,padding:'16px',display:'flex',alignItems:'center',gap:'12px',cursor:'pointer'}}>
+                      <div style={{width:'8px',height:'8px',borderRadius:'50%',background:sc,flexShrink:0}}></div>
+                      <div style={{flex:1}}>
+                        <p style={{fontSize:'14px',color:C.text,marginBottom:'3px'}}>{item.name}</p>
+                        <p style={{fontSize:'11px',color:C.faint}}>
+                          {item.currentQty!==null?`${item.currentQty} ${item.unit}`:'Not counted'} · Par: {item.parLevel??'—'} · Min: {item.minLevel??'—'}
+                          {price?` · ${sym}${price.toFixed(2)}/${item.unit}`:''}
+                          {value>0?` · Value: ${sym}${value.toFixed(2)}`:''}
+                        </p>
+                        {item.lastCounted&&<p style={{fontSize:'10px',color:C.faint,marginTop:'2px'}}>Counted {Math.floor((Date.now()-item.lastCounted)/86400000)===0?'today':Math.floor((Date.now()-item.lastCounted)/86400000)+'d ago'}</p>}
+                      </div>
+                      <span style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:sc}}>{status==='unknown'?'—':status}</span>
+                      {deleteId===item.id?(
+                        <div style={{display:'flex',alignItems:'center',gap:'8px'}} onClick={e=>e.stopPropagation()}>
+                          <button onClick={()=>setDeleteId(null)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer'}}>Cancel</button>
+                          <button onClick={()=>{ actions.delStock(item.id); setDeleteId(null); }} style={{fontSize:'11px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'5px 10px',cursor:'pointer',borderRadius:'2px'}}>Confirm</button>
+                        </div>
+                      ):(
+                        <button onClick={e=>{ e.stopPropagation(); setDeleteId(item.id); }} style={{color:C.faint,background:'none',border:'none',cursor:'pointer',fontSize:'18px',padding:'0 4px'}}>×</button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -364,7 +395,17 @@ export default function StockView() {
               <button onClick={()=>setShowAdd(false)} style={{background:'none',border:'none',color:C.faint,fontSize:'20px',cursor:'pointer'}}>×</button>
             </div>
             <div style={{padding:'20px',display:'flex',flexDirection:'column',gap:'14px'}}>
-              {([['Item Name',addName,setAddName,'e.g. Salmon fillet'],['Unit',addUnit,setAddUnit,'kg, L, each...'],['Par Level',addPar,setAddPar,'Ideal quantity'],['Minimum Level',addMin,setAddMin,'Reorder trigger']] as any[]).map(([lbl,val,setter,ph])=>(
+              <div>
+                <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>Item Name</label>
+                <input value={addName} onChange={e=>setAddName(e.target.value)} placeholder="e.g. Salmon fillet" style={input} />
+              </div>
+              <div>
+                <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>Category</label>
+                <select value={addCategory} onChange={e=>setAddCategory(e.target.value)} style={{...input,cursor:'pointer'}}>
+                  {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              {([['Unit',addUnit,setAddUnit,'kg, L, each...'],['Par Level',addPar,setAddPar,'Ideal quantity'],['Minimum Level',addMin,setAddMin,'Reorder trigger']] as any[]).map(([lbl,val,setter,ph])=>(
                 <div key={lbl}>
                   <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'6px'}}>{lbl}</label>
                   <input value={val} onChange={(e:any)=>setter(e.target.value)} placeholder={ph} style={input} />
@@ -391,7 +432,7 @@ export default function StockView() {
             </div>
             <div style={{overflow:'auto',flex:1}}>
               {bank.filter((b:any)=>b.name.toLowerCase().includes(bankSearch.toLowerCase())).map((b:any)=>(
-                <button key={b.id} onClick={()=>{ setAddName(b.name); setAddUnit(b.unit||'kg'); setShowBankPicker(false); setBankSearch(''); setShowAdd(true); }}
+                <button key={b.id} onClick={()=>{ setAddName(b.name); setAddUnit(b.unit||'kg'); setAddCategory(b.category||'Other'); setShowBankPicker(false); setBankSearch(''); setShowAdd(true); }}
                   style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px',borderBottom:`1px solid ${C.border}`,background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
                   <div>
                     <p style={{fontSize:'14px',color:C.text}}>{b.name}</p>

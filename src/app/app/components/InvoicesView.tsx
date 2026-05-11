@@ -6,6 +6,8 @@ import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 import{supabase}from'@/lib/supabase';
 
+const CATEGORIES = ['Meat & Fish','Dairy','Produce','Dry Goods','Beverages','Bakery','Frozen','Cleaning','Other'];
+
 export default function InvoicesView(){
   const{state:appState,actions:appActions}=useApp();
   const{tier}=useAuth();
@@ -295,6 +297,10 @@ Invoices scanned after this update will show full details.</p>
                     {hasAlert&&<span style={{color:C.faint}}> · was {sym}{(hasAlert.oldPrice||0).toFixed(2)}</span>}
                   </p>
                 </div>
+                <select value={item.category||'Other'} onChange={e=>appActions.upsertBank([{name:item.name,category:e.target.value}])}
+                  style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'5px 8px',borderRadius:'2px',outline:'none',fontFamily:'system-ui,sans-serif',cursor:'pointer'}}>
+                  {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
                 {deleteId===item.id?(
                   <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                     <button onClick={()=>setDeleteId(null)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer'}}>Cancel</button>
