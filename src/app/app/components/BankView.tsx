@@ -3,8 +3,8 @@ import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import { CATEGORIES } from '@/lib/categorize';
 
-const CATEGORIES = ['Meat & Fish','Dairy','Produce','Dry Goods','Beverages','Bakery','Frozen','Cleaning','Other'];
 const UNITS = ['kg','g','l','ml','ea','dozen','case'];
 
 const ALLERGENS: { key: string; label: string }[] = [

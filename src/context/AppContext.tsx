@@ -2,6 +2,7 @@
 import React,{createContext,useContext,useEffect,useReducer}from 'react';
 import{supabase}from'@/lib/supabase';
 import{useAuth}from'./AuthContext';
+import{migrateCategory}from'@/lib/categorize';
 const DEFAULT_PROFILE={name:'',location:'',currency:'GBP',currencySymbol:'£',units:'metric',gpTarget:72,tier:'free',stockDay:1,stockFrequency:'weekly'};
 export const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const init={recipes:[],notes:[],gpHistory:[],ingredientsBank:[],invoices:[],priceAlerts:[],stockItems:[],profile:DEFAULT_PROFILE,ready:false};
@@ -41,7 +42,10 @@ export function AppProvider({children}:{children:React.ReactNode}){
   useEffect(()=>{
     if(!user){dispatch({type:'LOAD',data:{}});return;}
     supabase.from('user_data').select('*').eq('user_id',user.id).single().then(({data})=>{
-      if(data){dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:data.ingredients_bank||[],invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:data.stock_items||[],profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});}
+      if(data){
+        const migrate=(arr:any[])=>arr.map(i=>i?.category?{...i,category:migrateCategory(i.category)}:i);
+        dispatch({type:'LOAD',data:{recipes:data.recipes||[],notes:data.notes||[],gpHistory:data.gp_history||[],ingredientsBank:migrate(data.ingredients_bank||[]),invoices:data.invoices||[],priceAlerts:data.price_alerts||[],stockItems:migrate(data.stock_items||[]),profile:{...DEFAULT_PROFILE,...(data.profile||{})}}});
+      }
       else{const profile={...DEFAULT_PROFILE,name:user.user_metadata?.name||''};supabase.from('user_data').insert({user_id:user.id,recipes:[],notes:[],gp_history:[],ingredients_bank:[],invoices:[],price_alerts:[],stock_items:[],profile});dispatch({type:'LOAD',data:{profile}});}
     });
   },[user]);
