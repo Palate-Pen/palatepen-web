@@ -145,6 +145,7 @@ export default function RecipesView() {
   const [assigningCosting, setAssigningCosting] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
   const [showSpec, setShowSpec] = useState(false);
+  const [confirmUnlock, setConfirmUnlock] = useState(false);
 
   const filtered = state.recipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -207,17 +208,48 @@ export default function RecipesView() {
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button onClick={() => { setSel(null); setEditMode(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => { setSel(null); setEditMode(false); setConfirmUnlock(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
             ← Recipe Library
           </button>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {sel.locked && !confirmUnlock && (
+              <span title="Locked — content cannot be edited" style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '14', border: '1px solid ' + C.gold + '50', padding: '5px 10px', borderRadius: '2px' }}>
+                🔒 Locked
+              </span>
+            )}
+            {!sel.locked ? (
+              <button onClick={() => actions.updRecipe(sel.id, { locked: true })}
+                title="Lock to freeze this recipe — prevents accidental edits"
+                style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                🔒 Lock
+              </button>
+            ) : confirmUnlock ? (
+              <>
+                <span style={{ fontSize: '11px', color: C.red, alignSelf: 'center' }}>Unlock to allow edits?</span>
+                <button onClick={() => { actions.updRecipe(sel.id, { locked: false }); setConfirmUnlock(false); }}
+                  style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: '#fff', background: C.red, border: 'none', padding: '8px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                  Yes, unlock
+                </button>
+                <button onClick={() => setConfirmUnlock(false)}
+                  style={{ fontSize: '11px', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setConfirmUnlock(true)}
+                style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                🔓 Unlock
+              </button>
+            )}
             {editMode ? (
               <>
                 <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, alignSelf: 'center' }}>Auto-saves</p>
                 <button onClick={() => setEditMode(false)} style={{ fontSize: '11px', fontWeight: 700, color: C.bg, background: C.gold, border: 'none', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>Done</button>
               </>
             ) : (
-              <button onClick={openEdit} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+              <button onClick={openEdit} disabled={!!sel.locked}
+                title={sel.locked ? 'Recipe is locked — unlock to edit' : ''}
+                style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: sel.locked ? C.faint : C.gold, background: sel.locked ? 'transparent' : C.gold + '12', border: '1px solid ' + (sel.locked ? C.border : C.gold + '30'), padding: '8px 16px', cursor: sel.locked ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: sel.locked ? 0.5 : 1 }}>
                 Edit Recipe
               </button>
             )}
@@ -284,11 +316,12 @@ export default function RecipesView() {
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Costing</p>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 {linkedCosting && <p style={{ fontSize: '11px', color: C.faint }}>Last updated {new Date(linkedCosting.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>}
-                {linkedCosting ? (
+                {linkedCosting && !sel.locked ? (
                   <button onClick={removeCosting} style={{ fontSize: '10px', color: C.faint, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Remove link</button>
                 ) : null}
-                <button onClick={() => setAssigningCosting(v => !v)}
-                  style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                <button onClick={() => setAssigningCosting(v => !v)} disabled={!!sel.locked}
+                  title={sel.locked ? 'Recipe is locked' : ''}
+                  style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: sel.locked ? C.faint : C.gold, background: sel.locked ? 'transparent' : C.gold + '12', border: '1px solid ' + (sel.locked ? C.border : C.gold + '30'), padding: '4px 10px', cursor: sel.locked ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: sel.locked ? 0.5 : 1 }}>
                   {assigningCosting ? 'Cancel' : linkedCosting ? 'Change' : '+ Assign Costing'}
                 </button>
               </div>
@@ -299,12 +332,13 @@ export default function RecipesView() {
               <label style={{ fontSize: '11px', color: C.faint, whiteSpace: 'nowrap', flexShrink: 0 }}>Linked costing:</label>
               <select
                 value={sel.linkedCostingId || ''}
+                disabled={!!sel.locked}
                 onChange={e => {
                   const val = e.target.value;
                   actions.updRecipe(sel.id, { linkedCostingId: val || null });
                   setSel({ ...sel, linkedCostingId: val || null });
                 }}
-                style={{ flex: 1, background: C.surface, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '7px 10px', outline: 'none', cursor: 'pointer', borderRadius: '3px' }}
+                style={{ flex: 1, background: C.surface, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '7px 10px', outline: 'none', cursor: sel.locked ? 'not-allowed' : 'pointer', borderRadius: '3px', opacity: sel.locked ? 0.5 : 1 }}
               >
                 <option value=''>— No costing linked —</option>
                 {state.gpHistory.map((h: any) => (
@@ -485,15 +519,16 @@ export default function RecipesView() {
                 {ALLERGENS.map(a => {
                   const may = (sel.allergens?.mayContain || []).includes(a.key);
                   const computedHas = computed.contains.has(a.key);
+                  const disabled = computedHas || !!sel.locked;
                   return (
-                    <button key={a.key} disabled={computedHas}
-                      title={computedHas ? 'Already in computed Contains list' : ''}
+                    <button key={a.key} disabled={disabled}
+                      title={sel.locked ? 'Recipe is locked' : (computedHas ? 'Already in computed Contains list' : '')}
                       onClick={() => {
                         const cur = (sel.allergens?.mayContain || []) as string[];
                         const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
                         actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), mayContain: next } });
                       }}
-                      style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (computedHas ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: computedHas ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: computedHas ? 0.4 : 1 }}>
+                      style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (disabled ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: disabled ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: disabled ? 0.4 : 1 }}>
                       {a.label}
                     </button>
                   );
@@ -571,14 +606,15 @@ export default function RecipesView() {
           <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>Chef&apos;s Notes</p>
           <textarea
             value={editMode ? editNotes : (sel.notes || '')}
+            readOnly={!!sel.locked && !editMode}
             onChange={e => editMode ? setEditNotes(e.target.value) : actions.updRecipe(sel.id, { notes: e.target.value })}
-            placeholder="Techniques, adaptations, ideas..." rows={4}
-            style={{ ...inp, resize: 'none' }}
+            placeholder={sel.locked ? 'Locked — unlock to edit' : 'Techniques, adaptations, ideas...'} rows={4}
+            style={{ ...inp, resize: 'none', opacity: sel.locked && !editMode ? 0.7 : 1, cursor: sel.locked && !editMode ? 'not-allowed' : 'text' }}
           />
         </div>
 
-        {/* Delete */}
-        {!editMode && (
+        {/* Delete (hidden when locked) */}
+        {!editMode && !sel.locked && (
           <div style={{ borderTop: '1px solid ' + C.border, paddingTop: '20px' }}>
             {deleteId === sel.id ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -595,6 +631,11 @@ export default function RecipesView() {
                 Delete Recipe
               </button>
             )}
+          </div>
+        )}
+        {!editMode && sel.locked && (
+          <div style={{ borderTop: '1px solid ' + C.border, paddingTop: '20px' }}>
+            <p style={{ fontSize: '12px', color: C.faint, fontStyle: 'italic' }}>Recipe is locked. Unlock from the header to enable Edit and Delete.</p>
           </div>
         )}
 
@@ -931,7 +972,10 @@ export default function RecipesView() {
             return (
               <button key={r.id} onClick={() => { setSel(r); setEditMode(false); setAssigningCosting(false); }}
                 style={{ textAlign: 'left', background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: '20px', cursor: 'pointer' }}>
-                <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: C.text, marginBottom: '8px' }}>{r.title}</h3>
+                <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: C.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {r.locked && <span title="Locked" style={{ fontSize: '12px', color: C.gold }}>🔒</span>}
+                  {r.title}
+                </h3>
                 {r.imported?.description && (
                   <p style={{ fontSize: '12px', color: C.faint, lineHeight: 1.5, marginBottom: '10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {r.imported.description}

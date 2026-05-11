@@ -57,7 +57,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] Waste tracking with £ cost impact
 - [ ] Recipe photo upload
 - [ ] Sub-recipes
-- [ ] Locked recipe specs
+- [x] Locked recipe specs
 - [x] Traffic light labelling
 - [x] Calorie counts per dish and portion
 - [x] Dish spec sheets (printable)
@@ -127,6 +127,7 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Categories restructured to 18 specific items (Meat & Poultry, Fish & Seafood, Dairy & Eggs, Fresh Produce, Fresh Herbs, Dry Goods & Grains, Tinned & Preserved, Oils & Vinegars, Condiments & Sauces, Spices & Seasonings, Bakery & Pastry, Frozen Meat & Fish, Frozen Produce, Frozen Pastry, Beverages, Cleaning & Chemicals, Disposables & Packaging, Other). Single source of truth in src/lib/categorize.ts. Bank/Stock/Invoices all import from there. Auto-categorize keywords updated. migrateCategory() runs on load to remap legacy names (Meat & Fish → Meat & Poultry, Dairy → Dairy & Eggs, Produce → Fresh Produce, etc.).
 - UK FOP traffic light labels on the recipe nutrition table — fat / saturates / sugars / salt get LOW/MED/HIGH pills coloured green/amber/red per the 2013 DH thresholds, computed per 100g of finished dish (using the bank-matched ingredient weight). Energy and fibre stay info-only.
 - Printable dish spec sheets — "Spec Sheet" button on recipe detail opens an A4-styled overlay with title/category/portions/sell/GP, ingredient list, computed Contains allergens (with name-the-nut/cereal sub-types), May Contain, and a nutrition table per portion + per 100g + FOP traffic lights. Print button uses `window.print()`; `@media print` CSS hides everything except `#spec-sheet-print` so the rest of the app doesn't print. Always rendered in light mode for paper readability regardless of the user's app theme.
+- Locked recipe specs — `recipe.locked: boolean` (jsonb, no schema migration). Lock button in recipe detail header, instant lock; unlock requires a confirm step. When locked: Edit button disabled, costing reassignment disabled, May Contain toggles disabled, notes textarea readonly, Delete button hidden. Lock icon (🔒) shown in detail header AND on the recipe card in the list. In a future multi-user world this becomes role-checked; for now the user is implicitly the admin.
 
 ## Known Issues
 
