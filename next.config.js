@@ -10,7 +10,7 @@ const nextConfig = {
           destination: '/app',
         },
         {
-          source: '/:path((?!app|api|_next|favicon).+)',
+          source: '/:path((?!app|api|_next|favicon|icon|apple-icon|robots|sitemap).+)',
           has: [{ type: 'host', value: 'app.palateandpen.co.uk' }],
           destination: '/app/:path',
         },
