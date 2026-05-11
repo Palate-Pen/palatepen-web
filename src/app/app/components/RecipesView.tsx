@@ -126,6 +126,7 @@ function gpColor(pct: number, target: number, C: any) {
 
 export default function RecipesView() {
   const { state, actions } = useApp();
+  const { user } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const sym = (state.profile||{}).currencySymbol || '£';
@@ -143,6 +144,8 @@ export default function RecipesView() {
   const [newNotes, setNewNotes] = useState('');
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
   const [importError, setImportError] = useState('');
   const [importedData, setImportedData] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string|null>(null);
@@ -235,6 +238,62 @@ export default function RecipesView() {
     setImporting(false);
   }
 
+  // ── PHOTO UPLOAD ──────────────────────────────────────────
+  // Resize browser-side to keep uploaded files small (~200-300KB)
+  async function resizePhoto(file: File): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxW = 1600;
+        const ratio = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas not supported'));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not encode image')), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+      img.src = url;
+    });
+  }
+
+  async function uploadPhoto(file: File) {
+    if (!sel || !user?.id) return;
+    setPhotoError('');
+    setPhotoUploading(true);
+    try {
+      const blob = await resizePhoto(file);
+      const ts = Date.now();
+      const path = `${user.id}/${sel.id}-${ts}.jpg`;
+      const { error: upErr } = await supabase.storage.from('recipe-photos').upload(path, blob, {
+        contentType: 'image/jpeg', upsert: true, cacheControl: '3600',
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('recipe-photos').getPublicUrl(path);
+      const newUrl = pub.publicUrl;
+      // If there was an old photo at a different path, attempt to delete it (best-effort)
+      if (sel.photoPath && sel.photoPath !== path) {
+        await supabase.storage.from('recipe-photos').remove([sel.photoPath]).catch(() => {});
+      }
+      actions.updRecipe(sel.id, { photoUrl: newUrl, photoPath: path });
+    } catch (e: any) {
+      setPhotoError(e?.message || 'Upload failed');
+    }
+    setPhotoUploading(false);
+  }
+
+  async function removePhoto() {
+    if (!sel) return;
+    if (sel.photoPath) {
+      await supabase.storage.from('recipe-photos').remove([sel.photoPath]).catch(() => {});
+    }
+    actions.updRecipe(sel.id, { photoUrl: null, photoPath: null });
+  }
+
   function addRecipe() {
     if (!newTitle.trim()) return;
     const recipe: any = { title: newTitle.trim(), category: newCat, notes: newNotes };
@@ -310,6 +369,35 @@ export default function RecipesView() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Photo */}
+        <div style={{ marginBottom: '20px' }}>
+          {sel.photoUrl ? (
+            <div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', border: '1px solid ' + C.border }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={sel.photoUrl} alt={sel.title || 'Recipe'} style={{ width: '100%', maxHeight: '320px', objectFit: 'cover', display: 'block' }} />
+              {!sel.locked && (
+                <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.text, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 10px', borderRadius: '2px', cursor: photoUploading ? 'wait' : 'pointer' }}>
+                    {photoUploading ? 'Uploading…' : 'Replace'}
+                    <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} style={{ display: 'none' }} disabled={photoUploading} />
+                  </label>
+                  <button onClick={removePhoto} disabled={photoUploading}
+                    style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.text, background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : !sel.locked ? (
+            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '32px 20px', background: C.surface2, border: '1px dashed ' + C.border, borderRadius: '4px', cursor: photoUploading ? 'wait' : 'pointer' }}>
+              <span style={{ fontSize: '13px', color: C.dim }}>{photoUploading ? 'Uploading…' : '📷 Add a photo'}</span>
+              <span style={{ fontSize: '11px', color: C.faint }}>JPEG or PNG, auto-resized to 1600px wide</span>
+              <input type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} style={{ display: 'none' }} disabled={photoUploading} />
+            </label>
+          ) : null}
+          {photoError && <p style={{ fontSize: '12px', color: C.red, marginTop: '6px' }}>⚠ {photoError}</p>}
         </div>
 
         {/* Title */}
@@ -882,6 +970,11 @@ export default function RecipesView() {
 
                   {/* The actual sheet — light theme always for print readability */}
                   <div id="spec-sheet-print" style={{ background: '#FFFFFF', color: '#111', padding: '32px 40px', overflow: 'auto', fontFamily: 'system-ui,sans-serif', borderRadius: '0 0 4px 4px' }}>
+                    {/* Photo (if any) */}
+                    {sel.photoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={sel.photoUrl} alt={sel.title || 'Recipe'} style={{ width: '100%', maxHeight: '220px', objectFit: 'cover', borderRadius: '3px', marginBottom: '14px' }} />
+                    )}
                     {/* Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #DDD', paddingBottom: '14px', marginBottom: '18px' }}>
                       <div>
@@ -1068,7 +1161,12 @@ export default function RecipesView() {
             const costing = getLinkedCosting(r);
             return (
               <button key={r.id} onClick={() => { setSel(r); setEditMode(false); setAssigningCosting(false); }}
-                style={{ textAlign: 'left', background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: '20px', cursor: 'pointer' }}>
+                style={{ textAlign: 'left', background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: 0, cursor: 'pointer', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {r.photoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={r.photoUrl} alt={r.title} style={{ width: '100%', height: '140px', objectFit: 'cover', display: 'block', borderBottom: '1px solid ' + C.border }} />
+                )}
+                <div style={{ padding: '20px' }}>
                 <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: C.text, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {r.locked && <span title="Locked" style={{ fontSize: '12px', color: C.gold }}>🔒</span>}
                   {r.title}
@@ -1092,6 +1190,7 @@ export default function RecipesView() {
                     if (!a) return null;
                     return <span key={k} title={`Contains ${a.label}`} style={{ fontSize: '9px', fontWeight: 700, color: C.red, background: C.red + '12', border: '0.5px solid ' + C.red + '30', padding: '2px 6px', borderRadius: '2px' }}>{a.short}</span>;
                   })}
+                </div>
                 </div>
               </button>
             );
