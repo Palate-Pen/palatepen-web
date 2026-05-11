@@ -24,7 +24,7 @@ import SettingsView from './components/SettingsView';
 import UpgradeModal from './components/UpgradeModal';
 
 export default function App() {
-  const { user, loading, currentAccount, refreshAccounts, switchAccount } = useAuth();
+  const { user, loading, currentAccount } = useAuth();
   const { state, saveStatus } = useApp();
   const { settings } = useSettings();
   const [tab, setTab] = useState('dashboard');
@@ -44,43 +44,22 @@ export default function App() {
     try { window.localStorage.setItem('palatable_sidebar_collapsed', b ? '1' : '0'); } catch {}
   }
 
-  // Redeem a pending team invite once the user is signed in. Token can come
-  // from either ?invite=TOKEN in the URL (link path) or sessionStorage (set
-  // by the /invite page before the auth bounce). We try both; whichever
-  // resolves first wins. Successful redemption switches the active account
-  // to the joined one and clears the marker.
+  // Pending invite token: redirect to /invite/[token] so the acceptance page
+  // can show the merge prompt (when the user has a personal Free-tier
+  // account that could be folded into the team). The page handles the
+  // accept POST + accountswitch + redirect back to /app after.
   useEffect(() => {
     if (!user) return;
     const url = new URLSearchParams(window.location.search);
     let token = url.get('invite');
     try { token = token || window.sessionStorage.getItem('palatable_pending_invite'); } catch {}
     if (!token) return;
-
-    let cancelled = false;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const access = session?.access_token;
-      if (!access) return;
-      const r = await fetch('/api/invites/' + token + '/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + access },
-      });
-      const json = await r.json().catch(() => ({}));
-      if (cancelled) return;
-      try { window.sessionStorage.removeItem('palatable_pending_invite'); } catch {}
-      if (url.has('invite')) {
-        url.delete('invite');
-        const qs = url.toString();
-        window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
-      }
-      if (r.ok && json.accountId) {
-        await refreshAccounts();
-        switchAccount(json.accountId);
-      } else if (json.error) {
-        console.warn('[invite redeem]', json.error);
-      }
-    })();
-    return () => { cancelled = true; };
+    if (url.has('invite')) {
+      url.delete('invite');
+      const qs = url.toString();
+      window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+    }
+    window.location.href = '/invite/' + token;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
