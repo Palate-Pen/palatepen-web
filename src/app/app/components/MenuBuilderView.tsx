@@ -386,6 +386,11 @@ export default function MenuBuilderView() {
                   <p style={{ fontSize: '11px', color: C.faint, lineHeight: 1.6 }}>
                     Profitability split is the menu&apos;s average contribution margin ({sym}{eng.avgMargin.toFixed(2)}). Popularity threshold is 70% of fair share — with {eng.rows.length} dish{eng.rows.length === 1 ? '' : 'es'} that&apos;s {(eng.threshold * 100).toFixed(1)}% of total covers ({Math.round(eng.totalCovers * eng.threshold)} covers per dish). Total covers entered: <strong style={{ color: C.text }}>{eng.totalCovers}</strong>.
                   </p>
+                  <div style={{ marginTop: '12px', padding: '10px 14px', background: C.gold + '08', border: '0.5px dashed ' + C.gold + '40', borderRadius: '3px' }}>
+                    <p style={{ fontSize: '11px', color: C.dim, lineHeight: 1.5 }}>
+                      <strong style={{ color: C.gold, letterSpacing: '0.3px' }}>Coming in Phase 4:</strong> covers will populate automatically from POS integration (Square, ePOSnow). Manual entry will become the fallback rather than the default.
+                    </p>
+                  </div>
                 </>
               )}
             </div>
