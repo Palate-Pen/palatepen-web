@@ -218,8 +218,11 @@ export default function RecipesView() {
       const json = await res.json();
       if (!res.ok || json.error) {
         if (json.debug) console.error('[import-recipe] debug:', json.debug);
-        const dbg = json.debug?.rawSnippet || json.debug?.jsonStr || json.debug?.apiError;
-        setImportError(json.error + (dbg ? ` — Claude said: ${String(dbg).slice(0, 200)}` : '') || `Import failed (HTTP ${res.status})`);
+        // Only append a snippet if it's a string — apiError is an object, the API message is already in json.error
+        const snippet = typeof json.debug?.rawSnippet === 'string' ? json.debug.rawSnippet
+                      : typeof json.debug?.jsonStr === 'string' ? json.debug.jsonStr
+                      : null;
+        setImportError(json.error + (snippet ? ` — Claude said: ${snippet.slice(0, 200)}` : '') || `Import failed (HTTP ${res.status})`);
       } else {
         setImportedData(json);
         if (json.title) setNewTitle(json.title);
