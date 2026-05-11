@@ -1,4 +1,5 @@
 'use client';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -21,6 +22,24 @@ export default function App() {
   const { settings } = useSettings();
   const [tab, setTab] = useState('recipes');
   const [showUpgrade, setShowUpgrade] = useState(false);
+
+  // Auto-refresh session after Stripe payment
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgraded') === 'true') {
+      // Remove the query param from URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Refresh the session to pick up new tier from Supabase
+      supabase.auth.refreshSession().then(({ data }) => {
+        if (data?.session) {
+          // Force a reload of user data
+          window.location.reload();
+        }
+      });
+    }
+  }, []);
+
   const C = settings.resolved === 'light' ? light : dark;
 
   if (loading || !state.ready) return (
