@@ -55,6 +55,53 @@ export default function MenuBuilderView() {
     return { dishes, costed, totalSell, totalCost, blendedGP, lowest, uncosted: dishes.length - costed.length };
   }
 
+  // Menu engineering classification (Kasavana & Smith).
+  // Profitability: contribution margin (sell - cost) per dish vs the menu mean.
+  //   above mean → HIGH, below or equal → LOW.
+  // Popularity: sales mix % (this dish covers / total covers) vs 70% × fair share.
+  //   fair share = 1 / N_dishes. 70% of fair share is the standard threshold.
+  type Quadrant = 'star' | 'plough' | 'puzzle' | 'dog';
+  type EngDish = { id: string; recipe: any; costing: any; covers: number; mix: number; margin: number; quadrant: Quadrant | null };
+  function engineering(menu: any): { rows: EngDish[]; totalCovers: number; avgMargin: number; fairShare: number; threshold: number } | null {
+    const sales = (menu.salesData || {}) as Record<string, number>;
+    const items = (menu.recipeIds || []).map((id: string) => {
+      const r = state.recipes.find((x: any) => x.id === id);
+      const c = getCosting(id);
+      const covers = parseInt(String(sales[id] || 0)) || 0;
+      const margin = c ? (parseFloat(c.sell) || 0) - (parseFloat(c.cost) || 0) : 0;
+      return { id, recipe: r, costing: c, covers, mix: 0, margin, quadrant: null as Quadrant | null };
+    });
+    const totalCovers = items.reduce((a: number, d: any) => a + d.covers, 0);
+    const N = items.length;
+    if (N === 0) return null;
+    const fairShare = 1 / N;
+    const threshold = 0.7 * fairShare; // 70% rule
+    const costedItems = items.filter((d: any) => d.costing);
+    const avgMargin = costedItems.length > 0
+      ? costedItems.reduce((a: number, d: any) => a + d.margin, 0) / costedItems.length
+      : 0;
+    items.forEach((d: any) => {
+      d.mix = totalCovers > 0 ? d.covers / totalCovers : 0;
+      if (!d.costing || totalCovers === 0) { d.quadrant = null; return; }
+      const highPop = d.mix >= threshold;
+      const highProf = d.margin > avgMargin;
+      d.quadrant = highPop
+        ? (highProf ? 'star' : 'plough')
+        : (highProf ? 'puzzle' : 'dog');
+    });
+    return { rows: items as EngDish[], totalCovers, avgMargin, fairShare, threshold };
+  }
+
+  function setCovers(menuId: string, recipeId: string, value: string) {
+    const menu = menus.find((m: any) => m.id === menuId);
+    if (!menu) return;
+    const next = { ...(menu.salesData || {}), [recipeId]: parseInt(value) || 0 };
+    actions.updMenu(menuId, { salesData: next });
+  }
+  function clearAllCovers(menuId: string) {
+    actions.updMenu(menuId, { salesData: {} });
+  }
+
   function addMenu() {
     if (!newName.trim()) return;
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -237,6 +284,104 @@ export default function MenuBuilderView() {
           )}
         </div>
 
+        {/* Menu Engineering — sales mix × profitability */}
+        {(() => {
+          const eng = engineering(sel);
+          if (!eng || eng.rows.length === 0) return null;
+          const Q_META: Record<'star' | 'plough' | 'puzzle' | 'dog', { label: string; color: string; advice: string }> = {
+            star:   { label: 'Star',         color: C.greenLight, advice: 'High covers + high margin. Protect: don\'t change spec or price.' },
+            plough: { label: 'Plough Horse', color: C.gold,       advice: 'Sells well but margin is thin. Trim cost or nudge price up.' },
+            puzzle: { label: 'Puzzle',       color: C.gold,       advice: 'Profitable but few sell. Promote, reposition, or rename.' },
+            dog:    { label: 'Dog',          color: C.red,        advice: 'Low covers + low margin. Cull or replace at next menu change.' },
+          };
+          const byQ = (q: 'star' | 'plough' | 'puzzle' | 'dog') => eng.rows.filter((r: EngDish) => r.quadrant === q);
+
+          return (
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
+                <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>
+                  Menu Engineering <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(Kasavana &amp; Smith)</span>
+                </p>
+                {eng.totalCovers > 0 && (
+                  <button onClick={() => clearAllCovers(sel.id)} style={{ fontSize: '11px', color: C.faint, background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                    Clear sales
+                  </button>
+                )}
+              </div>
+
+              {/* Per-dish sales entry table */}
+              <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '3px', overflow: 'hidden', marginBottom: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 100px 80px 100px 110px', gap: '8px', padding: '8px 12px', background: C.surface2, fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint }}>
+                  <span>Dish</span>
+                  <span style={{ textAlign: 'right' }}>Covers</span>
+                  <span style={{ textAlign: 'right' }}>Mix %</span>
+                  <span style={{ textAlign: 'right' }}>Margin</span>
+                  <span style={{ textAlign: 'right' }}>Class</span>
+                </div>
+                {eng.rows.map((d: EngDish) => (
+                  <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '2fr 100px 80px 100px 110px', gap: '8px', padding: '8px 12px', borderTop: '1px solid ' + C.border, alignItems: 'center' }}>
+                    <span style={{ fontSize: '13px', color: C.text }}>{d.recipe?.title || '(deleted)'}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={d.covers || ''}
+                      onChange={e => setCovers(sel.id, d.id, e.target.value)}
+                      placeholder="0"
+                      style={{ background: C.surface2, border: '1px solid ' + C.border, color: C.text, fontSize: '12px', padding: '4px 8px', textAlign: 'right', borderRadius: '2px', outline: 'none', width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <span style={{ fontSize: '12px', color: C.dim, textAlign: 'right' }}>
+                      {eng.totalCovers > 0 ? (d.mix * 100).toFixed(1) + '%' : '—'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: C.dim, textAlign: 'right' }}>
+                      {d.costing ? sym + d.margin.toFixed(2) : '—'}
+                    </span>
+                    <span style={{ textAlign: 'right' }}>
+                      {d.quadrant ? (
+                        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: Q_META[d.quadrant].color, background: Q_META[d.quadrant].color + '15', border: '0.5px solid ' + Q_META[d.quadrant].color + '40', padding: '3px 8px', borderRadius: '2px' }}>
+                          {Q_META[d.quadrant].label}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '10px', color: C.faint }}>—</span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {eng.totalCovers === 0 ? (
+                <p style={{ fontSize: '12px', color: C.faint, fontStyle: 'italic' }}>
+                  Enter covers per dish above to see the Star / Plough Horse / Puzzle / Dog classification.
+                </p>
+              ) : (
+                <>
+                  {/* 2x2 quadrant grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '8px', height: '260px', marginBottom: '12px', position: 'relative' }}>
+                    {/* Y axis label */}
+                    <div style={{ position: 'absolute', left: '-32px', top: '50%', transform: 'rotate(-90deg) translateX(50%)', transformOrigin: 'left top', fontSize: '10px', color: C.faint, letterSpacing: '1px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                      Profitability →
+                    </div>
+
+                    {/* TOP-LEFT: Puzzle (low pop, high prof) */}
+                    <Quad C={C} meta={Q_META.puzzle} dishes={byQ('puzzle')} />
+                    {/* TOP-RIGHT: Star (high pop, high prof) */}
+                    <Quad C={C} meta={Q_META.star} dishes={byQ('star')} />
+                    {/* BOT-LEFT: Dog */}
+                    <Quad C={C} meta={Q_META.dog} dishes={byQ('dog')} />
+                    {/* BOT-RIGHT: Plough Horse */}
+                    <Quad C={C} meta={Q_META.plough} dishes={byQ('plough')} />
+                  </div>
+                  <p style={{ fontSize: '10px', color: C.faint, textAlign: 'center', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>Popularity →</p>
+
+                  {/* Method note */}
+                  <p style={{ fontSize: '11px', color: C.faint, lineHeight: 1.6 }}>
+                    Profitability split is the menu&apos;s average contribution margin ({sym}{eng.avgMargin.toFixed(2)}). Popularity threshold is 70% of fair share — with {eng.rows.length} dish{eng.rows.length === 1 ? '' : 'es'} that&apos;s {(eng.threshold * 100).toFixed(1)}% of total covers ({Math.round(eng.totalCovers * eng.threshold)} covers per dish). Total covers entered: <strong style={{ color: C.text }}>{eng.totalCovers}</strong>.
+                  </p>
+                </>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Danger */}
         <div style={{ borderTop: '1px solid ' + C.border, paddingTop: '20px', marginTop: '24px' }}>
           {!confirmDelete ? (
@@ -335,6 +480,36 @@ export default function MenuBuilderView() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Quad({ C, meta, dishes }: {
+  C: any;
+  meta: { label: string; color: string; advice: string };
+  dishes: { id: string; recipe: any }[];
+}) {
+  return (
+    <div style={{
+      background: meta.color + '0A',
+      border: '1px solid ' + meta.color + '40',
+      borderRadius: '4px',
+      padding: '12px',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: meta.color }}>{meta.label}</p>
+        <span style={{ fontSize: '11px', color: C.faint }}>{dishes.length}</span>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {dishes.length === 0 ? (
+          <p style={{ fontSize: '11px', color: C.faint, fontStyle: 'italic' }}>—</p>
+        ) : dishes.map(d => (
+          <p key={d.id} style={{ fontSize: '12px', color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.recipe?.title || '(deleted)'}</p>
+        ))}
+      </div>
+      <p style={{ fontSize: '10px', color: C.faint, marginTop: '8px', lineHeight: 1.4 }}>{meta.advice}</p>
     </div>
   );
 }
