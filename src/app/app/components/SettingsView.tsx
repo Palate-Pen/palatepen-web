@@ -5,7 +5,6 @@ import{useAuth}from'@/context/AuthContext';
 import{useApp}from'@/context/AppContext';
 import{dark,light}from'@/lib/theme';
 import{usePerms}from'@/lib/perms';
-import TeamSection from './TeamSection';
 
 export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -94,8 +93,6 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
           {!['pro','kitchen','group'].includes(tier)&&perms.canManageBilling&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>}
         </div>
       </div>
-
-      <TeamSection onUpgrade={onUpgrade} />
 
       {/* Defaults — manager+ only (account-wide settings) */}
       {perms.canManageSettings && (
