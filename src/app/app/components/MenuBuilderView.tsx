@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import MenuDesigner from './MenuDesigner';
 
 function gpColor(pct: number, target: number, C: any) {
   if (pct >= target) return C.greenLight;
@@ -26,6 +27,7 @@ export default function MenuBuilderView() {
   const [picking, setPicking] = useState(false);
   const [pickQuery, setPickQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showDesigner, setShowDesigner] = useState(false);
 
   const sel = menus.find((m: any) => m.id === selId) || null;
 
@@ -158,7 +160,15 @@ export default function MenuBuilderView() {
           <button onClick={() => { setSelId(null); setPicking(false); setConfirmDelete(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
             ← Menus
           </button>
+          <button onClick={() => setShowDesigner(true)}
+            disabled={(sel.recipeIds || []).length === 0}
+            title={(sel.recipeIds || []).length === 0 ? 'Add at least one dish first' : 'Open Menu Designer'}
+            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: (sel.recipeIds || []).length === 0 ? C.faint : C.gold, background: (sel.recipeIds || []).length === 0 ? 'transparent' : C.gold + '14', border: '1px solid ' + ((sel.recipeIds || []).length === 0 ? C.border : C.gold + '40'), padding: '8px 14px', cursor: (sel.recipeIds || []).length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: (sel.recipeIds || []).length === 0 ? 0.5 : 1 }}>
+            🎨 Menu Designer
+          </button>
         </div>
+
+        {showDesigner && <MenuDesigner menuId={sel.id} onClose={() => setShowDesigner(false)} />}
 
         <input
           value={sel.name}
