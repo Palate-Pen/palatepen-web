@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp, uid } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -63,22 +63,24 @@ export default function StockView() {
     setEditCategory(item.category||'Other');
   }
 
-  function cancelEdit() {
+  function closeEdit() {
     setEditId(null);
   }
 
-  function saveEdit() {
+  useEffect(()=>{
     if (!editId||!editName.trim()) return;
-    actions.updStock(editId,{
-      name:editName.trim(),
-      unit:editUnit.trim()||'each',
-      unitPrice:editUnitPrice===''?null:parseFloat(editUnitPrice),
-      parLevel:editParLevel===''?null:parseFloat(editParLevel),
-      minLevel:editMinLevel===''?null:parseFloat(editMinLevel),
-      category:editCategory,
-    });
-    setEditId(null);
-  }
+    const t = setTimeout(()=>{
+      actions.updStock(editId,{
+        name:editName.trim(),
+        unit:editUnit.trim()||'each',
+        unitPrice:editUnitPrice===''?null:parseFloat(editUnitPrice),
+        parLevel:editParLevel===''?null:parseFloat(editParLevel),
+        minLevel:editMinLevel===''?null:parseFloat(editMinLevel),
+        category:editCategory,
+      });
+    },400);
+    return ()=>clearTimeout(t);
+  },[editId,editName,editUnit,editUnitPrice,editParLevel,editMinLevel,editCategory]);
 
   const summary = {
     total: stock.length,
@@ -369,9 +371,9 @@ export default function StockView() {
                           <div><label style={lblStyle}>Par Level</label><input type="number" value={editParLevel} onChange={e=>setEditParLevel(e.target.value)} style={input} /></div>
                           <div><label style={lblStyle}>Min Level</label><input type="number" value={editMinLevel} onChange={e=>setEditMinLevel(e.target.value)} style={input} /></div>
                         </div>
-                        <div style={{display:'flex',justifyContent:'flex-end',gap:'8px'}}>
-                          <button onClick={cancelEdit} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:`1px solid ${C.border}`,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Cancel</button>
-                          <button onClick={saveEdit} disabled={!editName.trim()} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px',opacity:!editName.trim()?0.4:1}}>Save</button>
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px'}}>
+                          <p style={{fontSize:'10px',letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint}}>Changes auto-save</p>
+                          <button onClick={closeEdit} style={{fontSize:'11px',fontWeight:700,background:C.gold,color:C.bg,border:'none',padding:'8px 16px',cursor:'pointer',borderRadius:'2px'}}>Done</button>
                         </div>
                       </div>
                     );

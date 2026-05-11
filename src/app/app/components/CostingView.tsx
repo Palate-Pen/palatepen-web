@@ -48,6 +48,13 @@ export default function CostingView(){
     });
     setPriceAlerts(alerts);
   },[editingId]);
+  useEffect(()=>{
+    if(!editingId||!dish.trim())return;
+    const t=setTimeout(()=>{
+      actions.updGP(editingId,{name:dish,sell:s,cost,gp,pct,currency:'GBP',target:tgt,portions:p,ingredients:ings,savedAt:Date.now()});
+    },600);
+    return()=>clearTimeout(t);
+  },[editingId,dish,sell,target,portions,ings]);
   function loadHistory(h:any){setDish(h.name||'');setSell(String(h.sell||''));setTarget(String(h.target||gpTarget));setPortions(String(h.portions||1));setIngs(h.ingredients||[]);setEditingId(h.id);}
   function addIng(){
     if(!ingName||!ingQty||!ingPrice)return;

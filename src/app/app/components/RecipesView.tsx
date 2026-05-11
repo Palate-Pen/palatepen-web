@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp, uid } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -69,11 +69,14 @@ export default function RecipesView() {
     setEditMode(true);
   }
 
-  function saveEdit() {
-    actions.updRecipe(sel.id, { title: editTitle.trim(), category: editCat, notes: editNotes });
-    setSel({ ...sel, title: editTitle.trim(), category: editCat, notes: editNotes });
-    setEditMode(false);
-  }
+  useEffect(() => {
+    if (!editMode || !sel || !editTitle.trim()) return;
+    const t = setTimeout(() => {
+      actions.updRecipe(sel.id, { title: editTitle.trim(), category: editCat, notes: editNotes });
+      setSel((prev:any) => prev ? { ...prev, title: editTitle.trim(), category: editCat, notes: editNotes } : prev);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [editMode, editTitle, editCat, editNotes]);
 
   function addRecipe() {
     if (!newTitle.trim()) return;
@@ -98,8 +101,8 @@ export default function RecipesView() {
           <div style={{ display: 'flex', gap: '8px' }}>
             {editMode ? (
               <>
-                <button onClick={() => setEditMode(false)} style={{ fontSize: '11px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>Cancel</button>
-                <button onClick={saveEdit} style={{ fontSize: '11px', fontWeight: 700, color: C.bg, background: C.gold, border: 'none', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>Save Changes</button>
+                <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, alignSelf: 'center' }}>Auto-saves</p>
+                <button onClick={() => setEditMode(false)} style={{ fontSize: '11px', fontWeight: 700, color: C.bg, background: C.gold, border: 'none', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>Done</button>
               </>
             ) : (
               <button onClick={openEdit} style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '8px 16px', cursor: 'pointer', borderRadius: '2px' }}>

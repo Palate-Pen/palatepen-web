@@ -1,5 +1,5 @@
 'use client';
-import{useState}from'react';
+import{useState,useEffect,useRef}from'react';
 import{useSettings}from'@/context/SettingsContext';
 import{useAuth}from'@/context/AuthContext';
 import{useApp}from'@/context/AppContext';
@@ -18,11 +18,16 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const[stockDay,setStockDay]=useState(String(profile.stockDay||1));
   const[stockFreq,setStockFreq]=useState(profile.stockFrequency||'weekly');
   const[deleteConfirm,setDeleteConfirm]=useState(false);
+  const mountedRef=useRef(false);
 
-  function save(){
-    actions.updProfile({name:name.trim(),location:location.trim(),gpTarget:parseFloat(gpTarget)||72,stockDay:parseInt(stockDay)||1,stockFrequency:stockFreq});
-    setSaved(true);setTimeout(()=>setSaved(false),2000);
-  }
+  useEffect(()=>{
+    if(!mountedRef.current){mountedRef.current=true;return;}
+    const t=setTimeout(()=>{
+      actions.updProfile({name:name.trim(),location:location.trim(),gpTarget:parseFloat(gpTarget)||72,stockDay:parseInt(stockDay)||1,stockFrequency:stockFreq});
+      setSaved(true);setTimeout(()=>setSaved(false),1500);
+    },600);
+    return()=>clearTimeout(t);
+  },[name,location,gpTarget,stockDay,stockFreq]);
 
   const inp:any={width:'100%',background:C.surface2,border:'1px solid '+C.border,color:C.text,fontSize:'14px',padding:'10px 12px',outline:'none',fontFamily:'system-ui,sans-serif',boxSizing:'border-box',borderRadius:'3px'};
   const card:any={background:C.surface2,border:'1px solid '+C.border,borderRadius:'4px',padding:'20px',marginBottom:'12px'};
@@ -33,9 +38,9 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
     <div style={{padding:'32px',maxWidth:'680px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'32px'}}>
         <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Settings</h1>
-        <button onClick={save} style={{fontSize:'11px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',background:saved?C.green:C.gold,color:saved?'#fff':C.bg,padding:'10px 20px',border:'none',cursor:'pointer',transition:'all 0.2s',borderRadius:'2px'}}>
-          {saved?'✓ Saved':'Save Changes'}
-        </button>
+        <p style={{fontSize:'11px',letterSpacing:'0.8px',textTransform:'uppercase',color:saved?C.greenLight:C.faint,padding:'10px 0',transition:'color 0.2s'}}>
+          {saved?'✓ Saved':'Auto-saves'}
+        </p>
       </div>
 
       {/* Appearance */}
