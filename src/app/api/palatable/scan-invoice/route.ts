@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const { base64, mediaType, userToken } = await req.json();
 
-    // Verify user is Pro tier using their session token
+    // Verify user is on a paid tier (pro/kitchen/group)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,8 +13,9 @@ export async function POST(req: NextRequest) {
     );
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
-    if (user.user_metadata?.tier !== 'pro') {
-      return NextResponse.json({ error: 'Pro subscription required' }, { status: 403 });
+    const tier = user.user_metadata?.tier || 'free';
+    if (!['pro','kitchen','group'].includes(tier)) {
+      return NextResponse.json({ error: 'Invoice scanning requires a paid subscription' }, { status: 403 });
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -36,11 +37,11 @@ export async function POST(req: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 2000,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2500,
         messages: [{ role: 'user', content: [
           contentBlock,
-          { type: 'text', text: 'Extract all food ingredients from this supplier invoice. Return ONLY a JSON array with no markdown. Each item: {"name":"","qty":0,"unit":"","unitPrice":0,"totalPrice":0}. If nothing found return [].' }
+          { type: 'text', text: 'Extract every food, beverage, and kitchen ingredient line from this supplier invoice. Return ONLY a JSON array with no markdown, no prose. Each item: {"name":"product name in plain English","qty":number,"unit":"kg|g|l|ml|ea|case|dozen","unitPrice":number,"totalPrice":number}. Convert pack sizes into a sensible unit (e.g. "12x500ml bottles" → unit "ml" qty 6000, OR unit "ea" qty 12 — pick the more useful one for cost tracking). Skip non-stock lines like delivery, VAT, deposit. If no ingredients are visible return [].' }
         ]}],
       }),
     });

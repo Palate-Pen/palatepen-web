@@ -4,6 +4,7 @@ import { useApp, uid } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import { supabase } from '@/lib/supabase';
 
 const CATS = ['Starter','Main','Dessert','Sauce','Bread','Pastry','Stock','Snack','Other'];
 
@@ -140,6 +141,10 @@ export default function RecipesView() {
   const [newTitle, setNewTitle] = useState('');
   const [newCat, setNewCat] = useState('Main');
   const [newNotes, setNewNotes] = useState('');
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importedData, setImportedData] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string|null>(null);
   const [expandedNotes, setExpandedNotes] = useState<Record<string,boolean>>({});
   const [assigningCosting, setAssigningCosting] = useState(false);
@@ -191,10 +196,56 @@ export default function RecipesView() {
     return () => clearTimeout(t);
   }, [editMode, editTitle, editCat, editNotes]);
 
+  function resetAddForm() {
+    setShowAdd(false);
+    setNewTitle(''); setNewCat('Main'); setNewNotes('');
+    setImportUrl(''); setImportError(''); setImportedData(null); setImporting(false);
+  }
+
+  async function importRecipe() {
+    const url = importUrl.trim();
+    if (!url) return;
+    setImporting(true);
+    setImportError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userToken = session?.access_token || '';
+      const res = await fetch('/api/palatable/import-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, userToken }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        setImportError(json.error || `Import failed (HTTP ${res.status})`);
+      } else {
+        setImportedData(json);
+        if (json.title) setNewTitle(json.title);
+        if (json.category && CATS.includes(json.category)) setNewCat(json.category);
+        if (json.chefNotes) setNewNotes(json.chefNotes);
+      }
+    } catch (e: any) {
+      setImportError(e?.message || 'Network error');
+    }
+    setImporting(false);
+  }
+
   function addRecipe() {
     if (!newTitle.trim()) return;
-    actions.addRecipe({ title: newTitle.trim(), category: newCat, notes: newNotes });
-    setShowAdd(false); setNewTitle(''); setNewCat('Main'); setNewNotes('');
+    const recipe: any = { title: newTitle.trim(), category: newCat, notes: newNotes };
+    if (importedData) {
+      recipe.url = importUrl.trim();
+      recipe.imported = {
+        description: importedData.description || '',
+        servings: importedData.servings || '',
+        prepTime: importedData.prepTime || '',
+        cookTime: importedData.cookTime || '',
+        ingredients: importedData.ingredients || [],
+        method: importedData.method || [],
+      };
+    }
+    actions.addRecipe(recipe);
+    resetAddForm();
   }
 
   const inp: any = { width: '100%', background: C.surface2, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '9px 12px', outline: 'none', fontFamily: 'system-ui,sans-serif', boxSizing: 'border-box' };
@@ -1020,11 +1071,42 @@ export default function RecipesView() {
 
       {showAdd && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
-          <div style={{ background: C.surface, border: '1px solid ' + C.border, width: '100%', maxWidth: '480px', borderRadius: '4px' }}>
+          <div style={{ background: C.surface, border: '1px solid ' + C.border, width: '100%', maxWidth: '520px', maxHeight: '92vh', overflow: 'auto', borderRadius: '4px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid ' + C.border }}>
               <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: C.text }}>Add Recipe</h3>
-              <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
+              <button onClick={resetAddForm} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
             </div>
+
+            {/* Import from URL */}
+            <div style={{ padding: '16px 20px', background: C.gold + '08', borderBottom: '1px solid ' + C.border }}>
+              <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.gold, display: 'block', marginBottom: '6px' }}>
+                Import from URL <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— Claude reads the page and fills the fields below</span>
+              </label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={e => setImportUrl(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && importUrl.trim() && !importing) importRecipe(); }}
+                  placeholder="https://www.bbcgoodfood.com/recipes/..."
+                  style={{ ...inp, flex: 1 }}
+                  disabled={importing}
+                />
+                <button onClick={importRecipe} disabled={!importUrl.trim() || importing}
+                  style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '0 16px', cursor: importing || !importUrl.trim() ? 'default' : 'pointer', borderRadius: '2px', opacity: importing || !importUrl.trim() ? 0.5 : 1, whiteSpace: 'nowrap' }}>
+                  {importing ? 'Reading…' : 'Import'}
+                </button>
+              </div>
+              {importError && (
+                <p style={{ fontSize: '11px', color: C.red, marginTop: '8px' }}>{importError}</p>
+              )}
+              {importedData && !importError && (
+                <p style={{ fontSize: '11px', color: C.greenLight, marginTop: '8px' }}>
+                  ✓ Imported · {importedData.ingredients?.length || 0} ingredients · {importedData.method?.length || 0} steps{importedData.servings ? ' · serves ' + importedData.servings : ''}
+                </p>
+              )}
+            </div>
+
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '6px' }}>Title</label>
@@ -1045,9 +1127,20 @@ export default function RecipesView() {
                 <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '6px' }}>Chef&apos;s Notes</label>
                 <textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Your thoughts, variations..." rows={3} style={{ ...inp, resize: 'none' }} />
               </div>
+              {importedData && (importedData.ingredients?.length > 0 || importedData.method?.length > 0) && (
+                <div style={{ background: C.surface2, border: '0.5px dashed ' + C.border, padding: '12px', borderRadius: '3px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>Imported preview</p>
+                  {importedData.ingredients?.length > 0 && (
+                    <p style={{ fontSize: '11px', color: C.dim, marginBottom: '4px' }}><strong style={{ color: C.text }}>Ingredients:</strong> {importedData.ingredients.slice(0, 3).join(', ')}{importedData.ingredients.length > 3 ? ', +' + (importedData.ingredients.length - 3) + ' more' : ''}</p>
+                  )}
+                  {importedData.method?.length > 0 && (
+                    <p style={{ fontSize: '11px', color: C.dim }}><strong style={{ color: C.text }}>Method:</strong> {importedData.method.length} step{importedData.method.length === 1 ? '' : 's'} captured</p>
+                  )}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: '10px', padding: '16px 20px', borderTop: '1px solid ' + C.border }}>
-              <button onClick={() => setShowAdd(false)} style={{ flex: 1, fontSize: '12px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '10px', cursor: 'pointer', borderRadius: '2px' }}>Cancel</button>
+              <button onClick={resetAddForm} style={{ flex: 1, fontSize: '12px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '10px', cursor: 'pointer', borderRadius: '2px' }}>Cancel</button>
               <button onClick={addRecipe} disabled={!newTitle.trim()}
                 style={{ flex: 1, fontSize: '12px', fontWeight: 700, background: C.gold, color: C.bg, border: 'none', padding: '10px', cursor: 'pointer', borderRadius: '2px', opacity: !newTitle.trim() ? 0.4 : 1 }}>
                 Save Recipe
