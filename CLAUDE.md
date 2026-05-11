@@ -52,9 +52,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 
 ### Phase 2 — Pro Feature Depth
 
-- [ ] Menu builder with full GP summary per menu
+- [x] Menu builder with full GP summary per menu
 - [x] Menu engineering reports (Star/Plough Horse/Dog/Puzzle)
-- [ ] Waste tracking with £ cost impact
+- [x] Waste tracking with £ cost impact
 - [x] Recipe photo upload
 - [x] Sub-recipes
 - [x] Locked recipe specs
@@ -132,6 +132,8 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Recipe photo upload — Supabase Storage bucket `recipe-photos` (public read, owner-only write per `auth.uid()` folder). Path: `{user_id}/{recipe_id}-{ts}.jpg`. Client-side resize to 1600px JPEG q0.85 before upload. UI in two places: dropzone in the Add Recipe modal (preview only, uploads after Save) and on the recipe detail (immediate upload, with Replace/Remove). Photo URL stored on `recipe.photoUrl`; storage path on `recipe.photoPath` for delete-on-replace. Migration 006_recipe_photos_bucket.sql provisions the bucket + RLS.
 - Menu engineering reports — Kasavana & Smith Star / Plough Horse / Puzzle / Dog classification on each menu detail. Per-dish covers entry, sales mix % computed from total. Profitability split = above/below menu average contribution margin (sell − cost). Popularity split = mix ≥ 70% × fair share (1/N). 2×2 quadrant grid with dishes listed per cell, sortable table with quadrant badges, plus advice per quadrant. Sales data persists as `menu.salesData: { recipeId: covers }` on the menu jsonb — no migration.
   - **Sales data dependency:** today covers are entered manually per menu per period. Phase 4's POS integration (Square / ePOSnow — see roadmap) needs to populate `menu.salesData` automatically when an order syncs. Mapping: POS line item → match by recipe.title (or a future `recipe.posSku` field) → increment covers for the live menu. Manual entry stays as the fallback. The in-app engineering panel already shows a Coming-in-Phase-4 note pointing at this so the chef knows what's planned.
+- Audit tick on already-shipped Phase 2 items: Menu builder with full GP summary (MenuBuilderView shows blended GP, total sell, total cost, lowest-GP dish, uncosted count per menu) and Waste tracking with £ cost impact (WasteView — per-ingredient log, 9 reasons, cost auto-computed from bank, CSV export, summary cards, dashboard rollup).
+- Menu orphan handling: deleting a recipe now cascades into menus — the id is stripped from `menu.recipeIds` and `menu.salesData` in the `DEL_RECIPE` reducer. Pre-existing orphan rows render with red tint, italic "Recipe no longer exists" text, a Removed pill, and a one-click Clean Up banner above the dish table that prunes all orphans for that menu. Replaces the silent "(deleted recipe)" label.
 
 ## Known Issues
 
