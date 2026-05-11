@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { isAuthorized, audit } from '@/lib/admin';
+import { isAuthorized, audit, svc } from '@/lib/admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function svc() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-}
 
 // Creates a fake auth user, watches for the on_auth_user_created trigger
 // to insert a matching user_data row, then cleans up both. Returns whether

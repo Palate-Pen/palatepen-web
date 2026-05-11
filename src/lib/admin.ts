@@ -1,6 +1,23 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export const ADMIN_PASSWORD = 'PalatePen2026!';
+
+// Service-role client with Next.js fetch caching disabled. supabase-js uses
+// global fetch(), which Next.js silently caches even with `force-dynamic` —
+// that caches admin GETs and makes them stale.
+export function svc(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: { persistSession: false },
+      global: {
+        fetch: (input: RequestInfo | URL, init: RequestInit = {}) =>
+          fetch(input, { ...init, cache: 'no-store' }),
+      },
+    },
+  );
+}
 
 export function isAuthorized(req: Request): boolean {
   const header = req.headers.get('authorization') || '';
