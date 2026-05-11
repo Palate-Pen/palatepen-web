@@ -13,12 +13,14 @@ import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
+import UpgradeModal from './components/UpgradeModal';
 
 export default function App() {
   const { user, loading } = useAuth();
   const { state } = useApp();
   const { settings } = useSettings();
   const [tab, setTab] = useState('recipes');
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const C = settings.resolved === 'light' ? light : dark;
 
   if (loading || !state.ready) return (
@@ -42,15 +44,16 @@ export default function App() {
     invoices: <InvoicesView />,
     stock: <StockView />,
     profile: <ProfileView />,
-    settings: <SettingsView />,
+    settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
   };
 
   return (
     <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
-      <Sidebar tab={tab} setTab={setTab} />
+      <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} />
       <main style={{ flex: 1, marginLeft: '224px', minHeight: '100vh', overflow: 'auto', color: C.text }}>
         {views[tab] || <RecipesView />}
       </main>
+    {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)}/>}
     </div>
   );
 }

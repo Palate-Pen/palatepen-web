@@ -3,7 +3,7 @@ import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 const NAV=[{id:'recipes',label:'Recipes'},{id:'notebook',label:'Notebook'},{id:'costing',label:'Costing'},{id:'invoices',label:'Invoices'},{id:'stock',label:'Stock'},{id:'profile',label:'Profile'},{id:'settings',label:'Settings'}];
-export default function Sidebar({tab,setTab}:{tab:string;setTab:(t:string)=>void}){
+export default function Sidebar({tab,setTab,onUpgrade}:{tab:string;setTab:(t:string)=>void;onUpgrade:()=>void}){
   const{tier}=useAuth();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
@@ -40,7 +40,7 @@ export default function Sidebar({tab,setTab}:{tab:string;setTab:(t:string)=>void
         ):(
           <div style={{background:C.surface2,border:'0.5px solid '+C.border,borderRadius:'4px',padding:'10px 12px'}}>
             <p style={{fontSize:'10px',fontWeight:700,color:C.faint,letterSpacing:'1px',textTransform:'uppercase',marginBottom:'4px'}}>Free</p>
-            <button style={{width:'100%',background:C.gold,color:C.bg,fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',padding:'6px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — £9.99/mo</button>
+            <button onClick={onUpgrade} style={{width:'100%',background:C.gold,color:C.bg,fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',padding:'6px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — £25/mo</button>
           </div>
         )}
       </div>

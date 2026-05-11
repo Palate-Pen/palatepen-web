@@ -5,7 +5,7 @@ import{useAuth}from'@/context/AuthContext';
 import{useApp}from'@/context/AppContext';
 import{dark,light}from'@/lib/theme';
 
-export default function SettingsView(){
+export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{settings,update}=useSettings();
   const{user,tier,signOut}=useAuth();
   const{state,actions}=useApp();
@@ -78,7 +78,7 @@ export default function SettingsView(){
             <p style={{fontSize:'13px',color:C.text,marginBottom:'4px'}}>{user?.email}</p>
             <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:tier==='pro'?C.gold:C.faint,background:(tier==='pro'?C.gold:C.faint)+'18',border:'0.5px solid '+(tier==='pro'?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{tier==='pro'?'Pro':'Free'}</span>
           </div>
-          {tier!=='pro'&&<button style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade to Pro</button>}
+          {tier!=='pro'&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade to Pro</button>}
         </div>
       </div>
 
