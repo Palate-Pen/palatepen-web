@@ -56,7 +56,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] Menu engineering reports (Star/Plough Horse/Dog/Puzzle)
 - [ ] Waste tracking with £ cost impact
 - [ ] Recipe photo upload
-- [ ] Sub-recipes
+- [x] Sub-recipes
 - [x] Locked recipe specs
 - [x] Traffic light labelling
 - [x] Calorie counts per dish and portion
@@ -128,6 +128,7 @@ When completing any roadmap item, add an entry here with the date, what was done
 - UK FOP traffic light labels on the recipe nutrition table — fat / saturates / sugars / salt get LOW/MED/HIGH pills coloured green/amber/red per the 2013 DH thresholds, computed per 100g of finished dish (using the bank-matched ingredient weight). Energy and fibre stay info-only.
 - Printable dish spec sheets — "Spec Sheet" button on recipe detail opens an A4-styled overlay with title/category/portions/sell/GP, ingredient list, computed Contains allergens (with name-the-nut/cereal sub-types), May Contain, and a nutrition table per portion + per 100g + FOP traffic lights. Print button uses `window.print()`; `@media print` CSS hides everything except `#spec-sheet-print` so the rest of the app doesn't print. Always rendered in light mode for paper readability regardless of the user's app theme.
 - Locked recipe specs — `recipe.locked: boolean` (jsonb, no schema migration). Lock button in recipe detail header, instant lock; unlock requires a confirm step. When locked: Edit button disabled, costing reassignment disabled, May Contain toggles disabled, notes textarea readonly, Delete button hidden. Lock icon (🔒) shown in detail header AND on the recipe card in the list. In a future multi-user world this becomes role-checked; for now the user is implicitly the admin.
+- Sub-recipes — costing's ingredient autocomplete lists matching recipes (with linked costing) under a "Sub-recipes" header. Picking one sets unit=each, price = cost-per-portion of the linked costing, stamps `ing.sourceRecipeId`. Sub-recipe ingredient lines show a gold "RECIPE" chip. Recipe detail has a "Used in" section listing dishes that consume this recipe via `sourceRecipeId`. Cost is snapshotted at pick time — sub-recipe price changes don't auto-propagate; users re-open dependent dishes.
 
 ## Known Issues
 
