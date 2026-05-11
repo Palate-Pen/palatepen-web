@@ -127,9 +127,12 @@ export default function StockView() {
     setView('report');
   }
 
-  const uncategorizedCount = stock.filter((i:any)=>!i.category).length;
+  const uncatStock = stock.filter((i:any)=>!i.category);
+  const uncatBank = bank.filter((b:any)=>!b.category);
+  const uncategorizedCount = uncatStock.length + uncatBank.length;
   function autoCategorize() {
-    stock.forEach((i:any)=>{ if(!i.category) actions.updStock(i.id,{category:guessCategory(i.name)}); });
+    uncatStock.forEach((i:any)=>actions.updStock(i.id,{category:guessCategory(i.name)}));
+    if (uncatBank.length) actions.upsertBank(uncatBank.map((b:any)=>({name:b.name,category:guessCategory(b.name)})));
   }
 
   

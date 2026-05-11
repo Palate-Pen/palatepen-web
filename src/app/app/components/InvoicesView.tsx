@@ -389,10 +389,19 @@ Invoices scanned after this update will show full details.</p>
           <p style={{fontSize:'12px',color:C.faint}}>{bank.length} ingredients · {invoices.length} invoices scanned</p>
         </div>
         <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'flex-end'}}>
-          {(()=>{const u=bank.filter((b:any)=>!b.category);if(!u.length)return null;return(
-            <button onClick={()=>appActions.upsertBank(u.map((b:any)=>({name:b.name,category:guessCategory(b.name)})))} title={`Assign categories to ${u.length} uncategorized item${u.length>1?'s':''}`}
-              style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Auto-categorize ({u.length})</button>
-          );})()}
+          {(()=>{
+            const uBank=bank.filter((b:any)=>!b.category);
+            const uStock=(appState.stockItems||[]).filter((s:any)=>!s.category);
+            const total=uBank.length+uStock.length;
+            if(!total)return null;
+            return(
+              <button onClick={()=>{
+                if(uBank.length)appActions.upsertBank(uBank.map((b:any)=>({name:b.name,category:guessCategory(b.name)})));
+                uStock.forEach((s:any)=>appActions.updStock(s.id,{category:guessCategory(s.name)}));
+              }} title={`Assign categories to ${total} uncategorized item${total>1?'s':''} across bank and stock`}
+                style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Auto-categorize ({total})</button>
+            );
+          })()}
           <button onClick={()=>{setReportPeriod('week');setReportOffset(0);setView('reports');}} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Reports</button>
           <button onClick={()=>setView('history')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>
             History {invoices.length>0&&<span style={{marginLeft:'4px',fontSize:'10px',background:C.border,padding:'1px 5px',borderRadius:'2px'}}>{invoices.length}</span>}
