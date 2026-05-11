@@ -39,17 +39,18 @@ export default function MenuBuilderView() {
 
   // Compute menu rollup
   function menuStats(menu: any) {
-    const dishes = (menu.recipeIds || []).map((id: string) => {
+    type Dish = { id: string; recipe: any; costing: any };
+    const dishes: Dish[] = (menu.recipeIds || []).map((id: string) => {
       const r = state.recipes.find((x: any) => x.id === id);
       const c = getCosting(id);
       return { id, recipe: r, costing: c };
     });
-    const costed = dishes.filter(d => d.costing);
-    const totalSell = costed.reduce((a, d) => a + (d.costing.sell || 0), 0);
-    const totalCost = costed.reduce((a, d) => a + (d.costing.cost || 0), 0);
+    const costed: Dish[] = dishes.filter((d: Dish) => !!d.costing);
+    const totalSell = costed.reduce((a: number, d: Dish) => a + (d.costing.sell || 0), 0);
+    const totalCost = costed.reduce((a: number, d: Dish) => a + (d.costing.cost || 0), 0);
     const blendedGP = totalSell > 0 ? ((totalSell - totalCost) / totalSell) * 100 : 0;
-    const lowest = costed.length > 0
-      ? costed.reduce((min, d) => (d.costing.pct < min.costing.pct ? d : min), costed[0])
+    const lowest: Dish | null = costed.length > 0
+      ? costed.reduce((min: Dish, d: Dish) => (d.costing.pct < min.costing.pct ? d : min), costed[0])
       : null;
     return { dishes, costed, totalSell, totalCost, blendedGP, lowest, uncosted: dishes.length - costed.length };
   }
@@ -209,7 +210,7 @@ export default function MenuBuilderView() {
                 <span style={{ textAlign: 'right' }}>GP</span>
                 <span></span>
               </div>
-              {stats.dishes.map((d, i) => (
+              {stats.dishes.map((d: any, i: number) => (
                 <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '24px 2fr 1fr 1fr 1fr 80px', gap: '8px', padding: '10px 12px', borderTop: '1px solid ' + C.border, alignItems: 'center' }}>
                   <span style={{ fontSize: '11px', color: C.faint, textAlign: 'right' }}>{i + 1}</span>
                   <div>
