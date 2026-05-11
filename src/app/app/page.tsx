@@ -16,6 +16,7 @@ import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
 import BankView from './components/BankView';
 import WasteView from './components/WasteView';
+import NotificationsBell from './components/NotificationsBell';
 import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
 import UpgradeModal from './components/UpgradeModal';
@@ -102,6 +103,7 @@ export default function App() {
       <main style={{ flex: 1, marginLeft: sidebarCollapsed ? '64px' : '224px', minHeight: '100vh', overflow: 'auto', color: C.text, transition: 'margin-left 0.18s ease' }}>
         {views[tab] || <DashboardView setTab={setTab} />}
       </main>
+      <NotificationsBell setTab={setTab} />
       <div style={{
         position: 'fixed', bottom: 16, right: 16, zIndex: 60,
         fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
