@@ -47,7 +47,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Stock inline editing
 - [x] Stock and ingredient categories
 - [x] Remove business min GP bar from CostingView
-- [ ] Allergen tracking
+- [x] Allergen tracking
 - [ ] Nutritional information
 
 ### Phase 2 — Pro Feature Depth
@@ -118,6 +118,7 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Audit log: server-side audit() helper records update_user / initialize_user / delete_user / test_signup with before→after diff, viewable in Audit tab with action filter + per-user filter
 - Diagnosed Next.js fetch cache issue masking admin GET reads (see Important Notes)
 - Audit confirmed already-shipped Phase 1 items: stock inline editing, stock/ingredient categories, business-min-GP-bar removed from CostingView
+- Allergen tracking: per-recipe toggle UI in RecipesView, two tag sets (Contains red / May contain dashed gold), 14 UK FIR allergens, compact short-code pills on recipe list cards
 
 ## Known Issues
 

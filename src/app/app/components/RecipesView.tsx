@@ -7,6 +7,24 @@ import { dark, light } from '@/lib/theme';
 
 const CATS = ['Starter','Main','Dessert','Sauce','Bread','Pastry','Stock','Snack','Other'];
 
+// UK Food Information Regulations — 14 mandatory allergens
+const ALLERGENS: { key: string; label: string; short: string }[] = [
+  { key: 'gluten',     label: 'Gluten',     short: 'GL' },
+  { key: 'crustaceans',label: 'Crustaceans',short: 'CR' },
+  { key: 'eggs',       label: 'Eggs',       short: 'EG' },
+  { key: 'fish',       label: 'Fish',       short: 'FI' },
+  { key: 'peanuts',    label: 'Peanuts',    short: 'PE' },
+  { key: 'soybeans',   label: 'Soybeans',   short: 'SO' },
+  { key: 'milk',       label: 'Milk',       short: 'MI' },
+  { key: 'nuts',       label: 'Nuts',       short: 'NU' },
+  { key: 'celery',     label: 'Celery',     short: 'CE' },
+  { key: 'mustard',    label: 'Mustard',    short: 'MU' },
+  { key: 'sesame',     label: 'Sesame',     short: 'SE' },
+  { key: 'sulphites',  label: 'Sulphites',  short: 'SU' },
+  { key: 'lupin',      label: 'Lupin',      short: 'LU' },
+  { key: 'molluscs',   label: 'Molluscs',   short: 'MO' },
+];
+
 function gpColor(pct: number, target: number, C: any) {
   if (pct >= target) return C.greenLight;
   if (pct >= 65) return C.gold;
@@ -308,6 +326,47 @@ export default function RecipesView() {
           </div>
         )}
 
+        {/* Allergens */}
+        <div style={{ marginBottom: '24px' }}>
+          <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>Allergens — Contains</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+            {ALLERGENS.map(a => {
+              const contains = (sel.allergens?.contains || []).includes(a.key);
+              return (
+                <button key={a.key}
+                  onClick={() => {
+                    const cur = (sel.allergens?.contains || []) as string[];
+                    const next = contains ? cur.filter(k => k !== a.key) : [...cur, a.key];
+                    const others = (sel.allergens?.mayContain || []).filter((k: string) => k !== a.key);
+                    actions.updRecipe(sel.id, { allergens: { contains: next, mayContain: others } });
+                  }}
+                  style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + (contains ? C.red : C.border), color: contains ? C.red : C.dim, background: contains ? C.red + '12' : 'transparent', cursor: 'pointer', borderRadius: '2px', fontWeight: contains ? 700 : 400 }}>
+                  {a.label}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>May Contain — Cross-contamination warning</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {ALLERGENS.map(a => {
+              const may = (sel.allergens?.mayContain || []).includes(a.key);
+              const contains = (sel.allergens?.contains || []).includes(a.key);
+              return (
+                <button key={a.key} disabled={contains}
+                  title={contains ? 'Already in Contains list' : ''}
+                  onClick={() => {
+                    const cur = (sel.allergens?.mayContain || []) as string[];
+                    const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
+                    actions.updRecipe(sel.id, { allergens: { contains: sel.allergens?.contains || [], mayContain: next } });
+                  }}
+                  style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (contains ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: contains ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: contains ? 0.4 : 1 }}>
+                  {a.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Chef notes */}
         <div style={{ marginBottom: '24px' }}>
           <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px' }}>Chef&apos;s Notes</p>
@@ -386,6 +445,11 @@ export default function RecipesView() {
                   )}
                   {r.imported && <span style={{ fontSize: '10px', color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '2px 8px', borderRadius: '2px' }}>Imported</span>}
                   {(r.linkedNoteIds||[]).length > 0 && <span style={{ fontSize: '10px', color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '2px 8px', borderRadius: '2px' }}>{r.linkedNoteIds.length} note{r.linkedNoteIds.length > 1 ? 's' : ''}</span>}
+                  {(r.allergens?.contains || []).map((k: string) => {
+                    const a = ALLERGENS.find(x => x.key === k);
+                    if (!a) return null;
+                    return <span key={k} title={`Contains ${a.label}`} style={{ fontSize: '9px', fontWeight: 700, color: C.red, background: C.red + '12', border: '0.5px solid ' + C.red + '30', padding: '2px 6px', borderRadius: '2px' }}>{a.short}</span>;
+                  })}
                 </div>
               </button>
             );
