@@ -158,6 +158,91 @@ export default function RecipesView() {
   const [showCompliance, setShowCompliance] = useState(false);
   const [showSpec, setShowSpec] = useState(false);
   const [confirmUnlock, setConfirmUnlock] = useState(false);
+  const [editIngredients, setEditIngredients] = useState<string[]>([]);
+
+  // Inline costing panel state
+  const [showInlineCosting, setShowInlineCosting] = useState(false);
+  const [ilcSell, setIlcSell] = useState('');
+  const [ilcPortions, setIlcPortions] = useState('1');
+  const [ilcIngs, setIlcIngs] = useState<any[]>([]);
+  const [ilcSaving, setIlcSaving] = useState(false);
+  const ILC_UNITS = ['kg', 'g', 'L', 'ml', 'each', 'bunch', 'tbsp'];
+
+  function ilcCalcLine(qty: number, unit: string, price: number) {
+    let line = qty * price;
+    if (unit === 'g' || unit === 'ml') line = (qty / 1000) * price;
+    return line;
+  }
+  function ilcSetField(id: string, field: 'name' | 'qty' | 'unit' | 'price', value: any) {
+    setIlcIngs(prev => prev.map(row => {
+      if (row.id !== id) return row;
+      const next = { ...row, [field]: value };
+      const qty = parseFloat(next.qty) || 0;
+      const price = parseFloat(next.price) || 0;
+      next.line = ilcCalcLine(qty, next.unit, price);
+      return next;
+    }));
+  }
+  function ilcAddRow() {
+    setIlcIngs(prev => [...prev, { id: Date.now().toString() + '-' + Math.random().toString(36).slice(2,6), name: '', qty: '', unit: 'g', price: '', line: 0 }]);
+  }
+  function ilcRemoveRow(id: string) {
+    setIlcIngs(prev => prev.filter(r => r.id !== id));
+  }
+  function ilcAutofillPrice(id: string, name: string) {
+    const m = state.ingredientsBank.find((b: any) => (b.name||'').toLowerCase() === (name||'').toLowerCase());
+    if (m?.unitPrice) ilcSetField(id, 'price', String(m.unitPrice));
+  }
+  function openInlineCosting() {
+    if (!sel) return;
+    const seed = (sel.imported?.ingredients || []).map((s: string, i: number) => ({
+      id: Date.now().toString() + '-' + i,
+      name: s, qty: '', unit: 'g', price: '', line: 0,
+    }));
+    if (seed.length === 0) seed.push({ id: Date.now().toString() + '-0', name: '', qty: '', unit: 'g', price: '', line: 0 });
+    setIlcIngs(seed);
+    setIlcSell('');
+    const servings = parseInt((sel.imported?.servings || '').toString().replace(/[^0-9]/g, '')) || 1;
+    setIlcPortions(String(servings));
+    setShowInlineCosting(true);
+  }
+  function saveInlineCosting() {
+    if (!sel) return;
+    const sellNum = parseFloat(ilcSell) || 0;
+    const portionsNum = parseInt(ilcPortions) || 1;
+    const total = ilcIngs.reduce((a, b) => a + (parseFloat(b.line) || 0), 0);
+    const costPer = total / portionsNum;
+    const gpVal = sellNum - costPer;
+    const pctVal = sellNum > 0 ? (gpVal / sellNum) * 100 : 0;
+    const cleanIngs = ilcIngs
+      .filter(r => (r.name||'').trim() !== '')
+      .map(r => ({
+        id: r.id,
+        name: r.name.trim(),
+        qty: parseFloat(r.qty) || 0,
+        unit: r.unit,
+        price: parseFloat(r.price) || 0,
+        line: parseFloat(r.line) || 0,
+      }));
+    const newId = uid();
+    setIlcSaving(true);
+    actions.addGP({
+      id: newId,
+      name: sel.title,
+      sell: sellNum,
+      cost: costPer,
+      gp: gpVal,
+      pct: pctVal,
+      currency: 'GBP',
+      target: gpTarget,
+      portions: portionsNum,
+      ingredients: cleanIngs,
+    });
+    actions.updRecipe(sel.id, { linkedCostingId: newId });
+    setSel((prev: any) => prev ? { ...prev, linkedCostingId: newId } : prev);
+    setShowInlineCosting(false);
+    setIlcSaving(false);
+  }
 
   const filtered = state.recipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -191,17 +276,23 @@ export default function RecipesView() {
     setEditTitle(sel.title || '');
     setEditCat(sel.category || 'Main');
     setEditNotes(sel.notes || '');
+    setEditIngredients(sel.imported?.ingredients ? [...sel.imported.ingredients] : []);
     setEditMode(true);
   }
 
   useEffect(() => {
     if (!editMode || !sel || !editTitle.trim()) return;
     const t = setTimeout(() => {
-      actions.updRecipe(sel.id, { title: editTitle.trim(), category: editCat, notes: editNotes });
-      setSel((prev:any) => prev ? { ...prev, title: editTitle.trim(), category: editCat, notes: editNotes } : prev);
+      const cleanIngs = editIngredients.map(s => (s||'').trim()).filter(Boolean);
+      const updates: any = { title: editTitle.trim(), category: editCat, notes: editNotes };
+      if (sel.imported || cleanIngs.length > 0) {
+        updates.imported = { ...(sel.imported || {}), ingredients: cleanIngs };
+      }
+      actions.updRecipe(sel.id, updates);
+      setSel((prev:any) => prev ? { ...prev, ...updates } : prev);
     }, 500);
     return () => clearTimeout(t);
-  }, [editMode, editTitle, editCat, editNotes]);
+  }, [editMode, editTitle, editCat, editNotes, editIngredients]);
 
   function resetAddForm() {
     setShowAdd(false);
@@ -503,6 +594,42 @@ export default function RecipesView() {
           </div>
         )}
 
+        {/* Ingredients (edit mode) */}
+        {editMode && (
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '8px' }}>Ingredients</label>
+            {editIngredients.length === 0 && (
+              <p style={{ fontSize: '12px', color: C.faint, marginBottom: '8px' }}>No ingredients yet — add the first below.</p>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+              {editIngredients.map((ing, i) => (
+                <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: C.faint, width: '22px', flexShrink: 0, textAlign: 'right' }}>{i + 1}.</span>
+                  <input
+                    value={ing}
+                    onChange={e => setEditIngredients(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                    placeholder="e.g. 200g plain flour"
+                    style={{ ...inp, flex: 1 }}
+                  />
+                  <button
+                    onClick={() => setEditIngredients(prev => prev.filter((_, j) => j !== i))}
+                    title="Remove ingredient"
+                    style={{ fontSize: '14px', color: C.red, background: 'transparent', border: '1px solid ' + C.border, padding: '6px 10px', cursor: 'pointer', borderRadius: '2px', flexShrink: 0 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setEditIngredients(prev => [...prev, ''])}
+              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+              + Add ingredient
+            </button>
+            <p style={{ fontSize: '11px', color: C.faint, marginTop: '8px' }}>Edits auto-save. Allergens + nutrition still derive from the linked costing&apos;s Bank-matched ingredients.</p>
+          </div>
+        )}
+
         {/* LINKED NOTES */}
         {!editMode && (() => {
           const linkedNotes = (sel.linkedNoteIds||[]).map((id: string) => state.notes.find((n: any) => n.id === id)).filter(Boolean);
@@ -633,13 +760,136 @@ export default function RecipesView() {
                 </div>
               </div>
             ) : (
-              !assigningCosting && (
+              !assigningCosting && !showInlineCosting && (
                 <div style={{ padding: '24px 16px', textAlign: 'center' }}>
                   <p style={{ fontSize: '13px', color: C.faint, marginBottom: '8px' }}>No costing linked to this recipe.</p>
-                  <p style={{ fontSize: '12px', color: C.faint }}>Click &ldquo;Assign Costing&rdquo; above to link a saved costing, or go to the Costing screen to create one.</p>
+                  <p style={{ fontSize: '12px', color: C.faint, marginBottom: '14px' }}>Link a saved costing above, or build one here without leaving the recipe.</p>
+                  <button onClick={openInlineCosting} disabled={!!sel.locked}
+                    title={sel.locked ? 'Recipe is locked' : ''}
+                    style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: sel.locked ? C.faint : C.bg, background: sel.locked ? 'transparent' : C.gold, border: sel.locked ? '1px solid ' + C.border : 'none', padding: '9px 16px', cursor: sel.locked ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: sel.locked ? 0.5 : 1 }}>
+                    + Add costing for this dish
+                  </button>
                 </div>
               )
             )}
+
+            {/* Inline costing builder */}
+            {showInlineCosting && !linkedCosting && (() => {
+              const sellNum = parseFloat(ilcSell) || 0;
+              const portionsNum = parseInt(ilcPortions) || 1;
+              const totalCost = ilcIngs.reduce((a, b) => a + (parseFloat(b.line) || 0), 0);
+              const costPerPortion = totalCost / portionsNum;
+              const gpVal = sellNum - costPerPortion;
+              const pctVal = sellNum > 0 ? (gpVal / sellNum) * 100 : 0;
+              const pctColor = gpColor(pctVal, gpTarget, C);
+              const hasName = ilcIngs.some(r => (r.name||'').trim() !== '');
+              return (
+                <div style={{ borderTop: '1px solid ' + C.border, background: C.gold + '06' }}>
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.gold }}>Build a costing for &ldquo;{sel.title}&rdquo;</p>
+                    <button onClick={() => setShowInlineCosting(false)}
+                      style={{ fontSize: '11px', color: C.faint, background: 'transparent', border: '1px solid ' + C.border, padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                      Cancel
+                    </button>
+                  </div>
+
+                  {/* Sell + portions */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '14px 16px', borderBottom: '1px solid ' + C.border }}>
+                    <div>
+                      <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '5px' }}>Sell price ({sym})</label>
+                      <input type="number" value={ilcSell} onChange={e => setIlcSell(e.target.value)} placeholder="0.00" style={inp} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '5px' }}>Portions</label>
+                      <input type="number" min="1" value={ilcPortions} onChange={e => setIlcPortions(e.target.value)} style={inp} />
+                    </div>
+                  </div>
+
+                  {/* Ingredient rows */}
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 70px 80px 90px 70px 32px', gap: '6px', marginBottom: '8px' }}>
+                      {['Ingredient','Qty','Unit','Cost/unit','Line','' ].map(h => (
+                        <p key={h} style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint }}>{h}</p>
+                      ))}
+                    </div>
+                    {ilcIngs.length === 0 && (
+                      <p style={{ fontSize: '12px', color: C.faint, padding: '8px 0' }}>No ingredients yet — add one below.</p>
+                    )}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {ilcIngs.map(row => (
+                        <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '2fr 70px 80px 90px 70px 32px', gap: '6px', alignItems: 'center' }}>
+                          <input
+                            value={row.name}
+                            onChange={e => ilcSetField(row.id, 'name', e.target.value)}
+                            onBlur={e => ilcAutofillPrice(row.id, e.target.value)}
+                            placeholder="Name"
+                            style={{ ...inp, fontSize: '12px', padding: '7px 9px' }}
+                          />
+                          <input
+                            type="number"
+                            value={row.qty}
+                            onChange={e => ilcSetField(row.id, 'qty', e.target.value)}
+                            placeholder="0"
+                            style={{ ...inp, fontSize: '12px', padding: '7px 9px' }}
+                          />
+                          <select
+                            value={row.unit}
+                            onChange={e => ilcSetField(row.id, 'unit', e.target.value)}
+                            style={{ ...inp, fontSize: '12px', padding: '7px 9px' }}
+                          >
+                            {ILC_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                          </select>
+                          <input
+                            type="number"
+                            value={row.price}
+                            onChange={e => ilcSetField(row.id, 'price', e.target.value)}
+                            placeholder="0.00"
+                            style={{ ...inp, fontSize: '12px', padding: '7px 9px' }}
+                          />
+                          <span style={{ fontSize: '12px', color: C.gold, textAlign: 'right' }}>{sym}{(parseFloat(row.line)||0).toFixed(3)}</span>
+                          <button onClick={() => ilcRemoveRow(row.id)} title="Remove"
+                            style={{ fontSize: '13px', color: C.red, background: 'transparent', border: '1px solid ' + C.border, padding: '5px 0', cursor: 'pointer', borderRadius: '2px' }}>
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={ilcAddRow}
+                      style={{ marginTop: '10px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                      + Add ingredient
+                    </button>
+                  </div>
+
+                  {/* Live GP summary */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', borderBottom: '1px solid ' + C.border, background: C.surface }}>
+                    {[
+                      { l: 'Sell', v: sym + sellNum.toFixed(2) },
+                      { l: 'Cost/Cover', v: sym + costPerPortion.toFixed(2) },
+                      { l: 'GP £', v: sym + gpVal.toFixed(2) },
+                      { l: 'GP %', v: sellNum > 0 ? pctVal.toFixed(1) + '%' : '—', highlight: true },
+                    ].map((cell, i) => (
+                      <div key={cell.l} style={{ padding: '12px', textAlign: 'center', borderRight: i < 3 ? '1px solid ' + C.border : 'none' }}>
+                        <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, marginBottom: '4px' }}>{cell.l}</p>
+                        <p style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: cell.highlight && sellNum > 0 ? pctColor : C.text }}>{cell.v}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Save */}
+                  <div style={{ padding: '14px 16px', display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <p style={{ fontSize: '11px', color: C.faint, marginRight: 'auto' }}>Saves to your costing history and links to this recipe.</p>
+                    <button onClick={() => setShowInlineCosting(false)}
+                      style={{ fontSize: '12px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '9px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+                      Cancel
+                    </button>
+                    <button onClick={saveInlineCosting} disabled={!hasName || sellNum <= 0 || ilcSaving}
+                      style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '9px 18px', cursor: (!hasName || sellNum <= 0 || ilcSaving) ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: (!hasName || sellNum <= 0 || ilcSaving) ? 0.4 : 1 }}>
+                      {ilcSaving ? 'Saving…' : 'Save Costing'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

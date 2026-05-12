@@ -53,6 +53,8 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Fix duplicate CSV download button in stock report viewer
 - [x] Prevent duplicate stock lines — stop the same ingredient being added twice to stock
 - [ ] Neaten up the allergen section inside the recipe detail view (layout/spacing/visual hierarchy of Contains + May Contain + sub-type rows)
+- [ ] Edit recipe ingredients inline on the recipe detail page
+- [ ] "Add costing now" button on recipe detail that opens a costing panel inline without leaving the recipe
 
 ### Phase 2 — Pro Feature Depth
 
@@ -68,6 +70,10 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] Change printable stock count sheet to a summary report format showing totals, variances and category breakdowns rather than a raw line list
 - [ ] Create a custom icon set for the Palatable website replacing generic icons with bespoke food and kitchen themed icons
 - [ ] Make menu backgrounds more graphic and custom with imagery or textured treatments
+- [ ] CSV export of all recipes, costings and stock as separate downloadable files
+- [ ] CSV import for recipes, costings and stock with downloadable template files containing the correct headers
+- [ ] Scan a spec sheet with AI to import recipe data automatically
+- [ ] Downloadable quick-start guide for new users explaining the CSV templates
 
 ### Phase 3 — Kitchen and Group Tier
 
