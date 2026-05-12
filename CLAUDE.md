@@ -72,7 +72,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] Make menu backgrounds more graphic and custom with imagery or textured treatments
 - [x] CSV export of all recipes, costings and stock as separate downloadable files
 - [x] CSV import for recipes, costings and stock with downloadable template files containing the correct headers
-- [ ] Scan a spec sheet with AI to import recipe data automatically
+- [x] Scan a spec sheet with AI to import recipe data automatically
 - [ ] Downloadable quick-start guide for new users explaining the CSV templates
 
 ### Phase 3 — Kitchen and Group Tier

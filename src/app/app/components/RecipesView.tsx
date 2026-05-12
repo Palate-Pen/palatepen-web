@@ -160,6 +160,11 @@ export default function RecipesView() {
   const [showSpec, setShowSpec] = useState(false);
   const [showRecipePrint, setShowRecipePrint] = useState(false);
   const [showRecipeBook, setShowRecipeBook] = useState(false);
+  // Spec-sheet scan modal
+  const [showScanSpec, setShowScanSpec] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scannedData, setScannedData] = useState<any>(null);
   const [confirmUnlock, setConfirmUnlock] = useState(false);
   // Edit-mode buffer for the linked costing's ingredients — sourced from
   // state.gpHistory when edit mode opens, debounced-saved back as the user edits.
@@ -536,6 +541,115 @@ export default function RecipesView() {
       setImportError(e?.message || 'Network error');
     }
     setImporting(false);
+  }
+
+  // ── SPEC SHEET SCAN ──────────────────────────────────────
+  // Sends a PDF/image to /api/palatable/scan-spec-sheet and stages the
+  // returned structured data for user review before commit.
+  async function scanSpecSheet(file: File) {
+    setScanError('');
+    setScannedData(null);
+    setScanning(true);
+    try {
+      const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+      const isImage = file.type.startsWith('image/');
+      if (!isPdf && !isImage) {
+        setScanError('Unsupported file type — use PDF or image (JPG/PNG/WebP)');
+        setScanning(false);
+        return;
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const userToken = session?.access_token || '';
+      const base64 = await fileToBase64(file);
+      const mediaType = file.type || (isPdf ? 'application/pdf' : 'image/jpeg');
+      const res = await fetch('/api/palatable/scan-spec-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, mediaType, userToken }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        if (json.debug) console.error('[scan-spec-sheet] debug:', json.debug);
+        const snippet = typeof json.debug?.rawSnippet === 'string' ? json.debug.rawSnippet : null;
+        setScanError(json.error + (snippet ? ` — Claude said: ${snippet.slice(0, 200)}` : '') || `Scan failed (HTTP ${res.status})`);
+      } else {
+        setScannedData(json);
+      }
+    } catch (e: any) {
+      setScanError(e?.message || 'Network error');
+    }
+    setScanning(false);
+  }
+
+  // Convert a scanned spec sheet into a recipe + costing pair and dispatch.
+  // Computes cost/GP/pct from the parsed ingredient lines (with g→kg, ml→L
+  // conversion to match the inline costing builder's convention).
+  function commitScannedSpec() {
+    if (!scannedData) return;
+    const data = scannedData;
+    const recipeId = uid();
+    const costingId = uid();
+    const rawIngs = Array.isArray(data.ingredients) ? data.ingredients : [];
+    const cleanIngs = rawIngs.map((i: any, idx: number) => {
+      const qty = parseFloat(i.qty) || 0;
+      const price = parseFloat(i.price) || 0;
+      const unit = (i.unit || 'g').toString();
+      let line = qty * price;
+      if (unit === 'g' || unit === 'ml') line = (qty / 1000) * price;
+      return {
+        id: `${Date.now()}-${idx}`,
+        name: (i.name || '').toString().trim() || 'Ingredient',
+        qty, unit, price,
+        line,
+      };
+    });
+    const portions = parseInt(data.portions) || 1;
+    const totalCost = cleanIngs.reduce((a: number, b: any) => a + (b.line || 0), 0);
+    const cost = totalCost / portions;
+    const sell = parseFloat(data.sellPrice) || 0;
+    const gp = sell - cost;
+    const pct = sell > 0 ? (gp / sell) * 100 : 0;
+    actions.addGP({
+      id: costingId,
+      name: (data.title || 'Untitled dish').toString(),
+      sell, cost, gp, pct,
+      target: parseFloat(data.targetGp) || gpTarget,
+      portions,
+      currency: 'GBP',
+      ingredients: cleanIngs,
+    });
+    const recipe: any = {
+      id: recipeId,
+      title: (data.title || 'Untitled dish').toString(),
+      category: CATS.includes(data.category) ? data.category : 'Main',
+      notes: (data.chefNotes || '').toString(),
+      linkedCostingId: costingId,
+    };
+    const ingStrings = cleanIngs.map((i: any) => `${i.qty || ''}${i.unit || ''} ${i.name}`.trim());
+    const methodArr = Array.isArray(data.method) ? data.method.map((m: any) => String(m)) : [];
+    if (ingStrings.length || methodArr.length || data.servings || data.prepTime || data.cookTime || data.description) {
+      recipe.imported = {
+        description: (data.description || '').toString(),
+        servings: data.portions ? String(data.portions) : '',
+        prepTime: (data.prepTime || '').toString(),
+        cookTime: (data.cookTime || '').toString(),
+        ingredients: ingStrings,
+        method: methodArr,
+      };
+    }
+    if (data.allergens && typeof data.allergens === 'object') {
+      recipe.allergens = {
+        contains: Array.isArray(data.allergens.contains) ? data.allergens.contains : [],
+        mayContain: Array.isArray(data.allergens.mayContain) ? data.allergens.mayContain : [],
+        nutTypes: Array.isArray(data.allergens.nutTypes) ? data.allergens.nutTypes : [],
+        glutenTypes: Array.isArray(data.allergens.glutenTypes) ? data.allergens.glutenTypes : [],
+      };
+    }
+    actions.addRecipe(recipe);
+    bankEnsureMany(cleanIngs.map((i: any) => ({ name: i.name, unit: i.unit })));
+    setShowScanSpec(false);
+    setScannedData(null);
+    setScanError('');
   }
 
   // ── PHOTO UPLOAD ──────────────────────────────────────────
@@ -2174,6 +2288,11 @@ export default function RecipesView() {
             style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: state.recipes.length === 0 ? C.faint : C.gold, background: state.recipes.length === 0 ? 'transparent' : C.gold + '12', border: '1px solid ' + (state.recipes.length === 0 ? C.border : C.gold + '40'), padding: '10px 16px', cursor: state.recipes.length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: state.recipes.length === 0 ? 0.5 : 1 }}>
             🖨 Print Recipe Book
           </button>
+          <button onClick={() => { setShowScanSpec(true); setScanError(''); setScannedData(null); }}
+            title="Scan a spec sheet with AI to import recipe + costing in one shot"
+            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '40', padding: '10px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+            ✨ Scan Spec Sheet
+          </button>
           <button onClick={() => setShowAdd(true)}
             style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
             + Add Recipe
@@ -2361,6 +2480,134 @@ export default function RecipesView() {
                 style={{ flex: 1, fontSize: '12px', fontWeight: 700, background: C.gold, color: C.bg, border: 'none', padding: '10px', cursor: 'pointer', borderRadius: '2px', opacity: !newTitle.trim() ? 0.4 : 1 }}>
                 Save Recipe
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spec sheet scan modal — upload → AI extracts → preview → commit recipe+costing */}
+      {showScanSpec && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
+          <div style={{ background: C.surface, border: '1px solid ' + C.border, width: '100%', maxWidth: '560px', maxHeight: '92vh', overflow: 'auto', borderRadius: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid ' + C.border }}>
+              <div>
+                <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: C.text }}>Scan Spec Sheet</h3>
+                <p style={{ fontSize: '11px', color: C.faint, marginTop: '2px' }}>AI reads a printed spec sheet and creates the recipe + costing in one shot</p>
+              </div>
+              <button onClick={() => { setShowScanSpec(false); setScannedData(null); setScanError(''); }}
+                style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+
+            {!scannedData && (
+              <div style={{ padding: '20px' }}>
+                <label style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '8px', padding: '32px 16px',
+                  background: C.surface2, border: '1px dashed ' + C.gold + '50', borderRadius: '3px',
+                  cursor: scanning ? 'wait' : 'pointer',
+                }}>
+                  <span style={{ fontSize: '24px' }}>✨</span>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{scanning ? 'Scanning…' : 'Upload spec sheet'}</span>
+                  <span style={{ fontSize: '11px', color: C.faint, textAlign: 'center', maxWidth: '320px' }}>
+                    PDF or image (JPG / PNG / WebP). Claude reads title, portions, sell price, ingredients with cost, allergens, and nutrition.
+                  </span>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) scanSpecSheet(f); }}
+                    disabled={scanning}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                {scanError && (
+                  <p style={{ fontSize: '11px', color: C.red, marginTop: '10px' }}>⚠ {scanError}</p>
+                )}
+                <p style={{ fontSize: '11px', color: C.faint, marginTop: '14px', lineHeight: 1.6 }}>
+                  Tip: works best on printed spec sheets with clear ingredient quantities, prices, and a sell price. Missing fields are left blank — you can fill them in after.
+                </p>
+              </div>
+            )}
+
+            {scannedData && (() => {
+              const data = scannedData;
+              const ingCount = Array.isArray(data.ingredients) ? data.ingredients.length : 0;
+              const methodCount = Array.isArray(data.method) ? data.method.length : 0;
+              const allergens = data.allergens || {};
+              const containsLen = Array.isArray(allergens.contains) ? allergens.contains.length : 0;
+              const mayLen = Array.isArray(allergens.mayContain) ? allergens.mayContain.length : 0;
+              const portions = parseInt(data.portions) || 1;
+              const sell = parseFloat(data.sellPrice) || 0;
+              const totalCost = Array.isArray(data.ingredients)
+                ? data.ingredients.reduce((a: number, i: any) => {
+                    const q = parseFloat(i.qty) || 0;
+                    const p = parseFloat(i.price) || 0;
+                    const u = (i.unit || '').toString();
+                    let line = q * p;
+                    if (u === 'g' || u === 'ml') line = (q / 1000) * p;
+                    return a + line;
+                  }, 0)
+                : 0;
+              const costPer = totalCost / portions;
+              const pct = sell > 0 ? ((sell - costPer) / sell) * 100 : 0;
+              const row: any = { fontSize: '12px', color: C.dim, padding: '4px 0', display: 'flex', justifyContent: 'space-between', gap: '8px' };
+              return (
+                <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ background: C.gold + '10', border: '1px solid ' + C.gold + '40', borderRadius: '3px', padding: '12px' }}>
+                    <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, marginBottom: '6px' }}>Extracted</p>
+                    <p style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: C.text }}>{data.title || 'Untitled dish'}</p>
+                    <p style={{ fontSize: '11px', color: C.faint, marginTop: '2px' }}>{data.category || 'Main'} · {portions} portion{portions === 1 ? '' : 's'}</p>
+                  </div>
+
+                  <div>
+                    <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>Costing preview</p>
+                    <div style={{ background: C.surface2, border: '0.5px solid ' + C.border, borderRadius: '3px', padding: '10px 12px' }}>
+                      <div style={row}><span>Sell price</span><span style={{ color: C.text, fontWeight: 600 }}>{sym}{sell.toFixed(2)}</span></div>
+                      <div style={row}><span>Cost / cover</span><span style={{ color: C.text }}>{sym}{costPer.toFixed(2)}</span></div>
+                      <div style={row}><span>GP %</span><span style={{ color: pct >= gpTarget ? C.greenLight : C.red, fontWeight: 700 }}>{sell > 0 ? pct.toFixed(1) + '%' : '—'}</span></div>
+                      <div style={row}><span>Ingredients</span><span style={{ color: C.text }}>{ingCount}</span></div>
+                      <div style={row}><span>Method steps</span><span style={{ color: C.text }}>{methodCount}</span></div>
+                      <div style={row}><span>Allergens</span><span style={{ color: C.text }}>{containsLen} contains · {mayLen} may contain</span></div>
+                    </div>
+                  </div>
+
+                  {ingCount > 0 && (
+                    <div>
+                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>Ingredients (first 8)</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {data.ingredients.slice(0, 8).map((i: any, idx: number) => (
+                          <p key={idx} style={{ fontSize: '11px', color: C.dim }}>
+                            <span style={{ color: C.text, fontWeight: 600 }}>{i.qty}{i.unit}</span> {i.name}{i.price ? <span style={{ color: C.faint }}> · {sym}{Number(i.price).toFixed(2)}/{i.unit}</span> : null}
+                          </p>
+                        ))}
+                        {ingCount > 8 && <p style={{ fontSize: '10px', color: C.faint }}>+ {ingCount - 8} more</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: '11px', color: C.faint, lineHeight: 1.6 }}>
+                    Save creates a recipe + costing pair, links them, and adds any new ingredient names to your Bank (no price overwrite). You can fine-tune everything in the recipe afterwards.
+                  </p>
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', gap: '10px', padding: '14px 20px', borderTop: '1px solid ' + C.border, justifyContent: 'flex-end' }}>
+              {scannedData && (
+                <button onClick={() => { setScannedData(null); setScanError(''); }}
+                  style={{ fontSize: '12px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '10px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+                  Scan a different sheet
+                </button>
+              )}
+              <button onClick={() => { setShowScanSpec(false); setScannedData(null); setScanError(''); }}
+                style={{ fontSize: '12px', color: C.dim, background: C.surface2, border: '1px solid ' + C.border, padding: '10px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+                Cancel
+              </button>
+              {scannedData && (
+                <button onClick={commitScannedSpec}
+                  style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
+                  Save Recipe + Costing
+                </button>
+              )}
             </div>
           </div>
         </div>
