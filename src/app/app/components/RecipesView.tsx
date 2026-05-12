@@ -650,6 +650,24 @@ export default function RecipesView() {
       ...(r.allergens?.contains || []),
     ]));
     const mayContain = r.allergens?.mayContain || [];
+    const nutTypesArr = Array.from(new Set<string>([
+      ...Array.from(computed.nutTypes),
+      ...(r.allergens?.nutTypes || []),
+    ]));
+    const glutenTypesArr = Array.from(new Set<string>([
+      ...Array.from(computed.glutenTypes),
+      ...(r.allergens?.glutenTypes || []),
+    ]));
+    const hasNutrition = NUTRITION_FIELDS.some(f => computed.nutrition[f.key] != null);
+    const dishGrams = computed.nutritionCoverage;
+    const printPortions = portions || 1;
+    // Light-theme FOP swatches for print (paper-readable contrast)
+    const fopCss = (l: Light | null): { fg: string; bg: string; bd: string } => {
+      if (!l) return { fg: '#222', bg: 'transparent', bd: '#DDD' };
+      if (l === 'low')  return { fg: '#1A6B2A', bg: '#E8F5EC', bd: '#1A6B2A' };
+      if (l === 'med')  return { fg: '#A06800', bg: '#FFF4E0', bd: '#A06800' };
+      return                   { fg: '#A00',     bg: '#FEE',     bd: '#A00' };
+    };
     const meta = [
       r.category,
       portions ? portions + (portions === 1 ? ' portion' : ' portions') : null,
@@ -723,6 +741,18 @@ export default function RecipesView() {
                 {containsArr.map(k => ALLERGENS.find(a => a.key === k)?.label).filter(Boolean).join(', ')}
               </p>
             )}
+            {nutTypesArr.length > 0 && (
+              <p style={{ fontSize: '12px', color: '#222', marginBottom: '4px', paddingLeft: '12px' }}>
+                <strong style={{ color: '#C00' }}>Tree nuts:</strong>{' '}
+                {nutTypesArr.join(', ')}
+              </p>
+            )}
+            {glutenTypesArr.length > 0 && (
+              <p style={{ fontSize: '12px', color: '#222', marginBottom: '4px', paddingLeft: '12px' }}>
+                <strong style={{ color: '#C00' }}>Cereals:</strong>{' '}
+                {glutenTypesArr.join(', ')}
+              </p>
+            )}
             {mayContain.length > 0 && (
               <p style={{ fontSize: '12px', color: '#222' }}>
                 <strong style={{ color: '#A77' }}>May contain:</strong>{' '}
@@ -731,6 +761,105 @@ export default function RecipesView() {
             )}
           </section>
         )}
+
+        {/* Costing — only shown when a costing is linked, since cost data lives there.
+            Same currency symbol as the rest of the app (state.profile.currencySymbol). */}
+        {linked && (
+          <section style={{ borderTop: '1px solid #DDD', paddingTop: '14px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Costing</h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ background: '#F4F4F2', color: '#555' }}>
+                  <th style={{ textAlign: 'left', padding: '5px 8px', fontWeight: 600 }}>Sell</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>Cost / cover</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>GP £</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>GP %</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '0.5px solid #EEE' }}>
+                  <td style={{ padding: '6px 8px', color: '#111', fontWeight: 600 }}>{sym}{(parseFloat(linked.sell) || 0).toFixed(2)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#222' }}>{sym}{(parseFloat(linked.cost) || 0).toFixed(2)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#222' }}>{sym}{(parseFloat(linked.gp) || 0).toFixed(2)}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', color: (linked.pct || 0) >= (linked.target || gpTarget) ? '#1A6B2A' : '#A00', fontWeight: 600 }}>{(parseFloat(linked.pct) || 0).toFixed(1)}%</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right', color: '#555' }}>{(linked.target || gpTarget)}%</td>
+                </tr>
+              </tbody>
+            </table>
+            {(linked.ingredients || []).length > 0 && (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', marginTop: '8px' }}>
+                <thead>
+                  <tr style={{ color: '#888' }}>
+                    <th style={{ textAlign: 'left', padding: '3px 8px', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Ingredient</th>
+                    <th style={{ textAlign: 'right', padding: '3px 8px', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Qty</th>
+                    <th style={{ textAlign: 'right', padding: '3px 8px', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{sym}/unit</th>
+                    <th style={{ textAlign: 'right', padding: '3px 8px', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Line</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linked.ingredients.map((ing: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: '0.5px dotted #DDD' }}>
+                      <td style={{ padding: '3px 8px', color: '#222' }}>{ing.name}</td>
+                      <td style={{ padding: '3px 8px', textAlign: 'right', color: '#555' }}>{ing.qty}{ing.unit}</td>
+                      <td style={{ padding: '3px 8px', textAlign: 'right', color: '#555' }}>{sym}{(parseFloat(ing.price) || 0).toFixed(2)}</td>
+                      <td style={{ padding: '3px 8px', textAlign: 'right', color: '#111' }}>{sym}{(parseFloat(ing.line) || 0).toFixed(3)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
+
+        {/* Nutrition — only shown when at least one Bank-matched ingredient supplies
+            per-100g nutrition data. Per-portion + per-100g + UK FOP traffic lights. */}
+        {hasNutrition && (
+          <section style={{ borderTop: '1px solid #DDD', paddingTop: '14px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>
+              Nutrition <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal', color: '#888' }}>(per portion · {printPortions} portion{printPortions === 1 ? '' : 's'} · FOP per 100g)</span>
+            </h2>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+              <thead>
+                <tr style={{ background: '#F4F4F2', color: '#555' }}>
+                  <th style={{ textAlign: 'left', padding: '5px 8px', fontWeight: 600 }}>Nutrient</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>Per portion</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>Per 100g</th>
+                  <th style={{ textAlign: 'right', padding: '5px 8px', fontWeight: 600 }}>FOP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {NUTRITION_FIELDS.map(f => {
+                  const total = computed.nutrition[f.key];
+                  if (total == null) return null;
+                  const perPortion = total / printPortions;
+                  const per100 = dishGrams > 0 ? (total * 100) / dishGrams : null;
+                  const light = per100 != null ? trafficLight(f.key, per100) : null;
+                  const c = fopCss(light);
+                  const decimals = f.unit === 'g' ? 1 : 0;
+                  return (
+                    <tr key={f.key} style={{ borderBottom: '0.5px solid #EEE' }}>
+                      <td style={{ padding: '5px 8px', color: '#222' }}>{f.label}</td>
+                      <td style={{ padding: '5px 8px', textAlign: 'right', color: '#222', fontWeight: 600 }}>{perPortion.toFixed(decimals)}{f.unit}</td>
+                      <td style={{ padding: '5px 8px', textAlign: 'right', color: '#555' }}>{per100 != null ? per100.toFixed(decimals) + f.unit : '—'}</td>
+                      <td style={{ padding: '5px 8px', textAlign: 'right' }}>
+                        {light ? (
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: c.fg, background: c.bg, border: '1px solid ' + c.bd, padding: '1px 6px', borderRadius: '2px' }}>{LIGHT_LABEL[light]}</span>
+                        ) : <span style={{ color: '#AAA' }}>—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {computed.nutritionTotal > 0 && computed.nutritionCoverage < computed.nutritionTotal && (
+              <p style={{ fontSize: '10px', color: '#A06800', marginTop: '6px' }}>
+                ⚠ Computed from {Math.round((computed.nutritionCoverage / computed.nutritionTotal) * 100)}% of recipe weight — add nutrition data to remaining Bank ingredients for full accuracy.
+              </p>
+            )}
+          </section>
+        )}
+
         {/* Chef's notes only shown as a separate section when a method already exists
             (otherwise notes have been used as the method fallback above). */}
         {r.notes?.trim() && (r.imported?.method?.length || 0) > 0 && (
