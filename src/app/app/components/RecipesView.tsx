@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp, uid } from '@/context/AppContext';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useAuth } from '@/context/AuthContext';
@@ -30,6 +30,36 @@ const ALLERGENS: { key: string; label: string; short: string }[] = [
 // FIR sub-types — UK law requires naming the specific tree nut and cereal
 const NUT_TYPES = ['Almond','Hazelnut','Walnut','Cashew','Pecan','Brazil nut','Pistachio','Macadamia'];
 const GLUTEN_TYPES = ['Wheat','Rye','Barley','Oats','Spelt','Kamut'];
+
+// Bank-ensure: known unit tokens we recognise when parsing free-form ingredient lines.
+const KNOWN_UNITS = ['g','kg','ml','l','oz','lb','tbsp','tsp','cup','cups','each','bunch','pinch','dash','sprig','sprigs','clove','cloves'];
+
+// Parse a free-form ingredient line ("200g plain flour", "2 tbsp olive oil",
+// "1 onion, diced") into a clean { name, unit? } suitable for the bank.
+// Strips trailing ", qualifier" and "(parenthetical)" tails.
+// Returns null when the line is empty or too short to be a real ingredient.
+function parseIngredientText(line: string): { name: string; unit?: string } | null {
+  const trimmed = (line || '').trim();
+  if (!trimmed) return null;
+  let body = trimmed;
+  body = body.replace(/\s*\([^)]*\)/g, ''); // drop "(parenthetical)"
+  const commaIdx = body.indexOf(',');
+  if (commaIdx > 0) body = body.slice(0, commaIdx); // drop ", qualifier"
+  body = body.trim();
+  const m = body.match(/^([\d./]+)\s*([a-zA-Z]+\.?)?\s+(.+)$/);
+  if (m) {
+    const unitTok = (m[2] || '').toLowerCase().replace(/\.$/, '');
+    const namePart = m[3].trim();
+    if (KNOWN_UNITS.includes(unitTok)) {
+      if (namePart.length < 2) return null;
+      return { name: namePart, unit: unitTok };
+    }
+    // Unknown unit token → likely part of the name ("1 onion")
+    const fullName = ((m[2] || '') + ' ' + namePart).trim();
+    return fullName.length >= 2 ? { name: fullName } : null;
+  }
+  return body.length >= 2 ? { name: body } : null;
+}
 
 const NUTRITION_FIELDS: { key: string; label: string; unit: string }[] = [
   { key: 'kcal',      label: 'Energy',         unit: 'kcal' },
@@ -240,9 +270,52 @@ export default function RecipesView() {
     });
     actions.updRecipe(sel.id, { linkedCostingId: newId });
     setSel((prev: any) => prev ? { ...prev, linkedCostingId: newId } : prev);
+    // Bank-ensure the structured costing ingredients (clean name + unit)
+    bankEnsureMany(cleanIngs.map(i => ({ name: i.name, unit: i.unit })));
     setShowInlineCosting(false);
     setIlcSaving(false);
   }
+
+  // Ensure each named ingredient exists in the bank. Never overwrites an existing
+  // entry's price — only inserts missing ones with unitPrice: null so the chef can
+  // fill the price in later from an invoice. Dedup'd and single-dispatch so the
+  // case-insensitive existence check stays correct (React state is async).
+  function bankEnsureMany(items: { name: string; unit?: string }[]) {
+    const bankNames = new Set((state.ingredientsBank || []).map((b: any) => (b.name || '').toLowerCase().trim()));
+    const seen = new Set<string>();
+    const fresh: any[] = [];
+    for (const item of items) {
+      const cleaned = (item.name || '').trim();
+      if (!cleaned || cleaned.length < 2) continue;
+      const key = cleaned.toLowerCase();
+      if (bankNames.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      fresh.push({
+        name: cleaned,
+        unit: item.unit || 'kg',
+        category: 'Other',
+        unitPrice: null,
+        allergens: { contains: [], nutTypes: [], glutenTypes: [] },
+        nutrition: {},
+      });
+    }
+    if (fresh.length > 0) actions.upsertBank(fresh);
+  }
+
+  // When edit mode exits (Done clicked, or user navigates back), sync the
+  // current ingredient list into the bank. Free-form lines like "200g plain flour"
+  // are parsed for { name, unit }; lines that don't parse to a reasonable name
+  // are skipped.
+  const prevEditModeRef = useRef(false);
+  useEffect(() => {
+    if (prevEditModeRef.current && !editMode) {
+      const parsed = editIngredients
+        .map(parseIngredientText)
+        .filter(Boolean) as { name: string; unit?: string }[];
+      if (parsed.length > 0) bankEnsureMany(parsed);
+    }
+    prevEditModeRef.current = editMode;
+  }, [editMode]);
 
   const filtered = state.recipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -635,6 +708,10 @@ export default function RecipesView() {
               + Add ingredient
             </button>
             <p style={{ fontSize: '11px', color: C.faint, marginTop: '8px' }}>Edits auto-save. Allergens + nutrition still derive from the linked costing&apos;s Bank-matched ingredients.</p>
+            <p style={{ fontSize: '11px', color: C.gold, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ fontSize: '12px', lineHeight: 1 }}>↗</span>
+              Ingredients you add here are automatically saved to your ingredients bank.
+            </p>
           </div>
         )}
 
