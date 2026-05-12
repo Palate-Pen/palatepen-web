@@ -125,6 +125,44 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 - [ ] Offline mode
 - [ ] Camera invoice scanning from phone
 
+## Tomorrow's punch list — from stress-test 2026-05-12
+
+Surfaced during the system-wide audit at end of day. Tackle top-down.
+
+**Quick wins (~2 hours total)**
+- [ ] **Lazy-init Stripe** — `src/app/api/stripe/webhook/route.ts:5` and `src/app/api/stripe/create-checkout/route.ts:5` both have `const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, …)` at module top level. Crashes module load if the env var is missing. Move the `new Stripe(...)` inside the POST handler (or behind a memoised lazy getter). Fix unblocks local `next build` too.
+- [ ] **Wire feature-flag enforcement** — flags are stored in `app_settings` and surfaced by the admin Platform section, but `grep featureFlags src/app/app` returns nothing. Every toggle is currently cosmetic. Create a small `usePlatformConfig()` client hook that fetches `/api/platform-config` once + caches. Gate the relevant features:
+  - `aiRecipeImport` → hide the Import URL/file button in RecipesView, return 403 from `/api/palatable/import-recipe`
+  - `aiInvoiceScan` → hide the scan UI in InvoicesView, return 403 from `/api/palatable/scan-invoice`
+  - `aiSpecSheet` → hide the Scan Spec Sheet button in RecipesView library, return 403 from `/api/palatable/scan-spec-sheet`
+  - `emailForwarding` → hide the Email Forwarding card in SettingsView, return 403 from `/api/inbound-email` (still accept POST but skip processing)
+  - `publicMenus` → hide Publish button on MenuBuilderView **AND** return 404 from `/m/[slug]/page.tsx`'s `loadMenu` so existing public URLs go dark when flag is off
+  - `apiAccess` → hide the API Access card in SettingsView, return 403 from every `/api/v1/*` route via the existing `authenticateApi` helper
+  - `csvImport`, `csvExport` → hide the buttons in Settings → Data
+  - `wasteTracking` → hide Waste in sidebar nav + don't render the WasteView
+  - `menuBuilder` → hide Menus in sidebar nav + don't render the MenuBuilderView
+- [ ] **`publicMenus` flag check on `/m/[slug]`** — covered by the bullet above, but call out separately since it's a single-line check at the top of `loadMenu()`.
+- [ ] **Idempotency on invite accept** — `src/app/api/invites/[token]/accept/route.ts` should use `INSERT ... ON CONFLICT DO NOTHING` for the membership insert (or check-then-insert) so a double-click doesn't create duplicate rows.
+
+**Medium-priority follow-ups (next session or later)**
+- [ ] **SettingsView autosave perms-aware** — `src/app/app/components/SettingsView.tsx:183` autosave `useEffect` deps array is missing `perms.canManageSettings`. Wrap the autosave body in a perms check (or add to deps + guard).
+- [ ] **Invite expiry check** — `src/app/api/invites/[token]/route.ts` doesn't verify `expires_at` on the invite row. Add a `new Date(invite.expires_at) < new Date()` check before accepting.
+- [ ] **Anthropic model into a constant** — 4 files hardcode `claude-sonnet-4-6` (`import-recipe`, `scan-invoice`, `scan-spec-sheet`, `inbound-email`). Pull into `src/lib/anthropic.ts` so we can swap to Haiku/Opus in one place.
+- [ ] **Inbound-email row guard** — `src/app/api/inbound-email/route.ts:197` writes invoices keyed by `user_id`. Add a sanity check that the row's `account_id` matches the account resolved from the token. Tiny extra cost, prevents a theoretical token-collision write to the wrong account.
+
+**Long-tail (no action needed yet, log for memory)**
+- API-key lookup via JSONB containment is fine at current scale; revisit if user count > 10k.
+- Ownership-transfer endpoint lacks a transaction (3 writes); fine until it breaks.
+- `wasteTracking` and `menuBuilder` flag definitions have no enforcement points — that's deliberate, they're there for when the flags need to be flipped during incident response.
+
+**Stress-test positives (audit confirmed OK)**
+- All admin routes auth via `isAuthorized` ✓
+- All `/api/v1/*` routes auth via `authenticateApi` + tier ✓
+- React hook order consistent everywhere (the earlier admin bug stays fixed) ✓
+- Supabase clients use lazy `createClient(url!, key!)` — module load succeeds, fails-at-request when env missing ✓
+- MaintenanceGate fails open and hard-reloads on restore ✓
+- All recent rebuilds (admin, Settings, MenuDesigner, Reports) typecheck clean ✓
+
 ## Progress Log
 
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
