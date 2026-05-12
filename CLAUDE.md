@@ -113,9 +113,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 
 Near-term tweaks to the responsive web layout (≤768px). Distinct from the native iOS/Android effort below.
 
-- [ ] Move alerts out of main navigation on mobile into a More tab
-- [ ] Show invoice scanning prominently on mobile home screen
-- [ ] Fix menu designer layout in mobile view
+- [x] Move alerts out of main navigation on mobile into a More tab
+- [ ] Show invoice scanning prominently on mobile home screen *(partially addressed — Invoices is now one of the 5 primary bottom-bar slots, so scanning is 1 tap from anywhere)*
+- [x] Fix menu designer layout in mobile view
 
 ### Phase 6 — Mobile (Native)
 
@@ -182,7 +182,7 @@ When completing any roadmap item, add an entry here with the date, what was done
 
 ## Known Issues
 
-- **Menu Designer layout broken in mobile view.** `MenuDesigner.tsx` (the full-screen overlay opened from a menu detail) was built around the desktop A4 preview + side controls panel and hasn't been touched in the mobile responsive pass. Below 768px the controls + preview overlap and become unusable. Needs a mobile layout — either stack controls above preview, or make controls a slide-up sheet over the preview, then hide the overlay's print preview at small widths.
+- ~~Menu Designer layout broken in mobile view.~~ **Fixed** — mobile now gets a Design/Preview tab switcher at the top, full-width controls in Design mode, and a CSS-transform-scaled A4 sheet in Preview mode so the whole page fits without horizontal scroll.
 
 ## Important Notes
 

@@ -139,14 +139,14 @@ export default function App() {
   };
   const saveText: Record<string, string> = { saving: 'Saving…', saved: '✓ Saved', error: '✗ Save failed', idle: '' };
 
-  // Bottom tab bar — mobile only. 4 primary + More (opens a sheet listing
-  // every other view: Notebook, Menus, Invoices, Bank, Waste, Reports,
-  // [Team if applicable], Settings, plus a Notifications row with badge).
+  // Bottom tab bar — mobile only. 5 primary + More. Alerts/notifications live
+  // inside the More sheet (with the unread badge); not in the main bar.
   const MOBILE_PRIMARY = [
-    { id: 'dashboard', label: 'Home',    icon: <IconHome /> },
-    { id: 'recipes',   label: 'Recipes', icon: <IconBook /> },
-    { id: 'costing',   label: 'Costing', icon: <IconCalc /> },
-    { id: 'stock',     label: 'Stock',   icon: <IconBox /> },
+    { id: 'dashboard', label: 'Home',     icon: <IconHome /> },
+    { id: 'recipes',   label: 'Recipes',  icon: <IconBook /> },
+    { id: 'costing',   label: 'Costing',  icon: <IconCalc /> },
+    { id: 'stock',     label: 'Stock',    icon: <IconBox /> },
+    { id: 'invoices',  label: 'Invoices', icon: <IconScan /> },
   ] as const;
 
   const teamTabAvailable = (currentRole === 'owner' || currentRole === 'manager')
@@ -155,7 +155,6 @@ export default function App() {
   const MOBILE_MORE_ITEMS = [
     { id: 'notebook', label: 'Notebook', icon: <IconNote /> },
     { id: 'menus',    label: 'Menus',    icon: <IconMenu /> },
-    { id: 'invoices', label: 'Invoices', icon: <IconScan /> },
     { id: 'bank',     label: 'Bank',     icon: <IconBank /> },
     { id: 'waste',    label: 'Waste',    icon: <IconBin /> },
     { id: 'reports',  label: 'Reports',  icon: <IconChart /> },
@@ -190,6 +189,7 @@ export default function App() {
       )}
       {isMobile && mobileSheet === 'more' && (
         <BottomSheet title="More" onClose={() => setMobileSheet(null)}>
+          <AlertsSheetRow onOpen={() => setMobileSheet('notifications')} />
           {MOBILE_MORE_ITEMS.map(item => (
             <SheetRow key={item.id}
               icon={item.icon}
@@ -264,22 +264,48 @@ function MobileBottomBar({ tab, setTab, primary, onMore, onNotifications }: {
           </button>
         );
       })}
-      <button onClick={onNotifications}
+      <button onClick={onMore}
         style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '6px 4px', background: 'transparent', border: 'none', color: '#9A8E7A', cursor: 'pointer', fontSize: '10px', fontWeight: 500, letterSpacing: '0.3px', position: 'relative' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px' }}><IconBell /></span>
-        <span>Alerts</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px' }}><IconMore /></span>
+        <span>More</span>
+        {/* Unread badge bubbles up from the More button so users still see new
+            alerts without a dedicated tab slot. */}
         {unreadCount > 0 && (
           <span style={{ position: 'absolute', top: 4, right: 'calc(50% - 18px)', minWidth: '14px', height: '14px', borderRadius: '7px', background: '#B85A3A', color: '#fff', fontSize: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', border: '1.5px solid #1C1A17' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
-      <button onClick={onMore}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '6px 4px', background: 'transparent', border: 'none', color: '#9A8E7A', cursor: 'pointer', fontSize: '10px', fontWeight: 500, letterSpacing: '0.3px' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px' }}><IconMore /></span>
-        <span>More</span>
-      </button>
     </nav>
+  );
+}
+
+// Special first row inside the More sheet — opens the notifications panel
+// instead of switching tab, and carries the unread-count badge.
+function AlertsSheetRow({ onOpen }: { onOpen: () => void }) {
+  const { unreadCount } = useNotificationsModel();
+  return (
+    <button onClick={onOpen}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '14px',
+        width: '100%', padding: '14px 16px',
+        background: 'transparent', border: 'none',
+        borderBottom: '1px solid #2A241D',
+        color: '#F0E8DC', cursor: 'pointer', textAlign: 'left',
+      }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', color: '#C8960A', position: 'relative' }}>
+        <IconBell />
+        {unreadCount > 0 && (
+          <span style={{ position: 'absolute', top: -4, right: -6, minWidth: '14px', height: '14px', borderRadius: '7px', background: '#B85A3A', color: '#fff', fontSize: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px', border: '1.5px solid #1C1A17' }}>
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </span>
+      <span style={{ flex: 1, fontSize: '14px' }}>Alerts</span>
+      {unreadCount > 0 && (
+        <span style={{ fontSize: '11px', color: '#B85A3A', fontWeight: 700 }}>{unreadCount} new</span>
+      )}
+    </button>
   );
 }
 

@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import { useIsMobile } from '@/lib/useIsMobile';
 import { supabase } from '@/lib/supabase';
 
 type Background = 'plain' | 'linen' | 'botanical' | 'deco' | 'marble' | 'kraft' | 'script' | 'modern' | 'custom';
@@ -76,6 +77,10 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const sym = (state.profile || {}).currencySymbol || '£';
+  const isMobile = useIsMobile();
+  // Mobile-only: switch between the controls panel and the preview.
+  // Desktop renders both side-by-side and ignores this state.
+  const [mobileView, setMobileView] = useState<'design' | 'preview'>('design');
 
   const menu = (state.menus || []).find((m: any) => m.id === menuId);
   // Header default: businessName (the user's restaurant brand) → name → "Restaurant Name".
@@ -247,17 +252,49 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
         }
       `}</style>
 
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', zIndex: 60, padding: '0' }}>
-        <div id="menu-design-overlay-frame" style={{ display: 'flex', width: '100%', maxHeight: '100vh' }}>
-          {/* Left: controls */}
-          <div id="menu-design-controls" style={{ width: '340px', background: C.surface, borderRight: '1px solid ' + C.border, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: C.text }}>Menu Designer</h3>
-                <p style={{ fontSize: '11px', color: C.faint, marginTop: '2px' }}>Auto-saves as you edit</p>
-              </div>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', zIndex: 60, padding: '0', flexDirection: 'column' }}>
+        {/* Mobile header — close button + tab switcher sit above everything */}
+        {isMobile && (
+          <div id="menu-design-mobile-header" style={{ background: C.surface, borderBottom: '1px solid ' + C.border, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '22px', cursor: 'pointer', padding: '0 6px' }}>×</button>
+            <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '16px', color: C.text, flexShrink: 0 }}>Designer</h3>
+            <div style={{ flex: 1, display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+              {(['design', 'preview'] as const).map(v => (
+                <button key={v} type="button" onClick={() => setMobileView(v)}
+                  style={{
+                    fontSize: '11px', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase',
+                    padding: '7px 14px',
+                    border: '1px solid ' + (mobileView === v ? C.gold + '60' : C.border),
+                    background: mobileView === v ? C.gold + '14' : 'transparent',
+                    color: mobileView === v ? C.gold : C.dim,
+                    cursor: 'pointer', borderRadius: '2px',
+                  }}>
+                  {v === 'design' ? 'Design' : 'Preview'}
+                </button>
+              ))}
             </div>
+          </div>
+        )}
+
+        <div id="menu-design-overlay-frame" style={{ display: 'flex', width: '100%', flex: 1, minHeight: 0, flexDirection: isMobile ? 'column' : 'row' }}>
+          {/* Left: controls — full-width on mobile when 'design' tab active */}
+          <div id="menu-design-controls" style={{
+            display: !isMobile || mobileView === 'design' ? 'flex' : 'none',
+            width: isMobile ? '100%' : '340px',
+            background: C.surface,
+            borderRight: isMobile ? 'none' : '1px solid ' + C.border,
+            overflow: 'auto', flexDirection: 'column',
+          }}>
+            {/* Desktop-only header (mobile uses the page-level header above) */}
+            {!isMobile && (
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: C.text }}>Menu Designer</h3>
+                  <p style={{ fontSize: '11px', color: C.faint, marginTop: '2px' }}>Auto-saves as you edit</p>
+                </div>
+                <button onClick={onClose} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
+              </div>
+            )}
 
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
               {/* Logo */}
@@ -458,19 +495,34 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
             </div>
           </div>
 
-          {/* Right: live preview */}
-          <div style={{ flex: 1, background: '#5A5552', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', overflow: 'auto', padding: '24px' }}>
-            {/* A4-proportional sheet */}
-            <div id="menu-design-print" style={{
-              background: '#FFFFFF', color: '#1A1A18',
-              width: '210mm', minHeight: '297mm',
-              padding: '16mm', boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
-              fontFamily: fontFor(design.fontFamily),
-              position: 'relative', overflow: 'hidden',
+          {/* Right: live preview — full-width on mobile when 'preview' tab active.
+              The A4 sheet is held at fixed width so it always looks like paper;
+              on mobile we pinch via CSS transform so the entire sheet fits in
+              the viewport without horizontal scrolling. */}
+          <div style={{
+            display: !isMobile || mobileView === 'preview' ? 'flex' : 'none',
+            flex: 1, background: '#5A5552',
+            alignItems: 'flex-start', justifyContent: 'center',
+            overflow: 'auto',
+            padding: isMobile ? '12px' : '24px',
+          }}>
+            <div style={{
+              transform: isMobile ? 'scale(0.42)' : 'none',
+              transformOrigin: 'top center',
+              marginBottom: isMobile ? '-170mm' : 0,
             }}>
-              <BackgroundLayer bg={design.background} accent={design.accentColor} customUrl={design.customBackground?.url} />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <MenuPreview design={design} dishes={dishes} sym={sym} fallbackLogoUrl={state.profile?.logoUrl} />
+              {/* A4-proportional sheet */}
+              <div id="menu-design-print" style={{
+                background: '#FFFFFF', color: '#1A1A18',
+                width: '210mm', minHeight: '297mm',
+                padding: '16mm', boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+                fontFamily: fontFor(design.fontFamily),
+                position: 'relative', overflow: 'hidden',
+              }}>
+                <BackgroundLayer bg={design.background} accent={design.accentColor} customUrl={design.customBackground?.url} />
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <MenuPreview design={design} dishes={dishes} sym={sym} fallbackLogoUrl={state.profile?.logoUrl} />
+                </div>
               </div>
             </div>
           </div>
