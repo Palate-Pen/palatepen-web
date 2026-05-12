@@ -52,6 +52,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Make the P logo in the sidebar a home button that navigates back to the dashboard
 - [x] Fix duplicate CSV download button in stock report viewer
 - [x] Prevent duplicate stock lines — stop the same ingredient being added twice to stock
+- [ ] Neaten up the allergen section inside the recipe detail view (layout/spacing/visual hierarchy of Contains + May Contain + sub-type rows)
 
 ### Phase 2 — Pro Feature Depth
 
