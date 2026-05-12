@@ -6,7 +6,7 @@ import{useApp}from'@/context/AppContext';
 import{dark,light}from'@/lib/theme';
 import{usePerms}from'@/lib/perms';
 import{useIsMobile}from'@/lib/useIsMobile';
-import{exportRecipesCsv,exportCostingsCsv,exportStockCsv}from'@/lib/csv';
+import{exportRecipesCsv,exportCostingsCsv,exportStockCsv,downloadRecipesTemplate,downloadCostingsTemplate,downloadStockTemplate,parseCsv,rowsToObjects,readFileAsText,rowsToRecipes,rowsToCostings,rowsToStock}from'@/lib/csv';
 import{supabase}from'@/lib/supabase';
 
 export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
@@ -27,7 +27,41 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const[deleteConfirm,setDeleteConfirm]=useState(false);
   const[uploadingLogo,setUploadingLogo]=useState(false);
   const[logoError,setLogoError]=useState('');
+  const[importPreview,setImportPreview]=useState<null|{kind:'recipes'|'costings'|'stock';rows:any[];fileName:string}>(null);
+  const[importError,setImportError]=useState('');
   const mountedRef=useRef(false);
+
+  async function pickImport(kind: 'recipes' | 'costings' | 'stock', file: File) {
+    setImportError('');
+    try {
+      const text = await readFileAsText(file);
+      const raw = parseCsv(text);
+      if (raw.length < 2) {
+        setImportError('That CSV looks empty — make sure it has a header row plus at least one data row.');
+        return;
+      }
+      const objs = rowsToObjects(raw);
+      const rows = kind === 'recipes' ? rowsToRecipes(objs)
+                  : kind === 'costings' ? rowsToCostings(objs)
+                  : rowsToStock(objs);
+      if (rows.length === 0) {
+        setImportError('No importable rows found. Check the headers match the template.');
+        return;
+      }
+      setImportPreview({ kind, rows, fileName: file.name });
+    } catch (e: any) {
+      setImportError(e?.message || 'Could not read that file.');
+    }
+  }
+
+  function confirmImport() {
+    if (!importPreview) return;
+    const { kind, rows } = importPreview;
+    if (kind === 'recipes') rows.forEach(r => actions.addRecipe(r));
+    if (kind === 'costings') rows.forEach(r => actions.addGP(r));
+    if (kind === 'stock') rows.forEach(r => actions.addStock(r));
+    setImportPreview(null);
+  }
 
   // Resize the logo client-side to ~600px wide before upload. Keeps storage
   // light and avoids huge PNGs slowing every print/page that embeds the logo.
@@ -223,6 +257,74 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
           ))}
         </div>
       </div>
+
+      {/* Data import */}
+      <div style={card}>
+        <p style={sec}>Import Data</p>
+        <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>Bring data in from a CSV. Download a template to see the exact headers, fill it out in Excel or Google Sheets, then upload. Imported rows are added alongside existing data — they don&apos;t overwrite or replace.</p>
+        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+          {[
+            {key:'recipes' as const,label:'Recipes',template:downloadRecipesTemplate},
+            {key:'costings' as const,label:'Costings',template:downloadCostingsTemplate},
+            {key:'stock' as const,label:'Stock',template:downloadStockTemplate},
+          ].map(row=>(
+            <div key={row.key} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',padding:'10px 14px',border:'1px solid '+C.border,background:C.surface,borderRadius:'3px',fontSize:'13px',flexWrap:'wrap'}}>
+              <span style={{color:C.text}}>{row.label}</span>
+              <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                <button onClick={row.template}
+                  style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint,background:'transparent',border:'1px solid '+C.border,padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                  ↓ Template
+                </button>
+                <label style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.gold,background:C.gold+'12',border:'1px solid '+C.gold+'30',padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                  ↑ Upload CSV
+                  <input type="file" accept=".csv,text/csv" onChange={e=>{const f=e.target.files?.[0];if(f)pickImport(row.key,f);e.target.value='';}} style={{display:'none'}}/>
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+        {importError && (
+          <p style={{fontSize:'11px',color:C.red,marginTop:'10px'}}>⚠ {importError}</p>
+        )}
+      </div>
+
+      {/* Import preview modal */}
+      {importPreview && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50,padding:'16px'}}>
+          <div style={{background:C.surface,border:'1px solid '+C.border,width:'100%',maxWidth:'480px',maxHeight:'80vh',overflow:'auto',borderRadius:'4px'}}>
+            <div style={{padding:'18px 20px',borderBottom:'1px solid '+C.border}}>
+              <h3 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'20px',color:C.text,marginBottom:'4px'}}>Confirm import</h3>
+              <p style={{fontSize:'12px',color:C.faint}}>{importPreview.fileName}</p>
+            </div>
+            <div style={{padding:'16px 20px'}}>
+              <p style={{fontSize:'13px',color:C.text,marginBottom:'8px'}}>
+                About to import <strong style={{color:C.gold}}>{importPreview.rows.length}</strong> {importPreview.kind === 'costings' ? 'costing' : importPreview.kind.replace(/s$/, '')}{importPreview.rows.length === 1 ? '' : 's'}.
+              </p>
+              <p style={{fontSize:'12px',color:C.faint,marginBottom:'10px'}}>Preview (first 5):</p>
+              <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'4px'}}>
+                {importPreview.rows.slice(0,5).map((r,i)=>(
+                  <li key={i} style={{fontSize:'12px',color:C.dim,padding:'5px 8px',background:C.surface2,borderRadius:'2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    {importPreview.kind === 'recipes' ? r.title : importPreview.kind === 'costings' ? `${r.name} · ${(state.profile?.currencySymbol||'£')}${(r.sell||0).toFixed(2)}` : `${r.name} · ${r.unit}`}
+                  </li>
+                ))}
+                {importPreview.rows.length > 5 && (
+                  <li style={{fontSize:'11px',color:C.faint,padding:'4px 8px'}}>… and {importPreview.rows.length - 5} more</li>
+                )}
+              </ul>
+            </div>
+            <div style={{padding:'14px 20px',borderTop:'1px solid '+C.border,display:'flex',gap:'10px',justifyContent:'flex-end'}}>
+              <button onClick={()=>setImportPreview(null)}
+                style={{fontSize:'12px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'9px 16px',cursor:'pointer',borderRadius:'2px'}}>
+                Cancel
+              </button>
+              <button onClick={confirmImport}
+                style={{fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.bg,background:C.gold,border:'none',padding:'9px 18px',cursor:'pointer',borderRadius:'2px'}}>
+                Import {importPreview.rows.length}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Danger */}
       <div style={{...card,border:'1px solid '+C.red+'30'}}>
