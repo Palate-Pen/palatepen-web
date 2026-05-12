@@ -2234,9 +2234,26 @@ export default function RecipesView() {
                 #recipe-book-print, #recipe-book-print * { visibility: visible !important; }
                 #recipe-book-print { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; background: white !important; color: #111 !important; }
                 #recipe-book-controls { display: none !important; }
-                .book-page { page-break-after: always; break-after: page; padding: 22mm 16mm !important; box-sizing: border-box; }
+                .book-page { page-break-after: always; break-after: page; padding: 22mm 16mm 8mm 16mm !important; box-sizing: border-box; }
                 .book-page:last-child { page-break-after: auto; break-after: auto; }
-                @page { size: A4; margin: 0; }
+                /* @page bottom margin reserves room for the native page-number footer.
+                   Chrome/Edge render @bottom-* boxes; Safari supports basic content;
+                   Firefox ignores them (graceful — the rest of the book still prints fine). */
+                @page {
+                  size: A4;
+                  margin: 0 0 14mm 0;
+                  @bottom-right {
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-family: system-ui, sans-serif;
+                    font-size: 9pt;
+                    color: #888;
+                    padding: 0 16mm 0 0;
+                  }
+                }
+                /* Title page is unnumbered (and the wordmark is the cover anyway) */
+                @page :first {
+                  @bottom-right { content: ""; }
+                }
               }
             `}</style>
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px', overflow: 'auto' }}>
