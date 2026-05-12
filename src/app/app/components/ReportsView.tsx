@@ -1,8 +1,28 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
+import { toCsv, downloadCsv, dateStamp } from '@/lib/csv';
+
+type SectionKey = 'gp' | 'waste' | 'stock' | 'menus' | 'prices';
+type Range = '7d' | '30d' | '90d' | 'all';
+
+const RANGE_OPTIONS: { value: Range; label: string }[] = [
+  { value: '7d', label: '7d' },
+  { value: '30d', label: '30d' },
+  { value: '90d', label: '90d' },
+  { value: 'all', label: 'All' },
+];
+
+function rangeCutoff(r: Range): number {
+  if (r === 'all') return 0;
+  const days = r === '7d' ? 7 : r === '30d' ? 30 : 90;
+  return Date.now() - days * 86400000;
+}
+function rangeLabel(r: Range): string {
+  return r === 'all' ? 'all time' : `last ${r === '7d' ? '7 days' : r === '30d' ? '30 days' : '90 days'}`;
+}
 
 function gpColor(pct: number, target: number, C: any): string {
   if (pct >= target) return C.greenLight;
@@ -28,11 +48,26 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
   const C = settings.resolved === 'light' ? light : dark;
   const sym = (state.profile || {}).currencySymbol || '£';
   const gpTarget = (state.profile || {}).gpTarget || 72;
+  const businessName = (state.profile?.businessName || '').trim();
+
+  // Section expansion + per-section date range + which one is currently printing
+  const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
+    gp: true, waste: true, stock: true, menus: true, prices: true,
+  });
+  const [ranges, setRanges] = useState<Record<'gp' | 'waste' | 'prices', Range>>({
+    gp: 'all', waste: '30d', prices: '30d',
+  });
+  const [printingKey, setPrintingKey] = useState<SectionKey | null>(null);
+
+  function toggle(k: SectionKey) { setExpanded(prev => ({ ...prev, [k]: !prev[k] })); }
+  function setRange(k: 'gp' | 'waste' | 'prices', r: Range) { setRanges(prev => ({ ...prev, [k]: r })); }
 
   // ── GP performance ────────────────────────────────────────
   const gp = useMemo(() => {
+    const cutoff = rangeCutoff(ranges.gp);
     const list = (state.gpHistory || [])
       .filter((g: any) => typeof g.pct === 'number' && g.pct > 0)
+      .filter((g: any) => (g.savedAt || 0) >= cutoff)
       .sort((a: any, b: any) => (b.pct || 0) - (a.pct || 0));
     const avg = list.length > 0 ? list.reduce((a: number, g: any) => a + g.pct, 0) / list.length : 0;
     const above = list.filter((g: any) => g.pct >= gpTarget).length;
@@ -46,28 +81,27 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       top: list.slice(0, 5),
       bottom: list.slice(-5).reverse(),
     };
-  }, [state.gpHistory, gpTarget]);
+  }, [state.gpHistory, gpTarget, ranges.gp]);
 
   // ── Waste ────────────────────────────────────────────────
   const waste = useMemo(() => {
     const log = state.wasteLog || [];
-    const now = Date.now();
+    const cutoff = rangeCutoff(ranges.waste);
+    const inRange = log.filter((w: any) => (w.createdAt || 0) >= cutoff);
     const sum = (arr: any[]) => arr.reduce((a, w) => a + (parseFloat(w.totalCost) || 0), 0);
-    const week = log.filter((w: any) => (w.createdAt || 0) >= now - 7 * 86400000);
-    const month = log.filter((w: any) => (w.createdAt || 0) >= now - 30 * 86400000);
     const byReason: Record<string, number> = {};
-    for (const w of month) byReason[w.reason || 'Other'] = (byReason[w.reason || 'Other'] || 0) + (parseFloat(w.totalCost) || 0);
+    for (const w of inRange) byReason[w.reason || 'Other'] = (byReason[w.reason || 'Other'] || 0) + (parseFloat(w.totalCost) || 0);
     const byIng: Record<string, number> = {};
-    for (const w of month) byIng[w.ingredientName] = (byIng[w.ingredientName] || 0) + (parseFloat(w.totalCost) || 0);
+    for (const w of inRange) byIng[w.ingredientName] = (byIng[w.ingredientName] || 0) + (parseFloat(w.totalCost) || 0);
     return {
       log,
-      week: sum(week),
-      month: sum(month),
+      inRange,
+      total: sum(inRange),
       allTime: sum(log),
       reasonRows: Object.entries(byReason).sort((a, b) => b[1] - a[1]),
       topIngredients: Object.entries(byIng).sort((a, b) => b[1] - a[1]).slice(0, 5),
     };
-  }, [state.wasteLog]);
+  }, [state.wasteLog, ranges.waste]);
 
   // ── Stock ────────────────────────────────────────────────
   const stock = useMemo(() => {
@@ -140,62 +174,70 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
     return { stars, ploughs, puzzles, dogs, totalRated, totalDishes, totalMenus: all.length, perMenu };
   }, [state.menus, state.recipes, state.gpHistory]);
 
-  // ── Price alerts (30d) ──────────────────────────────────
+  // ── Price alerts ──────────────────────────────────
   const priceAlerts = useMemo(() => {
-    const cutoff = Date.now() - 30 * 86400000;
+    const cutoff = rangeCutoff(ranges.prices);
     return [...(state.priceAlerts || [])]
       .filter((a: any) => (a.detectedAt || 0) >= cutoff)
       .sort((a: any, b: any) => (b.detectedAt || 0) - (a.detectedAt || 0));
-  }, [state.priceAlerts]);
+  }, [state.priceAlerts, ranges.prices]);
 
-  const businessName = (state.profile?.businessName || '').trim();
+  // ── Per-section CSV exports ────────────────────────────
+  function exportSection(k: SectionKey) {
+    const stamp = dateStamp();
+    if (k === 'gp') {
+      downloadCsv(`gp-performance-${stamp}.csv`, toCsv(
+        ['Dish', 'GP %', 'Sell', 'Cost/Cover', 'GP £', 'Target %', 'Saved At'],
+        gp.list.map((g: any) => [g.name, (g.pct || 0).toFixed(1), (g.sell || 0).toFixed(2), (g.cost || 0).toFixed(2), (g.gp || 0).toFixed(2), g.target ?? gpTarget, g.savedAt ? new Date(g.savedAt).toISOString() : ''])
+      ));
+    } else if (k === 'waste') {
+      downloadCsv(`waste-${stamp}.csv`, toCsv(
+        ['Ingredient', 'Reason', 'Qty', 'Unit', 'Cost', 'Date'],
+        waste.inRange.map((w: any) => [w.ingredientName, w.reason, w.qty ?? '', w.unit ?? '', (parseFloat(w.totalCost) || 0).toFixed(2), w.createdAt ? new Date(w.createdAt).toISOString() : ''])
+      ));
+    } else if (k === 'stock') {
+      downloadCsv(`stock-value-${stamp}.csv`, toCsv(
+        ['Category', 'Items', 'Value'],
+        stock.catRows.map(([cat, v]) => [cat, v.count, v.value.toFixed(2)])
+      ));
+    } else if (k === 'menus') {
+      downloadCsv(`menu-engineering-${stamp}.csv`, toCsv(
+        ['Menu', 'Dishes', 'Covers', 'Stars', 'Plough', 'Puzzle', 'Dog'],
+        menus.perMenu.map((m: any) => [m.name, m.dishes, m.totalCovers, m.stars || 0, m.ploughs || 0, m.puzzles || 0, m.dogs || 0])
+      ));
+    } else if (k === 'prices') {
+      downloadCsv(`price-changes-${stamp}.csv`, toCsv(
+        ['Ingredient', 'From', 'To', '%', 'Detected At'],
+        priceAlerts.map((a: any) => [a.name, (a.oldPrice ?? 0).toFixed(2), (a.newPrice ?? 0).toFixed(2), typeof a.pct === 'number' ? a.pct.toFixed(1) : '', a.detectedAt ? new Date(a.detectedAt).toISOString() : ''])
+      ));
+    }
+  }
+
   const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div style={{ padding: '32px', fontFamily: 'system-ui,sans-serif', color: C.text, background: C.bg, minHeight: '100vh' }}>
-      {/* Print rules — hide app chrome, anything tagged .reports-no-print, force the
-          page to a paper-friendly light theme so dark mode users still get readable
-          output without having to toggle theme first. */}
-      <style>{`
-        @media print {
-          aside, .reports-no-print { display: none !important; }
-          body { background: #fff !important; }
-          .reports-page { padding: 0 !important; background: #fff !important; color: #111 !important; min-height: 0 !important; }
-          .reports-page * { color: #111 !important; background: transparent !important; box-shadow: none !important; border-color: #ccc !important; }
-          .reports-page details { display: block !important; }
-          .reports-page details > summary { display: none !important; }
-          .reports-page .report-card { background: #fff !important; border: 1px solid #ccc !important; }
-          @page { size: A4; margin: 14mm; }
-        }
-      `}</style>
-      <div className="reports-page" style={{ padding: 0 }}>
-      {/* Print-only header — only appears on paper */}
-      <div style={{ display: 'none' }} className="reports-print-header" />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
-        <div>
-          {businessName && <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>}
-          <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Reports</h1>
-          <p style={{ fontSize: '12px', color: C.faint }}>{today} · Live snapshots across costings, waste, stock, menus, and price changes</p>
-        </div>
-        <button onClick={() => window.print()} className="reports-no-print"
-          title="Print this report (A4)"
-          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '40', padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
-          🖨 Print Report
-        </button>
+      <div style={{ marginBottom: '24px' }}>
+        {businessName && <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>}
+        <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Reports</h1>
+        <p style={{ fontSize: '12px', color: C.faint }}>{today} · Click any section to expand · pick a range, then print or export</p>
       </div>
 
       {/* Top-line stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         <Card C={C} label="Average GP" value={gp.list.length > 0 ? `${gp.avg.toFixed(1)}%` : '—'} accent={gp.list.length > 0 ? gpColor(gp.avg, gpTarget, C) : undefined} sub={gp.list.length > 0 ? `${gp.above}/${gp.list.length} at target` : 'no costings yet'} />
         <Card C={C} label="Stock value" value={`${sym}${stock.totalValue.toFixed(0)}`} sub={stock.lowStock.length > 0 ? `${stock.lowStock.length} below par` : 'all above par'} subAccent={stock.lowStock.length > 0 ? C.gold : undefined} />
-        <Card C={C} label="Waste · 30d" value={`${sym}${waste.month.toFixed(2)}`} accent={waste.month > 0 ? C.red : undefined} sub={`${waste.allTime > 0 ? sym + waste.allTime.toFixed(2) + ' all-time' : 'no waste logged'}`} />
-        <Card C={C} label="Price changes · 30d" value={String(priceAlerts.length)} accent={priceAlerts.length > 0 ? C.red : undefined} sub={priceAlerts.length > 0 ? 'see below' : 'no recent'} />
+        <Card C={C} label={`Waste · ${ranges.waste}`} value={`${sym}${waste.total.toFixed(2)}`} accent={waste.total > 0 ? C.red : undefined} sub={`${waste.allTime > 0 ? sym + waste.allTime.toFixed(2) + ' all-time' : 'no waste logged'}`} />
+        <Card C={C} label={`Price changes · ${ranges.prices}`} value={String(priceAlerts.length)} accent={priceAlerts.length > 0 ? C.red : undefined} sub={priceAlerts.length > 0 ? 'see below' : 'no recent'} />
       </div>
 
       {/* Two-column: GP performance + Waste */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         {/* GP performance */}
-        <Section C={C} title="GP performance" subtitle={`Target ${gpTarget}% · ${gp.list.length} costed dish${gp.list.length === 1 ? '' : 'es'}`}>
+        <Section C={C} sectionKey="gp" title="GP performance" subtitle={`Target ${gpTarget}% · ${gp.list.length} costed dish${gp.list.length === 1 ? '' : 'es'} · ${rangeLabel(ranges.gp)}`}
+          expanded={expanded.gp} onToggle={() => toggle('gp')}
+          range={ranges.gp} onRangeChange={(r) => setRange('gp', r as Range)}
+          onPrint={() => setPrintingKey('gp')} onExport={() => exportSection('gp')}>
           {gp.list.length === 0 ? (
             <Empty C={C} text="No costings yet" />
           ) : (
@@ -214,13 +256,16 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
         </Section>
 
         {/* Waste */}
-        <Section C={C} title="Waste cost · last 30 days" subtitle={waste.log.length > 0 ? `${waste.log.length} entr${waste.log.length === 1 ? 'y' : 'ies'} · ${sym}${waste.allTime.toFixed(2)} all-time` : 'No waste logged yet'}>
-          {waste.month === 0 ? (
-            <Empty C={C} text={waste.log.length > 0 ? 'No waste in the last 30 days' : 'No waste logged'} />
+        <Section C={C} sectionKey="waste" title="Waste cost" subtitle={waste.log.length > 0 ? `${waste.inRange.length} entr${waste.inRange.length === 1 ? 'y' : 'ies'} in ${rangeLabel(ranges.waste)} · ${sym}${waste.allTime.toFixed(2)} all-time` : 'No waste logged yet'}
+          expanded={expanded.waste} onToggle={() => toggle('waste')}
+          range={ranges.waste} onRangeChange={(r) => setRange('waste', r as Range)}
+          onPrint={() => setPrintingKey('waste')} onExport={() => exportSection('waste')}>
+          {waste.total === 0 ? (
+            <Empty C={C} text={waste.log.length > 0 ? `No waste in ${rangeLabel(ranges.waste)}` : 'No waste logged'} />
           ) : (
             <>
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>By reason</p>
-              <RankList C={C} items={waste.reasonRows.map(([r, v]) => ({ key: r, label: r, right: `${sym}${v.toFixed(2)}`, color: C.gold, bar: v / waste.month }))} />
+              <RankList C={C} items={waste.reasonRows.map(([r, v]) => ({ key: r, label: r, right: `${sym}${v.toFixed(2)}`, color: C.gold, bar: v / waste.total }))} />
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px', marginTop: '14px' }}>Most-wasted ingredients</p>
               <RankList C={C} items={waste.topIngredients.map(([n, v]) => ({ key: n, label: n, right: `${sym}${v.toFixed(2)}`, color: C.gold }))} />
             </>
@@ -231,7 +276,9 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       {/* Two-column: Stock by cat + Menu engineering */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
         {/* Stock by category */}
-        <Section C={C} title="Stock value by category" subtitle={`${(state.stockItems || []).length} items · ${sym}${stock.totalValue.toFixed(0)} total`}>
+        <Section C={C} sectionKey="stock" title="Stock value by category" subtitle={`${(state.stockItems || []).length} items · ${sym}${stock.totalValue.toFixed(0)} total`}
+          expanded={expanded.stock} onToggle={() => toggle('stock')}
+          onPrint={() => setPrintingKey('stock')} onExport={() => exportSection('stock')}>
           {stock.catRows.length === 0 ? (
             <Empty C={C} text="No stock items yet" />
           ) : (
@@ -246,7 +293,9 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
         </Section>
 
         {/* Menu engineering rollup */}
-        <Section C={C} title="Menu engineering" subtitle={`${menus.totalMenus} menu${menus.totalMenus === 1 ? '' : 's'} · ${menus.totalRated} dish${menus.totalRated === 1 ? '' : 'es'} classified`}>
+        <Section C={C} sectionKey="menus" title="Menu engineering" subtitle={`${menus.totalMenus} menu${menus.totalMenus === 1 ? '' : 's'} · ${menus.totalRated} dish${menus.totalRated === 1 ? '' : 'es'} classified`}
+          expanded={expanded.menus} onToggle={() => toggle('menus')}
+          onPrint={() => setPrintingKey('menus')} onExport={() => exportSection('menus')}>
           {menus.totalRated === 0 ? (
             <Empty C={C} text={menus.totalMenus === 0 ? 'No menus yet' : 'No sales data entered yet — open any menu and add weekly covers'} />
           ) : (
@@ -273,7 +322,10 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       </div>
 
       {/* Price changes table */}
-      <Section C={C} title="Price changes · last 30 days" subtitle={`${priceAlerts.length} change${priceAlerts.length === 1 ? '' : 's'}`}>
+      <Section C={C} sectionKey="prices" title="Price changes" subtitle={`${priceAlerts.length} change${priceAlerts.length === 1 ? '' : 's'} in ${rangeLabel(ranges.prices)}`}
+        expanded={expanded.prices} onToggle={() => toggle('prices')}
+        range={ranges.prices} onRangeChange={(r) => setRange('prices', r as Range)}
+        onPrint={() => setPrintingKey('prices')} onExport={() => exportSection('prices')}>
         {priceAlerts.length === 0 ? (
           <Empty C={C} text="No price changes detected" />
         ) : (
@@ -308,7 +360,26 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
           </div>
         )}
       </Section>
-      </div>
+
+      {/* Per-section print modal — clean A4 layout for just one section at a time */}
+      {printingKey && (
+        <PrintModal
+          C={C}
+          sectionKey={printingKey}
+          onClose={() => setPrintingKey(null)}
+          businessName={businessName}
+          today={today}
+          range={
+            printingKey === 'gp' ? rangeLabel(ranges.gp)
+            : printingKey === 'waste' ? rangeLabel(ranges.waste)
+            : printingKey === 'prices' ? rangeLabel(ranges.prices)
+            : ''
+          }
+          sym={sym}
+          gpTarget={gpTarget}
+          gp={gp} waste={waste} stock={stock} menus={menus} priceAlerts={priceAlerts}
+        />
+      )}
     </div>
   );
 }
@@ -323,15 +394,268 @@ function Card({ C, label, value, sub, accent, subAccent }: { C: any; label: stri
   );
 }
 
-function Section({ C, title, subtitle, children }: { C: any; title: string; subtitle?: string; children: React.ReactNode }) {
+function Section({ C, sectionKey, title, subtitle, expanded, onToggle, range, onRangeChange, onPrint, onExport, children }: {
+  C: any;
+  sectionKey: SectionKey;
+  title: string;
+  subtitle?: string;
+  expanded: boolean;
+  onToggle: () => void;
+  range?: Range;
+  onRangeChange?: (r: Range) => void;
+  onPrint: () => void;
+  onExport: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: '20px', marginBottom: '12px' }}>
-      <div style={{ marginBottom: '14px' }}>
-        <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.faint }}>{title}</p>
-        {subtitle && <p style={{ fontSize: '11px', color: C.faint, marginTop: '2px' }}>{subtitle}</p>}
+    <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 20px', gap: '12px', flexWrap: 'wrap' }}>
+        <button onClick={onToggle}
+          style={{ background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11px', color: C.faint, width: '12px' }}>{expanded ? '▾' : '▸'}</span>
+            <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.text }}>{title}</p>
+          </div>
+          {subtitle && <p style={{ fontSize: '11px', color: C.faint, marginTop: '3px', marginLeft: '20px' }}>{subtitle}</p>}
+        </button>
+        {expanded && (
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+            {range && onRangeChange && (
+              <div style={{ display: 'flex', gap: '2px', marginRight: '4px' }}>
+                {RANGE_OPTIONS.map(opt => (
+                  <button key={opt.value} onClick={() => onRangeChange(opt.value)}
+                    style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', padding: '5px 8px', border: '1px solid ' + (range === opt.value ? C.gold + '60' : C.border), background: range === opt.value ? C.gold + '14' : 'transparent', color: range === opt.value ? C.gold : C.faint, cursor: 'pointer', borderRadius: '2px' }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={onPrint} title="Print this section"
+              style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', padding: '5px 9px', border: '1px solid ' + C.border, background: 'transparent', color: C.dim, cursor: 'pointer', borderRadius: '2px' }}>
+              🖨 Print
+            </button>
+            <button onClick={onExport} title="Export this section as CSV"
+              style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', padding: '5px 9px', border: '1px solid ' + C.border, background: 'transparent', color: C.dim, cursor: 'pointer', borderRadius: '2px' }}>
+              ↓ CSV
+            </button>
+          </div>
+        )}
       </div>
-      {children}
+      {expanded && (
+        <div style={{ padding: '0 20px 20px' }}>
+          {children}
+        </div>
+      )}
     </div>
+  );
+}
+
+// Per-section print modal — opens a clean light-themed A4 preview with just one
+// section's data. Uses the same @media print pattern as the recipe prints
+// (visibility: hidden on the body, visible on the print container).
+function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, gpTarget, gp, waste, stock, menus, priceAlerts }: {
+  C: any;
+  sectionKey: SectionKey;
+  onClose: () => void;
+  businessName: string;
+  today: string;
+  range: string;
+  sym: string;
+  gpTarget: number;
+  gp: any; waste: any; stock: any; menus: any; priceAlerts: any[];
+}) {
+  const titleMap: Record<SectionKey, string> = {
+    gp: 'GP Performance',
+    waste: 'Waste Cost',
+    stock: 'Stock Value by Category',
+    menus: 'Menu Engineering',
+    prices: 'Price Changes',
+  };
+  return (
+    <>
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #report-print, #report-print * { visibility: visible !important; }
+          #report-print { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; background: white !important; color: #111 !important; }
+          #report-print-controls { display: none !important; }
+          @page { size: A4; margin: 14mm; }
+        }
+      `}</style>
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px', overflow: 'auto' }}>
+        <div style={{ width: '100%', maxWidth: '800px', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
+          <div id="report-print-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.surface, border: '1px solid ' + C.border, borderBottom: 'none', borderRadius: '4px 4px 0 0' }}>
+            <p style={{ fontSize: '12px', color: C.faint }}>{titleMap[sectionKey]} · A4 print preview</p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => window.print()}
+                style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.bg, background: C.gold, border: 'none', padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                Print
+              </button>
+              <button onClick={onClose}
+                style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                Close
+              </button>
+            </div>
+          </div>
+          <div id="report-print" style={{ background: '#FFFFFF', color: '#111', padding: '32px 40px', overflow: 'auto', fontFamily: 'system-ui,sans-serif', borderRadius: '0 0 4px 4px' }}>
+            {/* Header */}
+            <div style={{ borderBottom: '1px solid #DDD', paddingBottom: '14px', marginBottom: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+              <div>
+                <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: '#111', marginBottom: '4px' }}>{titleMap[sectionKey]}</h1>
+                <p style={{ fontSize: '12px', color: '#555' }}>{today}{range ? ' · ' + range : ''}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+                  <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: '18px' }}>P</span>
+                  <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#C8960A', marginBottom: '6px' }}></div>
+                  <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: '18px', letterSpacing: '3px' }}>ALATABLE</span>
+                </div>
+                {businessName && <p style={{ fontSize: '11px', color: '#555', marginTop: '3px', fontWeight: 600 }}>{businessName}</p>}
+              </div>
+            </div>
+
+            {/* Body */}
+            {sectionKey === 'gp' && <GpPrint sym={sym} gpTarget={gpTarget} gp={gp} />}
+            {sectionKey === 'waste' && <WastePrint sym={sym} waste={waste} />}
+            {sectionKey === 'stock' && <StockPrint sym={sym} stock={stock} />}
+            {sectionKey === 'menus' && <MenusPrint menus={menus} />}
+            {sectionKey === 'prices' && <PricesPrint sym={sym} priceAlerts={priceAlerts} />}
+
+            <div style={{ borderTop: '1px solid #DDD', paddingTop: '12px', marginTop: '24px', fontSize: '10px', color: '#888', display: 'flex', justifyContent: 'space-between' }}>
+              <span>{businessName || 'Palatable'} · Generated {today}</span>
+              <span>Palatable</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Printable body components — light theme, table-first layouts ─
+
+function PrintTable({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) {
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '12px' }}>
+      <thead>
+        <tr style={{ background: '#F4F4F2', color: '#555' }}>
+          {headers.map((h, i) => (
+            <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '6px 8px', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={i} style={{ borderBottom: '0.5px solid #EEE' }}>
+            {row.map((cell, j) => (
+              <td key={j} style={{ padding: '5px 8px', color: '#222', textAlign: j === 0 ? 'left' : 'right' }}>{cell}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function GpPrint({ sym, gpTarget, gp }: { sym: string; gpTarget: number; gp: any }) {
+  if (gp.list.length === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No costings in this range.</p>;
+  return (
+    <>
+      <PrintTable
+        headers={['Metric', 'Value']}
+        rows={[
+          ['Average GP', gp.avg.toFixed(1) + '%'],
+          ['Costed dishes', String(gp.list.length)],
+          ['At or above target (' + gpTarget + '%)', String(gp.above)],
+          ['Below target', String(gp.belowTarget)],
+          ['Below 65%', String(gp.below65)],
+        ]}
+      />
+      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px', marginTop: '14px' }}>All dishes by GP %</h2>
+      <PrintTable
+        headers={['Dish', 'Sell', 'Cost/Cover', 'GP £', 'GP %']}
+        rows={gp.list.map((g: any) => [g.name, sym + (g.sell || 0).toFixed(2), sym + (g.cost || 0).toFixed(2), sym + (g.gp || 0).toFixed(2), (g.pct || 0).toFixed(1) + '%'])}
+      />
+    </>
+  );
+}
+
+function WastePrint({ sym, waste }: { sym: string; waste: any }) {
+  if (waste.total === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No waste in this range.</p>;
+  return (
+    <>
+      <PrintTable
+        headers={['Metric', 'Value']}
+        rows={[
+          ['Total waste in range', sym + waste.total.toFixed(2)],
+          ['All-time waste', sym + waste.allTime.toFixed(2)],
+          ['Entries in range', String(waste.inRange.length)],
+        ]}
+      />
+      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px', marginTop: '14px' }}>By reason</h2>
+      <PrintTable headers={['Reason', 'Cost']} rows={waste.reasonRows.map(([r, v]: [string, number]) => [r, sym + v.toFixed(2)])} />
+      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px', marginTop: '14px' }}>Most-wasted ingredients</h2>
+      <PrintTable headers={['Ingredient', 'Cost']} rows={waste.topIngredients.map(([n, v]: [string, number]) => [n, sym + v.toFixed(2)])} />
+    </>
+  );
+}
+
+function StockPrint({ sym, stock }: { sym: string; stock: any }) {
+  if (stock.catRows.length === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No stock items yet.</p>;
+  return (
+    <>
+      <PrintTable
+        headers={['Metric', 'Value']}
+        rows={[
+          ['Total stock value', sym + stock.totalValue.toFixed(2)],
+          ['Categories', String(stock.catRows.length)],
+          ['Items below par', String(stock.lowStock.length)],
+        ]}
+      />
+      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px', marginTop: '14px' }}>By category</h2>
+      <PrintTable
+        headers={['Category', 'Items', 'Value', '% of Total']}
+        rows={stock.catRows.map(([cat, v]: [string, any]) => [cat, String(v.count), sym + v.value.toFixed(2), stock.totalValue > 0 ? ((v.value / stock.totalValue) * 100).toFixed(1) + '%' : '—'])}
+      />
+    </>
+  );
+}
+
+function MenusPrint({ menus }: { menus: any }) {
+  if (menus.totalRated === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No menu engineering data yet — add weekly covers to your menus to classify dishes.</p>;
+  return (
+    <>
+      <PrintTable
+        headers={['Quadrant', 'Count']}
+        rows={[
+          ['★ Stars (high pop, high profit)', String(menus.stars)],
+          ['Plough Horse (high pop, low profit)', String(menus.ploughs)],
+          ['Puzzle (low pop, high profit)', String(menus.puzzles)],
+          ['Dog (low pop, low profit)', String(menus.dogs)],
+        ]}
+      />
+      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px', marginTop: '14px' }}>Per menu</h2>
+      <PrintTable
+        headers={['Menu', 'Dishes', 'Covers', '★', 'Plough', 'Puzzle', 'Dog']}
+        rows={menus.perMenu.map((m: any) => [m.name, String(m.dishes), String(m.totalCovers || 0), String(m.stars || 0), String(m.ploughs || 0), String(m.puzzles || 0), String(m.dogs || 0)])}
+      />
+    </>
+  );
+}
+
+function PricesPrint({ sym, priceAlerts }: { sym: string; priceAlerts: any[] }) {
+  if (priceAlerts.length === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No price changes in this range.</p>;
+  return (
+    <PrintTable
+      headers={['Ingredient', 'From', 'To', '%', 'Detected']}
+      rows={priceAlerts.map((a: any) => [
+        a.name,
+        sym + (a.oldPrice ?? 0).toFixed(2),
+        sym + (a.newPrice ?? 0).toFixed(2),
+        typeof a.pct === 'number' ? (a.pct > 0 ? '+' : '') + a.pct.toFixed(1) + '%' : '—',
+        a.detectedAt ? new Date(a.detectedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—',
+      ])}
+    />
   );
 }
 
