@@ -196,6 +196,7 @@ export default function RecipesView() {
   const [ilcPortions, setIlcPortions] = useState('1');
   const [ilcIngs, setIlcIngs] = useState<any[]>([]);
   const [ilcSaving, setIlcSaving] = useState(false);
+  const [ilcSuggestRow, setIlcSuggestRow] = useState<string | null>(null);
   const ILC_UNITS = ['kg', 'g', 'L', 'ml', 'each', 'bunch', 'tbsp'];
 
   function ilcCalcLine(qty: number, unit: string, price: number) {
@@ -222,6 +223,42 @@ export default function RecipesView() {
   function ilcAutofillPrice(id: string, name: string) {
     const m = state.ingredientsBank.find((b: any) => (b.name||'').toLowerCase() === (name||'').toLowerCase());
     if (m?.unitPrice) ilcSetField(id, 'price', String(m.unitPrice));
+  }
+  // Bank-name autocomplete: startsWith matches first, then contains. Capped at 6.
+  function ilcBankMatches(query: string) {
+    const q = (query || '').toLowerCase().trim();
+    if (q.length < 1) return [];
+    const bank = state.ingredientsBank || [];
+    const starts: any[] = [];
+    const contains: any[] = [];
+    for (const b of bank) {
+      const n = (b.name || '').toLowerCase();
+      if (!n) continue;
+      if (n === q) { starts.unshift(b); continue; } // exact match floats to top
+      if (n.startsWith(q)) starts.push(b);
+      else if (n.includes(q)) contains.push(b);
+    }
+    return [...starts, ...contains].slice(0, 6);
+  }
+  // Pick a bank entry into the row: fills name + unit + (any known price) in one go.
+  function ilcPickBank(rowId: string, bank: any) {
+    setIlcIngs(prev => prev.map(row => {
+      if (row.id !== rowId) return row;
+      const next: any = { ...row, name: bank.name };
+      if (bank.unit) next.unit = bank.unit;
+      if (bank.unitPrice != null) next.price = String(bank.unitPrice);
+      const qty = parseFloat(next.qty) || 0;
+      const price = parseFloat(next.price) || 0;
+      next.line = ilcCalcLine(qty, next.unit, price);
+      return next;
+    }));
+    setIlcSuggestRow(null);
+  }
+  // Duplicate within the current builder (case-insensitive). Excludes the row itself.
+  function ilcIsDuplicateName(rowId: string, name: string) {
+    const k = (name || '').toLowerCase().trim();
+    if (!k) return false;
+    return ilcIngs.some(r => r.id !== rowId && (r.name || '').toLowerCase().trim() === k);
   }
   function openInlineCosting() {
     if (!sel) return;
@@ -901,15 +938,58 @@ export default function RecipesView() {
                       <p style={{ fontSize: '12px', color: C.faint, padding: '8px 0' }}>No ingredients yet — add one below.</p>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {ilcIngs.map(row => (
+                      {ilcIngs.map(row => {
+                        const matches = ilcSuggestRow === row.id ? ilcBankMatches(row.name) : [];
+                        const isDuplicate = ilcIsDuplicateName(row.id, row.name);
+                        const exactBank = row.name && (state.ingredientsBank || []).some((b: any) => (b.name || '').toLowerCase().trim() === row.name.toLowerCase().trim());
+                        const showDropdown = ilcSuggestRow === row.id && (row.name || '').trim().length > 0;
+                        return (
                         <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '2fr 70px 80px 90px 70px 32px', gap: '6px', alignItems: 'center' }}>
-                          <input
-                            value={row.name}
-                            onChange={e => ilcSetField(row.id, 'name', e.target.value)}
-                            onBlur={e => ilcAutofillPrice(row.id, e.target.value)}
-                            placeholder="Name"
-                            style={{ ...inp, fontSize: '12px', padding: '7px 9px' }}
-                          />
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              value={row.name}
+                              onChange={e => ilcSetField(row.id, 'name', e.target.value)}
+                              onFocus={() => setIlcSuggestRow(row.id)}
+                              onBlur={e => {
+                                ilcAutofillPrice(row.id, e.target.value);
+                                // Delay closing so a mousedown on a suggestion fires first
+                                setTimeout(() => {
+                                  setIlcSuggestRow(prev => prev === row.id ? null : prev);
+                                }, 150);
+                              }}
+                              onKeyDown={e => { if (e.key === 'Escape') setIlcSuggestRow(null); }}
+                              placeholder="Name"
+                              style={{
+                                ...inp, fontSize: '12px', padding: '7px 9px',
+                                border: '1px solid ' + (isDuplicate ? C.red : exactBank ? C.gold + '60' : C.border),
+                              }}
+                            />
+                            {showDropdown && (
+                              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: '2px', background: C.surface, border: '1px solid ' + C.border, borderRadius: '3px', maxHeight: '220px', overflow: 'auto', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }}>
+                                {isDuplicate && (
+                                  <p style={{ fontSize: '11px', color: C.red, padding: '7px 10px', borderBottom: '0.5px solid ' + C.border, background: C.red + '0E' }}>
+                                    ⚠ Already added to this costing
+                                  </p>
+                                )}
+                                {matches.length > 0 ? (
+                                  matches.map(m => (
+                                    <button key={m.id}
+                                      onMouseDown={e => { e.preventDefault(); ilcPickBank(row.id, m); }}
+                                      style={{ display: 'flex', width: '100%', textAlign: 'left', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '7px 10px', background: 'transparent', border: 'none', borderBottom: '0.5px solid ' + C.border, color: C.text, fontSize: '12px', cursor: 'pointer' }}>
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
+                                      <span style={{ fontSize: '10px', color: C.faint, flexShrink: 0 }}>
+                                        {m.unit || ''}{m.unitPrice != null ? ` · ${sym}${Number(m.unitPrice).toFixed(2)}` : ''}
+                                      </span>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <p style={{ fontSize: '11px', color: C.faint, padding: '8px 10px', fontStyle: 'italic' }}>
+                                    No bank match — saves as new on costing save
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           <input
                             type="number"
                             value={row.qty}
@@ -937,7 +1017,8 @@ export default function RecipesView() {
                             ✕
                           </button>
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                     <button onClick={ilcAddRow}
                       style={{ marginTop: '10px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
