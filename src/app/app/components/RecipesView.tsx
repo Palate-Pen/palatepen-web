@@ -158,6 +158,8 @@ export default function RecipesView() {
   const [assigningCosting, setAssigningCosting] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
   const [showSpec, setShowSpec] = useState(false);
+  const [showRecipePrint, setShowRecipePrint] = useState(false);
+  const [showRecipeBook, setShowRecipeBook] = useState(false);
   const [confirmUnlock, setConfirmUnlock] = useState(false);
   // Edit-mode buffer for the linked costing's ingredients — sourced from
   // state.gpHistory when edit mode opens, debounced-saved back as the user edits.
@@ -633,6 +635,114 @@ export default function RecipesView() {
 
   const inp: any = { width: '100%', background: C.surface2, border: '1px solid ' + C.border, color: C.text, fontSize: '13px', padding: '9px 12px', outline: 'none', fontFamily: 'system-ui,sans-serif', boxSizing: 'border-box' };
 
+  // Renders the printable body of a single recipe — used by both the single-recipe
+  // Print modal and each page of the Recipe Book. Always light-themed (paper).
+  // Ingredient source order: linked costing (priced, structured) → imported strings.
+  function recipePrintBody(r: any) {
+    const linked = getLinkedCosting(r);
+    const computed = computeFromBank(linked, state.ingredientsBank || []);
+    const portionsLinked = parseFloat(linked?.portions);
+    const portionsImported = parseInt((r.imported?.servings || '').toString().replace(/[^0-9]/g, ''));
+    const portions = !isNaN(portionsLinked) && portionsLinked > 0 ? portionsLinked
+                   : !isNaN(portionsImported) && portionsImported > 0 ? portionsImported : null;
+    const containsArr = Array.from(new Set<string>([
+      ...Array.from(computed.contains),
+      ...(r.allergens?.contains || []),
+    ]));
+    const mayContain = r.allergens?.mayContain || [];
+    const meta = [
+      r.category,
+      portions ? portions + (portions === 1 ? ' portion' : ' portions') : null,
+      r.imported?.prepTime ? 'Prep ' + r.imported.prepTime : null,
+      r.imported?.cookTime ? 'Cook ' + r.imported.cookTime : null,
+    ].filter(Boolean).join(' · ');
+    return (
+      <>
+        {r.photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={r.photoUrl} alt={r.title || 'Recipe'} style={{ width: '100%', maxHeight: '240px', objectFit: 'cover', borderRadius: '3px', marginBottom: '14px' }} />
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #DDD', paddingBottom: '14px', marginBottom: '18px', gap: '16px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '30px', color: '#111', marginBottom: '6px' }}>{r.title || 'Untitled recipe'}</h1>
+            {meta && <p style={{ fontSize: '12px', color: '#555' }}>{meta}</p>}
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: '20px' }}>P</span>
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#C8960A', marginBottom: '7px' }}></div>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: '20px', letterSpacing: '4px' }}>ALATABLE</span>
+            </div>
+          </div>
+        </div>
+        {r.imported?.description && (
+          <p style={{ fontSize: '13px', color: '#333', fontStyle: 'italic', marginBottom: '16px', lineHeight: 1.6 }}>{r.imported.description}</p>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '24px', marginBottom: '20px' }}>
+          <section>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Ingredients</h2>
+            {linked?.ingredients?.length > 0 ? (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {linked.ingredients.map((ing: any, i: number) => (
+                  <li key={i} style={{ fontSize: '13px', color: '#222', padding: '4px 0', borderBottom: '0.5px dotted #DDD' }}>
+                    <strong style={{ color: '#000' }}>{ing.qty}{ing.unit}</strong> {ing.name}
+                  </li>
+                ))}
+              </ul>
+            ) : r.imported?.ingredients?.length > 0 ? (
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {r.imported.ingredients.map((ing: string, i: number) => (
+                  <li key={i} style={{ fontSize: '13px', color: '#222', padding: '3px 0' }}>{ing}</li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No ingredients</p>
+            )}
+          </section>
+          <section>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Method</h2>
+            {r.imported?.method?.length > 0 ? (
+              <ol style={{ paddingLeft: '20px', margin: 0 }}>
+                {r.imported.method.map((step: string, i: number) => (
+                  <li key={i} style={{ fontSize: '13px', color: '#222', padding: '4px 0', lineHeight: 1.6 }}>{step}</li>
+                ))}
+              </ol>
+            ) : r.notes?.trim() ? (
+              <p style={{ fontSize: '13px', color: '#222', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{r.notes}</p>
+            ) : (
+              <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No method recorded</p>
+            )}
+          </section>
+        </div>
+        {(containsArr.length > 0 || mayContain.length > 0) && (
+          <section style={{ borderTop: '1px solid #DDD', paddingTop: '14px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px' }}>Allergens</h2>
+            {containsArr.length > 0 && (
+              <p style={{ fontSize: '12px', color: '#222', marginBottom: '4px' }}>
+                <strong style={{ color: '#C00' }}>Contains:</strong>{' '}
+                {containsArr.map(k => ALLERGENS.find(a => a.key === k)?.label).filter(Boolean).join(', ')}
+              </p>
+            )}
+            {mayContain.length > 0 && (
+              <p style={{ fontSize: '12px', color: '#222' }}>
+                <strong style={{ color: '#A77' }}>May contain:</strong>{' '}
+                {mayContain.map((k: string) => ALLERGENS.find(a => a.key === k)?.label).filter(Boolean).join(', ')}
+              </p>
+            )}
+          </section>
+        )}
+        {/* Chef's notes only shown as a separate section when a method already exists
+            (otherwise notes have been used as the method fallback above). */}
+        {r.notes?.trim() && (r.imported?.method?.length || 0) > 0 && (
+          <section style={{ borderTop: '1px solid #DDD', paddingTop: '14px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px' }}>Chef&apos;s notes</h2>
+            <p style={{ fontSize: '12px', color: '#222', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{r.notes}</p>
+          </section>
+        )}
+      </>
+    );
+  }
+
   // ── RECIPE DETAIL ──────────────────────────────────────────
   if (sel) {
     const linkedCosting = getLinkedCosting(sel);
@@ -642,7 +752,7 @@ export default function RecipesView() {
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <button onClick={() => { setSel(null); setEditMode(false); setConfirmUnlock(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => { setSel(null); setEditMode(false); setConfirmUnlock(false); setShowRecipePrint(false); }} style={{ fontSize: '13px', color: C.gold, background: 'none', border: 'none', cursor: 'pointer' }}>
             ← Recipe Library
           </button>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -675,6 +785,11 @@ export default function RecipesView() {
                 🔓 Unlock
               </button>
             )}
+            <button onClick={() => setShowRecipePrint(true)}
+              title="Print this recipe (A4)"
+              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+              🖨 Print
+            </button>
             {editMode ? (
               <>
                 <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, alignSelf: 'center' }}>Auto-saves</p>
@@ -1837,6 +1952,45 @@ export default function RecipesView() {
             </>
           );
         })()}
+
+        {/* Single-recipe print modal */}
+        {showRecipePrint && (
+          <>
+            <style>{`
+              @media print {
+                body * { visibility: hidden !important; }
+                #recipe-print, #recipe-print * { visibility: visible !important; }
+                #recipe-print { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; background: white !important; color: #111 !important; }
+                #recipe-print-controls { display: none !important; }
+                @page { size: A4; margin: 14mm; }
+              }
+            `}</style>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px', overflow: 'auto' }}>
+              <div style={{ width: '100%', maxWidth: '800px', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
+                <div id="recipe-print-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.surface, border: '1px solid ' + C.border, borderBottom: 'none', borderRadius: '4px 4px 0 0' }}>
+                  <p style={{ fontSize: '12px', color: C.faint }}>Recipe · A4 print preview</p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => window.print()}
+                      style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.bg, background: C.gold, border: 'none', padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                      Print
+                    </button>
+                    <button onClick={() => setShowRecipePrint(false)}
+                      style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div id="recipe-print" style={{ background: '#FFFFFF', color: '#111', padding: '32px 40px', overflow: 'auto', fontFamily: 'system-ui,sans-serif', borderRadius: '0 0 4px 4px' }}>
+                  {recipePrintBody(sel)}
+                  <div style={{ borderTop: '1px solid #DDD', paddingTop: '12px', marginTop: '20px', fontSize: '10px', color: '#888', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Generated by Palatable on {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    <span>Palate &amp; Pen</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -1855,10 +2009,17 @@ export default function RecipesView() {
           <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Recipe Library</h1>
           <p style={{ fontSize: '12px', color: C.faint }}>{state.recipes.length} recipe{state.recipes.length !== 1 ? 's' : ''} saved</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px', width: isMobile ? '100%' : 'auto' }}>
-          + Add Recipe
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
+          <button onClick={() => setShowRecipeBook(true)} disabled={state.recipes.length === 0}
+            title={state.recipes.length === 0 ? 'No recipes to compile' : 'Compile every recipe into a printable book'}
+            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: state.recipes.length === 0 ? C.faint : C.gold, background: state.recipes.length === 0 ? 'transparent' : C.gold + '12', border: '1px solid ' + (state.recipes.length === 0 ? C.border : C.gold + '40'), padding: '10px 16px', cursor: state.recipes.length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: state.recipes.length === 0 ? 0.5 : 1 }}>
+            🖨 Print Recipe Book
+          </button>
+          <button onClick={() => setShowAdd(true)}
+            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
+            + Add Recipe
+          </button>
+        </div>
       </div>
 
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search recipes..."
@@ -2045,6 +2206,100 @@ export default function RecipesView() {
           </div>
         </div>
       )}
+
+      {/* Recipe book print modal — compiles every recipe into one document,
+          ordered by CATS index then alphabetical within category. Title page +
+          contents + one A4 page per recipe (page-break-after via CSS). */}
+      {showRecipeBook && (() => {
+        const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        const sorted = [...state.recipes].sort((a: any, b: any) => {
+          const ca = CATS.indexOf(a.category || 'Other');
+          const cb = CATS.indexOf(b.category || 'Other');
+          const ia = ca === -1 ? CATS.length : ca;
+          const ib = cb === -1 ? CATS.length : cb;
+          if (ia !== ib) return ia - ib;
+          return (a.title || '').localeCompare(b.title || '');
+        });
+        const byCategory: Record<string, any[]> = {};
+        for (const r of sorted) {
+          const c = r.category || 'Other';
+          if (!byCategory[c]) byCategory[c] = [];
+          byCategory[c].push(r);
+        }
+        return (
+          <>
+            <style>{`
+              @media print {
+                body * { visibility: hidden !important; }
+                #recipe-book-print, #recipe-book-print * { visibility: visible !important; }
+                #recipe-book-print { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; background: white !important; color: #111 !important; }
+                #recipe-book-controls { display: none !important; }
+                .book-page { page-break-after: always; break-after: page; padding: 22mm 16mm !important; box-sizing: border-box; }
+                .book-page:last-child { page-break-after: auto; break-after: auto; }
+                @page { size: A4; margin: 0; }
+              }
+            `}</style>
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px', overflow: 'auto' }}>
+              <div style={{ width: '100%', maxWidth: '840px', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
+                <div id="recipe-book-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: C.surface, border: '1px solid ' + C.border, borderBottom: 'none', borderRadius: '4px 4px 0 0' }}>
+                  <p style={{ fontSize: '12px', color: C.faint }}>Recipe book · {sorted.length} recipe{sorted.length === 1 ? '' : 's'} · A4 print preview</p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => window.print()}
+                      style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.bg, background: C.gold, border: 'none', padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                      Print
+                    </button>
+                    <button onClick={() => setShowRecipeBook(false)}
+                      style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+                <div id="recipe-book-print" style={{ background: '#FFFFFF', color: '#111', overflow: 'auto', fontFamily: 'system-ui,sans-serif', borderRadius: '0 0 4px 4px' }}>
+                  {/* Title page */}
+                  <div className="book-page" style={{ minHeight: '780px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px 40px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '24px' }}>
+                      <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: '48px' }}>P</span>
+                      <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#C8960A', marginBottom: '16px' }}></div>
+                      <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: '48px', letterSpacing: '8px' }}>ALATABLE</span>
+                    </div>
+                    <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '40px', color: '#111', marginBottom: '12px' }}>Recipe Book</h1>
+                    {(state.profile?.name || state.profile?.location) && (
+                      <p style={{ fontSize: '14px', color: '#555', marginBottom: '8px' }}>
+                        {state.profile?.name}{state.profile?.name && state.profile?.location ? ' · ' : ''}{state.profile?.location}
+                      </p>
+                    )}
+                    <p style={{ fontSize: '12px', color: '#888', marginTop: '24px' }}>Compiled {today} · {sorted.length} recipe{sorted.length === 1 ? '' : 's'}</p>
+                  </div>
+                  {/* Contents */}
+                  <div className="book-page" style={{ padding: '40px', minHeight: '780px' }}>
+                    <h2 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '30px', color: '#111', marginBottom: '20px', borderBottom: '1px solid #DDD', paddingBottom: '10px' }}>Contents</h2>
+                    {Object.entries(byCategory).map(([cat, list]) => (
+                      <section key={cat} style={{ marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#888', marginBottom: '6px' }}>{cat}</h3>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                          {list.map((r: any) => (
+                            <li key={r.id} style={{ fontSize: '13px', color: '#222', padding: '5px 0', borderBottom: '0.5px dotted #DDD' }}>{r.title || 'Untitled recipe'}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    ))}
+                  </div>
+                  {/* Recipe pages */}
+                  {sorted.map((r: any) => (
+                    <div key={r.id} className="book-page" style={{ padding: '32px 40px' }}>
+                      {recipePrintBody(r)}
+                      <div style={{ borderTop: '1px solid #DDD', paddingTop: '12px', marginTop: '20px', fontSize: '10px', color: '#888', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{r.category || 'Other'}</span>
+                        <span>Palate &amp; Pen · Recipe Book</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
