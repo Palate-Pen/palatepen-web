@@ -9,6 +9,7 @@ import{useIsMobile}from'@/lib/useIsMobile';
 import{exportRecipesCsv,exportCostingsCsv,exportStockCsv,downloadRecipesTemplate,downloadCostingsTemplate,downloadStockTemplate,parseCsv,rowsToObjects,readFileAsText,rowsToRecipes,rowsToCostings,rowsToStock}from'@/lib/csv';
 import{supabase}from'@/lib/supabase';
 import{generateApiKey,maskApiKey}from'@/lib/apiKey';
+import{generateInboxToken}from'@/lib/inboundToken';
 
 export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>void;onShowGuide?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -54,6 +55,31 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       setApiKeyCopied(true);
       setTimeout(()=>setApiKeyCopied(false),1500);
     }catch{}
+  }
+
+  // Invoice email-forwarding: per-account inbox token, surfaces as
+  // invoices+{token}@palateandpen.co.uk. Pro tier and above.
+  const inboxToken: string = profile.invoiceInboxToken || '';
+  const inboxAddress = inboxToken ? `invoices+${inboxToken}@palateandpen.co.uk` : '';
+  const inboxEligible = tier === 'pro' || tier === 'kitchen' || tier === 'group';
+  const [inboxCopied, setInboxCopied] = useState(false);
+  const [showInboxHelp, setShowInboxHelp] = useState(false);
+  function createInboxToken() {
+    if (!inboxEligible) return;
+    actions.updProfile({ invoiceInboxToken: generateInboxToken() });
+  }
+  function regenInboxToken() {
+    if (!inboxEligible) return;
+    actions.updProfile({ invoiceInboxToken: generateInboxToken() });
+    setInboxCopied(false);
+  }
+  function copyInbox() {
+    if (!inboxAddress) return;
+    try {
+      navigator.clipboard?.writeText(inboxAddress);
+      setInboxCopied(true);
+      setTimeout(() => setInboxCopied(false), 1500);
+    } catch {}
   }
   const mountedRef=useRef(false);
 
@@ -287,6 +313,63 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
             <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>Reports has per-section date ranges, Print and CSV export.</li>
           </ul>
         </div>
+      </div>
+
+      {/* Email invoice forwarding — Pro+. Each account gets a unique inbox
+          address. Forward a supplier email and the AI extracts invoice lines
+          straight into the Invoices tab. */}
+      <div style={card}>
+        <p style={sec}>Invoice Email Forwarding</p>
+        <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>
+          Forward supplier invoices from your email to your private Palatable inbox. PDFs and image attachments get scanned automatically and appear in the Invoices tab.
+        </p>
+        {!inboxEligible ? (
+          <div style={{padding:'14px',background:C.surface,border:'1px solid '+C.gold+'30',borderRadius:'3px'}}>
+            <p style={{fontSize:'12px',color:C.gold,fontWeight:600,marginBottom:'4px'}}>Available on Pro and above</p>
+            <p style={{fontSize:'11px',color:C.faint}}>Upgrade to Pro (£25/mo) to enable.</p>
+          </div>
+        ) : !inboxToken ? (
+          <button onClick={createInboxToken} disabled={!perms.canManageSettings}
+            style={{fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.bg,background:C.gold,border:'none',padding:'10px 18px',cursor:perms.canManageSettings?'pointer':'not-allowed',borderRadius:'2px',opacity:perms.canManageSettings?1:0.5}}>
+            ✉ Generate inbox address
+          </button>
+        ) : (
+          <>
+            <div style={{display:'flex',gap:'8px',alignItems:'center',padding:'10px 12px',background:C.surface,border:'1px solid '+C.border,borderRadius:'3px',flexWrap:'wrap'}}>
+              <code style={{flex:1,minWidth:'220px',fontFamily:'monospace',fontSize:'13px',color:C.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {inboxAddress}
+              </code>
+              <button onClick={copyInbox}
+                style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.gold,background:C.gold+'14',border:'1px solid '+C.gold+'40',padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                {inboxCopied?'✓ Copied':'Copy'}
+              </button>
+              <button onClick={regenInboxToken}
+                style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.red,background:'transparent',border:'1px solid '+C.red+'40',padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                Regenerate
+              </button>
+            </div>
+            <button onClick={() => setShowInboxHelp(v => !v)}
+              style={{marginTop:'10px',fontSize:'11px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.gold,background:'transparent',border:'1px solid '+C.gold+'40',padding:'7px 12px',cursor:'pointer',borderRadius:'2px'}}>
+              {showInboxHelp ? 'Hide how-to' : 'How to use'}
+            </button>
+            {showInboxHelp && (
+              <div style={{marginTop:'10px',padding:'14px',background:C.surface,border:'0.5px solid '+C.border,borderRadius:'3px',fontSize:'12px',color:C.dim,lineHeight:1.65}}>
+                <ol style={{paddingLeft:'18px',margin:0,display:'flex',flexDirection:'column',gap:'6px'}}>
+                  <li>When a supplier sends you an invoice email, hit <strong>Forward</strong>.</li>
+                  <li>Send it to <code style={{color:C.gold}}>{inboxAddress}</code>.</li>
+                  <li>Within a minute or so the invoice appears in your <strong>Invoices</strong> tab, with the supplier name, line items and total filled in.</li>
+                  <li>Open it to review and adjust before saving to stock.</li>
+                </ol>
+                <p style={{fontSize:'11px',color:C.faint,marginTop:'10px'}}>
+                  Works with PDF and image attachments (JPG / PNG / WebP / HEIC). If a supplier embeds the invoice in the body without an attachment, that email is currently skipped — coming in a future update.
+                </p>
+                <p style={{fontSize:'11px',color:C.faint,marginTop:'6px'}}>
+                  Keep this address private — anyone who knows it can submit invoices to your account. Regenerate any time if it leaks.
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* API Access — Kitchen / Group only. Read-only public API for third-party

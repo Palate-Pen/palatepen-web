@@ -96,7 +96,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] QR code menus *(rendered inline from QR API + downloadable PNG)*
 - [ ] POS integration (Square, ePOSnow)
 - [ ] Xero integration
-- [ ] Email invoice forwarding
+- [x] Email invoice forwarding *(Pro+ — per-account `invoices+{token}@palateandpen.co.uk` address. Webhook at `/api/inbound-email` accepts Resend/Postmark/Mailgun-shaped JSON, runs each PDF/image attachment through Claude vision, appends to user_data.invoices. Requires `INBOUND_EMAIL_SECRET` env var + DNS/inbound provider configured on the domain.)*
 - [x] API access *(read-only v1 — Kitchen/Group only. Bearer-token API key generated from Settings → API Access. Endpoints: /me, /recipes, /recipes/{id}, /costings, /costings/{id}, /stock, /menus, /menus/{id}, /bank)*
 
 ### Phase 5 — Intelligence Layer
@@ -192,6 +192,7 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Stripe webhook endpoint: app.palateandpen.co.uk/api/stripe/webhook
 - Invoice scanning requires Pro tier — checked server-side
 - Demo account: jack@palateandpen.co.uk (Pro tier)
+- **Inbound email infra (for email-forwarded invoices):** the webhook lives at `app.palateandpen.co.uk/api/inbound-email`. It expects an `INBOUND_EMAIL_SECRET` env var (Vercel) and accepts either `Authorization: Bearer <secret>` or `?secret=<secret>`. Inbound provider needs to deliver POST JSON with `to`, `from`, `subject`, `attachments[].content` (base64). Tested-against payload shapes: Resend (lowercase keys), Postmark (Title-case), Mailgun (after JSON conversion). DNS-side: chefs forward to `invoices+{token}@palateandpen.co.uk` — you need the MX record on that domain pointing at the inbound provider, plus a route in the provider's dashboard that catches `invoices*` (catch-all on the local part) and forwards to the webhook URL. Without that DNS wire-up the in-app UI still works (chefs see their address and can copy it) but no emails actually arrive.
 - **supabase-js + Next.js fetch cache**: supabase-js calls global `fetch()` internally, and Next.js auto-caches GET `fetch()` calls in route handlers — even with `dynamic = 'force-dynamic'`. Symptom: server-side reads return phantom rows that no longer exist in Postgres. Fix: pass a custom `global.fetch` to `createClient` that wraps `fetch` with `cache: 'no-store'`. Centralized as `svc()` in `src/lib/admin.ts` — use it for any admin/server-role Supabase client. (Writes via PATCH/POST/DELETE are not cached, so this only affects GETs.)
 - **AppContext load effect must depend on `user?.id`, not `user`**: the `user` object reference changes on every Supabase auth event including silent token refreshes (~hourly). If the load effect lists `[user]` in its deps, every refresh re-fetches user_data and overwrites in-flight local edits. Use `[user?.id]` so the effect only re-runs when the actual user changes. Same for the autosave effect.
 - **Autosave**: 500ms debounced upsert in AppContext. Surfaces a save-status pill (Saving / Saved / ✗ Save failed) in the bottom-right of /app. Errors are logged via `console.error('[user_data save]', code, message)`. A `visibilitychange → hidden` listener flushes pending writes when the tab is about to close — best-effort, no sendBeacon (Supabase auth header isn't supported there).
