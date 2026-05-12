@@ -91,9 +91,9 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 
 ### Phase 4 — Digital and Integration
 
-- [ ] Live digital menus
-- [ ] Menus published to website with public URL
-- [ ] QR code menus
+- [x] Live digital menus *(Kitchen/Group only — public URL renders live menu data, no re-publish needed)*
+- [x] Menus published to website with public URL *(`/m/{slug}` route, server-rendered with OG meta)*
+- [x] QR code menus *(rendered inline from QR API + downloadable PNG)*
 - [ ] POS integration (Square, ePOSnow)
 - [ ] Xero integration
 - [ ] Email invoice forwarding

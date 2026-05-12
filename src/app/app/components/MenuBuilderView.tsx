@@ -1,10 +1,20 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { usePerms } from '@/lib/perms';
 import { dark, light } from '@/lib/theme';
 import MenuDesigner from './MenuDesigner';
+
+// Slug for the public URL. Random 8-char alphanumeric using a reduced
+// alphabet (no 0/1/l/i/o) to avoid ambiguity when read aloud or printed.
+function genMenuSlug(): string {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
 
 function gpColor(pct: number, target: number, C: any) {
   if (pct >= target) return C.greenLight;
@@ -14,8 +24,28 @@ function gpColor(pct: number, target: number, C: any) {
 
 export default function MenuBuilderView() {
   const { state, actions } = useApp();
+  const { tier } = useAuth();
   const { settings } = useSettings();
   const perms = usePerms();
+  const publishingAllowed = tier === 'kitchen' || tier === 'group';
+  const [copyConfirm, setCopyConfirm] = useState(false);
+
+  function publishMenu(m: any) {
+    if (!publishingAllowed) return;
+    const slug = m.publicSlug || genMenuSlug();
+    actions.updMenu(m.id, { published: true, publicSlug: slug });
+  }
+  function unpublishMenu(m: any) {
+    actions.updMenu(m.id, { published: false });
+  }
+  function copyMenuUrl(slug: string) {
+    const url = (typeof window !== 'undefined' ? window.location.origin : '') + '/m/' + slug;
+    try {
+      navigator.clipboard?.writeText(url);
+      setCopyConfirm(true);
+      setTimeout(() => setCopyConfirm(false), 1500);
+    } catch {}
+  }
   const C = settings.resolved === 'light' ? light : dark;
   const canEdit = perms.canEditMenus;
   const sym = (state.profile || {}).currencySymbol || '£';
@@ -221,6 +251,76 @@ export default function MenuBuilderView() {
             <p style={{ fontSize: '10px', color: C.faint, marginTop: '2px' }}>target {gpTarget}%</p>
           </div>
         </div>
+
+        {/* Publish (Kitchen/Group only) */}
+        {(() => {
+          const publicUrl = sel.publicSlug && typeof window !== 'undefined'
+            ? window.location.origin + '/m/' + sel.publicSlug
+            : '';
+          const qrSrc = sel.publicSlug && sel.published
+            ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(publicUrl)}`
+            : '';
+          return (
+            <div style={{ background: C.surface2, border: '1px solid ' + (sel.published ? C.gold + '40' : C.border), borderRadius: '4px', padding: '14px 16px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: sel.published ? C.gold : C.faint, marginBottom: '4px' }}>
+                    {sel.published ? '● Live · Public URL' : 'Live Digital Menu'}
+                  </p>
+                  <p style={{ fontSize: '12px', color: C.dim, marginBottom: '8px', lineHeight: 1.5 }}>
+                    {!publishingAllowed
+                      ? 'Publish your menu to a public URL with QR code — available on Kitchen and Group tiers.'
+                      : sel.published
+                        ? 'Anyone with the link can view this menu. Updates show live — no re-publish needed.'
+                        : 'Publish to get a public URL and QR code. The link updates automatically as you change the menu.'}
+                  </p>
+                  {!publishingAllowed ? (
+                    <p style={{ fontSize: '11px', color: C.gold, marginTop: '4px' }}>Upgrade to Kitchen (£59/mo) or Group (£129/mo) to publish.</p>
+                  ) : !sel.published ? (
+                    <button onClick={() => publishMenu(sel)} disabled={!canEdit || stats.dishes.length === 0}
+                      title={stats.dishes.length === 0 ? 'Add at least one dish first' : ''}
+                      style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.bg, background: C.gold, border: 'none', padding: '9px 16px', cursor: stats.dishes.length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: stats.dishes.length === 0 ? 0.5 : 1 }}>
+                      ✨ Publish Menu
+                    </button>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        <code style={{ fontSize: '12px', color: C.text, background: C.surface, border: '1px solid ' + C.border, padding: '7px 10px', borderRadius: '2px', flex: 1, minWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {publicUrl}
+                        </code>
+                        <button onClick={() => copyMenuUrl(sel.publicSlug)}
+                          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.gold, background: C.gold + '14', border: '1px solid ' + C.gold + '40', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                          {copyConfirm ? '✓ Copied' : 'Copy'}
+                        </button>
+                        <a href={publicUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.dim, background: 'transparent', border: '1px solid ' + C.border, padding: '7px 12px', cursor: 'pointer', borderRadius: '2px', textDecoration: 'none' }}>
+                          Open ↗
+                        </a>
+                        {canEdit && (
+                          <button onClick={() => unpublishMenu(sel)}
+                            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.red, background: 'transparent', border: '1px solid ' + C.red + '40', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                            Unpublish
+                          </button>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '11px', color: C.faint }}>Share the link, print it on a table card, or scan the QR with any phone camera.</p>
+                    </>
+                  )}
+                </div>
+                {sel.published && qrSrc && (
+                  <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={qrSrc} alt="QR code" width={96} height={96} style={{ background: '#fff', padding: '4px', borderRadius: '2px' }} />
+                    <a href={qrSrc} download={`menu-${sel.publicSlug}-qr.png`} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.gold, textDecoration: 'none' }}>
+                      ↓ Save QR
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Lowest GP flag */}
         {stats.lowest && stats.lowest.costing.pct < gpTarget && (
