@@ -83,6 +83,42 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
     };
   }, [state.gpHistory, gpTarget, ranges.gp]);
 
+  // ── GP trend per dish ──────────────────────────────────
+  // Groups every saved costing by dish name (normalised) and pulls out the
+  // earliest vs latest entry. Surfaces drift over time — useful when ingredient
+  // prices creep up but nobody re-prices the menu.
+  const gpTrends = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    for (const g of (state.gpHistory || [])) {
+      if (typeof g.pct !== 'number') continue;
+      const key = (g.name || '').toLowerCase().trim();
+      if (!key) continue;
+      (groups[key] = groups[key] || []).push(g);
+    }
+    const trends = Object.values(groups)
+      .filter(g => g.length >= 2)
+      .map(g => {
+        const sorted = [...g].sort((a, b) => (a.savedAt || 0) - (b.savedAt || 0));
+        const first = sorted[0];
+        const latest = sorted[sorted.length - 1];
+        const delta = (latest.pct || 0) - (first.pct || 0);
+        return {
+          name: latest.name,
+          firstPct: first.pct,
+          latestPct: latest.pct,
+          delta,
+          count: sorted.length,
+          firstSavedAt: first.savedAt,
+          latestSavedAt: latest.savedAt,
+        };
+      });
+    return {
+      improved: [...trends].filter(t => t.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 5),
+      worsened: [...trends].filter(t => t.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 5),
+      total: trends.length,
+    };
+  }, [state.gpHistory]);
+
   // ── Waste ────────────────────────────────────────────────
   const waste = useMemo(() => {
     const log = state.wasteLog || [];
@@ -93,6 +129,23 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
     for (const w of inRange) byReason[w.reason || 'Other'] = (byReason[w.reason || 'Other'] || 0) + (parseFloat(w.totalCost) || 0);
     const byIng: Record<string, number> = {};
     for (const w of inRange) byIng[w.ingredientName] = (byIng[w.ingredientName] || 0) + (parseFloat(w.totalCost) || 0);
+    // Trend: rolling 4-week buckets (newest last). Helps spot waste creep.
+    const now = Date.now();
+    const weekMs = 7 * 86400000;
+    const buckets: { from: number; total: number }[] = [];
+    for (let i = 3; i >= 0; i--) {
+      const from = now - (i + 1) * weekMs;
+      const to = now - i * weekMs;
+      const total = log.filter((w: any) => {
+        const t = w.createdAt || 0;
+        return t >= from && t < to;
+      }).reduce((a: number, w: any) => a + (parseFloat(w.totalCost) || 0), 0);
+      buckets.push({ from, total });
+    }
+    // Projected month = average of in-range × 30d / range days
+    const rangeDays = ranges.waste === '7d' ? 7 : ranges.waste === '30d' ? 30 : ranges.waste === '90d' ? 90 : (log.length > 0 ? Math.max(1, (now - Math.min(...log.map((w: any) => w.createdAt || now))) / 86400000) : 30);
+    const dailyAvg = rangeDays > 0 ? sum(inRange) / rangeDays : 0;
+    const projectedMonth = dailyAvg * 30;
     return {
       log,
       inRange,
@@ -100,6 +153,9 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       allTime: sum(log),
       reasonRows: Object.entries(byReason).sort((a, b) => b[1] - a[1]),
       topIngredients: Object.entries(byIng).sort((a, b) => b[1] - a[1]).slice(0, 5),
+      weekBuckets: buckets,
+      projectedMonth,
+      dailyAvg,
     };
   }, [state.wasteLog, ranges.waste]);
 
@@ -169,9 +225,17 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       }
       stars += mStars; ploughs += mPloughs; puzzles += mPuzzles; dogs += mDogs;
       totalRated += mStars + mPloughs + mPuzzles + mDogs;
-      perMenu.push({ id: m.id, name: m.name, dishes: dishes.length, totalCovers, classified: mStars + mPloughs + mPuzzles + mDogs, stars: mStars, ploughs: mPloughs, puzzles: mPuzzles, dogs: mDogs });
+      // Money projection: sum of (sell × covers) and (cost × covers) per dish
+      const projRevenue = dishes.reduce((a: number, d: any) => a + (d.costing ? (parseFloat(d.costing.sell) || 0) * d.covers : 0), 0);
+      const projCost = dishes.reduce((a: number, d: any) => a + (d.costing ? (parseFloat(d.costing.cost) || 0) * d.covers : 0), 0);
+      const projProfit = projRevenue - projCost;
+      const projGp = projRevenue > 0 ? (projProfit / projRevenue) * 100 : 0;
+      perMenu.push({ id: m.id, name: m.name, dishes: dishes.length, totalCovers, classified: mStars + mPloughs + mPuzzles + mDogs, stars: mStars, ploughs: mPloughs, puzzles: mPuzzles, dogs: mDogs, projRevenue, projCost, projProfit, projGp });
     }
-    return { stars, ploughs, puzzles, dogs, totalRated, totalDishes, totalMenus: all.length, perMenu };
+    // Group totals across all menus
+    const totalRevenue = perMenu.reduce((a, m) => a + (m.projRevenue || 0), 0);
+    const totalProfit = perMenu.reduce((a, m) => a + (m.projProfit || 0), 0);
+    return { stars, ploughs, puzzles, dogs, totalRated, totalDishes, totalMenus: all.length, perMenu, totalRevenue, totalProfit };
   }, [state.menus, state.recipes, state.gpHistory]);
 
   // ── Price alerts ──────────────────────────────────
@@ -251,6 +315,37 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
               <RankList C={C} items={gp.top.map((g: any) => ({ key: g.id, label: g.name, right: `${g.pct.toFixed(1)}%`, color: gpColor(g.pct, gpTarget, C) }))} />
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px', marginTop: '12px' }}>Bottom 5</p>
               <RankList C={C} items={gp.bottom.map((g: any) => ({ key: g.id, label: g.name, right: `${g.pct.toFixed(1)}%`, color: gpColor(g.pct, gpTarget, C) }))} />
+
+              {/* GP trend — dishes that have been re-costed at least twice */}
+              {gpTrends.total > 0 && (gpTrends.improved.length > 0 || gpTrends.worsened.length > 0) && (
+                <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid ' + C.border }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>
+                    GP trend <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>· {gpTrends.total} dish{gpTrends.total === 1 ? '' : 'es'} re-costed</span>
+                  </p>
+                  {gpTrends.worsened.length > 0 && (
+                    <>
+                      <p style={{ fontSize: '10px', color: C.red, marginTop: '8px', marginBottom: '4px', fontWeight: 600 }}>↓ Drifting down</p>
+                      <RankList C={C} items={gpTrends.worsened.map((t: any) => ({
+                        key: 'wors-' + t.name,
+                        label: t.name,
+                        right: `${t.firstPct.toFixed(1)}% → ${t.latestPct.toFixed(1)}%`,
+                        color: C.red,
+                      }))} />
+                    </>
+                  )}
+                  {gpTrends.improved.length > 0 && (
+                    <>
+                      <p style={{ fontSize: '10px', color: C.greenLight, marginTop: '10px', marginBottom: '4px', fontWeight: 600 }}>↑ Improving</p>
+                      <RankList C={C} items={gpTrends.improved.map((t: any) => ({
+                        key: 'imp-' + t.name,
+                        label: t.name,
+                        right: `${t.firstPct.toFixed(1)}% → ${t.latestPct.toFixed(1)}%`,
+                        color: C.greenLight,
+                      }))} />
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
         </Section>
@@ -264,6 +359,33 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
             <Empty C={C} text={waste.log.length > 0 ? `No waste in ${rangeLabel(ranges.waste)}` : 'No waste logged'} />
           ) : (
             <>
+              {/* Trend + projection stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                <Mini C={C} label="Daily average" value={`${sym}${waste.dailyAvg.toFixed(2)}`} accent={C.gold} />
+                <Mini C={C} label="Projected / month" value={`${sym}${waste.projectedMonth.toFixed(0)}`} accent={waste.projectedMonth > 100 ? C.red : C.gold} />
+              </div>
+
+              {/* 4-week trend mini-bars */}
+              {waste.weekBuckets.some(b => b.total > 0) && (
+                <div style={{ marginBottom: '14px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>4-week trend</p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '40px' }}>
+                    {waste.weekBuckets.map((b, i) => {
+                      const max = Math.max(...waste.weekBuckets.map(x => x.total));
+                      const pct = max > 0 ? (b.total / max) * 100 : 0;
+                      const lastWeek = i === waste.weekBuckets.length - 1;
+                      return (
+                        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', gap: '3px' }}>
+                          <div style={{ width: '100%', background: lastWeek ? C.gold : C.gold + '40', height: Math.max(2, pct) + '%', borderRadius: '2px 2px 0 0', transition: 'height 0.2s' }} />
+                          <span style={{ fontSize: '9px', color: lastWeek ? C.gold : C.faint, fontWeight: lastWeek ? 700 : 400 }}>{sym}{b.total.toFixed(0)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: '10px', color: C.faint, marginTop: '4px', textAlign: 'right' }}>← oldest · newest →</p>
+                </div>
+              )}
+
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>By reason</p>
               <RankList C={C} items={waste.reasonRows.map(([r, v]) => ({ key: r, label: r, right: `${sym}${v.toFixed(2)}`, color: C.gold, bar: v / waste.total }))} />
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px', marginTop: '14px' }}>Most-wasted ingredients</p>
@@ -306,10 +428,19 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
                 <QuadStat C={C} label="Puzzle" value={menus.puzzles} color={C.gold} />
                 <QuadStat C={C} label="Dog" value={menus.dogs} color={C.red} />
               </div>
+
+              {/* Projected revenue / profit — from sales data × dish sell/cost */}
+              {menus.totalRevenue > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                  <Mini C={C} label="Projected revenue" value={`${sym}${menus.totalRevenue.toFixed(0)}`} accent={C.gold} />
+                  <Mini C={C} label="Projected profit" value={`${sym}${menus.totalProfit.toFixed(0)}`} accent={C.greenLight} />
+                </div>
+              )}
+
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>Per menu</p>
               <RankList C={C} items={menus.perMenu.map((m: any) => ({
                 key: m.id,
-                label: m.name,
+                label: m.name + (m.projRevenue > 0 ? ` · ${sym}${m.projRevenue.toFixed(0)} rev` : ''),
                 right: m.classified > 0
                   ? `${m.stars}★ ${m.ploughs}P ${m.puzzles}? ${m.dogs}✗`
                   : (m.totalCovers === 0 ? 'no sales' : 'uncosted'),

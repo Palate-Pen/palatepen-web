@@ -101,12 +101,12 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 
 ### Phase 5 — Intelligence Layer
 
-- [ ] GP trend analysis per dish over time
-- [ ] Menu profitability dashboard
+- [x] GP trend analysis per dish over time *(Reports → GP section, dishes re-costed ≥ 2× show first→latest delta with up/down sorting)*
+- [x] Menu profitability dashboard *(Reports → Menu engineering, per-menu projected revenue + profit from sales × dish sell/cost)*
 - [ ] Ingredient price benchmarking
-- [ ] Waste cost dashboard
-- [ ] Smart reorder alerts
-- [ ] Recipe cost simulator
+- [x] Waste cost dashboard *(Reports → Waste, daily average + projected month + 4-week trend bars)*
+- [x] Smart reorder alerts *(already shipped — `stock-critical` and `stock-low` notifications surface in the bell whenever currentQty ≤ minLevel or < parLevel)*
+- [x] Recipe cost simulator *(recipe detail → 🧪 Simulator button; per-ingredient % adjuster with live GP recompute, never writes the saved costing)*
 - [ ] Supplier performance tracking
 
 ### Mobile — Responsive Web Polish

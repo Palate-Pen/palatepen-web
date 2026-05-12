@@ -158,6 +158,10 @@ export default function RecipesView() {
   const [assigningCosting, setAssigningCosting] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
   const [showSpec, setShowSpec] = useState(false);
+  // Recipe cost simulator: per-ingredient % adjusters mapped by ingredient id.
+  // Stored as a Record because it resets every time the user opens the modal.
+  const [showSimulator, setShowSimulator] = useState(false);
+  const [simAdjusts, setSimAdjusts] = useState<Record<string, number>>({});
   const [showRecipePrint, setShowRecipePrint] = useState(false);
   const [showRecipeBook, setShowRecipeBook] = useState(false);
   // Spec-sheet scan modal
@@ -1155,6 +1159,13 @@ export default function RecipesView() {
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Costing</p>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 {linkedCosting && <p style={{ fontSize: '11px', color: C.faint }}>Last updated {new Date(linkedCosting.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>}
+                {linkedCosting && (
+                  <button onClick={() => { setSimAdjusts({}); setShowSimulator(true); }}
+                    title="Simulate ingredient price changes and see new GP"
+                    style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '4px 10px', cursor: 'pointer', borderRadius: '2px' }}>
+                    🧪 Simulator
+                  </button>
+                )}
                 {linkedCosting && !sel.locked ? (
                   <button onClick={removeCosting} style={{ fontSize: '10px', color: C.faint, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Remove link</button>
                 ) : null}
@@ -2223,6 +2234,100 @@ export default function RecipesView() {
                 </div>
               </div>
             </>
+          );
+        })()}
+
+        {/* Cost simulator — per-ingredient % adjuster with live GP recompute.
+            Doesn't modify the saved costing; close = discard. Lets a chef
+            stress-test "what if salmon goes up 15%?" without touching data. */}
+        {showSimulator && (() => {
+          const lc = getLinkedCosting(sel);
+          if (!lc) return null;
+          const portions = parseInt(lc.portions) || 1;
+          const sellNum = parseFloat(lc.sell) || 0;
+          const target = parseFloat(lc.target) || gpTarget;
+          // Recompute every ingredient with its % adjustment applied
+          const simIngs = (lc.ingredients || []).map((ing: any) => {
+            const adj = simAdjusts[ing.id] || 0;
+            const origPrice = parseFloat(ing.price) || 0;
+            const newPrice = origPrice * (1 + adj / 100);
+            const qty = parseFloat(ing.qty) || 0;
+            let line = qty * newPrice;
+            if (ing.unit === 'g' || ing.unit === 'ml') line = (qty / 1000) * newPrice;
+            return { ...ing, newPrice, newLine: line };
+          });
+          const newTotal = simIngs.reduce((a: number, i: any) => a + i.newLine, 0);
+          const newCost = newTotal / portions;
+          const newGp = sellNum - newCost;
+          const newPct = sellNum > 0 ? (newGp / sellNum) * 100 : 0;
+          const origPct = parseFloat(lc.pct) || 0;
+          const deltaPct = newPct - origPct;
+          const anyAdjusted = Object.values(simAdjusts).some(v => v !== 0);
+          return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
+              <div style={{ background: C.surface, border: '1px solid ' + C.border, width: '100%', maxWidth: '640px', maxHeight: '92vh', overflow: 'auto', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px', borderBottom: '1px solid ' + C.border }}>
+                  <div>
+                    <h3 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '20px', color: C.text }}>Cost simulator</h3>
+                    <p style={{ fontSize: '11px', color: C.faint, marginTop: '2px' }}>{sel.title} — adjust ingredient prices to see GP impact</p>
+                  </div>
+                  <button onClick={() => setShowSimulator(false)} style={{ background: 'none', border: 'none', color: C.faint, fontSize: '20px', cursor: 'pointer' }}>×</button>
+                </div>
+
+                {/* Live stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderBottom: '1px solid ' + C.border }}>
+                  {[
+                    { l: 'Sell', v: sym + sellNum.toFixed(2) },
+                    { l: 'New cost', v: sym + newCost.toFixed(2) },
+                    { l: 'New GP %', v: newPct.toFixed(1) + '%', highlight: true },
+                    { l: 'Δ vs original', v: (deltaPct > 0 ? '+' : '') + deltaPct.toFixed(1) + ' pts', dim: !anyAdjusted },
+                  ].map((c, i) => (
+                    <div key={c.l} style={{ padding: '14px', textAlign: 'center', borderRight: i < 3 ? '1px solid ' + C.border : 'none' }}>
+                      <p style={{ fontSize: '10px', letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint, marginBottom: '4px' }}>{c.l}</p>
+                      <p style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '18px', color: c.highlight ? gpColor(newPct, target, C) : c.dim ? C.faint : (c.l === 'Δ vs original' ? (deltaPct >= 0 ? C.greenLight : C.red) : C.text) }}>{c.v}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Per-ingredient adjusters */}
+                <div style={{ padding: '14px 20px' }}>
+                  {simIngs.length === 0 ? (
+                    <p style={{ fontSize: '12px', color: C.faint, fontStyle: 'italic' }}>This costing has no ingredients to adjust.</p>
+                  ) : simIngs.map((ing: any) => {
+                    const adj = simAdjusts[ing.id] || 0;
+                    return (
+                      <div key={ing.id} style={{ display: 'grid', gridTemplateColumns: '1.8fr 70px 1fr 80px', gap: '10px', alignItems: 'center', padding: '8px 0', borderBottom: '0.5px solid ' + C.border }}>
+                        <div>
+                          <p style={{ fontSize: '13px', color: C.text }}>{ing.name}</p>
+                          <p style={{ fontSize: '10px', color: C.faint }}>{ing.qty}{ing.unit} @ {sym}{(parseFloat(ing.price) || 0).toFixed(2)} → {sym}{ing.newPrice.toFixed(2)}</p>
+                        </div>
+                        <input type="number" value={adj} step="5"
+                          onChange={e => setSimAdjusts(prev => ({ ...prev, [ing.id]: parseFloat(e.target.value) || 0 }))}
+                          style={{ width: '100%', background: C.surface2, border: '1px solid ' + (adj !== 0 ? C.gold + '60' : C.border), color: adj !== 0 ? C.gold : C.text, fontSize: '12px', padding: '6px 8px', outline: 'none', borderRadius: '2px', textAlign: 'right' }} />
+                        <input type="range" min={-50} max={100} step={5} value={adj}
+                          onChange={e => setSimAdjusts(prev => ({ ...prev, [ing.id]: parseFloat(e.target.value) || 0 }))}
+                          style={{ width: '100%' }} />
+                        <p style={{ fontSize: '11px', color: adj > 0 ? C.red : adj < 0 ? C.greenLight : C.dim, textAlign: 'right', fontWeight: 600 }}>
+                          {sym}{ing.newLine.toFixed(3)}
+                          {adj !== 0 && <span style={{ display: 'block', fontSize: '9px', color: C.faint, fontWeight: 400 }}>{adj > 0 ? '+' : ''}{adj}%</span>}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{ padding: '14px 20px', borderTop: '1px solid ' + C.border, display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button onClick={() => setSimAdjusts({})} disabled={!anyAdjusted}
+                    style={{ fontSize: '11px', color: anyAdjusted ? C.dim : C.faint, background: 'transparent', border: '1px solid ' + C.border, padding: '8px 14px', cursor: anyAdjusted ? 'pointer' : 'not-allowed', borderRadius: '2px', opacity: anyAdjusted ? 1 : 0.5 }}>
+                    Reset all
+                  </button>
+                  <button onClick={() => setShowSimulator(false)}
+                    style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.bg, background: C.gold, border: 'none', padding: '9px 18px', cursor: 'pointer', borderRadius: '2px' }}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
           );
         })()}
 
