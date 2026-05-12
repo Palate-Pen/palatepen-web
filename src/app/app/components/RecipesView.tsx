@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp, uid } from '@/context/AppContext';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { useAuth } from '@/context/AuthContext';
@@ -31,35 +31,6 @@ const ALLERGENS: { key: string; label: string; short: string }[] = [
 const NUT_TYPES = ['Almond','Hazelnut','Walnut','Cashew','Pecan','Brazil nut','Pistachio','Macadamia'];
 const GLUTEN_TYPES = ['Wheat','Rye','Barley','Oats','Spelt','Kamut'];
 
-// Bank-ensure: known unit tokens we recognise when parsing free-form ingredient lines.
-const KNOWN_UNITS = ['g','kg','ml','l','oz','lb','tbsp','tsp','cup','cups','each','bunch','pinch','dash','sprig','sprigs','clove','cloves'];
-
-// Parse a free-form ingredient line ("200g plain flour", "2 tbsp olive oil",
-// "1 onion, diced") into a clean { name, unit? } suitable for the bank.
-// Strips trailing ", qualifier" and "(parenthetical)" tails.
-// Returns null when the line is empty or too short to be a real ingredient.
-function parseIngredientText(line: string): { name: string; unit?: string } | null {
-  const trimmed = (line || '').trim();
-  if (!trimmed) return null;
-  let body = trimmed;
-  body = body.replace(/\s*\([^)]*\)/g, ''); // drop "(parenthetical)"
-  const commaIdx = body.indexOf(',');
-  if (commaIdx > 0) body = body.slice(0, commaIdx); // drop ", qualifier"
-  body = body.trim();
-  const m = body.match(/^([\d./]+)\s*([a-zA-Z]+\.?)?\s+(.+)$/);
-  if (m) {
-    const unitTok = (m[2] || '').toLowerCase().replace(/\.$/, '');
-    const namePart = m[3].trim();
-    if (KNOWN_UNITS.includes(unitTok)) {
-      if (namePart.length < 2) return null;
-      return { name: namePart, unit: unitTok };
-    }
-    // Unknown unit token → likely part of the name ("1 onion")
-    const fullName = ((m[2] || '') + ' ' + namePart).trim();
-    return fullName.length >= 2 ? { name: fullName } : null;
-  }
-  return body.length >= 2 ? { name: body } : null;
-}
 
 const NUTRITION_FIELDS: { key: string; label: string; unit: string }[] = [
   { key: 'kcal',      label: 'Energy',         unit: 'kcal' },
@@ -188,7 +159,10 @@ export default function RecipesView() {
   const [showCompliance, setShowCompliance] = useState(false);
   const [showSpec, setShowSpec] = useState(false);
   const [confirmUnlock, setConfirmUnlock] = useState(false);
-  const [editIngredients, setEditIngredients] = useState<string[]>([]);
+  // Edit-mode buffer for the linked costing's ingredients — sourced from
+  // state.gpHistory when edit mode opens, debounced-saved back as the user edits.
+  const [editCostingIngs, setEditCostingIngs] = useState<any[]>([]);
+  const [eciSuggestRow, setEciSuggestRow] = useState<string | null>(null);
 
   // Inline costing panel state
   const [showInlineCosting, setShowInlineCosting] = useState(false);
@@ -259,6 +233,47 @@ export default function RecipesView() {
     const k = (name || '').toLowerCase().trim();
     if (!k) return false;
     return ilcIngs.some(r => r.id !== rowId && (r.name || '').toLowerCase().trim() === k);
+  }
+
+  // ── Edit-mode costing-ingredient helpers — mirror the ilc* set but bound
+  //    to editCostingIngs (the buffer for the linked costing's ingredients).
+  function eciSetField(id: string, field: 'name' | 'qty' | 'unit' | 'price', value: any) {
+    setEditCostingIngs(prev => prev.map(row => {
+      if (row.id !== id) return row;
+      const next = { ...row, [field]: value };
+      const qty = parseFloat(next.qty) || 0;
+      const price = parseFloat(next.price) || 0;
+      next.line = ilcCalcLine(qty, next.unit, price);
+      return next;
+    }));
+  }
+  function eciAddRow() {
+    setEditCostingIngs(prev => [...prev, { id: Date.now().toString() + '-' + Math.random().toString(36).slice(2,6), name: '', qty: '', unit: 'g', price: '', line: 0 }]);
+  }
+  function eciRemoveRow(id: string) {
+    setEditCostingIngs(prev => prev.filter(r => r.id !== id));
+  }
+  function eciAutofillPrice(id: string, name: string) {
+    const m = (state.ingredientsBank || []).find((b: any) => (b.name||'').toLowerCase() === (name||'').toLowerCase());
+    if (m?.unitPrice) eciSetField(id, 'price', String(m.unitPrice));
+  }
+  function eciPickBank(rowId: string, bank: any) {
+    setEditCostingIngs(prev => prev.map(row => {
+      if (row.id !== rowId) return row;
+      const next: any = { ...row, name: bank.name };
+      if (bank.unit) next.unit = bank.unit;
+      if (bank.unitPrice != null) next.price = String(bank.unitPrice);
+      const qty = parseFloat(next.qty) || 0;
+      const price = parseFloat(next.price) || 0;
+      next.line = ilcCalcLine(qty, next.unit, price);
+      return next;
+    }));
+    setEciSuggestRow(null);
+  }
+  function eciIsDuplicateName(rowId: string, name: string) {
+    const k = (name || '').toLowerCase().trim();
+    if (!k) return false;
+    return editCostingIngs.some(r => r.id !== rowId && (r.name || '').toLowerCase().trim() === k);
   }
   function openInlineCosting() {
     if (!sel) return;
@@ -339,21 +354,6 @@ export default function RecipesView() {
     if (fresh.length > 0) actions.upsertBank(fresh);
   }
 
-  // When edit mode exits (Done clicked, or user navigates back), sync the
-  // current ingredient list into the bank. Free-form lines like "200g plain flour"
-  // are parsed for { name, unit }; lines that don't parse to a reasonable name
-  // are skipped.
-  const prevEditModeRef = useRef(false);
-  useEffect(() => {
-    if (prevEditModeRef.current && !editMode) {
-      const parsed = editIngredients
-        .map(parseIngredientText)
-        .filter(Boolean) as { name: string; unit?: string }[];
-      if (parsed.length > 0) bankEnsureMany(parsed);
-    }
-    prevEditModeRef.current = editMode;
-  }, [editMode]);
-
   const filtered = state.recipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
     (r.category||'').toLowerCase().includes(search.toLowerCase())
@@ -386,23 +386,56 @@ export default function RecipesView() {
     setEditTitle(sel.title || '');
     setEditCat(sel.category || 'Main');
     setEditNotes(sel.notes || '');
-    setEditIngredients(sel.imported?.ingredients ? [...sel.imported.ingredients] : []);
     setEditMode(true);
   }
 
   useEffect(() => {
     if (!editMode || !sel || !editTitle.trim()) return;
     const t = setTimeout(() => {
-      const cleanIngs = editIngredients.map(s => (s||'').trim()).filter(Boolean);
       const updates: any = { title: editTitle.trim(), category: editCat, notes: editNotes };
-      if (sel.imported || cleanIngs.length > 0) {
-        updates.imported = { ...(sel.imported || {}), ingredients: cleanIngs };
-      }
       actions.updRecipe(sel.id, updates);
       setSel((prev:any) => prev ? { ...prev, ...updates } : prev);
     }, 500);
     return () => clearTimeout(t);
-  }, [editMode, editTitle, editCat, editNotes, editIngredients]);
+  }, [editMode, editTitle, editCat, editNotes]);
+
+  // Seed the edit-mode costing-ingredient buffer when edit mode opens or the
+  // linked costing changes. A deep clone keeps in-progress edits from mutating
+  // the saved gpHistory record directly.
+  useEffect(() => {
+    if (!editMode) { setEditCostingIngs([]); return; }
+    const lc = getLinkedCosting(sel);
+    setEditCostingIngs(lc?.ingredients ? JSON.parse(JSON.stringify(lc.ingredients)) : []);
+  }, [editMode, sel?.linkedCostingId]);
+
+  // Debounced save back to gpHistory — recomputes cost / GP / pct from the
+  // edited ingredients and the costing's existing sell/portions. Also
+  // bank-ensures any new ingredient names so they show up in the Bank tab.
+  useEffect(() => {
+    if (!editMode) return;
+    const lc = getLinkedCosting(sel);
+    if (!lc) return;
+    const t = setTimeout(() => {
+      const ings = editCostingIngs.map(r => ({
+        id: r.id,
+        name: (r.name || '').trim(),
+        qty: parseFloat(r.qty) || 0,
+        unit: r.unit,
+        price: parseFloat(r.price) || 0,
+        line: parseFloat(r.line) || 0,
+        ...(r.sourceRecipeId ? { sourceRecipeId: r.sourceRecipeId } : {}),
+      })).filter(i => i.name);
+      const totalCost = ings.reduce((a, b) => a + (b.line || 0), 0);
+      const portions = parseInt(lc.portions) || 1;
+      const cost = totalCost / portions;
+      const sell = parseFloat(lc.sell) || 0;
+      const gp = sell - cost;
+      const pct = sell > 0 ? (gp / sell) * 100 : 0;
+      actions.updGP(lc.id, { ingredients: ings, cost, gp, pct, savedAt: Date.now() });
+      bankEnsureMany(ings.map(i => ({ name: i.name, unit: i.unit })));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [editCostingIngs, editMode]);
 
   // Keep `sel` in lockstep with state.recipes — any updRecipe() dispatch reflects instantly
   // in the recipe-detail UI without needing to re-open the recipe.
@@ -712,46 +745,6 @@ export default function RecipesView() {
           </div>
         )}
 
-        {/* Ingredients (edit mode) */}
-        {editMode && (
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: '8px' }}>Ingredients</label>
-            {editIngredients.length === 0 && (
-              <p style={{ fontSize: '12px', color: C.faint, marginBottom: '8px' }}>No ingredients yet — add the first below.</p>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
-              {editIngredients.map((ing, i) => (
-                <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: C.faint, width: '22px', flexShrink: 0, textAlign: 'right' }}>{i + 1}.</span>
-                  <input
-                    value={ing}
-                    onChange={e => setEditIngredients(prev => prev.map((v, j) => j === i ? e.target.value : v))}
-                    placeholder="e.g. 200g plain flour"
-                    style={{ ...inp, flex: 1 }}
-                  />
-                  <button
-                    onClick={() => setEditIngredients(prev => prev.filter((_, j) => j !== i))}
-                    title="Remove ingredient"
-                    style={{ fontSize: '14px', color: C.red, background: 'transparent', border: '1px solid ' + C.border, padding: '6px 10px', cursor: 'pointer', borderRadius: '2px', flexShrink: 0 }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setEditIngredients(prev => [...prev, ''])}
-              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
-              + Add ingredient
-            </button>
-            <p style={{ fontSize: '11px', color: C.faint, marginTop: '8px' }}>Edits auto-save. Allergens + nutrition still derive from the linked costing&apos;s Bank-matched ingredients.</p>
-            <p style={{ fontSize: '11px', color: C.gold, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ fontSize: '12px', lineHeight: 1 }}>↗</span>
-              Ingredients you add here are automatically saved to your ingredients bank.
-            </p>
-          </div>
-        )}
-
         {/* LINKED NOTES */}
         {!editMode && (() => {
           const linkedNotes = (sel.linkedNoteIds||[]).map((id: string) => state.notes.find((n: any) => n.id === id)).filter(Boolean);
@@ -779,8 +772,10 @@ export default function RecipesView() {
           );
         })()}
 
-        {/* COSTING PANEL */}
-        {!editMode && (
+        {/* COSTING PANEL — visible in both view and edit modes. In edit mode the
+            ingredients table becomes editable (rows below) and saves debounce
+            into gpHistory via the editCostingIngs buffer. */}
+        {(
           <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', marginBottom: '28px', overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Costing</p>
@@ -853,8 +848,8 @@ export default function RecipesView() {
                   ))}
                 </div>
 
-                {/* Ingredients table */}
-                {(linkedCosting.ingredients||[]).length > 0 && (
+                {/* Ingredients table — read-only in view mode */}
+                {!editMode && (linkedCosting.ingredients||[]).length > 0 && (
                   <div>
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '8px', padding: '10px 16px', background: C.surface2, borderBottom: '1px solid ' + C.border }}>
                       {['Ingredient','Qty','Cost/unit','Line cost'].map(h => (
@@ -869,6 +864,90 @@ export default function RecipesView() {
                         <p style={{ fontSize: '13px', color: C.gold }}>{sym}{(ing.line||0).toFixed(3)}</p>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Ingredients table — editable in edit mode, bound to editCostingIngs.
+                    Each change debounce-saves into gpHistory (see useEffect above)
+                    and bank-ensures new names so the Bank tab fills out passively. */}
+                {editMode && (
+                  <div>
+                    <div style={{ padding: '10px 16px', background: C.surface2, borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint }}>Ingredients — auto-save into linked costing</p>
+                      <p style={{ fontSize: '10px', color: C.gold }}>↗ Also added to your Bank</p>
+                    </div>
+                    <div style={{ padding: '10px 16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 70px 80px 90px 70px 32px', gap: '6px', marginBottom: '6px' }}>
+                        {['Ingredient','Qty','Unit','Cost/unit','Line',''].map(h => (
+                          <p key={h} style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.faint }}>{h}</p>
+                        ))}
+                      </div>
+                      {editCostingIngs.length === 0 && (
+                        <p style={{ fontSize: '12px', color: C.faint, padding: '8px 0' }}>No ingredients in this costing yet — add one below.</p>
+                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {editCostingIngs.map(row => {
+                          const matches = eciSuggestRow === row.id ? ilcBankMatches(row.name) : [];
+                          const isDuplicate = eciIsDuplicateName(row.id, row.name);
+                          const exactBank = row.name && (state.ingredientsBank || []).some((b: any) => (b.name || '').toLowerCase().trim() === row.name.toLowerCase().trim());
+                          const showDropdown = eciSuggestRow === row.id && (row.name || '').trim().length > 0;
+                          return (
+                            <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '2fr 70px 80px 90px 70px 32px', gap: '6px', alignItems: 'center' }}>
+                              <div style={{ position: 'relative' }}>
+                                <input
+                                  value={row.name}
+                                  onChange={e => eciSetField(row.id, 'name', e.target.value)}
+                                  onFocus={() => setEciSuggestRow(row.id)}
+                                  onBlur={e => {
+                                    eciAutofillPrice(row.id, e.target.value);
+                                    setTimeout(() => { setEciSuggestRow(prev => prev === row.id ? null : prev); }, 150);
+                                  }}
+                                  onKeyDown={e => { if (e.key === 'Escape') setEciSuggestRow(null); }}
+                                  placeholder="Name"
+                                  style={{ ...inp, fontSize: '12px', padding: '7px 9px', border: '1px solid ' + (isDuplicate ? C.red : exactBank ? C.gold + '60' : C.border) }}
+                                />
+                                {showDropdown && (
+                                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: '2px', background: C.surface, border: '1px solid ' + C.border, borderRadius: '3px', maxHeight: '220px', overflow: 'auto', boxShadow: '0 6px 18px rgba(0,0,0,0.35)' }}>
+                                    {isDuplicate && (
+                                      <p style={{ fontSize: '11px', color: C.red, padding: '7px 10px', borderBottom: '0.5px solid ' + C.border, background: C.red + '0E' }}>
+                                        ⚠ Already in this costing
+                                      </p>
+                                    )}
+                                    {matches.length > 0 ? (
+                                      matches.map(m => (
+                                        <button key={m.id}
+                                          onMouseDown={e => { e.preventDefault(); eciPickBank(row.id, m); }}
+                                          style={{ display: 'flex', width: '100%', textAlign: 'left', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '7px 10px', background: 'transparent', border: 'none', borderBottom: '0.5px solid ' + C.border, color: C.text, fontSize: '12px', cursor: 'pointer' }}>
+                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
+                                          <span style={{ fontSize: '10px', color: C.faint, flexShrink: 0 }}>
+                                            {m.unit || ''}{m.unitPrice != null ? ` · ${sym}${Number(m.unitPrice).toFixed(2)}` : ''}
+                                          </span>
+                                        </button>
+                                      ))
+                                    ) : (
+                                      <p style={{ fontSize: '11px', color: C.faint, padding: '8px 10px', fontStyle: 'italic' }}>
+                                        No bank match — adds as new on save
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <input type="number" value={row.qty} onChange={e => eciSetField(row.id, 'qty', e.target.value)} placeholder="0" style={{ ...inp, fontSize: '12px', padding: '7px 9px' }} />
+                              <select value={row.unit} onChange={e => eciSetField(row.id, 'unit', e.target.value)} style={{ ...inp, fontSize: '12px', padding: '7px 9px' }}>
+                                {ILC_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                              </select>
+                              <input type="number" value={row.price} onChange={e => eciSetField(row.id, 'price', e.target.value)} placeholder="0.00" style={{ ...inp, fontSize: '12px', padding: '7px 9px' }} />
+                              <span style={{ fontSize: '12px', color: C.gold, textAlign: 'right' }}>{sym}{(parseFloat(row.line)||0).toFixed(3)}</span>
+                              <button onClick={() => eciRemoveRow(row.id)} title="Remove" style={{ fontSize: '13px', color: C.red, background: 'transparent', border: '1px solid ' + C.border, padding: '5px 0', cursor: 'pointer', borderRadius: '2px' }}>✕</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <button onClick={eciAddRow}
+                        style={{ marginTop: '10px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '30', padding: '7px 12px', cursor: 'pointer', borderRadius: '2px' }}>
+                        + Add ingredient
+                      </button>
+                    </div>
                   </div>
                 )}
 
