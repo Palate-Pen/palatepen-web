@@ -53,8 +53,8 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Fix duplicate CSV download button in stock report viewer
 - [x] Prevent duplicate stock lines — stop the same ingredient being added twice to stock
 - [ ] Neaten up the allergen section inside the recipe detail view (layout/spacing/visual hierarchy of Contains + May Contain + sub-type rows)
-- [ ] Edit recipe ingredients inline on the recipe detail page
-- [ ] "Add costing now" button on recipe detail that opens a costing panel inline without leaving the recipe
+- [x] Edit recipe ingredients inline on the recipe detail page
+- [x] "Add costing now" button on recipe detail that opens a costing panel inline without leaving the recipe
 
 ### Phase 2 — Pro Feature Depth
 
@@ -128,6 +128,12 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 ## Progress Log
 
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
+
+### 2026-05-12
+
+- **Inline ingredient editing on recipe detail** (commit `8ec1631`). Entering Edit Recipe mode now exposes the imported ingredient list as a vertical stack of text inputs with a `+ Add ingredient` button and a per-row remove (✕). State held in `editIngredients: string[]`, seeded from `sel.imported?.ingredients` when `openEdit()` fires. The existing 500ms autosave effect was extended to include ingredients — on each keystroke it debounces, then `actions.updRecipe(sel.id, { ..., imported: { ...(sel.imported||{}), ingredients: cleanIngs } })`. Whitespace-only rows are dropped before save. If the recipe had no prior `imported` block, the update only writes one when at least one ingredient is non-empty (avoids creating phantom `imported: { ingredients: [] }` rows). Allergens + nutrition still derive from the linked costing's Bank-matched ingredients — the imported string list is informational/printable only.
+- **Inline costing builder on recipe detail** (commit `8ec1631`). When a recipe has no linked costing, the costing panel's empty state now shows an `+ Add costing for this dish` button. Clicking it expands an inline costing form inside the same card with: sell price + portions inputs, an editable ingredient table (name / qty / unit kg-g-L-ml-each-bunch-tbsp / cost-per-unit / computed line / remove), `+ Add ingredient` button, live 4-cell GP summary (Sell / Cost-per-cover / GP £ / GP %) coloured against `gpTarget`, and Save. Ingredients are seeded from `sel.imported?.ingredients` (each imported string lands in the `name` field; user fills qty/unit/price). Portions default to `sel.imported.servings` if parseable, else 1. Line cost uses the same g→kg / ml→L conversion as `CostingView`. On save, calls `actions.addGP({ id, name: sel.title, sell, cost, gp, pct, target, portions, ingredients, currency: 'GBP' })` then `actions.updRecipe(sel.id, { linkedCostingId: newId })` so the new costing is immediately linked and the existing costing panel takes over. Ingredient name `onBlur` autofills `price` from the Bank when the name matches — same pattern as `CostingView.autofillPrice`. Disabled when `sel.locked` is true. Save button gated by "at least one named ingredient + sell > 0".
+- **Roadmap additions.** Phase 1: inline ingredient editing + Add-costing-now button (both shipped same commit, ticked above). Phase 2: CSV export of recipes/costings/stock as separate files, CSV import with downloadable templates, AI spec-sheet scan into a recipe, and a downloadable quick-start guide explaining the CSV templates (all open).
 
 ### 2026-05-11
 
