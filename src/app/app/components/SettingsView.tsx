@@ -6,6 +6,7 @@ import{useApp}from'@/context/AppContext';
 import{dark,light}from'@/lib/theme';
 import{usePerms}from'@/lib/perms';
 import{useIsMobile}from'@/lib/useIsMobile';
+import{exportRecipesCsv,exportCostingsCsv,exportStockCsv}from'@/lib/csv';
 
 export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -112,6 +113,25 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
           <div><label style={lbl}>Stock Take Day of Month (1–28)</label><input type="number" min={1} max={28} value={stockDay} onChange={e=>setStockDay(e.target.value)} placeholder="1" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>e.g. 1 = 1st of each month</p></div>
         </div>
       )}
+
+      {/* Data export */}
+      <div style={card}>
+        <p style={sec}>Export Data</p>
+        <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>Download a snapshot of your data as CSV files — one per type. Open in Excel, Google Sheets, or Numbers.</p>
+        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+          {[
+            {label:'Recipes',count:state.recipes?.length||0,run:()=>exportRecipesCsv(state.recipes||[])},
+            {label:'Costings',count:state.gpHistory?.length||0,run:()=>exportCostingsCsv(state.gpHistory||[])},
+            {label:'Stock',count:state.stockItems?.length||0,run:()=>exportStockCsv(state.stockItems||[])},
+          ].map(x=>(
+            <button key={x.label} onClick={x.run} disabled={x.count===0}
+              style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',border:'1px solid '+C.border,background:x.count===0?'transparent':C.surface,color:x.count===0?C.faint:C.text,cursor:x.count===0?'not-allowed':'pointer',borderRadius:'3px',fontSize:'13px',opacity:x.count===0?0.5:1}}>
+              <span>Download {x.label.toLowerCase()} <span style={{color:C.faint,fontSize:'11px',marginLeft:'6px'}}>({x.count} row{x.count===1?'':'s'})</span></span>
+              <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:x.count===0?C.faint:C.gold}}>↓ CSV</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Danger */}
       <div style={{...card,border:'1px solid '+C.red+'30'}}>
