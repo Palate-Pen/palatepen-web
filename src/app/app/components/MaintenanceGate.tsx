@@ -15,6 +15,11 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
 
   useEffect(() => {
     let cancelled = false;
+    // Remember whether we've ever been in maintenance during this session. When
+    // we then see `active: false`, we hard-reload the page so the user gets a
+    // fresh JS bundle + a clean app boot (state is wiped, post-deploy code
+    // ships). Pure React swap would skip the reload and leave them on stale JS.
+    let hasBeenDown = false;
     async function check() {
       try {
         const res = await fetch('/api/platform-config', { cache: 'no-store' });
@@ -23,8 +28,14 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
         if (cancelled) return;
         const m: MaintenanceState = json.maintenance || { active: false };
         if (m.active) {
+          hasBeenDown = true;
           setMessage((m.message || '').trim() || DEFAULT_FUNNY);
           setPhase('maintenance');
+        } else if (hasBeenDown) {
+          // We were down, now we're back up — full reload to clear any state
+          // built up while the user was staring at the holding page (and to
+          // pull any newly-deployed JS).
+          window.location.reload();
         } else {
           setPhase('open');
         }
@@ -35,9 +46,9 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
       }
     }
     check();
-    // Re-check periodically — if maintenance is lifted, users get back in
-    // without a manual refresh. Every 30s.
-    const t = setInterval(check, 30000);
+    // Re-check periodically — every 15s while we're on the holding page so
+    // users get back in fast once maintenance lifts.
+    const t = setInterval(check, 15000);
     return () => { cancelled = true; clearInterval(t); };
   }, []);
 
@@ -65,9 +76,6 @@ function MaintenancePage({ message }: { message: string }) {
           <span style={{ fontFamily: 'Georgia, serif', fontWeight: 300, color: '#1A1A18', fontSize: 36, letterSpacing: 7 }}>ALATABLE</span>
         </div>
 
-        {/* Spinning whisk emoji as the focal art — cheap + on-theme */}
-        <div style={{ fontSize: 72, marginBottom: 24, animation: 'spin 2.6s linear infinite', display: 'inline-block' }}>🥄</div>
-
         <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 36, color: '#1A1A18', marginBottom: 18, lineHeight: 1.15 }}>
           Just stepped out for a smoke
         </h1>
@@ -92,7 +100,6 @@ function MaintenancePage({ message }: { message: string }) {
       </div>
 
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
       `}</style>
     </div>
