@@ -26,7 +26,7 @@ const C = {
   redSoft: 'rgba(184,48,48,0.10)',
 };
 
-type Section = 'overview' | 'users' | 'audit' | 'settings';
+type Section = 'overview' | 'users' | 'audit' | 'platform' | 'settings';
 type TierFilter = 'all' | 'free' | 'pro';
 type SortBy = 'newest' | 'oldest' | 'recipes' | 'updated';
 
@@ -364,6 +364,7 @@ export default function AdminPage() {
             { id: 'overview', label: 'Overview', count: '' },
             { id: 'users', label: 'Users', count: String(users.length) },
             { id: 'audit', label: 'Audit', count: audit.length ? String(audit.length) : '' },
+            { id: 'platform', label: 'Platform', count: '' },
             { id: 'settings', label: 'Settings', count: '' },
           ] as { id: Section; label: string; count: string }[]).map(item => (
             <button
@@ -438,6 +439,9 @@ export default function AdminPage() {
               onRefresh={load}
               loading={loading}
             />
+          )}
+          {section === 'platform' && (
+            <Platform stats={stats} />
           )}
           {section === 'settings' && (
             <Settings stats={stats} onRefresh={load} loading={loading} />
@@ -1071,6 +1075,247 @@ function shortVal(v: any): string {
   if (typeof v === 'string') return v.length > 30 ? `"${v.slice(0, 30)}…"` : `"${v}"`;
   if (typeof v === 'number' || typeof v === 'boolean') return String(v);
   return JSON.stringify(v).slice(0, 30);
+}
+
+// ── Platform — feature flags, announcements, system health ────────────────
+// Founder-only controls that affect every user. Settings stored in the
+// app_settings.global JSONB row.
+
+interface FeatureFlags {
+  aiRecipeImport?: boolean;
+  aiInvoiceScan?: boolean;
+  aiSpecSheet?: boolean;
+  publicMenus?: boolean;
+  apiAccess?: boolean;
+  emailForwarding?: boolean;
+  csvImport?: boolean;
+  csvExport?: boolean;
+}
+interface Announcement {
+  active?: boolean;
+  text?: string;
+  level?: 'info' | 'warning' | 'critical';
+  dismissible?: boolean;
+}
+
+const FEATURE_FLAG_META: { key: keyof FeatureFlags; label: string; help: string }[] = [
+  { key: 'aiRecipeImport', label: 'AI recipe import', help: 'URL / file → recipe extraction via Claude' },
+  { key: 'aiInvoiceScan',  label: 'AI invoice scan', help: 'Invoice PDF/image → structured line items' },
+  { key: 'aiSpecSheet',    label: 'AI spec-sheet scan', help: 'Spec sheet → recipe + costing in one shot' },
+  { key: 'emailForwarding',label: 'Email invoice forwarding', help: 'Inbound /api/inbound-email webhook' },
+  { key: 'publicMenus',    label: 'Public menus + QR', help: 'Live /m/[slug] pages (Kitchen/Group)' },
+  { key: 'apiAccess',      label: 'Public API access', help: '/api/v1/* endpoints (Kitchen/Group)' },
+  { key: 'csvImport',      label: 'CSV import', help: 'User Settings → Import Data' },
+  { key: 'csvExport',      label: 'CSV export', help: 'User Settings → Export Data' },
+];
+
+function Platform({ stats }: { stats: any }) {
+  const [settings, setSettings] = useState<{ featureFlags: FeatureFlags; announcement: Announcement } | null>(null);
+  const [loadErr, setLoadErr] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [annDraft, setAnnDraft] = useState<Announcement>({ active: false, text: '', level: 'info', dismissible: true });
+
+  async function load() {
+    setLoadErr('');
+    try {
+      const res = await fetch('/api/admin/settings', { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } });
+      const json = await res.json();
+      if (!res.ok) { setLoadErr(json.error || 'Load failed'); return; }
+      const s = json.settings || {};
+      setSettings({ featureFlags: s.featureFlags || {}, announcement: s.announcement || { active: false } });
+      setAnnDraft({
+        active: !!s.announcement?.active,
+        text: s.announcement?.text || '',
+        level: s.announcement?.level || 'info',
+        dismissible: s.announcement?.dismissible !== false,
+      });
+    } catch (e: any) {
+      setLoadErr(e?.message || 'Network error');
+    }
+  }
+  useEffect(() => { load(); }, []);
+
+  async function patch(body: any) {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Save failed');
+      const s = json.settings || {};
+      setSettings({ featureFlags: s.featureFlags || {}, announcement: s.announcement || { active: false } });
+      setSavedAt(Date.now());
+    } catch (e: any) {
+      setLoadErr(e?.message || 'Save failed');
+    }
+    setSaving(false);
+  }
+
+  async function toggleFlag(key: keyof FeatureFlags) {
+    if (!settings) return;
+    const next = !settings.featureFlags[key];
+    await patch({ featureFlags: { [key]: next } });
+  }
+  async function saveAnnouncement() {
+    await patch({ announcement: { ...annDraft } });
+  }
+  async function clearAnnouncement() {
+    setAnnDraft({ active: false, text: '', level: 'info', dismissible: true });
+    await patch({ announcement: { active: false, text: '', level: 'info', dismissible: true } });
+  }
+
+  return (
+    <div style={{ maxWidth: 920 }}>
+      <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 26, marginBottom: 6 }}>Platform</h1>
+      <p style={{ fontSize: 12, color: C.dim, marginBottom: 20 }}>
+        Founder-only controls affecting every user. Changes apply within ~60 seconds (config is CDN-cached).
+        {savedAt && <span style={{ color: C.green, marginLeft: 8 }}>✓ Saved {Math.round((Date.now() - savedAt) / 1000)}s ago</span>}
+      </p>
+      {loadErr && (
+        <div style={{ marginBottom: 16, padding: 10, background: C.redSoft, border: `1px solid ${C.red}`, borderRadius: 4, fontSize: 11, color: C.red }}>
+          {loadErr}
+        </div>
+      )}
+
+      {/* System health */}
+      <SettingCard title="System health">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {[
+            { l: 'Total users', v: String(stats?.totalUsers ?? '—') },
+            { l: 'Paid users', v: String(stats?.paidUsers ?? '—') },
+            { l: 'Active 7d', v: String(stats?.active7d ?? '—') },
+          ].map(s => (
+            <div key={s.l} style={{ padding: '10px 14px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+              <p style={{ fontSize: 10, color: C.faint, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>{s.l}</p>
+              <p style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: 22, color: C.text }}>{s.v}</p>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: 11, color: C.faint, marginTop: 10 }}>
+          Anthropic balance, recent Stripe events and inbound-email health checks would go here — coming in a future build.
+        </p>
+      </SettingCard>
+
+      {/* Feature flags */}
+      <SettingCard title="Feature flags">
+        <p style={{ fontSize: 12, color: C.dim, marginBottom: 12 }}>
+          Kill switches for risky or expensive features. Useful for incident response — turn off AI features instantly if the Anthropic balance drops or a feature breaks in prod. Toggles apply to <strong>every user on every tier</strong>.
+        </p>
+        {!settings ? (
+          <p style={{ fontSize: 12, color: C.faint, fontStyle: 'italic' }}>Loading…</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {FEATURE_FLAG_META.map(meta => {
+              const on = settings.featureFlags[meta.key] !== false;
+              return (
+                <div key={meta.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: C.panel, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{meta.label}</p>
+                    <p style={{ fontSize: 11, color: C.faint }}>{meta.help}</p>
+                  </div>
+                  <button onClick={() => toggleFlag(meta.key)} disabled={saving}
+                    style={{
+                      width: 44, height: 24, borderRadius: 12,
+                      background: on ? C.gold : C.border,
+                      border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0,
+                    }}>
+                    <div style={{
+                      position: 'absolute', top: 2, left: on ? 22 : 2,
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: '#fff', transition: 'left 0.15s',
+                    }} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </SettingCard>
+
+      {/* Announcement banner */}
+      <SettingCard title="Platform announcement">
+        <p style={{ fontSize: 12, color: C.dim, marginBottom: 12 }}>
+          Broadcast a banner to every user — maintenance, new features, outages. Renders at the top of the app for as long as it's active.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: 6 }}>Message</label>
+            <textarea
+              value={annDraft.text || ''}
+              onChange={e => setAnnDraft({ ...annDraft, text: e.target.value })}
+              placeholder="e.g. Scheduled maintenance Sunday 2am — site will be down for ~10 minutes."
+              rows={3}
+              style={{ width: '100%', background: C.panel, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '8px 10px', outline: 'none', borderRadius: 4, fontFamily: 'system-ui,sans-serif', boxSizing: 'border-box', resize: 'vertical' }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: 6 }}>Level</label>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {(['info', 'warning', 'critical'] as const).map(lv => (
+                  <button key={lv} onClick={() => setAnnDraft({ ...annDraft, level: lv })}
+                    style={{
+                      fontSize: 11, padding: '6px 12px',
+                      background: annDraft.level === lv ? C.goldSoft : 'transparent',
+                      border: `1px solid ${annDraft.level === lv ? C.gold : C.border}`,
+                      color: annDraft.level === lv ? C.gold : C.dim,
+                      cursor: 'pointer', borderRadius: 3,
+                    }}>
+                    {lv}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: 6 }}>Dismissible</label>
+              <button onClick={() => setAnnDraft({ ...annDraft, dismissible: !annDraft.dismissible })}
+                style={{
+                  width: 44, height: 24, borderRadius: 12,
+                  background: annDraft.dismissible ? C.gold : C.border,
+                  border: 'none', cursor: 'pointer', position: 'relative', marginTop: 0,
+                }}>
+                <div style={{ position: 'absolute', top: 2, left: annDraft.dismissible ? 22 : 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+              </button>
+            </div>
+          </div>
+          {/* Preview */}
+          {annDraft.text && (
+            <div style={{ padding: '10px 12px', background: annDraft.level === 'critical' ? C.redSoft : annDraft.level === 'warning' ? '#3a2a14' : C.goldSoft, border: `1px solid ${annDraft.level === 'critical' ? C.red : annDraft.level === 'warning' ? C.gold : C.gold}`, borderRadius: 4, fontSize: 13, color: annDraft.level === 'critical' ? C.red : C.gold }}>
+              <strong>Preview · {annDraft.level}</strong>
+              <p style={{ marginTop: 4 }}>{annDraft.text}</p>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => saveAnnouncement()} disabled={saving || !annDraft.text?.trim()}
+              style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '9px 16px', cursor: (saving || !annDraft.text?.trim()) ? 'not-allowed' : 'pointer', borderRadius: 3, opacity: (saving || !annDraft.text?.trim()) ? 0.5 : 1 }}>
+              {annDraft.active ? 'Update active banner' : 'Activate banner'}
+            </button>
+            {annDraft.active && (
+              <button onClick={() => setAnnDraft({ ...annDraft, active: false })}
+                style={{ fontSize: 11, color: C.dim, background: 'transparent', border: `1px solid ${C.border}`, padding: '8px 12px', cursor: 'pointer', borderRadius: 3 }}>
+                Deactivate
+              </button>
+            )}
+            <button onClick={() => clearAnnouncement()}
+              style={{ fontSize: 11, color: C.red, background: 'transparent', border: `1px solid ${C.red}40`, padding: '8px 12px', cursor: 'pointer', borderRadius: 3, marginLeft: 'auto' }}>
+              Clear
+            </button>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.dim }}>
+              <input type="checkbox" checked={annDraft.active} onChange={e => setAnnDraft({ ...annDraft, active: e.target.checked })} />
+              Active
+            </label>
+          </div>
+          {settings?.announcement?.active && (
+            <p style={{ fontSize: 11, color: C.green, marginTop: 4 }}>● Currently live across the platform</p>
+          )}
+        </div>
+      </SettingCard>
+    </div>
+  );
 }
 
 function Settings({ stats, onRefresh, loading }: { stats: any; onRefresh: () => void; loading: boolean }) {

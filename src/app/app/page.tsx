@@ -25,6 +25,7 @@ import SettingsView from './components/SettingsView';
 import MyTeamView from './components/MyTeamView';
 import UpgradeModal from './components/UpgradeModal';
 import QuickStartGuide from './components/QuickStartGuide';
+import AnnouncementBanner from './components/AnnouncementBanner';
 
 export default function App() {
   const { user, loading, currentAccount, currentRole } = useAuth();
@@ -174,6 +175,7 @@ export default function App() {
         transition: 'margin-left 0.18s ease',
         paddingBottom: isMobile ? '80px' : 0,
       }}>
+        <AnnouncementBanner />
         <RoleBanner />
         {views[tab] || <DashboardView setTab={setTab} />}
       </main>
