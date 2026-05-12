@@ -9,7 +9,7 @@ import{useIsMobile}from'@/lib/useIsMobile';
 import{exportRecipesCsv,exportCostingsCsv,exportStockCsv,downloadRecipesTemplate,downloadCostingsTemplate,downloadStockTemplate,parseCsv,rowsToObjects,readFileAsText,rowsToRecipes,rowsToCostings,rowsToStock}from'@/lib/csv';
 import{supabase}from'@/lib/supabase';
 
-export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
+export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>void;onShowGuide?:()=>void}={}){
   const{settings,update}=useSettings();
   const{user,tier,signOut}=useAuth();
   const{state,actions}=useApp();
@@ -238,6 +238,30 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
           <div><label style={lbl}>Stock Take Day of Month (1–28)</label><input type="number" min={1} max={28} value={stockDay} onChange={e=>setStockDay(e.target.value)} placeholder="1" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>e.g. 1 = 1st of each month</p></div>
         </div>
       )}
+
+      {/* Help & Tips */}
+      <div style={card}>
+        <p style={sec}>Help &amp; Tips</p>
+        <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>An interactive tour of every part of Palatable — opens automatically on your first login and is available here any time as a reference.</p>
+        <button onClick={()=>onShowGuide?.()} disabled={!onShowGuide}
+          style={{display:'flex',justifyContent:'space-between',alignItems:'center',width:'100%',padding:'12px 14px',border:'1px solid '+C.gold+'40',background:C.gold+'12',color:C.gold,cursor:onShowGuide?'pointer':'not-allowed',borderRadius:'3px',fontSize:'13px',fontWeight:600}}>
+          <span style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <span style={{fontSize:'18px'}}>📖</span>
+            <span>Open Quick Start Guide</span>
+          </span>
+          <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase'}}>↗</span>
+        </button>
+        <div style={{marginTop:'14px',padding:'12px 14px',background:C.surface,border:'0.5px solid '+C.border,borderRadius:'3px'}}>
+          <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px'}}>Quick tips</p>
+          <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'6px'}}>
+            <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>Set your business name and logo above — they appear across the app and on every print.</li>
+            <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>Scan a spec sheet from the Recipes tab to create recipe + costing in one shot.</li>
+            <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>Lock a recipe once final — prevents accidental edits, easy to unlock.</li>
+            <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>The Bank stores ingredient prices once — every recipe using them recalculates automatically.</li>
+            <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>Reports has per-section date ranges, Print and CSV export.</li>
+          </ul>
+        </div>
+      </div>
 
       {/* Data export */}
       <div style={card}>

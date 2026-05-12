@@ -24,16 +24,29 @@ import ProfileView from './components/ProfileView';
 import SettingsView from './components/SettingsView';
 import MyTeamView from './components/MyTeamView';
 import UpgradeModal from './components/UpgradeModal';
+import QuickStartGuide from './components/QuickStartGuide';
 
 export default function App() {
   const { user, loading, currentAccount, currentRole } = useAuth();
-  const { state, saveStatus } = useApp();
+  const { state, saveStatus, actions } = useApp();
   const { settings } = useSettings();
   const isMobile = useIsMobile();
   const [tab, setTab] = useState('dashboard');
   const [mobileSheet, setMobileSheet] = useState<'more' | 'notifications' | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+
+  // First-login auto-trigger: once state is loaded (state.ready) and the
+  // user hasn't dismissed the tutorial yet, open the guide. Subsequent logins
+  // pass through silently — they can replay from Settings.
+  useEffect(() => {
+    if (!state.ready) return;
+    if (state.profile?.tutorialDismissed) return;
+    // Small delay so the dashboard renders behind the modal first — feels less abrupt
+    const t = setTimeout(() => setShowGuide(true), 600);
+    return () => clearTimeout(t);
+  }, [state.ready, state.profile?.tutorialDismissed]);
 
   // Restore sidebar collapsed state from localStorage
   useEffect(() => {
@@ -115,7 +128,7 @@ export default function App() {
     reports: <ReportsView setTab={setTab} />,
     team: <MyTeamView />,
     profile: <ProfileView />,
-    settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} />,
+    settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} onShowGuide={() => setShowGuide(true)} />,
   };
 
   const saveStyles: Record<string, React.CSSProperties> = {
@@ -205,6 +218,12 @@ export default function App() {
         {saveText[saveStatus]}
       </div>
     {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)}/>}
+    <QuickStartGuide
+      open={showGuide}
+      onClose={() => setShowGuide(false)}
+      setTab={setTab}
+      onDismissForever={() => actions.updProfile({ tutorialDismissed: true })}
+    />
     </div>
   );
 }

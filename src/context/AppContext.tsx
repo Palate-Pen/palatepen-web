@@ -4,7 +4,7 @@ import{supabase}from'@/lib/supabase';
 import{useAuth}from'./AuthContext';
 import{migrateCategory}from'@/lib/categorize';
 type SaveStatus='idle'|'saving'|'saved'|'error';
-const DEFAULT_PROFILE={businessName:'',name:'',location:'',currency:'GBP',currencySymbol:'£',units:'metric',gpTarget:72,tier:'free',stockDay:1,stockFrequency:'weekly'};
+const DEFAULT_PROFILE={businessName:'',name:'',location:'',currency:'GBP',currencySymbol:'£',units:'metric',gpTarget:72,tier:'free',stockDay:1,stockFrequency:'weekly',tutorialDismissed:false};
 export const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const init={recipes:[],notes:[],gpHistory:[],ingredientsBank:[],invoices:[],priceAlerts:[],stockItems:[],menus:[],wasteLog:[],profile:DEFAULT_PROFILE,ready:false};
 function reducer(state:any,action:any):any{

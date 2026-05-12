@@ -73,7 +73,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] CSV export of all recipes, costings and stock as separate downloadable files
 - [x] CSV import for recipes, costings and stock with downloadable template files containing the correct headers
 - [x] Scan a spec sheet with AI to import recipe data automatically
-- [ ] Downloadable quick-start guide for new users explaining the CSV templates
+- [x] Downloadable quick-start guide for new users explaining the CSV templates *(shipped as an interactive in-app guide with auto-trigger on first login + Settings replay button — covers every part of the app, not just CSVs)*
 
 ### Phase 3 — Kitchen and Group Tier
 
