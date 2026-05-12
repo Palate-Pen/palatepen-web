@@ -410,31 +410,37 @@ function Section({ C, sectionKey, title, subtitle, expanded, onToggle, range, on
   return (
     <div style={{ background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', marginBottom: '12px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 20px', gap: '12px', flexWrap: 'wrap' }}>
-        <button onClick={onToggle}
-          style={{ background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, flex: 1, minWidth: 0 }}>
+        {/* Title row uses a div+role=button rather than a real <button> so it can
+            safely contain block-level paragraphs without tripping React's DOM-
+            nesting validator (which can blank the page on click). */}
+        <div role="button" tabIndex={0}
+          onClick={onToggle}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+          style={{ background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0, flex: 1, minWidth: 0, outline: 'none', userSelect: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '11px', color: C.faint, width: '12px' }}>{expanded ? '▾' : '▸'}</span>
-            <p style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.text }}>{title}</p>
+            <span style={{ fontSize: '11px', color: C.faint, width: '12px', display: 'inline-block' }}>{expanded ? '▾' : '▸'}</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.text }}>{title}</span>
           </div>
           {subtitle && <p style={{ fontSize: '11px', color: C.faint, marginTop: '3px', marginLeft: '20px' }}>{subtitle}</p>}
-        </button>
+        </div>
         {expanded && (
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}
+            onClick={e => e.stopPropagation()}>
             {range && onRangeChange && (
               <div style={{ display: 'flex', gap: '2px', marginRight: '4px' }}>
                 {RANGE_OPTIONS.map(opt => (
-                  <button key={opt.value} onClick={() => onRangeChange(opt.value)}
+                  <button key={opt.value} type="button" onClick={() => onRangeChange(opt.value)}
                     style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', padding: '5px 8px', border: '1px solid ' + (range === opt.value ? C.gold + '60' : C.border), background: range === opt.value ? C.gold + '14' : 'transparent', color: range === opt.value ? C.gold : C.faint, cursor: 'pointer', borderRadius: '2px' }}>
                     {opt.label}
                   </button>
                 ))}
               </div>
             )}
-            <button onClick={onPrint} title="Print this section"
+            <button type="button" onClick={onPrint} title="Print this section"
               style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', padding: '5px 9px', border: '1px solid ' + C.border, background: 'transparent', color: C.dim, cursor: 'pointer', borderRadius: '2px' }}>
               🖨 Print
             </button>
-            <button onClick={onExport} title="Export this section as CSV"
+            <button type="button" onClick={onExport} title="Export this section as CSV"
               style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', padding: '5px 9px', border: '1px solid ' + C.border, background: 'transparent', color: C.dim, cursor: 'pointer', borderRadius: '2px' }}>
               ↓ CSV
             </button>
