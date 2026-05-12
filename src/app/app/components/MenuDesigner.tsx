@@ -306,7 +306,7 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
             }}>
               <BackgroundLayer bg={design.background} accent={design.accentColor} />
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <MenuPreview design={design} dishes={dishes} sym={sym} />
+                <MenuPreview design={design} dishes={dishes} sym={sym} fallbackLogoUrl={state.profile?.logoUrl} />
               </div>
             </div>
           </div>
@@ -316,18 +316,20 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
   );
 }
 
-function MenuPreview({ design, dishes, sym }: {
+function MenuPreview({ design, dishes, sym, fallbackLogoUrl }: {
   design: Design;
   dishes: { name: string; dishes: any[] }[];
   sym: string;
+  fallbackLogoUrl?: string;
 }) {
+  const headerLogo = design.logo?.url || fallbackLogoUrl;
   return (
     <>
       {/* Header */}
       <div style={{ borderBottom: '2px solid ' + design.accentColor, paddingBottom: '12mm', marginBottom: '10mm', textAlign: 'center' }}>
-        {design.logo?.url && (
+        {headerLogo && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={design.logo.url} alt="Logo" style={{ maxHeight: '24mm', objectFit: 'contain', marginBottom: '6mm' }} />
+          <img src={headerLogo} alt="Logo" style={{ maxHeight: '24mm', objectFit: 'contain', marginBottom: '6mm' }} />
         )}
         <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: '32pt', color: '#111', marginBottom: '4mm', lineHeight: 1.1 }}>
           {design.headerText || 'Restaurant Name'}

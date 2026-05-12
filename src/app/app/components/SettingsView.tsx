@@ -7,6 +7,7 @@ import{dark,light}from'@/lib/theme';
 import{usePerms}from'@/lib/perms';
 import{useIsMobile}from'@/lib/useIsMobile';
 import{exportRecipesCsv,exportCostingsCsv,exportStockCsv}from'@/lib/csv';
+import{supabase}from'@/lib/supabase';
 
 export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -24,7 +25,64 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const[stockDay,setStockDay]=useState(String(profile.stockDay||1));
   const[stockFreq,setStockFreq]=useState(profile.stockFrequency||'weekly');
   const[deleteConfirm,setDeleteConfirm]=useState(false);
+  const[uploadingLogo,setUploadingLogo]=useState(false);
+  const[logoError,setLogoError]=useState('');
   const mountedRef=useRef(false);
+
+  // Resize the logo client-side to ~600px wide before upload. Keeps storage
+  // light and avoids huge PNGs slowing every print/page that embeds the logo.
+  async function resizeLogo(file: File): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxW = 600;
+        const ratio = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas not supported'));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not encode')), file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.9);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+      img.src = url;
+    });
+  }
+
+  async function uploadLogo(file: File) {
+    if (!user?.id) return;
+    setLogoError('');
+    setUploadingLogo(true);
+    try {
+      const blob = await resizeLogo(file);
+      const ext = file.type.includes('png') ? 'png' : 'jpg';
+      const ts = Date.now();
+      // Reusing recipe-photos bucket — RLS allows owner writes under {user.id}/...
+      const path = `${user.id}/business-logo-${ts}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('recipe-photos').upload(path, blob, {
+        contentType: blob.type, upsert: true, cacheControl: '3600',
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('recipe-photos').getPublicUrl(path);
+      if (profile.logoPath && profile.logoPath !== path) {
+        await supabase.storage.from('recipe-photos').remove([profile.logoPath]).catch(() => {});
+      }
+      actions.updProfile({ logoUrl: pub.publicUrl, logoPath: path });
+    } catch (e: any) {
+      setLogoError(e?.message || 'Upload failed');
+    }
+    setUploadingLogo(false);
+  }
+
+  async function removeLogo() {
+    if (profile.logoPath) {
+      await supabase.storage.from('recipe-photos').remove([profile.logoPath]).catch(() => {});
+    }
+    actions.updProfile({ logoUrl: null, logoPath: null });
+  }
 
   useEffect(()=>{
     if(!mountedRef.current){mountedRef.current=true;return;}
@@ -87,6 +145,33 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
           <label style={lbl}>Restaurant / Business Name</label>
           <input value={businessName} onChange={e=>setBusinessName(e.target.value)} disabled={!perms.canManageSettings} placeholder="e.g. The Heron, Catford Tavern" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/>
           <p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>Shown across the app, on printed recipes, recipe books and menus.</p>
+        </div>
+        <div style={{marginBottom:'14px'}}>
+          <label style={lbl}>Business Logo (optional)</label>
+          {profile.logoUrl ? (
+            <div style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px',background:C.surface,border:'1px solid '+C.border,borderRadius:'3px'}}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={profile.logoUrl} alt="Business logo" style={{height:'52px',maxWidth:'140px',objectFit:'contain',background:'#fff',padding:'4px',borderRadius:'2px',flexShrink:0}}/>
+              <div style={{flex:1,display:'flex',gap:'8px',flexWrap:'wrap'}}>
+                <label style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.gold,background:C.gold+'12',border:'1px solid '+C.gold+'30',padding:'7px 12px',cursor:(uploadingLogo||!perms.canManageSettings)?'not-allowed':'pointer',borderRadius:'2px',opacity:(uploadingLogo||!perms.canManageSettings)?0.5:1}}>
+                  {uploadingLogo?'Uploading…':'Replace'}
+                  <input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f)uploadLogo(f);e.target.value='';}} style={{display:'none'}} disabled={uploadingLogo||!perms.canManageSettings}/>
+                </label>
+                <button onClick={removeLogo} disabled={uploadingLogo||!perms.canManageSettings}
+                  style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.red,background:'transparent',border:'1px solid '+C.red+'40',padding:'7px 12px',cursor:(uploadingLogo||!perms.canManageSettings)?'not-allowed':'pointer',borderRadius:'2px',opacity:(uploadingLogo||!perms.canManageSettings)?0.5:1}}>
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <label style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'4px',padding:'20px',background:C.surface2,border:'1px dashed '+C.border,borderRadius:'3px',cursor:perms.canManageSettings?'pointer':'not-allowed',opacity:perms.canManageSettings?1:0.5}}>
+              <span style={{fontSize:'13px',color:C.dim}}>{uploadingLogo?'Uploading…':'📷 Upload logo'}</span>
+              <span style={{fontSize:'11px',color:C.faint}}>PNG or JPG · auto-resized to 600px wide</span>
+              <input type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f)uploadLogo(f);e.target.value='';}} style={{display:'none'}} disabled={uploadingLogo||!perms.canManageSettings}/>
+            </label>
+          )}
+          {logoError && <p style={{fontSize:'11px',color:C.red,marginTop:'4px'}}>⚠ {logoError}</p>}
+          <p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>Appears in the sidebar, on the dashboard, and across printed recipes, books and menus.</p>
         </div>
         <div style={{marginBottom:'14px'}}><label style={lbl}>Your Name</label><input value={name} onChange={e=>setName(e.target.value)} disabled={!perms.canManageSettings} placeholder="Jack Harrison" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/></div>
         <div style={{marginBottom:'14px'}}><label style={lbl}>Location</label><input value={location} onChange={e=>setLocation(e.target.value)} disabled={!perms.canManageSettings} placeholder="London, UK" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/></div>

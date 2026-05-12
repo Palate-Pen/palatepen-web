@@ -50,6 +50,7 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const businessName = (state.profile?.businessName || '').trim();
+  const logoUrl = state.profile?.logoUrl as string | undefined;
   const isPaid = PAID_TIERS.includes(tier);
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const width = collapsed ? 64 : 224;
@@ -92,16 +93,30 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
       >
         {collapsed ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px', marginLeft: '2px' }}></div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={businessName || 'Logo'} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+            ) : (
+              <>
+                <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px', marginLeft: '2px' }}></div>
+              </>
+            )}
           </div>
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
-              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '22px', letterSpacing: '5px' }}>ALATABLE</span>
-            </div>
+            {logoUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt={businessName || 'Logo'} style={{ height: '32px', maxWidth: '120px', objectFit: 'contain', flexShrink: 0 }} />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
+                <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '22px', letterSpacing: '5px' }}>ALATABLE</span>
+              </div>
+            )}
             {businessName ? (
               <p title={businessName} style={{ fontSize: '11px', color: C.gold, letterSpacing: '0.5px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</p>
             ) : (

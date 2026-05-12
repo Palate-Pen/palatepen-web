@@ -52,6 +52,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   const gpTarget = profile.gpTarget || 72;
   const userName = profile.name || user?.user_metadata?.name || 'Chef';
   const businessName = (profile.businessName || '').trim();
+  const logoUrl = profile.logoUrl as string | undefined;
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const isPaid = ['pro', 'kitchen', 'group'].includes(tier);
 
@@ -118,15 +119,21 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: 'system-ui,sans-serif', padding: isMobile ? '20px 16px' : '32px' }}>
       {/* Greeting */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-        <div>
-          {businessName && (
-            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+          {logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={businessName || 'Logo'} style={{ height: '56px', maxWidth: '120px', objectFit: 'contain', flexShrink: 0 }} />
           )}
-          <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', color: C.text, marginBottom: '4px' }}>
-            {greeting()}, {userName}
-          </h1>
-          <p style={{ fontSize: '13px', color: C.faint }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <div style={{ minWidth: 0 }}>
+            {businessName && (
+              <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>
+            )}
+            <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', color: C.text, marginBottom: '4px' }}>
+              {greeting()}, {userName}
+            </h1>
+            <p style={{ fontSize: '13px', color: C.faint }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          </div>
         </div>
         <span style={{
           fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase',

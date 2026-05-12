@@ -686,7 +686,15 @@ export default function RecipesView() {
             {meta && <p style={{ fontSize: '12px', color: '#555' }}>{meta}</p>}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            {state.profile?.businessName?.trim() ? (
+            {state.profile?.logoUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={state.profile.logoUrl} alt={state.profile.businessName || 'Logo'} style={{ height: '48px', maxWidth: '160px', objectFit: 'contain', display: 'block', marginLeft: 'auto' }} />
+                {state.profile?.businessName?.trim() && (
+                  <p style={{ fontSize: '10px', color: '#555', marginTop: '4px', fontWeight: 600 }}>{state.profile.businessName.trim()}</p>
+                )}
+              </>
+            ) : state.profile?.businessName?.trim() ? (
               <>
                 <p style={{ fontFamily: 'Georgia,serif', fontWeight: 600, color: '#111', fontSize: '18px', letterSpacing: '0.5px' }}>{state.profile.businessName.trim()}</p>
                 {state.profile?.location && <p style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{state.profile.location}</p>}
@@ -1940,15 +1948,27 @@ export default function RecipesView() {
                         <p style={{ fontSize: '12px', color: '#555' }}>{sel.category || 'Other'} · {portions} portion{portions === 1 ? '' : 's'}{sellPrice > 0 ? ` · sell ${(state.profile?.currencySymbol||'£')}${sellPrice.toFixed(2)}` : ''}{gpPct != null ? ` · GP ${gpPct.toFixed(1)}%` : ''}</p>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
-                          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: '20px' }}>P</span>
-                          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#C8960A', marginBottom: '7px' }}></div>
-                          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: '20px', letterSpacing: '4px' }}>ALATABLE</span>
-                        </div>
-                        {state.profile?.businessName?.trim() ? (
-                          <p style={{ fontSize: '11px', color: '#111', marginTop: '4px', fontWeight: 600 }}>{state.profile.businessName.trim()}</p>
+                        {state.profile?.logoUrl ? (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={state.profile.logoUrl} alt={state.profile.businessName || 'Logo'} style={{ height: '44px', maxWidth: '140px', objectFit: 'contain', display: 'block', marginLeft: 'auto' }} />
+                            {state.profile?.businessName?.trim() && (
+                              <p style={{ fontSize: '10px', color: '#555', marginTop: '4px', fontWeight: 600 }}>{state.profile.businessName.trim()}</p>
+                            )}
+                          </>
                         ) : (
-                          <p style={{ fontSize: '10px', color: '#777', marginTop: '4px' }}>By Palate &amp; Pen</p>
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+                              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: '20px' }}>P</span>
+                              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#C8960A', marginBottom: '7px' }}></div>
+                              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: '20px', letterSpacing: '4px' }}>ALATABLE</span>
+                            </div>
+                            {state.profile?.businessName?.trim() ? (
+                              <p style={{ fontSize: '11px', color: '#111', marginTop: '4px', fontWeight: 600 }}>{state.profile.businessName.trim()}</p>
+                            ) : (
+                              <p style={{ fontSize: '10px', color: '#777', marginTop: '4px' }}>By Palate &amp; Pen</p>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -2416,13 +2436,20 @@ export default function RecipesView() {
                       Palatable wordmark sits as the platform credit above. */}
                   {(() => {
                     const biz = (state.profile?.businessName || '').trim();
+                    const logo = state.profile?.logoUrl as string | undefined;
                     return (
                       <div className="book-page" style={{ minHeight: '780px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '60px 40px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: biz ? '36px' : '24px' }}>
-                          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: biz ? '32px' : '48px' }}>P</span>
-                          <div style={{ width: biz ? '7px' : '10px', height: biz ? '7px' : '10px', borderRadius: '50%', background: '#C8960A', marginBottom: biz ? '11px' : '16px' }}></div>
-                          <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: biz ? '32px' : '48px', letterSpacing: biz ? '6px' : '8px' }}>ALATABLE</span>
-                        </div>
+                        {logo && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={logo} alt={biz || 'Logo'} style={{ maxHeight: '120px', maxWidth: '60%', objectFit: 'contain', marginBottom: biz ? '24px' : '16px' }} />
+                        )}
+                        {!logo && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: biz ? '36px' : '24px' }}>
+                            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#111', fontSize: biz ? '32px' : '48px' }}>P</span>
+                            <div style={{ width: biz ? '7px' : '10px', height: biz ? '7px' : '10px', borderRadius: '50%', background: '#C8960A', marginBottom: biz ? '11px' : '16px' }}></div>
+                            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#111', fontSize: biz ? '32px' : '48px', letterSpacing: biz ? '6px' : '8px' }}>ALATABLE</span>
+                          </div>
+                        )}
                         {biz && (
                           <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '52px', color: '#111', marginBottom: '8px', lineHeight: 1.1 }}>{biz}</h1>
                         )}
