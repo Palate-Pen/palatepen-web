@@ -49,7 +49,14 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
   const sym = (state.profile || {}).currencySymbol || '£';
 
   const menu = (state.menus || []).find((m: any) => m.id === menuId);
-  const design: Design = { ...DEFAULT_DESIGN, ...(menu?.design || {}), headerText: menu?.design?.headerText || (state.profile?.name ? state.profile.name + (state.profile?.location ? ' · ' + state.profile.location : '') : 'Restaurant Name'), subtitleText: menu?.design?.subtitleText || menu?.name || '' };
+  // Header default: businessName (the user's restaurant brand) → name → "Restaurant Name".
+  // Once a menu's design.headerText is set explicitly, that wins.
+  const headerDefault = state.profile?.businessName?.trim()
+    ? state.profile.businessName.trim() + (state.profile?.location ? ' · ' + state.profile.location : '')
+    : state.profile?.name
+      ? state.profile.name + (state.profile?.location ? ' · ' + state.profile.location : '')
+      : 'Restaurant Name';
+  const design: Design = { ...DEFAULT_DESIGN, ...(menu?.design || {}), headerText: menu?.design?.headerText || headerDefault, subtitleText: menu?.design?.subtitleText || menu?.name || '' };
 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');

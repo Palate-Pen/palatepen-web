@@ -17,6 +17,7 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const C=settings.resolved==='light'?light:dark;
   const profile=state.profile||{};
   const[saved,setSaved]=useState(false);
+  const[businessName,setBusinessName]=useState(profile.businessName||'');
   const[name,setName]=useState(profile.name||'');
   const[location,setLocation]=useState(profile.location||'');
   const[gpTarget,setGpTarget]=useState(String(profile.gpTarget||72));
@@ -29,11 +30,11 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
     if(!mountedRef.current){mountedRef.current=true;return;}
     if(!perms.canManageSettings)return;
     const t=setTimeout(()=>{
-      actions.updProfile({name:name.trim(),location:location.trim(),gpTarget:parseFloat(gpTarget)||72,stockDay:parseInt(stockDay)||1,stockFrequency:stockFreq});
+      actions.updProfile({businessName:businessName.trim(),name:name.trim(),location:location.trim(),gpTarget:parseFloat(gpTarget)||72,stockDay:parseInt(stockDay)||1,stockFrequency:stockFreq});
       setSaved(true);setTimeout(()=>setSaved(false),1500);
     },600);
     return()=>clearTimeout(t);
-  },[name,location,gpTarget,stockDay,stockFreq]);
+  },[businessName,name,location,gpTarget,stockDay,stockFreq]);
 
   const inp:any={width:'100%',background:C.surface2,border:'1px solid '+C.border,color:C.text,fontSize:'14px',padding:'10px 12px',outline:'none',fontFamily:'system-ui,sans-serif',boxSizing:'border-box',borderRadius:'3px'};
   const card:any={background:C.surface2,border:'1px solid '+C.border,borderRadius:'4px',padding:'20px',marginBottom:'12px'};
@@ -82,6 +83,11 @@ export default function SettingsView({onUpgrade}:{onUpgrade?:()=>void}={}){
       {/* Account */}
       <div style={card}>
         <p style={sec}>Account</p>
+        <div style={{marginBottom:'14px'}}>
+          <label style={lbl}>Restaurant / Business Name</label>
+          <input value={businessName} onChange={e=>setBusinessName(e.target.value)} disabled={!perms.canManageSettings} placeholder="e.g. The Heron, Catford Tavern" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/>
+          <p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>Shown across the app, on printed recipes, recipe books and menus.</p>
+        </div>
         <div style={{marginBottom:'14px'}}><label style={lbl}>Your Name</label><input value={name} onChange={e=>setName(e.target.value)} disabled={!perms.canManageSettings} placeholder="Jack Harrison" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/></div>
         <div style={{marginBottom:'14px'}}><label style={lbl}>Location</label><input value={location} onChange={e=>setLocation(e.target.value)} disabled={!perms.canManageSettings} placeholder="London, UK" style={{...inp,opacity:perms.canManageSettings?1:0.5,cursor:perms.canManageSettings?'text':'not-allowed'}}/></div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderTop:'1px solid '+C.border,marginTop:'8px'}}>

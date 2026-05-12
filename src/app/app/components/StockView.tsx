@@ -139,10 +139,14 @@ export default function StockView() {
 
   
   function downloadReport(usageItems: any[], date: string) {
-    const rows = [
+    const biz = (state.profile?.businessName || '').trim();
+    const rows: any[][] = [];
+    if (biz) rows.push([biz]);
+    rows.push(
       ['Stock Report — ' + date],
       [''],
-      ['Item', 'Unit', 'Unit Price', 'Prev Qty', 'Curr Qty', 'Usage', 'Usage Value', 'Closing Value'],
+      ['Item', 'Unit', 'Unit Price', 'Prev Qty', 'Curr Qty', 'Usage', 'Usage Value', 'Closing Value']);
+    rows.push(
       ...usageItems.map((i: any) => [
         i.name,
         i.unit,
@@ -155,7 +159,7 @@ export default function StockView() {
       ]),
       [''],
       ['Total closing stock value', '', '', '', '', '', '', sym + usageItems.reduce((a: number, i: any) => a + i.value, 0).toFixed(2)],
-    ];
+    );
     const csv = rows.map(r => r.map((cell: any) => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

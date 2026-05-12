@@ -51,6 +51,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   const sym = profile.currencySymbol || '£';
   const gpTarget = profile.gpTarget || 72;
   const userName = profile.name || user?.user_metadata?.name || 'Chef';
+  const businessName = (profile.businessName || '').trim();
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const isPaid = ['pro', 'kitchen', 'group'].includes(tier);
 
@@ -119,6 +120,9 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
       {/* Greeting */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>
+          {businessName && (
+            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>
+          )}
           <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', color: C.text, marginBottom: '4px' }}>
             {greeting()}, {userName}
           </h1>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
@@ -34,10 +35,12 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   setCollapsed: (b: boolean) => void;
 }) {
   const { tier, accounts, currentAccount, currentRole, switchAccount } = useAuth();
+  const { state } = useApp();
   const canBill = currentRole === 'owner';
   const isMobile = useIsMobile();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
+  const businessName = (state.profile?.businessName || '').trim();
   const isPaid = PAID_TIERS.includes(tier);
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const width = collapsed ? 64 : 224;
@@ -90,7 +93,11 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
               <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '22px', letterSpacing: '5px' }}>ALATABLE</span>
             </div>
-            <p style={{ fontSize: '10px', color: C.faint, letterSpacing: '1px', textTransform: 'uppercase' }}>By Palate &amp; Pen</p>
+            {businessName ? (
+              <p title={businessName} style={{ fontSize: '11px', color: C.gold, letterSpacing: '0.5px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</p>
+            ) : (
+              <p style={{ fontSize: '10px', color: C.faint, letterSpacing: '1px', textTransform: 'uppercase' }}>By Palate &amp; Pen</p>
+            )}
           </div>
         )}
       </button>
