@@ -288,6 +288,30 @@ export default function AdminPage() {
 
   useEffect(() => { if (authed) load(); }, [authed]);
 
+  // ── Filtered + sorted users list (declared above the auth early-return so
+  //    hook order stays consistent across re-renders — Rules of Hooks). ────
+  const filteredSorted = useMemo(() => {
+    let list = users;
+    const q = search.toLowerCase().trim();
+    if (q) list = list.filter((u: any) =>
+      (u.profile?.name || '').toLowerCase().includes(q) ||
+      (u.profile?.email || '').toLowerCase().includes(q)
+    );
+    if (tierFilter !== 'all') {
+      if (tierFilter === 'comp') list = list.filter(u => u.profile?.comp);
+      else list = list.filter(u => (u.profile?.tier || 'free') === tierFilter && !u.profile?.comp);
+    }
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === 'recipes') return ((b.recipes || []).length) - ((a.recipes || []).length);
+      if (sortBy === 'costings') return ((b.gp_history || []).length) - ((a.gp_history || []).length);
+      return 0;
+    });
+    return sorted;
+  }, [users, search, tierFilter, sortBy]);
+
   // ── Auth screen ────────────────────────────────
   if (!authed) {
     return (
@@ -320,29 +344,6 @@ export default function AdminPage() {
       </div>
     );
   }
-
-  // ── Filtered + sorted users list ────────────────
-  const filteredSorted = useMemo(() => {
-    let list = users;
-    const q = search.toLowerCase().trim();
-    if (q) list = list.filter((u: any) =>
-      (u.profile?.name || '').toLowerCase().includes(q) ||
-      (u.profile?.email || '').toLowerCase().includes(q)
-    );
-    if (tierFilter !== 'all') {
-      if (tierFilter === 'comp') list = list.filter(u => u.profile?.comp);
-      else list = list.filter(u => (u.profile?.tier || 'free') === tierFilter && !u.profile?.comp);
-    }
-    const sorted = [...list];
-    sorted.sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (sortBy === 'recipes') return ((b.recipes || []).length) - ((a.recipes || []).length);
-      if (sortBy === 'costings') return ((b.gp_history || []).length) - ((a.gp_history || []).length);
-      return 0;
-    });
-    return sorted;
-  }, [users, search, tierFilter, sortBy]);
 
   // ── Layout shell ─────────────────────────────────
   return (
