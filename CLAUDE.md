@@ -69,7 +69,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Dish spec sheets (printable)
 - [x] Change printable stock count sheet to a summary report format showing totals, variances and category breakdowns rather than a raw line list
 - [x] Create a custom icon set for the Palatable website replacing generic icons with bespoke food and kitchen themed icons
-- [ ] Make menu backgrounds more graphic and custom with imagery or textured treatments
+- [x] Make menu backgrounds more graphic and custom with imagery or textured treatments
 - [x] CSV export of all recipes, costings and stock as separate downloadable files
 - [x] CSV import for recipes, costings and stock with downloadable template files containing the correct headers
 - [x] Scan a spec sheet with AI to import recipe data automatically

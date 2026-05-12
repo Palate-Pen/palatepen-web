@@ -6,7 +6,9 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 
-type Background = 'plain' | 'linen' | 'botanical' | 'deco';
+type Background = 'plain' | 'linen' | 'botanical' | 'deco' | 'marble' | 'kraft' | 'script' | 'modern' | 'custom';
+type FontFamily = 'serif' | 'sans' | 'modern';
+type DishStyle = 'standard' | 'leaders' | 'stacked';
 
 interface Design {
   logo?: { url: string; path: string } | null;
@@ -18,6 +20,12 @@ interface Design {
   showDescriptions: boolean;
   sectionStyle: 'category' | 'flat';
   background: Background;
+  // New layout / typography knobs
+  columns?: 1 | 2;
+  fontFamily?: FontFamily;
+  dishStyle?: DishStyle;
+  // User-uploaded template that replaces the built-in backgrounds when set
+  customBackground?: { url: string; path: string } | null;
 }
 
 const DEFAULT_DESIGN: Design = {
@@ -30,13 +38,34 @@ const DEFAULT_DESIGN: Design = {
   showDescriptions: true,
   sectionStyle: 'category',
   background: 'plain',
+  columns: 1,
+  fontFamily: 'serif',
+  dishStyle: 'standard',
+  customBackground: null,
 };
 
 const BACKGROUNDS: { id: Background; label: string }[] = [
   { id: 'plain',     label: 'Plain' },
   { id: 'linen',     label: 'Linen' },
+  { id: 'marble',    label: 'Marble' },
+  { id: 'kraft',     label: 'Kraft' },
   { id: 'botanical', label: 'Botanical' },
+  { id: 'script',    label: 'Script' },
   { id: 'deco',      label: 'Art Deco' },
+  { id: 'modern',    label: 'Modern' },
+];
+
+const FONT_OPTIONS: { id: FontFamily; label: string; family: string }[] = [
+  { id: 'serif',  label: 'Serif',  family: 'Georgia, "Times New Roman", serif' },
+  { id: 'sans',   label: 'Sans',   family: '"Helvetica Neue", Helvetica, Arial, sans-serif' },
+  { id: 'modern', label: 'Modern', family: 'system-ui, -apple-system, "Segoe UI", sans-serif' },
+];
+function fontFor(f?: FontFamily) { return FONT_OPTIONS.find(x => x.id === f)?.family || FONT_OPTIONS[0].family; }
+
+const DISH_STYLES: { id: DishStyle; label: string }[] = [
+  { id: 'standard', label: 'Standard' },
+  { id: 'leaders',  label: 'Leader dots' },
+  { id: 'stacked',  label: 'Stacked' },
 ];
 
 const CATEGORY_ORDER = ['Starter', 'Main', 'Sauce', 'Bread', 'Pastry', 'Dessert', 'Stock', 'Snack', 'Other'];
@@ -61,6 +90,9 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInRef = useRef<HTMLInputElement | null>(null);
+  const tplInRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingTpl, setUploadingTpl] = useState(false);
+  const [tplError, setTplError] = useState('');
 
   function update(partial: Partial<Design>) {
     actions.updMenu(menuId, { design: { ...design, ...partial } });
@@ -143,6 +175,58 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
       await supabase.storage.from('recipe-photos').remove([design.logo.path]).catch(() => {});
     }
     update({ logo: null });
+  }
+
+  // Upload a user-provided menu template (the full-bleed background paper).
+  // Larger than the logo — 1600px wide, since this is the whole menu sheet.
+  async function resizeTemplate(file: File): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const maxW = 1600;
+        const ratio = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas not supported'));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not encode')), file.type.includes('png') ? 'image/png' : 'image/jpeg', 0.92);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+      img.src = url;
+    });
+  }
+  async function uploadTemplate(file: File) {
+    if (!user?.id) return;
+    setTplError('');
+    setUploadingTpl(true);
+    try {
+      const blob = await resizeTemplate(file);
+      const ext = file.type.includes('png') ? 'png' : 'jpg';
+      const ts = Date.now();
+      const path = `${user.id}/menu-${menuId}-template-${ts}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('recipe-photos').upload(path, blob, {
+        contentType: blob.type, upsert: true, cacheControl: '3600',
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('recipe-photos').getPublicUrl(path);
+      if (design.customBackground?.path && design.customBackground.path !== path) {
+        await supabase.storage.from('recipe-photos').remove([design.customBackground.path]).catch(() => {});
+      }
+      update({ customBackground: { url: pub.publicUrl, path }, background: 'custom' });
+    } catch (e: any) {
+      setTplError(e?.message || 'Upload failed');
+    }
+    setUploadingTpl(false);
+  }
+  async function removeTemplate() {
+    if (design.customBackground?.path) {
+      await supabase.storage.from('recipe-photos').remove([design.customBackground.path]).catch(() => {});
+    }
+    update({ customBackground: null, background: design.background === 'custom' ? 'plain' : design.background });
   }
 
   if (!menu) return null;
@@ -246,6 +330,52 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
                 </div>
               </div>
 
+              {/* Columns */}
+              <div>
+                <label style={lbl}>Columns</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {([1, 2] as const).map(n => (
+                    <button key={n} onClick={() => update({ columns: n })}
+                      style={{ flex: 1, fontSize: '12px', padding: '8px', border: '1px solid ' + ((design.columns || 1) === n ? C.gold : C.border), background: (design.columns || 1) === n ? C.gold + '14' : 'transparent', color: (design.columns || 1) === n ? C.gold : C.dim, cursor: 'pointer', borderRadius: '3px' }}>
+                      {n} column{n === 1 ? '' : 's'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Font family */}
+              <div>
+                <label style={lbl}>Font</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                  {FONT_OPTIONS.map(f => {
+                    const active = (design.fontFamily || 'serif') === f.id;
+                    return (
+                      <button key={f.id} onClick={() => update({ fontFamily: f.id })}
+                        style={{ fontSize: '12px', padding: '10px 6px', border: '1px solid ' + (active ? C.gold : C.border), background: active ? C.gold + '14' : 'transparent', color: active ? C.gold : C.dim, cursor: 'pointer', borderRadius: '3px', fontFamily: f.family }}>
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Dish row style */}
+              <div>
+                <label style={lbl}>Dish layout</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {DISH_STYLES.map(d => {
+                    const active = (design.dishStyle || 'standard') === d.id;
+                    return (
+                      <button key={d.id} onClick={() => update({ dishStyle: d.id })}
+                        style={{ flex: 1, fontSize: '11px', padding: '8px 4px', border: '1px solid ' + (active ? C.gold : C.border), background: active ? C.gold + '14' : 'transparent', color: active ? C.gold : C.dim, cursor: 'pointer', borderRadius: '3px' }}>
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Background */}
               <div>
                 <label style={lbl}>Background</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -270,6 +400,40 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Custom template upload */}
+              <div>
+                <label style={lbl}>Your own template</label>
+                {design.customBackground?.url ? (
+                  <div style={{ background: C.surface2, border: '1px solid ' + (design.background === 'custom' ? C.gold : C.border), borderRadius: '3px', padding: '8px' }}>
+                    <button onClick={() => update({ background: 'custom' })}
+                      style={{ width: '100%', height: '110px', background: '#FFFFFF', border: '0.5px solid ' + C.border, borderRadius: '2px', overflow: 'hidden', position: 'relative', cursor: 'pointer', padding: 0 }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={design.customBackground.url} alt="Custom template" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    </button>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                      <button onClick={() => tplInRef.current?.click()} disabled={uploadingTpl}
+                        style={{ flex: 1, fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '40', padding: '7px 8px', cursor: 'pointer', borderRadius: '2px' }}>
+                        {uploadingTpl ? 'Uploading…' : 'Replace'}
+                      </button>
+                      <button onClick={removeTemplate}
+                        style={{ flex: 1, fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.red, background: 'transparent', border: '1px solid ' + C.red + '40', padding: '7px 8px', cursor: 'pointer', borderRadius: '2px' }}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => tplInRef.current?.click()} disabled={uploadingTpl}
+                    style={{ width: '100%', padding: '20px 12px', background: C.surface2, border: '1px dashed ' + C.gold + '50', color: C.dim, fontSize: '12px', cursor: 'pointer', borderRadius: '3px' }}>
+                    {uploadingTpl ? 'Uploading…' : '📄 Upload your own template'}
+                    <p style={{ fontSize: '10px', color: C.faint, marginTop: '4px' }}>A4 portrait works best. The image fills the whole page — leave room for your text.</p>
+                  </button>
+                )}
+                <input ref={tplInRef} type="file" accept="image/*"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadTemplate(f); e.target.value = ''; }}
+                  style={{ display: 'none' }} />
+                {tplError && <p style={{ fontSize: '11px', color: C.red, marginTop: '4px' }}>{tplError}</p>}
               </div>
 
               <Toggle C={C} label="Show prices" value={design.showPrices} onChange={v => update({ showPrices: v })} />
@@ -301,10 +465,10 @@ export default function MenuDesigner({ menuId, onClose }: { menuId: string; onCl
               background: '#FFFFFF', color: '#1A1A18',
               width: '210mm', minHeight: '297mm',
               padding: '16mm', boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
-              fontFamily: 'Georgia, serif',
+              fontFamily: fontFor(design.fontFamily),
               position: 'relative', overflow: 'hidden',
             }}>
-              <BackgroundLayer bg={design.background} accent={design.accentColor} />
+              <BackgroundLayer bg={design.background} accent={design.accentColor} customUrl={design.customBackground?.url} />
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <MenuPreview design={design} dishes={dishes} sym={sym} fallbackLogoUrl={state.profile?.logoUrl} />
               </div>
@@ -323,15 +487,50 @@ function MenuPreview({ design, dishes, sym, fallbackLogoUrl }: {
   fallbackLogoUrl?: string;
 }) {
   const headerLogo = design.logo?.url || fallbackLogoUrl;
+  const dishStyle = design.dishStyle || 'standard';
+  const cols = design.columns || 1;
+
+  function DishRow({ d }: { d: any }) {
+    const price = design.showPrices && d.costing?.sell != null ? `${sym}${(d.costing.sell || 0).toFixed(2)}` : null;
+    const titleEl = <span style={{ fontWeight: 600, fontSize: '12pt', color: '#111' }}>{d.recipe.title}</span>;
+    const priceEl = price ? <span style={{ fontSize: '12pt', fontWeight: 600, color: design.accentColor, whiteSpace: 'nowrap' }}>{price}</span> : null;
+    return (
+      <div style={{ marginBottom: '5mm', breakInside: 'avoid' }}>
+        {dishStyle === 'stacked' ? (
+          <div>
+            {titleEl}
+            {priceEl && <div style={{ marginTop: '1mm' }}>{priceEl}</div>}
+          </div>
+        ) : dishStyle === 'leaders' && priceEl ? (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '3mm' }}>
+            {titleEl}
+            <span style={{ flex: 1, borderBottom: '0.5px dotted #999', alignSelf: 'flex-end', marginBottom: '2px' }} />
+            {priceEl}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '4mm' }}>
+            {titleEl}
+            {priceEl}
+          </div>
+        )}
+        {design.showDescriptions && d.recipe.imported?.description && (
+          <p style={{ fontSize: '9.5pt', color: '#555', lineHeight: 1.5, marginTop: '1mm', fontStyle: 'italic' }}>
+            {d.recipe.imported.description}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Header */}
+      {/* Header — always full width, sits above any multi-column body */}
       <div style={{ borderBottom: '2px solid ' + design.accentColor, paddingBottom: '12mm', marginBottom: '10mm', textAlign: 'center' }}>
         {headerLogo && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={headerLogo} alt="Logo" style={{ maxHeight: '24mm', objectFit: 'contain', marginBottom: '6mm' }} />
         )}
-        <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: '32pt', color: '#111', marginBottom: '4mm', lineHeight: 1.1 }}>
+        <h1 style={{ fontWeight: 300, fontSize: '32pt', color: '#111', marginBottom: '4mm', lineHeight: 1.1 }}>
           {design.headerText || 'Restaurant Name'}
         </h1>
         {design.subtitleText && (
@@ -341,44 +540,32 @@ function MenuPreview({ design, dishes, sym, fallbackLogoUrl }: {
         )}
       </div>
 
-      {/* Sections */}
+      {/* Body — wrapped in a CSS multi-column container when columns=2.
+          break-inside: avoid on each dish + section keeps things from being
+          chopped mid-row. */}
       {dishes.length === 0 || dishes.every(s => s.dishes.length === 0) ? (
         <p style={{ textAlign: 'center', color: '#888', fontStyle: 'italic', padding: '24mm 0' }}>
           No dishes in this menu yet — add some from the menu detail.
         </p>
-      ) : dishes.map(section => (
-        <section key={section.name || 'all'} style={{ marginBottom: '10mm' }}>
-          {section.name && (
-            <h2 style={{
-              fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: '14pt', textTransform: 'uppercase',
-              letterSpacing: '0.2em', color: design.accentColor,
-              borderBottom: '0.5px solid #DDD', paddingBottom: '2mm', marginBottom: '6mm',
-              textAlign: 'center',
-            }}>
-              {section.name}{section.dishes.length > 1 ? 's' : ''}
-            </h2>
-          )}
-          {section.dishes.map(d => (
-            <div key={d.id} style={{ marginBottom: '6mm', breakInside: 'avoid' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8mm' }}>
-                <p style={{ fontFamily: 'Georgia, serif', fontWeight: 600, fontSize: '13pt', color: '#111', flex: 1 }}>
-                  {d.recipe.title}
-                </p>
-                {design.showPrices && d.costing?.sell != null && (
-                  <p style={{ fontSize: '13pt', fontWeight: 600, color: design.accentColor, whiteSpace: 'nowrap' }}>
-                    {sym}{(d.costing.sell || 0).toFixed(2)}
-                  </p>
-                )}
-              </div>
-              {design.showDescriptions && d.recipe.imported?.description && (
-                <p style={{ fontSize: '10pt', color: '#555', lineHeight: 1.5, marginTop: '1mm', fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>
-                  {d.recipe.imported.description}
-                </p>
+      ) : (
+        <div style={{ columnCount: cols, columnGap: '14mm' }}>
+          {dishes.map(section => (
+            <section key={section.name || 'all'} style={{ marginBottom: '10mm', breakInside: 'avoid' }}>
+              {section.name && (
+                <h2 style={{
+                  fontWeight: 400, fontSize: '13pt', textTransform: 'uppercase',
+                  letterSpacing: '0.2em', color: design.accentColor,
+                  borderBottom: '0.5px solid #DDD', paddingBottom: '2mm', marginBottom: '5mm',
+                  textAlign: 'center',
+                }}>
+                  {section.name}{section.dishes.length > 1 ? 's' : ''}
+                </h2>
               )}
-            </div>
+              {section.dishes.map(d => <DishRow key={d.id} d={d} />)}
+            </section>
           ))}
-        </section>
-      ))}
+        </div>
+      )}
 
       {/* Footer */}
       {design.footerText && (
@@ -413,9 +600,17 @@ function Toggle({ C, label, value, onChange }: { C: any; label: string; value: b
 
 // Inline SVG background layer. Drawn behind the menu content (zIndex 0).
 // `mini` collapses everything down to a thumbnail-friendly viewBox.
-function BackgroundLayer({ bg, accent, mini }: { bg: Background; accent: string; mini?: boolean }) {
-  if (bg === 'plain') return null;
+// `customUrl` short-circuits with the user's uploaded template image.
+function BackgroundLayer({ bg, accent, mini, customUrl }: { bg: Background; accent: string; mini?: boolean; customUrl?: string }) {
   const inset: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 };
+
+  if (bg === 'custom' && customUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={customUrl} alt="" aria-hidden style={{ ...inset, width: '100%', height: '100%', objectFit: 'cover' }} />
+    );
+  }
+  if (bg === 'plain' || bg === 'custom') return null;
 
   if (bg === 'linen') {
     // Subtle dot pattern — prints as a barely-there texture
@@ -483,5 +678,91 @@ function BackgroundLayer({ bg, accent, mini }: { bg: Background; accent: string;
       </svg>
     );
   }
+
+  if (bg === 'marble') {
+    // Soft cream wash with veined curves — calm, restaurant-ready
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`marble-${mini ? 'm' : 'p'}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#FAF7F2" />
+            <stop offset="1" stopColor="#F0E8DC" />
+          </linearGradient>
+        </defs>
+        <rect width="210" height="297" fill={`url(#marble-${mini ? 'm' : 'p'})`} />
+        <g stroke="#B8A480" strokeWidth="0.3" fill="none" opacity="0.45" strokeLinecap="round">
+          <path d="M-10 60 Q60 50 110 80 T220 100" />
+          <path d="M-10 130 Q70 145 130 130 T220 170" />
+          <path d="M-10 220 Q80 200 140 230 T220 240" />
+        </g>
+        <g stroke="#B8A480" strokeWidth="0.15" fill="none" opacity="0.35">
+          <path d="M-10 80 Q70 75 130 90 T220 115" />
+          <path d="M-10 195 Q80 185 140 200 T220 215" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (bg === 'kraft') {
+    // Warm tan paper with a noisy fibre texture
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id={`kraft-${mini ? 'm' : 'p'}`} width={mini ? 4 : 8} height={mini ? 4 : 8} patternUnits="userSpaceOnUse">
+            <rect width={mini ? 4 : 8} height={mini ? 4 : 8} fill="#E8D9BA" />
+            <circle cx={mini ? 1 : 2}   cy={mini ? 1 : 2}   r={mini ? 0.3 : 0.6} fill="#8C7A55" opacity="0.18" />
+            <circle cx={mini ? 3 : 6}   cy={mini ? 2.5 : 5} r={mini ? 0.2 : 0.4} fill="#8C7A55" opacity="0.15" />
+            <circle cx={mini ? 2 : 4}   cy={mini ? 3.5 : 7} r={mini ? 0.25 : 0.5} fill="#8C7A55" opacity="0.12" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#kraft-${mini ? 'm' : 'p'})`} />
+      </svg>
+    );
+  }
+
+  if (bg === 'script') {
+    // Ornate corner flourishes — wedding/fine-dining feel
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="none">
+        {[ ['translate(8, 8)', false], ['translate(202, 8) scale(-1, 1)', true], ['translate(8, 289) scale(1, -1)', false], ['translate(202, 289) scale(-1, -1)', true] ].map(([t], i) => (
+          <g key={i} transform={t as string} fill="none" stroke={accent} strokeWidth="0.45" opacity="0.7" strokeLinecap="round">
+            <path d="M0 0 C8 2 14 6 18 12 C22 6 28 4 36 2" />
+            <path d="M0 0 Q4 8 12 10 Q8 18 4 22" />
+            <circle cx="18" cy="12" r="0.9" fill={accent} fillOpacity="0.7" />
+            <circle cx="12" cy="10" r="0.6" fill={accent} fillOpacity="0.7" />
+          </g>
+        ))}
+        {/* Centre top + bottom ornament */}
+        <g transform="translate(105, 12)" stroke={accent} strokeWidth="0.35" fill="none" opacity="0.6">
+          <path d="M-14 0 Q-7 -3 0 0 Q7 -3 14 0" />
+          <circle cx="0" cy="0" r="0.8" fill={accent} fillOpacity="0.8" />
+        </g>
+        <g transform="translate(105, 285)" stroke={accent} strokeWidth="0.35" fill="none" opacity="0.6">
+          <path d="M-14 0 Q-7 3 0 0 Q7 3 14 0" />
+          <circle cx="0" cy="0" r="0.8" fill={accent} fillOpacity="0.8" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (bg === 'modern') {
+    // Thin geometric border + side accent — clean, contemporary
+    return (
+      <svg style={inset} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297" preserveAspectRatio="none">
+        <rect x="6" y="6" width="198" height="285" stroke={accent} strokeWidth="0.4" fill="none" opacity="0.85" />
+        <rect x="9" y="9" width="192" height="279" stroke={accent} strokeWidth="0.15" fill="none" opacity="0.45" />
+        {/* Side accent stripe */}
+        <rect x="0" y="0" width="3" height="297" fill={accent} opacity="0.85" />
+        {/* Corner ticks */}
+        {[[6,6],[204,6],[6,291],[204,291]].map(([cx, cy], i) => (
+          <g key={i} stroke={accent} strokeWidth="0.5" fill="none" opacity="0.9">
+            <line x1={cx - 2} y1={cy} x2={cx + 2} y2={cy} />
+            <line x1={cx} y1={cy - 2} x2={cx} y2={cy + 2} />
+          </g>
+        ))}
+      </svg>
+    );
+  }
+
   return null;
 }
