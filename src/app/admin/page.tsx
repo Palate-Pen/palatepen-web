@@ -1170,11 +1170,22 @@ const FEATURE_FLAGS_DEF = [
   { key: 'menuBuilder',      label: 'Menu builder',         desc: 'Menus tab + designer + engineering' },
 ];
 
+// Default funny holding-page message — used when the admin hasn't customised it
+const DEFAULT_MAINTENANCE_MSG = "Just stepped out for a smoke. Be right back — your data is fine, the chef just needed a minute.";
+
 function Platform() {
   const [settings, setSettings] = useState<any>(null);
   const [err, setErr] = useState('');
   const [saving, setSaving] = useState(false);
   const [annDraft, setAnnDraft] = useState({ active: false, text: '', level: 'info', dismissible: true });
+  // Maintenance mode — password-confirmed before flip. `pendingAction` tracks
+  // which way we're going through the modal: 'on' = about to activate,
+  // 'off' = about to deactivate. Both require password re-entry to avoid
+  // an accidental click taking the site down (or putting it up too early).
+  const [maintDraft, setMaintDraft] = useState({ active: false, message: '' });
+  const [pendingMaint, setPendingMaint] = useState<'on' | 'off' | null>(null);
+  const [confirmPw, setConfirmPw] = useState('');
+  const [confirmErr, setConfirmErr] = useState('');
 
   async function load() {
     setErr('');
@@ -1189,6 +1200,10 @@ function Platform() {
         text: s.announcement?.text || '',
         level: s.announcement?.level || 'info',
         dismissible: s.announcement?.dismissible !== false,
+      });
+      setMaintDraft({
+        active: !!s.maintenance?.active,
+        message: s.maintenance?.message || '',
       });
     } catch (e: any) { setErr(e?.message || 'network error'); }
   }
@@ -1226,10 +1241,58 @@ function Platform() {
   const annLevelColor = annDraft.level === 'critical' ? C.red : annDraft.level === 'warning' ? C.amber : C.blue;
   const annLevelSoft = annDraft.level === 'critical' ? C.redSoft : annDraft.level === 'warning' ? C.amberSoft : C.blueSoft;
 
+  function attemptConfirm() {
+    if (confirmPw !== ADMIN_PASSWORD) {
+      setConfirmErr('Wrong password');
+      return;
+    }
+    const wantActive = pendingMaint === 'on';
+    patch({ maintenance: { active: wantActive, message: maintDraft.message.trim() || DEFAULT_MAINTENANCE_MSG } });
+    setPendingMaint(null);
+    setConfirmPw('');
+    setConfirmErr('');
+  }
+
   return (
     <div>
       <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, marginBottom: 6 }}>Platform</h1>
       <p style={{ fontSize: 12, color: C.faint, marginBottom: 18 }}>Founder-only controls. Changes propagate within ~60 seconds via CDN.</p>
+
+      {/* Maintenance mode — red card so it's visually distinct from the
+          softer feature flags / announcement cards below. Requires a
+          password re-entry before flipping in either direction. */}
+      <div style={{ background: C.panel, border: `1px solid ${maintDraft.active ? C.red : C.border}`, borderLeft: `3px solid ${maintDraft.active ? C.red : C.amber}`, borderRadius: 6, padding: 18, marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: maintDraft.active ? C.red : C.amber, marginBottom: 4 }}>
+              {maintDraft.active ? '● Maintenance mode active' : 'Maintenance mode'}
+            </p>
+            <p style={{ fontSize: 12, color: C.dim, marginBottom: 10 }}>
+              Takes the entire <code style={{ fontFamily: 'monospace' }}>/app</code> down for users and shows a holding page. Their data is untouched — Postgres keeps running, this is purely a render-time gate. Admin and public menus stay reachable.
+            </p>
+            <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, display: 'block', marginBottom: 6 }}>Holding-page message</label>
+            <textarea value={maintDraft.message} onChange={e => setMaintDraft({ ...maintDraft, message: e.target.value })}
+              placeholder={DEFAULT_MAINTENANCE_MSG}
+              rows={2}
+              style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 4, fontFamily: FONT, boxSizing: 'border-box', resize: 'vertical' }} />
+            <p style={{ fontSize: 10, color: C.faint, marginTop: 4 }}>Make it funny — chefs forgive funny. Leave blank to use the default.</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', minWidth: 180 }}>
+            {maintDraft.active ? (
+              <button onClick={() => { setPendingMaint('off'); setConfirmPw(''); setConfirmErr(''); }}
+                style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#fff', background: C.green, border: 'none', padding: '10px 16px', cursor: 'pointer', borderRadius: 3, whiteSpace: 'nowrap' }}>
+                Bring site back up
+              </button>
+            ) : (
+              <button onClick={() => { setPendingMaint('on'); setConfirmPw(''); setConfirmErr(''); }}
+                style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#fff', background: C.red, border: 'none', padding: '10px 16px', cursor: 'pointer', borderRadius: 3, whiteSpace: 'nowrap' }}>
+                Activate maintenance
+              </button>
+            )}
+            <p style={{ fontSize: 10, color: C.faint, textAlign: 'right' }}>Password re-entry required</p>
+          </div>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {/* Feature flags */}
@@ -1307,6 +1370,40 @@ function Platform() {
           )}
         </Card>
       </div>
+
+      {/* Password re-confirm modal — second gate before flipping maintenance */}
+      {pendingMaint && (
+        <div onClick={() => { setPendingMaint(null); setConfirmPw(''); setConfirmErr(''); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.panel, border: `1px solid ${pendingMaint === 'on' ? C.red : C.green}40`, borderTop: `3px solid ${pendingMaint === 'on' ? C.red : C.green}`, borderRadius: 6, width: '100%', maxWidth: 420, padding: 24 }}>
+            <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: C.text, marginBottom: 6 }}>
+              {pendingMaint === 'on' ? 'Take the site down?' : 'Bring the site back up?'}
+            </p>
+            <p style={{ fontSize: 12, color: C.dim, marginBottom: 16, lineHeight: 1.6 }}>
+              {pendingMaint === 'on'
+                ? 'Every user currently using the app will see the holding page on their next request. Re-enter your admin password to confirm.'
+                : 'The holding page goes away and users can use the app normally again. Re-enter your password to confirm.'}
+            </p>
+            <input type="password" value={confirmPw} autoFocus
+              onChange={e => { setConfirmPw(e.target.value); setConfirmErr(''); }}
+              onKeyDown={e => { if (e.key === 'Enter') attemptConfirm(); }}
+              placeholder="Admin password"
+              style={{ width: '100%', background: C.bg, border: `1px solid ${confirmErr ? C.red : C.border}`, color: C.text, fontSize: 14, padding: '10px 14px', outline: 'none', borderRadius: 4, fontFamily: FONT, boxSizing: 'border-box', marginBottom: 8 }} />
+            {confirmErr && <p style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>⚠ {confirmErr}</p>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setPendingMaint(null); setConfirmPw(''); setConfirmErr(''); }}
+                style={{ background: 'transparent', color: C.dim, border: `1px solid ${C.border}`, padding: '9px 16px', fontSize: 12, cursor: 'pointer', borderRadius: 3 }}>
+                Cancel
+              </button>
+              <button onClick={attemptConfirm} disabled={!confirmPw || saving}
+                style={{ background: pendingMaint === 'on' ? C.red : C.green, color: '#fff', border: 'none', padding: '9px 18px', fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', cursor: (!confirmPw || saving) ? 'not-allowed' : 'pointer', borderRadius: 3, opacity: (!confirmPw || saving) ? 0.5 : 1 }}>
+                {saving ? 'Working…' : pendingMaint === 'on' ? 'Take site down' : 'Bring site back'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

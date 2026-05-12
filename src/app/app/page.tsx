@@ -26,6 +26,7 @@ import MyTeamView from './components/MyTeamView';
 import UpgradeModal from './components/UpgradeModal';
 import QuickStartGuide from './components/QuickStartGuide';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import MaintenanceGate from './components/MaintenanceGate';
 
 export default function App() {
   const { user, loading, currentAccount, currentRole } = useAuth();
@@ -164,6 +165,7 @@ export default function App() {
   ];
 
   return (
+    <MaintenanceGate>
     <div id="palatable-app-root" style={{ minHeight: '100vh', background: C.bg, display: 'flex', fontFamily: 'system-ui,sans-serif' }}>
       {!isMobile && (
         <Sidebar tab={tab} setTab={setTab} onUpgrade={() => setShowUpgrade(true)} collapsed={sidebarCollapsed} setCollapsed={toggleSidebar} />
@@ -227,6 +229,7 @@ export default function App() {
       onDismissForever={() => actions.updProfile({ tutorialDismissed: true })}
     />
     </div>
+    </MaintenanceGate>
   );
 }
 

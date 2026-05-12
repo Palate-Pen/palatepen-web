@@ -22,14 +22,22 @@ export async function GET() {
     return NextResponse.json({
       featureFlags: value.featureFlags || {},
       announcement: value.announcement || { active: false },
+      maintenance: value.maintenance || { active: false },
     }, {
-      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' },
+      // Short cache for maintenance — chefs hitting refresh should see the
+      // gate within a few seconds of activation. 15s s-maxage feels right:
+      // not so fast every page load hammers the DB, not so slow that flipping
+      // the switch takes a minute to land.
+      headers: { 'Cache-Control': 's-maxage=15, stale-while-revalidate=60' },
     });
   } catch {
     // Don't break the app on a settings fetch failure — return permissive defaults
+    // (and crucially `maintenance.active: false`, so a config blip never locks
+    // every user out)
     return NextResponse.json({
       featureFlags: {},
       announcement: { active: false },
+      maintenance: { active: false },
     });
   }
 }
