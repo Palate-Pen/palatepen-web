@@ -294,6 +294,14 @@ export default function RecipesView() {
     return () => clearTimeout(t);
   }, [editMode, editTitle, editCat, editNotes, editIngredients]);
 
+  // Keep `sel` in lockstep with state.recipes — any updRecipe() dispatch reflects instantly
+  // in the recipe-detail UI without needing to re-open the recipe.
+  useEffect(() => {
+    if (!sel) return;
+    const fresh = state.recipes.find((r: any) => r.id === sel.id);
+    if (fresh && fresh !== sel) setSel(fresh);
+  }, [state.recipes]);
+
   function resetAddForm() {
     setShowAdd(false);
     setNewTitle(''); setNewCat('Main'); setNewNotes('');
@@ -925,20 +933,65 @@ export default function RecipesView() {
           </div>
         )}
 
-        {/* Allergens (computed from bank via linked costing) + Nutrition + May Contain */}
+        {/* Allergens — unified per-allergen tri-state (None / May / Contains).
+            Bank-matched ingredients lock the Contains state; user can add manual
+            overrides for allergens the Bank didn't flag (e.g. recipe with no costing). */}
         {(() => {
           const linked = getLinkedCosting(sel);
           const computed = computeFromBank(linked, state.ingredientsBank || []);
-          const portions = parseFloat(linked?.portions) || 1;
-          const containsArr = Array.from(computed.contains);
-          const nutTypesArr = Array.from(computed.nutTypes);
-          const glutenTypesArr = Array.from(computed.glutenTypes);
+
+          // Which ingredient(s) caused each allergen — for the "From Bank: x" caption
+          const sources: Record<string, string[]> = {};
+          if (linked?.ingredients) {
+            for (const ing of linked.ingredients) {
+              const bankItem = (state.ingredientsBank || []).find((b: any) =>
+                (b.name||'').toLowerCase().trim() === (ing.name||'').toLowerCase().trim());
+              if (!bankItem) continue;
+              for (const k of (bankItem.allergens?.contains || [])) {
+                if (!sources[k]) sources[k] = [];
+                if (!sources[k].includes(ing.name)) sources[k].push(ing.name);
+              }
+            }
+          }
+
+          const userContains: string[] = sel.allergens?.contains || [];
+          const userMay: string[] = sel.allergens?.mayContain || [];
+          const userNuts: string[] = sel.allergens?.nutTypes || [];
+          const userGlutens: string[] = sel.allergens?.glutenTypes || [];
+          const locked = !!sel.locked;
+
+          function setAllergenState(key: string, target: 'none' | 'may' | 'contains') {
+            const cur = sel.allergens || {};
+            const nextContains = (cur.contains || []).filter((k: string) => k !== key);
+            const nextMay = (cur.mayContain || []).filter((k: string) => k !== key);
+            if (target === 'may') nextMay.push(key);
+            if (target === 'contains') nextContains.push(key);
+            // If we're moving away from contains for nuts/gluten, clean stray sub-types too
+            let nutTypes = cur.nutTypes || [];
+            let glutenTypes = cur.glutenTypes || [];
+            if (key === 'nuts' && target !== 'contains') nutTypes = [];
+            if (key === 'gluten' && target !== 'contains') glutenTypes = [];
+            const next = { ...cur, contains: nextContains, mayContain: nextMay, nutTypes, glutenTypes };
+            actions.updRecipe(sel.id, { allergens: next });
+            setSel((prev: any) => prev ? { ...prev, allergens: next } : prev);
+          }
+          function toggleSubtype(field: 'nutTypes' | 'glutenTypes', type: string) {
+            const cur = sel.allergens || {};
+            const list = (cur[field] || []) as string[];
+            const next = list.includes(type) ? list.filter(t => t !== type) : [...list, type];
+            const allergens = { ...cur, [field]: next };
+            actions.updRecipe(sel.id, { allergens });
+            setSel((prev: any) => prev ? { ...prev, allergens } : prev);
+          }
 
           return (
             <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Allergens — Contains <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(computed from Bank)</span></p>
-                <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint }}>Allergens — UK FIR 14</p>
+                  <p style={{ fontSize: '11px', color: C.faint, marginTop: '3px' }}>Pick a state for each. Bank-matched ingredients lock Contains automatically — change the Bank entry to override.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                   <button onClick={() => setShowSpec(true)}
                     style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: 'transparent', border: '1px solid ' + C.gold + '40', padding: '5px 10px', cursor: 'pointer', borderRadius: '2px' }}>
                     Spec Sheet
@@ -950,67 +1003,131 @@ export default function RecipesView() {
                 </div>
               </div>
 
-              {!linked ? (
-                <p style={{ fontSize: '12px', color: C.faint, padding: '12px', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', marginBottom: '14px' }}>
-                  Link a costing above to compute allergens and nutrition from the ingredients.
+              {!linked && (
+                <p style={{ fontSize: '11px', color: C.faint, padding: '8px 12px', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', marginBottom: '12px' }}>
+                  No costing linked — Bank auto-detection is inactive. You can still set states manually below.
                 </p>
-              ) : computed.matched === 0 ? (
-                <p style={{ fontSize: '12px', color: C.faint, padding: '12px', background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', marginBottom: '14px' }}>
-                  None of the {linked.ingredients?.length || 0} costing ingredients match a Bank entry. Add them to the Bank tab to see allergens here.
+              )}
+              {linked && computed.unmatched.length > 0 && (
+                <p style={{ fontSize: '11px', color: C.gold, padding: '8px 12px', background: C.gold + '0F', border: '0.5px solid ' + C.gold + '40', borderRadius: '3px', marginBottom: '12px' }}>
+                  ⚠ {computed.unmatched.length} ingredient{computed.unmatched.length === 1 ? '' : 's'} not in Bank — auto-detection may miss allergens for: {computed.unmatched.slice(0, 5).join(', ')}{computed.unmatched.length > 5 ? '…' : ''}
                 </p>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                    {containsArr.length === 0 && <span style={{ fontSize: '12px', color: C.faint }}>No allergens in any of the {computed.matched} matched ingredients.</span>}
-                    {containsArr.map(k => {
-                      const a = ALLERGENS.find(x => x.key === k);
-                      return a && (
-                        <span key={k} title="Computed from linked costing — edit Bank entries to change"
-                          style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + C.red, color: C.red, background: C.red + '12', borderRadius: '2px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ fontSize: '11px', lineHeight: 1 }}>✓</span>{a.label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  {nutTypesArr.length > 0 && (
-                    <div style={{ marginBottom: '10px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
-                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '4px' }}>Tree nuts: <span style={{ color: C.text, fontWeight: 400 }}>{nutTypesArr.join(', ')}</span></p>
-                    </div>
-                  )}
-                  {glutenTypesArr.length > 0 && (
-                    <div style={{ marginBottom: '10px', paddingLeft: '12px', borderLeft: '2px solid ' + C.red + '40' }}>
-                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '4px' }}>Cereals: <span style={{ color: C.text, fontWeight: 400 }}>{glutenTypesArr.join(', ')}</span></p>
-                    </div>
-                  )}
-                  {computed.unmatched.length > 0 && (
-                    <p style={{ fontSize: '11px', color: C.gold, marginBottom: '14px' }}>
-                      ⚠ {computed.unmatched.length} ingredient{computed.unmatched.length === 1 ? '' : 's'} not in Bank — allergens may be incomplete: {computed.unmatched.slice(0, 5).join(', ')}{computed.unmatched.length > 5 ? '…' : ''}
-                    </p>
-                  )}
-                </>
               )}
 
-              <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '8px', marginTop: '16px' }}>May Contain — Cross-contamination warning <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal' }}>(per-recipe)</span></p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {/* 14 allergen rows in a 2-col grid (1-col on mobile) */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '6px' }}>
                 {ALLERGENS.map(a => {
-                  const may = (sel.allergens?.mayContain || []).includes(a.key);
-                  const computedHas = computed.contains.has(a.key);
-                  const disabled = computedHas || !!sel.locked;
-                  return (
-                    <button key={a.key} disabled={disabled}
-                      title={sel.locked ? 'Recipe is locked' : (computedHas ? 'Already in computed Contains list' : '')}
-                      onClick={() => {
-                        const cur = (sel.allergens?.mayContain || []) as string[];
-                        const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
-                        actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), mayContain: next } });
-                      }}
-                      style={{ fontSize: '11px', padding: '5px 10px', border: (may ? '1px solid ' + C.gold : '1px dashed ' + C.border), color: may ? C.gold : (disabled ? C.faint : C.dim), background: may ? C.gold + '12' : 'transparent', cursor: disabled ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: disabled ? 0.4 : 1, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      {may && <span style={{ fontSize: '11px', lineHeight: 1 }}>✓</span>}
-                      {a.label}
+                  const fromBank = computed.contains.has(a.key);
+                  const isContains = fromBank || userContains.includes(a.key);
+                  const isMay = !isContains && userMay.includes(a.key);
+                  const isNone = !isContains && !isMay;
+                  const bankLocked = fromBank;
+                  const rowDisabled = locked || bankLocked;
+
+                  const seg = (label: string, active: boolean, target: 'none'|'may'|'contains', color: string) => (
+                    <button
+                      key={target}
+                      onClick={() => !rowDisabled && setAllergenState(a.key, target)}
+                      disabled={rowDisabled}
+                      title={bankLocked ? 'Bank-sourced — change the Bank entry to override' : (locked ? 'Recipe is locked' : '')}
+                      style={{
+                        fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase',
+                        padding: '5px 8px', minWidth: '56px',
+                        border: active ? '1px solid ' + color : '1px solid ' + C.border,
+                        color: active ? color : C.faint,
+                        background: active ? color + '14' : 'transparent',
+                        cursor: rowDisabled ? 'not-allowed' : 'pointer',
+                        opacity: rowDisabled && !active ? 0.45 : 1,
+                        borderRadius: 0,
+                      }}>
+                      {label}
                     </button>
+                  );
+
+                  const borderCol = isContains ? C.red + '60' : isMay ? C.gold + '60' : C.border;
+                  const bgCol = isContains ? C.red + '0C' : isMay ? C.gold + '0C' : C.surface2;
+
+                  return (
+                    <div key={a.key} style={{
+                      display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 10px',
+                      background: bgCol,
+                      border: '0.5px solid ' + borderCol,
+                      borderRadius: '3px',
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: isContains ? C.red : C.faint, background: C.surface, border: '0.5px solid ' + (isContains ? C.red + '40' : C.border), padding: '1px 5px', borderRadius: '2px', flexShrink: 0, letterSpacing: '0.5px' }}>{a.short}</span>
+                          <span style={{ fontSize: '13px', color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.label}</span>
+                        </div>
+                        {fromBank && sources[a.key]?.length > 0 && (
+                          <p style={{ fontSize: '10px', color: C.red, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={`From Bank: ${sources[a.key].join(', ')}`}>
+                            From Bank: {sources[a.key].slice(0, 2).join(', ')}{sources[a.key].length > 2 ? ` +${sources[a.key].length - 2}` : ''}
+                          </p>
+                        )}
+                        {!fromBank && isContains && (
+                          <p style={{ fontSize: '10px', color: C.red, marginTop: '2px' }}>Manual override</p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexShrink: 0, borderRadius: '2px', overflow: 'hidden' }}>
+                        {seg('None', isNone, 'none', C.dim)}
+                        {seg('May', isMay, 'may', C.gold)}
+                        {seg('Contains', isContains, 'contains', C.red)}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
+
+              {/* Tree-nut sub-types — when contains nuts (bank or user) */}
+              {(computed.contains.has('nuts') || userContains.includes('nuts')) && (
+                <div style={{ marginTop: '12px', padding: '10px 12px', background: C.red + '08', border: '0.5px solid ' + C.red + '40', borderRadius: '3px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '6px' }}>
+                    Tree nuts — name the specific nut <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal', color: C.faint }}>(UK FIR 2014)</span>
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {NUT_TYPES.map(t => {
+                      const fromBank = computed.nutTypes.has(t);
+                      const userOn = userNuts.includes(t);
+                      const on = fromBank || userOn;
+                      const subLocked = locked || fromBank;
+                      return (
+                        <button key={t} disabled={subLocked}
+                          title={fromBank ? 'From Bank — change the Bank entry to override' : (locked ? 'Recipe is locked' : '')}
+                          onClick={() => !subLocked && toggleSubtype('nutTypes', t)}
+                          style={{ fontSize: '11px', padding: '4px 9px', border: '1px solid ' + (on ? C.red : C.border), color: on ? C.red : C.dim, background: on ? C.red + '14' : 'transparent', cursor: subLocked ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: on ? 700 : 400, opacity: subLocked && !on ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {on && <span style={{ fontSize: '11px', lineHeight: 1 }}>✓</span>}{t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Gluten cereal sub-types — when contains gluten */}
+              {(computed.contains.has('gluten') || userContains.includes('gluten')) && (
+                <div style={{ marginTop: '8px', padding: '10px 12px', background: C.red + '08', border: '0.5px solid ' + C.red + '40', borderRadius: '3px' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.red, marginBottom: '6px' }}>
+                    Gluten cereal — name the specific cereal <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 'normal', color: C.faint }}>(UK FIR 2014)</span>
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {GLUTEN_TYPES.map(t => {
+                      const fromBank = computed.glutenTypes.has(t);
+                      const userOn = userGlutens.includes(t);
+                      const on = fromBank || userOn;
+                      const subLocked = locked || fromBank;
+                      return (
+                        <button key={t} disabled={subLocked}
+                          title={fromBank ? 'From Bank — change the Bank entry to override' : (locked ? 'Recipe is locked' : '')}
+                          onClick={() => !subLocked && toggleSubtype('glutenTypes', t)}
+                          style={{ fontSize: '11px', padding: '4px 9px', border: '1px solid ' + (on ? C.red : C.border), color: on ? C.red : C.dim, background: on ? C.red + '14' : 'transparent', cursor: subLocked ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: on ? 700 : 400, opacity: subLocked && !on ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {on && <span style={{ fontSize: '11px', lineHeight: 1 }}>✓</span>}{t}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -1148,10 +1265,20 @@ export default function RecipesView() {
           const importedCount = sel.imported?.ingredients?.length || 0;
           const linkedCount = linked?.ingredients?.length || 0;
           const ingTotal = Math.max(importedCount, linkedCount);
-          const contains = Array.from(computed.contains);
+          // Effective contains = bank-computed ∪ user-manual override
+          const contains = Array.from(new Set<string>([
+            ...Array.from(computed.contains),
+            ...(sel.allergens?.contains || []),
+          ]));
           const mayContain = sel.allergens?.mayContain || [];
-          const nutTypes = Array.from(computed.nutTypes);
-          const glutenTypes = Array.from(computed.glutenTypes);
+          const nutTypes = Array.from(new Set<string>([
+            ...Array.from(computed.nutTypes),
+            ...(sel.allergens?.nutTypes || []),
+          ]));
+          const glutenTypes = Array.from(new Set<string>([
+            ...Array.from(computed.glutenTypes),
+            ...(sel.allergens?.glutenTypes || []),
+          ]));
 
           type Status = 'pass' | 'warn' | 'fail';
           const checks: { label: string; status: Status; detail: string; source: string }[] = [
@@ -1262,9 +1389,19 @@ export default function RecipesView() {
           const linked = getLinkedCosting(sel);
           const computed = computeFromBank(linked, state.ingredientsBank || []);
           const portions = parseFloat(linked?.portions) || 1;
-          const containsArr = Array.from(computed.contains);
-          const nutTypesArr = Array.from(computed.nutTypes);
-          const glutenTypesArr = Array.from(computed.glutenTypes);
+          // Effective Contains / sub-types = bank ∪ user-manual override
+          const containsArr = Array.from(new Set<string>([
+            ...Array.from(computed.contains),
+            ...(sel.allergens?.contains || []),
+          ]));
+          const nutTypesArr = Array.from(new Set<string>([
+            ...Array.from(computed.nutTypes),
+            ...(sel.allergens?.nutTypes || []),
+          ]));
+          const glutenTypesArr = Array.from(new Set<string>([
+            ...Array.from(computed.glutenTypes),
+            ...(sel.allergens?.glutenTypes || []),
+          ]));
           const mayContain = sel.allergens?.mayContain || [];
           const dishGrams = computed.nutritionCoverage;
           const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -1498,6 +1635,12 @@ export default function RecipesView() {
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(280px,1fr))', gap: '8px' }}>
           {filtered.map((r: any) => {
             const costing = getLinkedCosting(r);
+            // Card chips reflect the same effective Contains list as the detail view
+            const cardComputed = computeFromBank(costing, state.ingredientsBank || []);
+            const cardContains = Array.from(new Set<string>([
+              ...Array.from(cardComputed.contains),
+              ...(r.allergens?.contains || []),
+            ]));
             return (
               <button key={r.id} onClick={() => { setSel(r); setEditMode(false); setAssigningCosting(false); }}
                 style={{ textAlign: 'left', background: C.surface, border: '1px solid ' + C.border, borderRadius: '4px', padding: 0, cursor: 'pointer', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -1524,7 +1667,7 @@ export default function RecipesView() {
                   )}
                   {r.imported && <span style={{ fontSize: '10px', color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '2px 8px', borderRadius: '2px' }}>Imported</span>}
                   {(r.linkedNoteIds||[]).length > 0 && <span style={{ fontSize: '10px', color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '2px 8px', borderRadius: '2px' }}>{r.linkedNoteIds.length} note{r.linkedNoteIds.length > 1 ? 's' : ''}</span>}
-                  {(r.allergens?.contains || []).map((k: string) => {
+                  {cardContains.map((k: string) => {
                     const a = ALLERGENS.find(x => x.key === k);
                     if (!a) return null;
                     return <span key={k} title={`Contains ${a.label}`} style={{ fontSize: '9px', fontWeight: 700, color: C.red, background: C.red + '12', border: '0.5px solid ' + C.red + '30', padding: '2px 6px', borderRadius: '2px' }}>{a.short}</span>;
