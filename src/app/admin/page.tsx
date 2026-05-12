@@ -420,6 +420,48 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
       .then(r => r.json()).then(setHealth).catch(() => {});
   }, []);
 
+  // Orphan action state — track which row is busy + which is awaiting delete confirm
+  const [orphanBusy, setOrphanBusy] = useState<string | null>(null);
+  const [orphanConfirm, setOrphanConfirm] = useState<string | null>(null);
+  const [orphanError, setOrphanError] = useState('');
+
+  async function initOrphan(o: any) {
+    setOrphanBusy(o.id);
+    setOrphanError('');
+    try {
+      const name = o.user_metadata?.name || (o.email ? o.email.split('@')[0] : '');
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: o.id, name, email: o.email }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'initialize failed');
+      onRefresh();
+    } catch (e: any) {
+      setOrphanError(`${o.email}: ${e?.message || 'failed'}`);
+    }
+    setOrphanBusy(null);
+  }
+
+  async function hardDeleteOrphan(o: any) {
+    setOrphanBusy(o.id);
+    setOrphanError('');
+    try {
+      const res = await fetch(`/api/admin/auth-users/${o.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || 'delete failed');
+      setOrphanConfirm(null);
+      onRefresh();
+    } catch (e: any) {
+      setOrphanError(`${o.email}: ${e?.message || 'failed'}`);
+    }
+    setOrphanBusy(null);
+  }
+
   const healthRows: { id: string; label: string; status: 'green' | 'amber' | 'red'; detail: string }[] = [
     { id: 'vercel',    label: 'Vercel deploy',   status: 'green' as const, detail: 'site live' },
     { id: 'db',        label: 'Supabase DB',     status: (health?.db?.status as any) || 'amber', detail: health?.db?.detail || '…' },
@@ -503,6 +545,68 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
         )}
       </div>
 
+      {/* Orphaned auth users — auth.users rows without a matching user_data row.
+          Inline actions: Initialise (creates user_data + lets them sign in
+          normally) or Delete fully (hard-removes the auth row too). */}
+      {orphans.length > 0 && (
+        <div style={{ background: C.panel, border: `1px solid ${C.amber}60`, borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: 18, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.amber }}>⚠ {orphans.length} orphaned auth user{orphans.length === 1 ? '' : 's'}</p>
+              <p style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>Auth row exists but no user_data — usually the signup trigger failed at registration. Initialise to seed the missing row, or remove fully if the account shouldn't exist.</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {orphans.map((o: any) => {
+              const busy = orphanBusy === o.id;
+              const awaiting = orphanConfirm === o.id;
+              return (
+                <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                  <Avatar name={o.email || ''} size={32} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, color: C.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.email}</p>
+                    <p style={{ fontSize: 11, color: C.faint }}>
+                      Joined {fmtRel(o.created_at)}
+                      {o.last_sign_in_at ? ` · last sign-in ${fmtRel(o.last_sign_in_at)}` : ' · never signed in'}
+                      {o.email_confirmed_at ? ' · confirmed' : ' · unconfirmed'}
+                    </p>
+                  </div>
+                  {awaiting ? (
+                    <>
+                      <span style={{ fontSize: 11, color: C.red, fontWeight: 600 }}>Delete permanently?</span>
+                      <button onClick={() => hardDeleteOrphan(o)} disabled={busy}
+                        style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: '#fff', background: C.red, border: 'none', padding: '7px 12px', cursor: busy ? 'wait' : 'pointer', borderRadius: 3 }}>
+                        {busy ? '…' : 'Confirm'}
+                      </button>
+                      <button onClick={() => setOrphanConfirm(null)} disabled={busy}
+                        style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: C.dim, background: 'transparent', border: `1px solid ${C.border}`, padding: '7px 10px', cursor: busy ? 'wait' : 'pointer', borderRadius: 3 }}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => initOrphan(o)} disabled={busy}
+                        title="Create the missing user_data row so they can sign in normally"
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: C.green, background: C.greenSoft, border: `1px solid ${C.green}40`, padding: '7px 12px', cursor: busy ? 'wait' : 'pointer', borderRadius: 3 }}>
+                        {busy ? '…' : <><Icon name="check" size={12} /> Initialise</>}
+                      </button>
+                      <button onClick={() => setOrphanConfirm(o.id)} disabled={busy}
+                        title="Permanently delete the auth user — they will not be able to sign in"
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: C.red, background: 'transparent', border: `1px solid ${C.red}40`, padding: '7px 12px', cursor: busy ? 'wait' : 'pointer', borderRadius: 3 }}>
+                        <Icon name="trash" size={12} /> Delete fully
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {orphanError && (
+            <p style={{ fontSize: 11, color: C.red, marginTop: 10, padding: '8px 10px', background: C.redSoft, border: `1px solid ${C.red}40`, borderRadius: 3 }}>⚠ {orphanError}</p>
+          )}
+        </div>
+      )}
+
       {/* Two-column: recent signups + needs attention */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Card title="Recent signups">
@@ -528,15 +632,11 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Card title="Needs attention">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {orphans.length === 0 && churnRisk.length === 0 && compExpiring.length === 0 && (
+              {churnRisk.length === 0 && compExpiring.length === 0 && (
                 <p style={{ fontSize: 12, color: C.faint, fontStyle: 'italic' }}>Nothing flagged · all clear</p>
               )}
-              {orphans.length > 0 && (
-                <div style={{ padding: '10px 12px', background: C.amberSoft, border: `1px solid ${C.amber}40`, borderRadius: 4 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: C.amber, marginBottom: 4 }}>⚠ {orphans.length} orphaned auth user{orphans.length === 1 ? '' : 's'}</p>
-                  <p style={{ fontSize: 11, color: C.dim }}>Auth account exists but no user_data row was created. Initialise from the Users section.</p>
-                </div>
-              )}
+              {/* Orphans flag intentionally omitted here — they get their own
+                  dedicated panel above with inline Initialise / Delete actions. */}
               {churnRisk.length > 0 && (
                 <div style={{ padding: '10px 12px', background: C.redSoft, border: `1px solid ${C.red}40`, borderRadius: 4 }}>
                   <p style={{ fontSize: 12, fontWeight: 600, color: C.red, marginBottom: 4 }}>⚠ {churnRisk.length} paid user{churnRisk.length === 1 ? '' : 's'} inactive 14+ days</p>
