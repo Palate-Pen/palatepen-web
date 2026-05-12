@@ -1523,20 +1523,10 @@ export default function RecipesView() {
           </div>
         )}
 
-        {/* Ingredients */}
-        {!editMode && sel.imported?.ingredients?.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '12px' }}>Ingredients</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              {sel.imported.ingredients.map((ing: string, i: number) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'start', gap: '10px', padding: '8px 12px', background: C.surface2, border: '0.5px solid ' + C.border, borderRadius: '3px' }}>
-                  <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: C.gold, flexShrink: 0, marginTop: '5px' }}></div>
-                  <span style={{ fontSize: '13px', color: C.text }}>{ing}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Ingredients live in the linked costing — see the Costing panel above.
+            The legacy `imported.ingredients` strings are kept on the recipe
+            record (for the print, recipe book, and as a fallback when no
+            costing is linked) but no longer rendered as a separate section. */}
 
         {/* Method */}
         {!editMode && sel.imported?.method?.length > 0 && (
