@@ -8,6 +8,7 @@ import{usePerms}from'@/lib/perms';
 import{useIsMobile}from'@/lib/useIsMobile';
 import{exportRecipesCsv,exportCostingsCsv,exportStockCsv,downloadRecipesTemplate,downloadCostingsTemplate,downloadStockTemplate,parseCsv,rowsToObjects,readFileAsText,rowsToRecipes,rowsToCostings,rowsToStock}from'@/lib/csv';
 import{supabase}from'@/lib/supabase';
+import{generateApiKey,maskApiKey}from'@/lib/apiKey';
 
 export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>void;onShowGuide?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -29,6 +30,31 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const[logoError,setLogoError]=useState('');
   const[importPreview,setImportPreview]=useState<null|{kind:'recipes'|'costings'|'stock';rows:any[];fileName:string}>(null);
   const[importError,setImportError]=useState('');
+  // API key state — derived from profile.apiKey, with a UI-only "show plaintext" flag
+  const[showApiKey,setShowApiKey]=useState(false);
+  const[apiKeyCopied,setApiKeyCopied]=useState(false);
+  const[showApiDocs,setShowApiDocs]=useState(false);
+  const apiKey:string=profile.apiKey||'';
+  const apiEligible=tier==='kitchen'||tier==='group';
+  function createApiKey(){
+    if(!apiEligible) return;
+    const k=generateApiKey();
+    actions.updProfile({apiKey:k});
+    setShowApiKey(true);
+  }
+  function revokeApiKey(){
+    actions.updProfile({apiKey:null});
+    setShowApiKey(false);
+    setApiKeyCopied(false);
+  }
+  function copyApiKey(){
+    if(!apiKey) return;
+    try{
+      navigator.clipboard?.writeText(apiKey);
+      setApiKeyCopied(true);
+      setTimeout(()=>setApiKeyCopied(false),1500);
+    }catch{}
+  }
   const mountedRef=useRef(false);
 
   async function pickImport(kind: 'recipes' | 'costings' | 'stock', file: File) {
@@ -261,6 +287,85 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
             <li style={{fontSize:'12px',color:C.dim,lineHeight:1.5}}><span style={{color:C.gold,marginRight:'6px'}}>•</span>Reports has per-section date ranges, Print and CSV export.</li>
           </ul>
         </div>
+      </div>
+
+      {/* API Access — Kitchen / Group only. Read-only public API for third-party
+          integrations: dashboards, accounting, POS pipelines, custom websites. */}
+      <div style={card}>
+        <p style={sec}>API Access</p>
+        <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>
+          A read-only public API for pulling your recipes, costings, stock and menus into third-party tools. Available on Kitchen and Group tiers.
+        </p>
+        {!apiEligible ? (
+          <div style={{padding:'14px',background:C.surface,border:'1px solid '+C.gold+'30',borderRadius:'3px'}}>
+            <p style={{fontSize:'12px',color:C.gold,fontWeight:600,marginBottom:'4px'}}>Upgrade to Kitchen or Group to enable</p>
+            <p style={{fontSize:'11px',color:C.faint}}>API access unlocks at Kitchen (£59/mo) and is included with Group (£129/mo).</p>
+          </div>
+        ) : !apiKey ? (
+          <button onClick={createApiKey} disabled={!perms.canManageSettings}
+            style={{fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.bg,background:C.gold,border:'none',padding:'10px 18px',cursor:perms.canManageSettings?'pointer':'not-allowed',borderRadius:'2px',opacity:perms.canManageSettings?1:0.5}}>
+            🔑 Generate API key
+          </button>
+        ) : (
+          <>
+            <div style={{display:'flex',gap:'8px',alignItems:'center',padding:'10px 12px',background:C.surface,border:'1px solid '+C.border,borderRadius:'3px',flexWrap:'wrap'}}>
+              <code style={{flex:1,minWidth:'200px',fontFamily:'monospace',fontSize:'13px',color:C.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {showApiKey?apiKey:maskApiKey(apiKey)}
+              </code>
+              <button onClick={()=>setShowApiKey(v=>!v)}
+                style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.dim,background:'transparent',border:'1px solid '+C.border,padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                {showApiKey?'Hide':'Show'}
+              </button>
+              <button onClick={copyApiKey}
+                style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.gold,background:C.gold+'14',border:'1px solid '+C.gold+'40',padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                {apiKeyCopied?'✓ Copied':'Copy'}
+              </button>
+              <button onClick={revokeApiKey}
+                style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.red,background:'transparent',border:'1px solid '+C.red+'40',padding:'6px 10px',cursor:'pointer',borderRadius:'2px'}}>
+                Revoke
+              </button>
+            </div>
+            <p style={{fontSize:'11px',color:C.faint,marginTop:'8px'}}>
+              Keep this key private. Treat it like a password — anyone with it can read your data.
+            </p>
+            <button onClick={()=>setShowApiDocs(v=>!v)}
+              style={{marginTop:'12px',fontSize:'11px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.gold,background:'transparent',border:'1px solid '+C.gold+'40',padding:'7px 12px',cursor:'pointer',borderRadius:'2px'}}>
+              {showApiDocs?'Hide docs':'View docs'}
+            </button>
+            {showApiDocs && (
+              <div style={{marginTop:'10px',padding:'14px',background:C.surface,border:'0.5px solid '+C.border,borderRadius:'3px'}}>
+                <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px'}}>Endpoints (read-only)</p>
+                <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'4px',fontFamily:'monospace',fontSize:'12px'}}>
+                  {[
+                    ['GET','/api/v1/me','Account info + counts'],
+                    ['GET','/api/v1/recipes','List all recipes'],
+                    ['GET','/api/v1/recipes/{id}','One recipe + linked costing'],
+                    ['GET','/api/v1/costings','List all costings'],
+                    ['GET','/api/v1/costings/{id}','One costing with ingredients'],
+                    ['GET','/api/v1/stock','List all stock items'],
+                    ['GET','/api/v1/menus','List all menus'],
+                    ['GET','/api/v1/menus/{id}','One menu with resolved dishes'],
+                    ['GET','/api/v1/bank','Ingredient bank (prices, allergens, nutrition)'],
+                  ].map(([m,p,d])=>(
+                    <li key={p as string} style={{display:'flex',gap:'8px',padding:'4px 0'}}>
+                      <span style={{color:C.greenLight,fontWeight:700,width:'40px',flexShrink:0}}>{m}</span>
+                      <span style={{color:C.text,minWidth:0,wordBreak:'break-all'}}>{p}</span>
+                      <span style={{color:C.faint,fontFamily:'system-ui,sans-serif',fontSize:'11px',flexShrink:0,marginLeft:'auto',display:'none'}}>{d}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginTop:'14px',marginBottom:'6px'}}>Example</p>
+                <pre style={{fontFamily:'monospace',fontSize:'11px',color:C.dim,background:C.surface2,padding:'10px 12px',borderRadius:'2px',whiteSpace:'pre-wrap',wordBreak:'break-all',margin:0}}>
+{`curl https://app.palateandpen.co.uk/api/v1/recipes \\
+  -H "Authorization: Bearer ${showApiKey?apiKey:'pk_...'}"`}
+                </pre>
+                <p style={{fontSize:'11px',color:C.faint,marginTop:'10px',lineHeight:1.6}}>
+                  Write operations (POST/PUT/DELETE) are not supported in v1 — all endpoints return JSON, none modify data. Versioning lives in the URL path (<code>/api/v1/...</code>) so future breaking changes can ship as <code>/api/v2/</code> without affecting existing integrations.
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Data export */}

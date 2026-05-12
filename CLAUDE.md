@@ -97,7 +97,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [ ] POS integration (Square, ePOSnow)
 - [ ] Xero integration
 - [ ] Email invoice forwarding
-- [ ] API access
+- [x] API access *(read-only v1 — Kitchen/Group only. Bearer-token API key generated from Settings → API Access. Endpoints: /me, /recipes, /recipes/{id}, /costings, /costings/{id}, /stock, /menus, /menus/{id}, /bank)*
 
 ### Phase 5 — Intelligence Layer
 
