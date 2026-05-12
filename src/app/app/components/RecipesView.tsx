@@ -714,7 +714,12 @@ export default function RecipesView() {
                     {containsArr.length === 0 && <span style={{ fontSize: '12px', color: C.faint }}>No allergens in any of the {computed.matched} matched ingredients.</span>}
                     {containsArr.map(k => {
                       const a = ALLERGENS.find(x => x.key === k);
-                      return a && <span key={k} style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + C.red, color: C.red, background: C.red + '12', borderRadius: '2px', fontWeight: 700 }}>{a.label}</span>;
+                      return a && (
+                        <span key={k} title="Computed from linked costing — edit Bank entries to change"
+                          style={{ fontSize: '11px', padding: '5px 10px', border: '1px solid ' + C.red, color: C.red, background: C.red + '12', borderRadius: '2px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ fontSize: '11px', lineHeight: 1 }}>✓</span>{a.label}
+                        </span>
+                      );
                     })}
                   </div>
                   {nutTypesArr.length > 0 && (
@@ -749,7 +754,8 @@ export default function RecipesView() {
                         const next = may ? cur.filter(k => k !== a.key) : [...cur, a.key];
                         actions.updRecipe(sel.id, { allergens: { ...(sel.allergens || {}), mayContain: next } });
                       }}
-                      style={{ fontSize: '11px', padding: '5px 10px', border: '1px dashed ' + (may ? C.gold : C.border), color: may ? C.gold : (disabled ? C.faint : C.dim), background: may ? C.gold + '10' : 'transparent', cursor: disabled ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: disabled ? 0.4 : 1 }}>
+                      style={{ fontSize: '11px', padding: '5px 10px', border: (may ? '1px solid ' + C.gold : '1px dashed ' + C.border), color: may ? C.gold : (disabled ? C.faint : C.dim), background: may ? C.gold + '12' : 'transparent', cursor: disabled ? 'not-allowed' : 'pointer', borderRadius: '2px', fontWeight: may ? 700 : 400, opacity: disabled ? 0.4 : 1, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      {may && <span style={{ fontSize: '11px', lineHeight: 1 }}>✓</span>}
                       {a.label}
                     </button>
                   );
