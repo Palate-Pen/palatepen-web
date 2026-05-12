@@ -138,34 +138,102 @@ export default function StockView() {
   }
 
   
+  // Summary-format stock report: business header → totals → category breakdown →
+  // variance flags (high usage / not counted / below par / negative usage) →
+  // optional raw line detail at the bottom for anyone who still wants it.
   function downloadReport(usageItems: any[], date: string) {
     const biz = (state.profile?.businessName || '').trim();
     const rows: any[][] = [];
     if (biz) rows.push([biz]);
-    rows.push(
-      ['Stock Report — ' + date],
-      [''],
-      ['Item', 'Unit', 'Unit Price', 'Prev Qty', 'Curr Qty', 'Usage', 'Usage Value', 'Closing Value']);
-    rows.push(
-      ...usageItems.map((i: any) => [
+    rows.push(['Stock Summary Report — ' + date]);
+    rows.push(['']);
+
+    const totalClosing = usageItems.reduce((a: number, i: any) => a + i.value, 0);
+    const totalUsage = usageItems.reduce((a: number, i: any) => a + i.usageValue, 0);
+    const counted = usageItems.filter((i: any) => i.currentQty != null && i.currentQty !== '');
+    const notCounted = usageItems.filter((i: any) => i.currentQty == null || i.currentQty === '');
+    const highUsage = usageItems.filter((i: any) => (i.parLevel || 0) > 0 && i.usage > (i.parLevel || 0) * 0.8);
+    const negativeUsage = usageItems.filter((i: any) => i.usage < 0);
+    const belowPar = usageItems.filter((i: any) => (i.parLevel || 0) > 0 && (i.currentQty || 0) < (i.parLevel || 0) && (i.currentQty != null));
+
+    rows.push(['== TOTALS ==']);
+    rows.push(['Closing Stock Value', sym + totalClosing.toFixed(2)]);
+    rows.push(['Total Usage Value', sym + totalUsage.toFixed(2)]);
+    rows.push(['Items Counted', String(counted.length) + ' of ' + usageItems.length]);
+    rows.push(['']);
+
+    // By category
+    const byCat = new Map<string, { count: number; closing: number; usage: number }>();
+    for (const i of usageItems) {
+      const c = i.category || 'Other';
+      const acc = byCat.get(c) || { count: 0, closing: 0, usage: 0 };
+      acc.count++;
+      acc.closing += i.value;
+      acc.usage += i.usageValue;
+      byCat.set(c, acc);
+    }
+    rows.push(['== BY CATEGORY ==']);
+    rows.push(['Category', 'Items', 'Closing Value', 'Usage Value', '% of Closing']);
+    const sortedCats = Array.from(byCat.entries()).sort((a, b) => b[1].closing - a[1].closing);
+    for (const [cat, t] of sortedCats) {
+      const pct = totalClosing > 0 ? ((t.closing / totalClosing) * 100).toFixed(1) + '%' : '—';
+      rows.push([cat, String(t.count), sym + t.closing.toFixed(2), sym + t.usage.toFixed(2), pct]);
+    }
+    rows.push(['']);
+
+    // Variances
+    if (highUsage.length || negativeUsage.length || notCounted.length || belowPar.length) {
+      rows.push(['== VARIANCES & FLAGS ==']);
+      if (highUsage.length) {
+        rows.push(['']);
+        rows.push(['High Usage (above 80% of par level):']);
+        rows.push(['Item', 'Category', 'Usage', 'Par', 'Cost Impact']);
+        for (const i of highUsage) rows.push([i.name, i.category || 'Other', i.usage.toFixed(2) + ' ' + i.unit, String(i.parLevel || 0), sym + i.usageValue.toFixed(2)]);
+      }
+      if (negativeUsage.length) {
+        rows.push(['']);
+        rows.push(['Negative Usage (stock gained — check for unrecorded deliveries):']);
+        rows.push(['Item', 'Category', 'Gained']);
+        for (const i of negativeUsage) rows.push([i.name, i.category || 'Other', Math.abs(i.usage).toFixed(2) + ' ' + i.unit]);
+      }
+      if (belowPar.length) {
+        rows.push(['']);
+        rows.push(['Below Par (running low):']);
+        rows.push(['Item', 'Category', 'Current', 'Par']);
+        for (const i of belowPar) rows.push([i.name, i.category || 'Other', String(i.currentQty || 0) + ' ' + i.unit, String(i.parLevel || 0)]);
+      }
+      if (notCounted.length) {
+        rows.push(['']);
+        rows.push(['Not Counted (skipped during count):']);
+        rows.push(['Item', 'Category', 'Unit']);
+        for (const i of notCounted) rows.push([i.name, i.category || 'Other', i.unit || '—']);
+      }
+      rows.push(['']);
+    }
+
+    // Full line detail at the end for users who want it
+    rows.push(['== FULL LINE DETAIL ==']);
+    rows.push(['Item', 'Category', 'Unit', 'Unit Price', 'Prev Qty', 'Curr Qty', 'Usage', 'Usage Value', 'Closing Value']);
+    for (const i of usageItems) {
+      rows.push([
         i.name,
+        i.category || 'Other',
         i.unit,
         i.price ? sym + i.price.toFixed(2) : '—',
         i.prev,
-        i.currentQty || 0,
+        i.currentQty ?? '',
         i.usage.toFixed(2),
         sym + i.usageValue.toFixed(2),
         sym + i.value.toFixed(2),
-      ]),
-      [''],
-      ['Total closing stock value', '', '', '', '', '', '', sym + usageItems.reduce((a: number, i: any) => a + i.value, 0).toFixed(2)],
-    );
+      ]);
+    }
+
     const csv = rows.map(r => r.map((cell: any) => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'stock-report-' + new Date().toISOString().slice(0, 10) + '.csv';
+    a.download = 'stock-summary-' + new Date().toISOString().slice(0, 10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -210,11 +278,33 @@ export default function StockView() {
     const totalCurrentValue = usageItems.reduce((a:number,i:any)=>a+i.value,0);
     const totalUsageValue = usageItems.reduce((a:number,i:any)=>a+i.usageValue,0);
 
+    // Category rollup
+    type CatRow = { category: string; count: number; closing: number; usage: number };
+    const catMap = new Map<string, CatRow>();
+    for (const i of usageItems) {
+      const c = i.category || 'Other';
+      const acc = catMap.get(c) || { category: c, count: 0, closing: 0, usage: 0 };
+      acc.count++;
+      acc.closing += i.value;
+      acc.usage += i.usageValue;
+      catMap.set(c, acc);
+    }
+    const catRows = Array.from(catMap.values()).sort((a, b) => b.closing - a.closing);
+
+    // Variance flags
+    const counted = usageItems.filter((i:any) => i.currentQty != null);
+    const notCounted = usageItems.filter((i:any) => i.currentQty == null);
+    const highUsage = usageItems.filter((i:any) => (i.parLevel || 0) > 0 && i.usage > (i.parLevel || 0) * 0.8);
+    const negativeUsage = usageItems.filter((i:any) => i.usage < 0);
+    const belowPar = usageItems.filter((i:any) => (i.parLevel || 0) > 0 && (i.currentQty || 0) < (i.parLevel || 0) && i.currentQty != null);
+
+    const sectionTitle: any = { fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.faint, marginBottom: '10px' };
+
     return (
       <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
         <div style={{display:'flex',flexDirection:isMobile?'column':'row',justifyContent:'space-between',alignItems:isMobile?'stretch':'center',gap:isMobile?'12px':0,marginBottom:'24px'}}>
           <div>
-            <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Stock Report</h1>
+            <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Stock Summary</h1>
             <p style={{fontSize:'12px',color:C.faint}}>{new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
           </div>
           <div style={{display:'flex',gap:'8px',flexDirection:isMobile?'column':'row'}}>
@@ -224,46 +314,145 @@ export default function StockView() {
           </div>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(3,1fr)',gap:'12px',marginBottom:'24px'}}>
+        {/* Totals */}
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4,1fr)',gap:'12px',marginBottom:'28px'}}>
           {[
-            {l:'Closing Stock Value',v:`${sym}${totalCurrentValue.toFixed(2)}`},
-            {l:'Usage Value',v:`${sym}${totalUsageValue.toFixed(2)}`},
-            {l:'Items Counted',v:String(stock.length)},
+            {l:'Closing Stock Value',v:`${sym}${totalCurrentValue.toFixed(2)}`,hi:true},
+            {l:'Usage Value',v:`${sym}${totalUsageValue.toFixed(2)}`,hi:false},
+            {l:'Items Counted',v:`${counted.length} of ${stock.length}`,hi:false},
+            {l:'Flags',v:String(highUsage.length+negativeUsage.length+notCounted.length+belowPar.length),hi:false},
           ].map(s=>(
             <div key={s.l} style={{...card,padding:'16px',textAlign:'center'}}>
               <p style={{fontSize:'10px',letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint,marginBottom:'6px'}}>{s.l}</p>
-              <p style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'24px',color:C.gold}}>{s.v}</p>
+              <p style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'22px',color:s.hi?C.gold:C.text}}>{s.v}</p>
             </div>
           ))}
         </div>
 
-        <div style={{...card,overflow:isMobile?'auto':'hidden'}}>
-          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'10px 16px',background:C.surface2,borderBottom:`1px solid ${C.border}`,gap:'8px',minWidth:isMobile?'620px':undefined}}>
-            {['Item','Unit Price','Prev Qty','Curr Qty','Usage','Value'].map(h=>(
-              <p key={h} style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint}}>{h}</p>
-            ))}
-          </div>
-          {usageItems.map((i:any)=>{
-            const anomaly = i.usage > (i.parLevel||10)*0.8;
-            return (
-              <div key={i.id} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'12px 16px',borderBottom:`1px solid ${C.border}`,gap:'8px',alignItems:'center',background:anomaly?`${C.red}06`:C.surface}}>
-                <div>
-                  <p style={{fontSize:'13px',color:C.text}}>{i.name}</p>
-                  {anomaly&&<p style={{fontSize:'10px',color:C.red,fontWeight:700}}>High usage — check portioning</p>}
+        {/* By category breakdown */}
+        <div style={{marginBottom:'28px'}}>
+          <p style={sectionTitle}>By Category</p>
+          <div style={{...card,overflow:isMobile?'auto':'hidden'}}>
+            <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1.2fr 1.2fr 1fr',padding:'10px 16px',background:C.surface2,borderBottom:`1px solid ${C.border}`,gap:'8px',minWidth:isMobile?'520px':undefined}}>
+              {['Category','Items','Closing','Usage','% of Closing'].map(h=>(
+                <p key={h} style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint}}>{h}</p>
+              ))}
+            </div>
+            {catRows.length === 0 ? (
+              <p style={{fontSize:'12px',color:C.faint,padding:'16px'}}>No stock to summarise.</p>
+            ) : catRows.map(r=>{
+              const pct = totalCurrentValue > 0 ? (r.closing / totalCurrentValue) * 100 : 0;
+              return (
+                <div key={r.category} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1.2fr 1.2fr 1fr',padding:'10px 16px',borderBottom:`1px solid ${C.border}`,gap:'8px',alignItems:'center',minWidth:isMobile?'520px':undefined}}>
+                  <p style={{fontSize:'13px',color:C.text}}>{r.category}</p>
+                  <p style={{fontSize:'13px',color:C.dim}}>{r.count}</p>
+                  <p style={{fontSize:'13px',color:C.gold,fontWeight:600}}>{sym}{r.closing.toFixed(2)}</p>
+                  <p style={{fontSize:'13px',color:C.dim}}>{sym}{r.usage.toFixed(2)}</p>
+                  <p style={{fontSize:'12px',color:C.faint}}>{pct.toFixed(1)}%</p>
                 </div>
-                <p style={{fontSize:'13px',color:C.dim}}>{i.price?`${sym}${i.price.toFixed(2)}`:'—'}</p>
-                <p style={{fontSize:'13px',color:C.dim}}>{i.prev} {i.unit}</p>
-                <p style={{fontSize:'13px',color:C.text}}>{i.currentQty||0} {i.unit}</p>
-                <p style={{fontSize:'13px',color:i.usage>0?C.red:C.greenLight}}>{i.usage>0?'+':''}{i.usage.toFixed(1)} {i.unit}</p>
-                <p style={{fontSize:'13px',color:C.gold}}>{sym}{i.value.toFixed(2)}</p>
+              );
+            })}
+            {catRows.length > 0 && (
+              <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1.2fr 1.2fr 1fr',padding:'10px 16px',gap:'8px',background:C.surface2}}>
+                <p style={{fontSize:'12px',fontWeight:700,color:C.text}}>Total</p>
+                <p style={{fontSize:'12px',fontWeight:700,color:C.text}}>{stock.length}</p>
+                <p style={{fontSize:'13px',fontWeight:700,color:C.gold}}>{sym}{totalCurrentValue.toFixed(2)}</p>
+                <p style={{fontSize:'13px',fontWeight:700,color:C.text}}>{sym}{totalUsageValue.toFixed(2)}</p>
+                <p style={{fontSize:'12px',color:C.faint}}>100%</p>
               </div>
-            );
-          })}
-          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'12px 16px',background:C.surface2,gap:'8px'}}>
-            <p style={{fontSize:'12px',fontWeight:700,color:C.text,gridColumn:'span 5'}}>Total closing stock value</p>
-            <p style={{fontSize:'14px',fontWeight:700,color:C.gold}}>{sym}{totalCurrentValue.toFixed(2)}</p>
+            )}
           </div>
         </div>
+
+        {/* Variances & flags */}
+        {(highUsage.length + negativeUsage.length + notCounted.length + belowPar.length) > 0 && (
+          <div style={{marginBottom:'28px'}}>
+            <p style={sectionTitle}>Variances &amp; Flags</p>
+            <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+              {highUsage.length > 0 && (
+                <div style={{...card,padding:'14px 16px',borderLeft:`3px solid ${C.red}`}}>
+                  <p style={{fontSize:'12px',fontWeight:700,color:C.red,marginBottom:'8px'}}>⚠ High usage <span style={{color:C.faint,fontWeight:400}}>· {highUsage.length} item{highUsage.length===1?'':'s'} above 80% of par — check portioning or wastage</span></p>
+                  <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'4px'}}>
+                    {highUsage.map((i:any)=>(
+                      <li key={i.id} style={{fontSize:'12px',color:C.text,display:'flex',justifyContent:'space-between',gap:'8px'}}>
+                        <span style={{color:C.text}}>{i.name}<span style={{color:C.faint,marginLeft:'6px'}}>· {i.category || 'Other'}</span></span>
+                        <span style={{color:C.red,fontWeight:600,flexShrink:0}}>{i.usage.toFixed(1)} {i.unit} · {sym}{i.usageValue.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {negativeUsage.length > 0 && (
+                <div style={{...card,padding:'14px 16px',borderLeft:`3px solid ${C.gold}`}}>
+                  <p style={{fontSize:'12px',fontWeight:700,color:C.gold,marginBottom:'8px'}}>⚠ Negative usage <span style={{color:C.faint,fontWeight:400}}>· {negativeUsage.length} item{negativeUsage.length===1?'':'s'} gained stock — check for unrecorded deliveries</span></p>
+                  <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'4px'}}>
+                    {negativeUsage.map((i:any)=>(
+                      <li key={i.id} style={{fontSize:'12px',color:C.text,display:'flex',justifyContent:'space-between',gap:'8px'}}>
+                        <span>{i.name}<span style={{color:C.faint,marginLeft:'6px'}}>· {i.category || 'Other'}</span></span>
+                        <span style={{color:C.gold,fontWeight:600,flexShrink:0}}>+{Math.abs(i.usage).toFixed(1)} {i.unit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {belowPar.length > 0 && (
+                <div style={{...card,padding:'14px 16px',borderLeft:`3px solid ${C.gold}`}}>
+                  <p style={{fontSize:'12px',fontWeight:700,color:C.gold,marginBottom:'8px'}}>↓ Below par <span style={{color:C.faint,fontWeight:400}}>· {belowPar.length} item{belowPar.length===1?'':'s'} running low — consider reordering</span></p>
+                  <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'4px'}}>
+                    {belowPar.map((i:any)=>(
+                      <li key={i.id} style={{fontSize:'12px',color:C.text,display:'flex',justifyContent:'space-between',gap:'8px'}}>
+                        <span>{i.name}<span style={{color:C.faint,marginLeft:'6px'}}>· {i.category || 'Other'}</span></span>
+                        <span style={{color:C.gold,fontWeight:600,flexShrink:0}}>{i.currentQty || 0} of {i.parLevel || 0} {i.unit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {notCounted.length > 0 && (
+                <div style={{...card,padding:'14px 16px',borderLeft:`3px solid ${C.faint}`}}>
+                  <p style={{fontSize:'12px',fontWeight:700,color:C.dim,marginBottom:'8px'}}>○ Not counted <span style={{color:C.faint,fontWeight:400}}>· {notCounted.length} item{notCounted.length===1?'':'s'} skipped during this count</span></p>
+                  <ul style={{listStyle:'none',padding:0,margin:0,display:'flex',flexDirection:'column',gap:'4px'}}>
+                    {notCounted.map((i:any)=>(
+                      <li key={i.id} style={{fontSize:'12px',color:C.text}}>
+                        {i.name}<span style={{color:C.faint,marginLeft:'6px'}}>· {i.category || 'Other'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Full line detail — collapsible */}
+        <details style={{marginBottom:'28px'}}>
+          <summary style={{cursor:'pointer',padding:'10px 0',color:C.dim,fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase'}}>
+            Full line detail <span style={{color:C.faint,fontWeight:400}}>({stock.length} item{stock.length===1?'':'s'})</span>
+          </summary>
+          <div style={{...card,overflow:isMobile?'auto':'hidden',marginTop:'10px'}}>
+            <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'10px 16px',background:C.surface2,borderBottom:`1px solid ${C.border}`,gap:'8px',minWidth:isMobile?'620px':undefined}}>
+              {['Item','Unit Price','Prev Qty','Curr Qty','Usage','Value'].map(h=>(
+                <p key={h} style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint}}>{h}</p>
+              ))}
+            </div>
+            {usageItems.map((i:any)=>{
+              const anomaly = (i.parLevel||0) > 0 && i.usage > (i.parLevel||0)*0.8;
+              return (
+                <div key={i.id} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 1fr',padding:'12px 16px',borderBottom:`1px solid ${C.border}`,gap:'8px',alignItems:'center',background:anomaly?`${C.red}06`:C.surface,minWidth:isMobile?'620px':undefined}}>
+                  <div>
+                    <p style={{fontSize:'13px',color:C.text}}>{i.name}</p>
+                    <p style={{fontSize:'10px',color:C.faint}}>{i.category || 'Other'}</p>
+                  </div>
+                  <p style={{fontSize:'13px',color:C.dim}}>{i.price?`${sym}${i.price.toFixed(2)}`:'—'}</p>
+                  <p style={{fontSize:'13px',color:C.dim}}>{i.prev} {i.unit}</p>
+                  <p style={{fontSize:'13px',color:C.text}}>{i.currentQty != null ? i.currentQty : '—'} {i.currentQty != null ? i.unit : ''}</p>
+                  <p style={{fontSize:'13px',color:i.usage>0?C.red:i.usage<0?C.gold:C.greenLight}}>{i.usage>0?'+':''}{i.usage.toFixed(1)} {i.unit}</p>
+                  <p style={{fontSize:'13px',color:C.gold}}>{sym}{i.value.toFixed(2)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </details>
       </div>
     );
   }

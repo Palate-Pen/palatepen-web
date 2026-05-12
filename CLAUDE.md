@@ -67,7 +67,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Traffic light labelling
 - [x] Calorie counts per dish and portion
 - [x] Dish spec sheets (printable)
-- [ ] Change printable stock count sheet to a summary report format showing totals, variances and category breakdowns rather than a raw line list
+- [x] Change printable stock count sheet to a summary report format showing totals, variances and category breakdowns rather than a raw line list
 - [x] Create a custom icon set for the Palatable website replacing generic icons with bespoke food and kitchen themed icons
 - [ ] Make menu backgrounds more graphic and custom with imagery or textured treatments
 - [x] CSV export of all recipes, costings and stock as separate downloadable files
