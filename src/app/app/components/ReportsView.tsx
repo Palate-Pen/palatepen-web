@@ -148,11 +148,40 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       .sort((a: any, b: any) => (b.detectedAt || 0) - (a.detectedAt || 0));
   }, [state.priceAlerts]);
 
+  const businessName = (state.profile?.businessName || '').trim();
+  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
   return (
     <div style={{ padding: '32px', fontFamily: 'system-ui,sans-serif', color: C.text, background: C.bg, minHeight: '100vh' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Reports</h1>
-        <p style={{ fontSize: '12px', color: C.faint }}>Live snapshots across costings, waste, stock, menus, and price changes</p>
+      {/* Print rules — hide app chrome, anything tagged .reports-no-print, force the
+          page to a paper-friendly light theme so dark mode users still get readable
+          output without having to toggle theme first. */}
+      <style>{`
+        @media print {
+          aside, .reports-no-print { display: none !important; }
+          body { background: #fff !important; }
+          .reports-page { padding: 0 !important; background: #fff !important; color: #111 !important; min-height: 0 !important; }
+          .reports-page * { color: #111 !important; background: transparent !important; box-shadow: none !important; border-color: #ccc !important; }
+          .reports-page details { display: block !important; }
+          .reports-page details > summary { display: none !important; }
+          .reports-page .report-card { background: #fff !important; border: 1px solid #ccc !important; }
+          @page { size: A4; margin: 14mm; }
+        }
+      `}</style>
+      <div className="reports-page" style={{ padding: 0 }}>
+      {/* Print-only header — only appears on paper */}
+      <div style={{ display: 'none' }} className="reports-print-header" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
+        <div>
+          {businessName && <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>}
+          <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Reports</h1>
+          <p style={{ fontSize: '12px', color: C.faint }}>{today} · Live snapshots across costings, waste, stock, menus, and price changes</p>
+        </div>
+        <button onClick={() => window.print()} className="reports-no-print"
+          title="Print this report (A4)"
+          style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '40', padding: '8px 14px', cursor: 'pointer', borderRadius: '2px' }}>
+          🖨 Print Report
+        </button>
       </div>
 
       {/* Top-line stats */}
@@ -279,6 +308,7 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
           </div>
         )}
       </Section>
+      </div>
     </div>
   );
 }
