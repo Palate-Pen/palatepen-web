@@ -6,6 +6,15 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
 import NotificationsTab from './NotificationsTab';
+import { Icon } from './icons/PalatableIcons';
+
+// Map a sidebar nav id to the custom-icon name. Most align 1:1 — the
+// exception is `bank`, which renders the `ingredients` icon since the
+// Bank tab is the ingredient bank.
+function iconNameFor(navId: string): string {
+  if (navId === 'bank') return 'ingredients';
+  return navId;
+}
 
 interface NavItem { id: string; label: string; icon: string; comingSoon?: boolean; }
 
@@ -230,10 +239,12 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
               }}
             >
               <span style={{
-                width: '18px', display: 'inline-block', textAlign: 'center',
-                fontSize: '13px', color: active ? C.gold : C.faint,
-                fontFamily: 'Georgia,serif', flexShrink: 0,
-              }}>{item.icon}</span>
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+                color: active ? C.gold : (disabled ? C.faint : C.dim),
+              }}>
+                <Icon name={iconNameFor(item.id)} size={20} />
+              </span>
               {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
               {!collapsed && disabled && (
                 <span style={{ fontSize: '9px', fontWeight: 700, color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
