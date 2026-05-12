@@ -478,6 +478,29 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
             </div>
           ))}
         </div>
+
+        {/* Warnings list — surfaces any amber/red rows in full detail below
+            the tile grid so the chef can see what needs attention without
+            squinting at the small tiles above. */}
+        {(amberCount + redCount) > 0 && (
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 8 }}>
+              {amberCount + redCount} item{amberCount + redCount === 1 ? '' : 's'} need{amberCount + redCount === 1 ? 's' : ''} attention
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {healthRows.filter(r => r.status !== 'green').map(r => (
+                <div key={'warn-' + r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: r.status === 'red' ? C.redSoft : C.amberSoft, border: `1px solid ${r.status === 'red' ? C.red + '40' : C.amber + '40'}`, borderRadius: 4 }}>
+                  <StatusDot status={r.status} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.text, flexShrink: 0 }}>{r.label}</span>
+                  <span style={{ fontSize: 11, color: C.dim, flex: 1, minWidth: 0 }}>{r.detail}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: r.status === 'red' ? C.red : C.amber, flexShrink: 0 }}>
+                    {r.status === 'red' ? 'Issue' : 'Warning'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Two-column: recent signups + needs attention */}
