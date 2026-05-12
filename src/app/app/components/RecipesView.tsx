@@ -693,11 +693,23 @@ export default function RecipesView() {
                 {state.profile?.businessName?.trim() && (
                   <p style={{ fontSize: '10px', color: '#555', marginTop: '4px', fontWeight: 600 }}>{state.profile.businessName.trim()}</p>
                 )}
+                {/* Palatable wordmark — small, sits as the platform credit under the user's logo */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                  <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#888', fontSize: '11px' }}>P</span>
+                  <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#C8960A', marginBottom: '4px' }}></div>
+                  <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#888', fontSize: '11px', letterSpacing: '2.5px' }}>ALATABLE</span>
+                </div>
               </>
             ) : state.profile?.businessName?.trim() ? (
               <>
                 <p style={{ fontFamily: 'Georgia,serif', fontWeight: 600, color: '#111', fontSize: '18px', letterSpacing: '0.5px' }}>{state.profile.businessName.trim()}</p>
                 {state.profile?.location && <p style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{state.profile.location}</p>}
+                {/* Palatable wordmark — small, sits as the platform credit under the business name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                  <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#888', fontSize: '11px' }}>P</span>
+                  <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#C8960A', marginBottom: '4px' }}></div>
+                  <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#888', fontSize: '11px', letterSpacing: '2.5px' }}>ALATABLE</span>
+                </div>
               </>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
@@ -1955,6 +1967,11 @@ export default function RecipesView() {
                             {state.profile?.businessName?.trim() && (
                               <p style={{ fontSize: '10px', color: '#555', marginTop: '4px', fontWeight: 600 }}>{state.profile.businessName.trim()}</p>
                             )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#888', fontSize: '11px' }}>P</span>
+                              <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#C8960A', marginBottom: '4px' }}></div>
+                              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#888', fontSize: '11px', letterSpacing: '2.5px' }}>ALATABLE</span>
+                            </div>
                           </>
                         ) : (
                           <>
@@ -2460,6 +2477,14 @@ export default function RecipesView() {
                           </p>
                         )}
                         <p style={{ fontSize: '12px', color: '#888', marginTop: '24px' }}>Compiled {today} · {sorted.length} recipe{sorted.length === 1 ? '' : 's'}</p>
+                        {/* Palatable wordmark — sits at the bottom of the cover as the platform credit when the user's logo takes the headline */}
+                        {logo && (
+                          <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: '#888', fontSize: '16px' }}>P</span>
+                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#C8960A', marginBottom: '5px' }}></div>
+                            <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: '#888', fontSize: '16px', letterSpacing: '4px' }}>ALATABLE</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
