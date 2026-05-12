@@ -833,14 +833,20 @@ export default function RecipesView() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '24px', marginBottom: '20px' }}>
           <section>
             <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Ingredients</h2>
-            {linked?.ingredients?.length > 0 ? (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {linked.ingredients.map((ing: any, i: number) => (
-                  <li key={i} style={{ fontSize: '13px', color: '#222', padding: '4px 0', borderBottom: '0.5px dotted #DDD' }}>
-                    <strong style={{ color: '#000' }}>{ing.qty}{ing.unit}</strong> {ing.name}
-                  </li>
-                ))}
-              </ul>
+            {/* Linked costing wins when it exists — the imported-strings fallback
+                only renders when the recipe has no costing attached. */}
+            {linked ? (
+              (linked.ingredients || []).length > 0 ? (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {linked.ingredients.map((ing: any, i: number) => (
+                    <li key={i} style={{ fontSize: '13px', color: '#222', padding: '4px 0', borderBottom: '0.5px dotted #DDD' }}>
+                      <strong style={{ color: '#000' }}>{ing.qty}{ing.unit}</strong> {ing.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No ingredients in linked costing yet</p>
+              )
             ) : r.imported?.ingredients?.length > 0 ? (
               <ul style={{ paddingLeft: '20px', margin: 0 }}>
                 {r.imported.ingredients.map((ing: string, i: number) => (
@@ -2090,15 +2096,19 @@ export default function RecipesView() {
                     {/* Ingredients */}
                     <section style={{ marginBottom: '20px' }}>
                       <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '8px' }}>Ingredients</h2>
-                      {linked && linked.ingredients?.length > 0 ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-                          {linked.ingredients.map((ing: any, i: number) => (
-                            <div key={i} style={{ fontSize: '13px', color: '#222', padding: '3px 0', display: 'flex', justifyContent: 'space-between', borderBottom: '0.5px dotted #DDD' }}>
-                              <span>{ing.name}</span>
-                              <span style={{ color: '#555' }}>{ing.qty}{ing.unit}</span>
-                            </div>
-                          ))}
-                        </div>
+                      {linked ? (
+                        (linked.ingredients || []).length > 0 ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                            {linked.ingredients.map((ing: any, i: number) => (
+                              <div key={i} style={{ fontSize: '13px', color: '#222', padding: '3px 0', display: 'flex', justifyContent: 'space-between', borderBottom: '0.5px dotted #DDD' }}>
+                                <span>{ing.name}</span>
+                                <span style={{ color: '#555' }}>{ing.qty}{ing.unit}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No ingredients in linked costing yet</p>
+                        )
                       ) : sel.imported?.ingredients?.length > 0 ? (
                         <ul style={{ paddingLeft: '20px', margin: 0 }}>
                           {sel.imported.ingredients.map((ing: string, i: number) => (
