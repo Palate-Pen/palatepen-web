@@ -27,6 +27,8 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const[stockDay,setStockDay]=useState(String(profile.stockDay||1));
   const[stockFreq,setStockFreq]=useState(profile.stockFrequency||'weekly');
   const[deleteConfirm,setDeleteConfirm]=useState(false);
+  // Section nav — sectional layout instead of one long scroll
+  const[section,setSection]=useState<'profile'|'preferences'|'data'|'integrations'|'help'|'account'>('profile');
   const[uploadingLogo,setUploadingLogo]=useState(false);
   const[logoError,setLogoError]=useState('');
   const[importPreview,setImportPreview]=useState<null|{kind:'recipes'|'costings'|'stock';rows:any[];fileName:string}>(null);
@@ -185,16 +187,61 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const lbl:any={fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,display:'block',marginBottom:'8px'};
   const sec:any={fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'16px'};
 
+  const SECTIONS:{id:typeof section;label:string;help:string}[]=[
+    {id:'profile',     label:'Profile',       help:'Business name, logo, your details'},
+    {id:'preferences', label:'Preferences',   help:'Theme, text size, defaults'},
+    {id:'data',        label:'Data',          help:'Export and import as CSV'},
+    {id:'integrations',label:'Integrations',  help:'Email forwarding, API access'},
+    {id:'help',        label:'Help & Tips',   help:'Quick Start Guide and shortcuts'},
+    {id:'account',     label:'Account',       help:'Sign out and delete'},
+  ];
+  const current=SECTIONS.find(s=>s.id===section);
+
   return(
-    <div style={{padding:isMobile?'20px 16px':'32px',maxWidth:'680px',fontFamily:'system-ui,sans-serif',color:C.text}}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'32px'}}>
-        <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Settings</h1>
-        <p style={{fontSize:'11px',letterSpacing:'0.8px',textTransform:'uppercase',color:saved?C.greenLight:C.faint,padding:'10px 0',transition:'color 0.2s'}}>
+    <div style={{padding:isMobile?'20px 16px':'28px 32px',maxWidth:'1080px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+      {/* Page header */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:'20px',gap:'16px',flexWrap:'wrap'}}>
+        <div>
+          <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'30px',color:C.text,marginBottom:'4px'}}>Settings</h1>
+          <p style={{fontSize:'12px',color:C.faint}}>{current?.help||''}</p>
+        </div>
+        <p style={{fontSize:'11px',fontWeight:600,letterSpacing:'0.8px',textTransform:'uppercase',color:saved?C.greenLight:C.faint,padding:'4px 10px',background:saved?C.greenLight+'14':'transparent',border:'1px solid '+(saved?C.greenLight+'40':'transparent'),borderRadius:'2px',transition:'all 0.2s'}}>
           {saved?'✓ Saved':'Auto-saves'}
         </p>
       </div>
 
+      {/* Two-column: nav + content. Stacks to single column on mobile with
+          the nav becoming a horizontal scrollable pill row above the content. */}
+      <div style={{display:'flex',gap:isMobile?'16px':'28px',flexDirection:isMobile?'column':'row',alignItems:'flex-start'}}>
+        <nav style={{width:isMobile?'100%':'200px',flexShrink:0,display:'flex',flexDirection:isMobile?'row':'column',gap:isMobile?'4px':'2px',overflowX:isMobile?'auto':undefined,paddingBottom:isMobile?'4px':0}}>
+          {SECTIONS.map(s=>{
+            const active=section===s.id;
+            return(
+              <button key={s.id} onClick={()=>setSection(s.id)} type="button"
+                style={{
+                  textAlign:'left',padding:isMobile?'9px 14px':'10px 14px',
+                  border:'1px solid '+(active?C.gold+'60':'transparent'),
+                  background:active?C.gold+'14':'transparent',
+                  color:active?C.gold:C.dim,
+                  fontSize:'13px',fontWeight:active?700:500,
+                  cursor:'pointer',borderRadius:'4px',
+                  whiteSpace:'nowrap',flexShrink:0,
+                  display:'flex',alignItems:'center',gap:'8px',
+                  fontFamily:'system-ui,sans-serif',
+                  transition:'all 0.12s',
+                }}>
+                <span style={{width:'4px',height:'16px',background:active?C.gold:'transparent',borderRadius:'2px',display:isMobile?'none':'inline-block'}}/>
+                {s.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Content column */}
+        <div style={{flex:1,minWidth:0,maxWidth:'720px'}}>
+
       {/* Appearance */}
+      {section==='preferences' && (
       <div style={card}>
         <p style={sec}>Appearance</p>
         <div style={{marginBottom:'20px'}}>
@@ -224,7 +271,10 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         </div>
       </div>
 
+      )}
+
       {/* Account */}
+      {section==='profile' && (
       <div style={card}>
         <p style={sec}>Account</p>
         <div style={{marginBottom:'14px'}}>
@@ -274,8 +324,10 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         </div>
       </div>
 
+      )}
+
       {/* Defaults — manager+ only (account-wide settings) */}
-      {perms.canManageSettings && (
+      {section==='preferences' && perms.canManageSettings && (
         <div style={card}>
           <p style={sec}>Defaults</p>
           <div style={{marginBottom:'14px'}}><label style={lbl}>Default GP Target %</label><input type="number" value={gpTarget} onChange={e=>setGpTarget(e.target.value)} placeholder="72" style={inp}/><p style={{fontSize:'11px',color:C.faint,marginTop:'4px'}}>Industry benchmark: 65–75%</p></div>
@@ -292,6 +344,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       )}
 
       {/* Help & Tips */}
+      {section==='help' && (
       <div style={card}>
         <p style={sec}>Help &amp; Tips</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>An interactive tour of every part of Palatable — opens automatically on your first login and is available here any time as a reference.</p>
@@ -315,9 +368,12 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         </div>
       </div>
 
+      )}
+
       {/* Email invoice forwarding — Pro+. Each account gets a unique inbox
           address. Forward a supplier email and the AI extracts invoice lines
           straight into the Invoices tab. */}
+      {section==='integrations' && (
       <div style={card}>
         <p style={sec}>Invoice Email Forwarding</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>
@@ -372,8 +428,11 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         )}
       </div>
 
+      )}
+
       {/* API Access — Kitchen / Group only. Read-only public API for third-party
           integrations: dashboards, accounting, POS pipelines, custom websites. */}
+      {section==='integrations' && (
       <div style={card}>
         <p style={sec}>API Access</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>
@@ -451,7 +510,10 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         )}
       </div>
 
+      )}
+
       {/* Data export */}
+      {section==='data' && (
       <div style={card}>
         <p style={sec}>Export Data</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>Download a snapshot of your data as CSV files — one per type. Open in Excel, Google Sheets, or Numbers.</p>
@@ -470,7 +532,10 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         </div>
       </div>
 
+      )}
+
       {/* Data import */}
+      {section==='data' && (
       <div style={card}>
         <p style={sec}>Import Data</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>Bring data in from a CSV. Download a template to see the exact headers, fill it out in Excel or Google Sheets, then upload. Imported rows are added alongside existing data — they don&apos;t overwrite or replace.</p>
@@ -500,7 +565,9 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
         )}
       </div>
 
-      {/* Import preview modal */}
+      )}
+
+      {/* Import preview modal — always rendered when there's a preview */}
       {importPreview && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50,padding:'16px'}}>
           <div style={{background:C.surface,border:'1px solid '+C.border,width:'100%',maxWidth:'480px',maxHeight:'80vh',overflow:'auto',borderRadius:'4px'}}>
@@ -539,6 +606,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       )}
 
       {/* Danger */}
+      {section==='account' && (
       <div style={{...card,border:'1px solid '+C.red+'30'}}>
         <p style={{...sec,color:C.red}}>Account Actions</p>
         <div style={{display:'flex',gap:'12px',flexWrap:'wrap',alignItems:'center'}}>
@@ -554,6 +622,10 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
           ))}
         </div>
       </div>
+      )}
+
+        </div> {/* /content column */}
+      </div> {/* /two-column wrapper */}
     </div>
   );
 }
