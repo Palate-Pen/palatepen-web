@@ -93,28 +93,31 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
       >
         {collapsed ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', gap: '6px' }}>
+            {/* Palatable wordmark sits on top — primary platform brand. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
+            </div>
             {logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={businessName || 'Logo'} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+              <img src={logoUrl} alt={businessName || 'Logo'} style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: logoUrl ? '16px' : '22px', letterSpacing: '-1px' }}>P</span>
-              <div style={{ width: logoUrl ? '4px' : '6px', height: logoUrl ? '4px' : '6px', borderRadius: '50%', background: C.gold, marginBottom: logoUrl ? '5px' : '7px' }}></div>
-            </div>
           </div>
         ) : (
           <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Palatable wordmark stays full size on top */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: logoUrl ? '8px' : '4px' }}>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: '22px', letterSpacing: '-1px' }}>P</span>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: C.gold, marginBottom: '7px' }}></div>
+              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: '22px', letterSpacing: '5px' }}>ALATABLE</span>
+            </div>
+            {/* User's business logo sits below as the secondary brand */}
             {logoUrl && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={logoUrl} alt={businessName || 'Logo'} style={{ height: '32px', maxWidth: '120px', objectFit: 'contain', flexShrink: 0 }} />
+                <img src={logoUrl} alt={businessName || 'Logo'} style={{ height: '24px', maxWidth: '110px', objectFit: 'contain', flexShrink: 0 }} />
               </div>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 700, fontStyle: 'italic', color: C.text, fontSize: logoUrl ? '15px' : '22px', letterSpacing: '-1px' }}>P</span>
-              <div style={{ width: logoUrl ? '4px' : '6px', height: logoUrl ? '4px' : '6px', borderRadius: '50%', background: C.gold, marginBottom: logoUrl ? '4px' : '7px' }}></div>
-              <span style={{ fontFamily: 'Georgia,serif', fontWeight: 300, color: C.text, fontSize: logoUrl ? '15px' : '22px', letterSpacing: logoUrl ? '3px' : '5px' }}>ALATABLE</span>
-            </div>
             {businessName ? (
               <p title={businessName} style={{ fontSize: '11px', color: C.gold, letterSpacing: '0.5px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{businessName}</p>
             ) : (
