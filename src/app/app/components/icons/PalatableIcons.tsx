@@ -16,6 +16,7 @@ export type IconName =
   | 'waste'
   | 'reports'
   | 'team'
+  | 'suppliers'
   | 'settings';
 
 export interface IconProps {
@@ -205,6 +206,28 @@ function renderIcon(name: string): React.ReactNode {
           <path d="M21 21 L23.5 23.5" strokeWidth={1.5} />
           {/* Dashed orbit */}
           <circle cx={16} cy={16} r={8} strokeWidth={1} strokeDasharray="2.5 2" />
+        </>
+      );
+
+    case 'suppliers':
+      // Storefront — awning on top + door + window, gold dot for the
+      // delivery van wheel implied behind the building.
+      return (
+        <>
+          {/* Awning */}
+          <path d="M5 9 L16 5 L27 9 L27 12 L5 12 Z" strokeWidth={1.5} />
+          {/* Awning stripes */}
+          <line x1={11} y1={9} x2={11} y2={12} strokeWidth={1} />
+          <line x1={16} y1={8} x2={16} y2={12} strokeWidth={1} />
+          <line x1={21} y1={9} x2={21} y2={12} strokeWidth={1} />
+          {/* Building body */}
+          <path d="M7 12 V27 H25 V12" strokeWidth={1.5} />
+          {/* Door */}
+          <rect x={13.5} y={18} width={5} height={9} strokeWidth={1.3} />
+          {/* Window */}
+          <rect x={9} y={16} width={3} height={3} strokeWidth={1.2} />
+          {/* Gold dot for accent */}
+          <circle cx={22} cy={17.5} r={1.8} fill={GOLD} stroke="none" />
         </>
       );
 

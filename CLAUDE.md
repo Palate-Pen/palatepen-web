@@ -45,6 +45,7 @@ Use these dotted keys when pointing at a specific surface so we both know exactl
 | `MENU`    | Menus       |
 | `INV`     | Invoices    |
 | `STK`     | Stock       |
+| `SUP`     | Suppliers   |
 | `BANK`    | Bank        |
 | `WASTE`   | Waste       |
 | `REP`     | Reports     |
@@ -105,6 +106,30 @@ Use these dotted keys when pointing at a specific surface so we both know exactl
 | `STK.report.byCat`        | By-category table |
 | `STK.report.variances`    | Variances & flags section |
 | `STK.report.lineDetail`   | Collapsible full line detail |
+
+### Suppliers · `SUP`
+
+Promoted from a sub-tab of Invoices to a top-level workspace 2026-05-13. Lives in `src/app/app/components/SuppliersView.tsx`. Master/detail split-pane (240px left + right detail). Mobile collapses to single-pane with a back button.
+
+| Key                                  | What it refers to |
+|--------------------------------------|-------------------|
+| `SUP.topbar`                         | Title + sort toggle + Add supplier button |
+| `SUP.list`                           | Left panel — supplier list |
+| `SUP.list.search`                    | Search input at top of left panel |
+| `SUP.list.row`                       | One supplier row (avatar + name + last-invoice + score chip) |
+| `SUP.list.addBtn`                    | Dashed "+ Add supplier" button at the bottom of the list |
+| `SUP.detail`                         | Right panel — selected supplier detail |
+| `SUP.detail.header`                  | Avatar + name + meta + phone/email/PO action buttons |
+| `SUP.detail.stats`                   | 4 stat tiles (Score 45d, Prior 45d, Discrepancy £, Accuracy %) |
+| `SUP.detail.issue`                   | "Most common issue" gold callout |
+| `SUP.detail.priceHistory`            | Price-change history list |
+| `SUP.detail.contact`                 | Editable rep / phone / email / delivery days / notes form |
+| `SUP.detail.items`                   | Items-supplied chip cloud |
+| `SUP.detail.actions`                 | Bottom action row (PO / View history / Full history) |
+| `SUP.detail.empty`                   | Empty-state shown when no supplier is selected (desktop) |
+| `SUP.add`                            | Add supplier modal |
+
+The old `INV.suppliers.*` keys are deprecated. Their bullets are intentionally retained below for historical reference but the routes/components don't exist anymore.
 
 ### Recipes · `REC`
 
@@ -342,6 +367,8 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
 
 ### 2026-05-13
+
+- **Suppliers promoted to a top-level workspace.** Spec for the redesign came out of a separate planning chat; build laid down here. New `src/app/app/components/SuppliersView.tsx` (master/detail split-pane: 240px left list + right detail). The old `view === 'suppliers'` block inside `InvoicesView.tsx` is gone, along with the Suppliers nav pill and the per-supplier contact buffer (which now lives in `SuppliersView` instead). Sidebar gets a new "Suppliers" item between Stock and Bank with a bespoke storefront icon added to `PalatableIcons.tsx`. `page.tsx` views map registers `suppliers: <SuppliersView setTab={setTab} />`. The Suppliers tab can also receive a `setTab` callback for the "View invoice history" action to deep-link into the Invoices history tab. Mobile: single-pane master/detail with a "← Back to list" button on the detail. Adds `deliveryDays` as a new contact field on `profile.supplierContacts[key]`. Adds an "Add supplier" affordance (modal in the topbar + dashed button at the bottom of the list) so chefs can stand up a supplier with no invoice history yet — score chip is hidden for those entries and the right panel surfaces an "Add invoices to see reliability" dashed card. Editing-key now exposes `SUP.*` at top-level; the old `INV.suppliers.*` keys are deprecated.
 
 - **Delivery confirmation flow on invoice scan.** After a successful scan + review, a mobile-first modal asks "Did everything arrive as expected?" with two big tap buttons (Yes / Flag) and a tertiary "Skip this check" link. Yes-tap saves the invoice with `status: 'confirmed'`. Flag-tap opens an editable line-list seeded from the scanned items: each row has a 44×44 received/not-received toggle (`✓` / `✗`), a numeric received-qty input clamped to the invoiced qty, and a short optional note input. Save stamps `status: 'flagged'` + materialises a `discrepancies[]` array on the invoice with `{name, invoicedQty, receivedQty, received, note, unitPrice, unit}`. Non-blocking: the whole flow is optional, Skip preserves the pre-existing behaviour, and a chef who taps Yes every time isn't slowed down at all. New 30-day discrepancy summary banner sits at the top of the Invoices bank view AND the history view — shows total flagged count + estimated £ value diff, click to jump to the history. Flagged invoices in the history list pick up an amber `⚑` glyph next to the supplier name plus a gold-tinted border; confirmed invoices show a quiet green `✓`.
 - **Supplier reliability score.** New `src/lib/supplierReliability.ts` produces a 0-10 score per supplier blending: (a) confirmation ratio (10 × confirmed/total) and (b) discrepancy-severity penalty (avg flagged-invoice discrepancy £ as fraction of avg invoice £, scaled to max 4 points off). Legacy invoices without a status field are treated as confirmed so the feature is opt-in — a chef who never opens the delivery check doesn't see their suppliers' scores collapse. Score colour ramp: green ≥8.5, gold ≥6.5, red below. Rendered as a small chip next to every history row's supplier name. New Suppliers tab in `InvoicesView` (linked from both bank + history) shows a ranked list (worst score first — the actionable signal) with score · total invoices · total value · 45d-vs-prior-45d trend (improving/declining/stable/insufficient_data) · last-invoice date. Click any row to expand: shows split scores for both windows, total discrepancy £, and the most-flagged ingredient name (counted from `discrepancies[].name` where qty was reduced or `received: false`). Feeds the existing Phase 5 supplier performance section in Reports — both surfaces read the same `state.invoices` array, so re-flagging anywhere updates everything.

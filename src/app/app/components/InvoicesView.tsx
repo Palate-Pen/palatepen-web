@@ -1,5 +1,5 @@
 'use client';
-import{useState,useRef,useMemo,useEffect}from'react';
+import{useState,useRef,useMemo}from'react';
 import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
@@ -41,7 +41,7 @@ export default function InvoicesView(){
   const[scanResults,setScanResults]=useState<any[]>([]);
   const[priceChanges,setPriceChanges]=useState<any[]>([]);
   const[supplierName,setSupplierName]=useState('');
-  const[view,setView]=useState<'bank'|'review'|'history'|'detail'|'reports'|'suppliers'>('bank');
+  const[view,setView]=useState<'bank'|'review'|'history'|'detail'|'reports'>('bank');
   const[search,setSearch]=useState('');
   const[deleteId,setDeleteId]=useState<string|null>(null);
   const[selectedInvoice,setSelectedInvoice]=useState<any>(null);
@@ -51,45 +51,11 @@ export default function InvoicesView(){
   const[pendingInvoice,setPendingInvoice]=useState<any>(null);
   const[deliveryStep,setDeliveryStep]=useState<'check'|'flag'|null>(null);
   const[flagItems,setFlagItems]=useState<Array<{name:string;invoicedQty:number;receivedQty:number;received:boolean;note:string;unitPrice:number;unit:string}>>([]);
-  const[expandedSupplier,setExpandedSupplier]=useState<string|null>(null);
   const[showInbox,setShowInbox]=useState(false);
   const[inboxCopied,setInboxCopied]=useState(false);
-  // Per-supplier contact fields — stored on profile.supplierContacts keyed by
-  // the same nameKey the reliability summary uses, so any supplier with
-  // invoice history can have a rep card attached without a new DB column.
-  // Editable fields buffer in local state so we can save-on-blur and keep
-  // typing smooth.
-  const[contactRep,setContactRep]=useState('');
-  const[contactPhone,setContactPhone]=useState('');
-  const[contactEmail,setContactEmail]=useState('');
-  const[contactNotes,setContactNotes]=useState('');
-  const supplierContacts=((profile as any).supplierContacts||{}) as Record<string,{name?:string;rep?:string;phone?:string;email?:string;notes?:string}>;
-  // Re-seed the local buffer whenever the user opens a different supplier.
-  useEffect(()=>{
-    if(!expandedSupplier){return;}
-    const c=supplierContacts[expandedSupplier]||{};
-    setContactRep(c.rep||'');
-    setContactPhone(c.phone||'');
-    setContactEmail(c.email||'');
-    setContactNotes(c.notes||'');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[expandedSupplier]);
-  function saveContact(){
-    if(!expandedSupplier)return;
-    const supplier=reliability.find(r=>r.nameKey===expandedSupplier);
-    const existing=supplierContacts[expandedSupplier]||{};
-    const next={
-      name:supplier?.name||existing.name||expandedSupplier,
-      rep:contactRep.trim(),
-      phone:contactPhone.trim(),
-      email:contactEmail.trim(),
-      notes:contactNotes.trim(),
-    };
-    // No-op short-circuit if nothing changed — avoids spamming the autosave
-    // debounce when the user just clicks through inputs without editing.
-    if(next.rep===(existing.rep||'')&&next.phone===(existing.phone||'')&&next.email===(existing.email||'')&&next.notes===(existing.notes||''))return;
-    appActions.updProfile({supplierContacts:{...supplierContacts,[expandedSupplier]:next}});
-  }
+  // (Suppliers tab promoted to its own top-level view — see SuppliersView.tsx.
+  // The reliability index is kept here only to render the score chip on
+  // history rows.)
 
   const reliability=useMemo(()=>buildSupplierReliability(invoices),[invoices]);
   const reliabilityIdx=useMemo(()=>reliabilityByName(reliability),[reliability]);
@@ -274,7 +240,6 @@ export default function InvoicesView(){
       {([
         {id:'bank',label:'Ingredients bank'},
         {id:'history',label:'History'},
-        {id:'suppliers',label:'Suppliers'},
         {id:'reports',label:'Reports'},
       ] as const).map(p=>{
         const active=view===p.id||(p.id==='history'&&view==='detail');
@@ -704,227 +669,6 @@ export default function InvoicesView(){
     );
   }
 
-  // ── SUPPLIERS VIEW BODY ───────────────────────────────────
-  function renderSuppliersBody(){
-    const ninetyAgo=Date.now()-90*86400000;
-    const ninetyInvoices=invoices.filter((i:any)=>(i.scannedAt||0)>=ninetyAgo);
-    const ninetySpend=ninetyInvoices.reduce((s:number,inv:any)=>{
-      if(typeof inv.total==='number'&&inv.total>0)return s+inv.total;
-      return s+(inv.items||[]).reduce((ss:number,it:any)=>ss+(it.totalPrice||((it.unitPrice||0)*(it.qty||0))||0),0);
-    },0);
-    const ninetyFlagged=ninetyInvoices.filter((i:any)=>i.status==='flagged').length;
-    const avgScore=reliability.length>0?reliability.reduce((s,r)=>s+r.score,0)/reliability.length:0;
-
-    return(
-      <>
-        <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(4,1fr)',gap:'10px',marginBottom:'14px'}}>
-          {[
-            {l:'Active suppliers',v:String(reliability.length),c:C.text},
-            {l:'Total spend 90 days',v:`${sym}${ninetySpend.toFixed(0)}`,c:C.gold},
-            {l:'Flagged deliveries',v:String(ninetyFlagged),c:ninetyFlagged>0?AMBER:C.text},
-            {l:'Average reliability',v:reliability.length>0?`${avgScore.toFixed(1)}/10`:'—',c:avgScore>=8?C.greenLight:avgScore>=6?C.gold:C.red},
-          ].map(t=>(
-            <div key={t.l} style={{...card,padding:'14px 16px'}}>
-              <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.faint,marginBottom:'8px'}}>{t.l}</p>
-              <p style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'22px',color:t.c,lineHeight:1.1}}>{t.v}</p>
-            </div>
-          ))}
-        </div>
-
-        <div style={{...card,borderLeft:`3px solid ${C.gold}`,padding:'12px 14px',marginBottom:'18px'}}>
-          <p style={{fontSize:'11px',color:C.dim,lineHeight:1.5}}>
-            Score (0–10) blends the share of deliveries confirmed-as-correct with the £ value of discrepancies on flagged invoices. Trend compares the last 45 days to the prior 45. Tap a supplier to see their most common issue and price history.
-          </p>
-        </div>
-
-        <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'10px'}}>Supplier reliability — ranked worst first</p>
-
-        {reliability.length===0?(
-          <div style={{textAlign:'center',padding:'60px 0'}}><p style={{fontSize:'13px',color:C.faint}}>No supplier history yet — scan a few invoices to start tracking.</p></div>
-        ):(
-          <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-            {reliability.map(r=>{
-              const expanded=expandedSupplier===r.nameKey;
-              const trendIcon=r.trend==='improving'?'↑':r.trend==='declining'?'↓':r.trend==='stable'?'→':'·';
-              const trendColor=r.trend==='improving'?C.greenLight:r.trend==='declining'?C.red:C.faint;
-              const accuracyPct=r.totalInvoices>0?(r.confirmedCount/r.totalInvoices)*100:100;
-              const flaggedRatio=r.totalInvoices>0?`${r.flaggedCount}/${r.totalInvoices}`:'0/0';
-              // Price-change rows for this supplier — across all their invoices' priceChangeDetails.
-              const priceHistory:any[]=[];
-              for(const inv of invoices){
-                if((inv.supplier||'').toLowerCase().trim()!==r.name.toLowerCase().trim())continue;
-                for(const c of (inv.priceChangeDetails||[])) priceHistory.push({...c,supplier:r.name,detectedAt:c.detectedAt||inv.scannedAt});
-              }
-              priceHistory.sort((a,b)=>(b.detectedAt||0)-(a.detectedAt||0));
-              // Items supplied — unique ingredient names from this supplier's invoices.
-              const items=new Set<string>();
-              for(const inv of invoices){
-                if((inv.supplier||'').toLowerCase().trim()!==r.name.toLowerCase().trim())continue;
-                for(const it of (inv.items||[])) if(it.name)items.add(it.name);
-              }
-              return(
-                <div key={r.nameKey} style={{...card,overflow:'hidden'}}>
-                  <button onClick={()=>setExpandedSupplier(expanded?null:r.nameKey)}
-                    style={{width:'100%',display:'flex',alignItems:'center',gap:'12px',padding:'14px 16px',background:'transparent',border:'none',cursor:'pointer',textAlign:'left'}}>
-                    <div style={{width:'40px',height:'40px',borderRadius:'50%',background:`${C.gold}18`,color:C.gold,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'13px',fontWeight:700,fontFamily:'Georgia,serif',flexShrink:0}}>
-                      {initials(r.name)}
-                    </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <p style={{fontSize:'14px',color:C.text,fontWeight:500,marginBottom:'2px'}}>{r.name}</p>
-                      <p style={{fontSize:'11px',color:C.faint}}>
-                        Last invoice {r.lastInvoiceTs?new Date(r.lastInvoiceTs).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'} · {r.totalInvoices} on file{supplierContacts[r.nameKey]?.rep?` · Rep: ${supplierContacts[r.nameKey].rep}`:''}
-                      </p>
-                    </div>
-                    {!isMobile&&(
-                      <>
-                        <div style={{textAlign:'right',minWidth:'80px'}}>
-                          <p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px'}}>90d spend</p>
-                          <p style={{fontSize:'13px',color:C.gold,fontWeight:600}}>{sym}{r.totalValue.toFixed(0)}</p>
-                        </div>
-                        <div style={{textAlign:'right',minWidth:'70px'}}>
-                          <p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px'}}>Flagged</p>
-                          <p style={{fontSize:'13px',color:r.flaggedCount>0?AMBER:C.dim,fontWeight:600}}>{flaggedRatio}</p>
-                        </div>
-                        <div title={`Trend: ${r.trend}`} style={{textAlign:'right',minWidth:'40px',color:trendColor,fontSize:'18px',fontWeight:700}}>
-                          {trendIcon}
-                        </div>
-                      </>
-                    )}
-                    <span title={`Reliability ${r.score.toFixed(1)}/10`}
-                      style={{fontSize:'12px',fontWeight:700,color:scoreColour(r.score,C),background:scoreColour(r.score,C)+'14',border:`1px solid ${scoreColour(r.score,C)}40`,padding:'5px 9px',borderRadius:'4px',flexShrink:0}}>
-                      {r.score.toFixed(1)}/10
-                    </span>
-                    <span style={{fontSize:'14px',color:C.faint,flexShrink:0}}>{expanded?'▾':'▸'}</span>
-                  </button>
-                  {expanded&&(
-                    <div style={{padding:'12px 16px 18px',borderTop:`1px solid ${C.border}`,background:C.surface2}}>
-                      {/* Stat tiles */}
-                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4,1fr)',gap:'8px',marginBottom:'14px'}}>
-                        {[
-                          {l:'Score last 45d',v:`${r.scoreRecent.toFixed(1)}/10`,c:scoreColour(r.scoreRecent,C)},
-                          {l:'Score prior 45d',v:`${r.scorePrior.toFixed(1)}/10`,c:scoreColour(r.scorePrior,C)},
-                          {l:'Total discrepancy',v:`${sym}${r.totalDiscrepancyValue.toFixed(2)}`,c:r.totalDiscrepancyValue>0?C.red:C.dim},
-                          {l:'Delivery accuracy',v:`${accuracyPct.toFixed(0)}%`,c:accuracyPct>=80?C.greenLight:accuracyPct>=60?C.gold:C.red},
-                        ].map(t=>(
-                          <div key={t.l} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:'6px',padding:'10px 12px'}}>
-                            <p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'4px'}}>{t.l}</p>
-                            <p style={{fontSize:'15px',color:t.c,fontWeight:600}}>{t.v}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Top issue callout */}
-                      {r.topIssue?(
-                        <div style={{background:`${C.gold}10`,border:`1px solid ${C.gold}40`,borderRadius:'6px',padding:'10px 12px',marginBottom:'14px'}}>
-                          <p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'2px'}}>Most common issue</p>
-                          <p style={{fontSize:'13px',color:C.text}}><strong style={{color:C.gold}}>{r.topIssue.name}</strong> flagged {r.topIssue.count}×</p>
-                        </div>
-                      ):r.flaggedCount===0?(
-                        <p style={{fontSize:'11px',color:C.faint,fontStyle:'italic',marginBottom:'14px'}}>No flagged deliveries — every invoice from this supplier has been confirmed.</p>
-                      ):(
-                        <p style={{fontSize:'11px',color:C.faint,fontStyle:'italic',marginBottom:'14px'}}>Flags were on overall delivery, not a specific item.</p>
-                      )}
-
-                      {/* Price change history */}
-                      {priceHistory.length>0&&(
-                        <>
-                          <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'6px'}}>Price changes</p>
-                          <div style={{...card,overflow:'hidden',marginBottom:'14px'}}>
-                            {priceHistory.slice(0,8).map((c:any,i:number)=>(
-                              <div key={i} style={{display:'grid',gridTemplateColumns:'1.4fr 0.8fr auto',gap:'8px',padding:'8px 12px',borderBottom:`1px solid ${C.border}`,alignItems:'center',fontSize:'12px'}}>
-                                <span style={{color:C.text}}>{c.name}</span>
-                                <span style={{color:C.faint,textAlign:'right'}}>{c.detectedAt?new Date(c.detectedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}</span>
-                                <span style={{color:c.change>0?C.red:C.greenLight,textAlign:'right',fontWeight:600}}>
-                                  {sym}{(c.oldPrice||0).toFixed(2)} → {sym}{(c.newPrice||0).toFixed(2)} ({c.change>0?'+':''}{(c.pct||0).toFixed(1)}%)
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
-
-                      {/* Items supplied chips */}
-                      {items.size>0&&(
-                        <>
-                          <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'6px'}}>Items supplied ({items.size})</p>
-                          <div style={{display:'flex',flexWrap:'wrap',gap:'6px',marginBottom:'14px'}}>
-                            {Array.from(items).slice(0,30).map(n=>(
-                              <span key={n} style={{fontSize:'11px',color:C.dim,background:C.surface,border:`1px solid ${C.border}`,padding:'4px 10px',borderRadius:'12px'}}>{n}</span>
-                            ))}
-                          </div>
-                        </>
-                      )}
-
-                      {/* Contact — editable, saved per supplier to profile.supplierContacts */}
-                      <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px'}}>Contact</p>
-                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:'10px',marginBottom:'10px'}}>
-                        <div>
-                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Rep name</label>
-                          <input type="text" value={contactRep} onChange={e=>setContactRep(e.target.value)} onBlur={saveContact}
-                            placeholder="e.g. Sarah Wilkins"
-                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',minHeight:'40px'}}/>
-                        </div>
-                        <div>
-                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Phone</label>
-                          <input type="tel" value={contactPhone} onChange={e=>setContactPhone(e.target.value)} onBlur={saveContact}
-                            placeholder="020 7946 0123"
-                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',minHeight:'40px'}}/>
-                        </div>
-                        <div style={{gridColumn:isMobile?'auto':'span 2'}}>
-                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Email</label>
-                          <input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} onBlur={saveContact}
-                            placeholder="orders@supplier.co.uk"
-                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',minHeight:'40px'}}/>
-                        </div>
-                        <div style={{gridColumn:isMobile?'auto':'span 2'}}>
-                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Notes</label>
-                          <textarea value={contactNotes} onChange={e=>setContactNotes(e.target.value)} onBlur={saveContact}
-                            placeholder="Cut-off times, delivery days, account number…"
-                            rows={2}
-                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',resize:'vertical',fontFamily:'inherit'}}/>
-                        </div>
-                      </div>
-                      <p style={{fontSize:'10px',color:C.faint,fontStyle:'italic',marginBottom:'14px'}}>Auto-saves when you tab out of a field.</p>
-
-                      {/* Action buttons */}
-                      <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
-                        <button disabled title="Coming in Phase 3 — Supplier ordering"
-                          style={{fontSize:'12px',fontWeight:700,color:C.bg,background:`${C.gold}80`,border:'none',padding:'9px 14px',cursor:'not-allowed',borderRadius:'6px',opacity:0.6}}>
-                          Raise purchase order
-                        </button>
-                        {contactPhone.trim()?(
-                          <a href={`tel:${contactPhone.trim().replace(/\s+/g,'')}`}
-                            style={{fontSize:'12px',color:C.gold,background:'transparent',border:`1px solid ${C.gold}60`,padding:'9px 14px',cursor:'pointer',borderRadius:'6px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>
-                            📞 Call {contactRep.trim()?contactRep.trim().split(/\s+/)[0]:'rep'}
-                          </a>
-                        ):(
-                          <button disabled title="Add a phone number above to enable"
-                            style={{fontSize:'12px',color:C.dim,background:'transparent',border:`1px solid ${C.border}`,padding:'9px 14px',cursor:'not-allowed',borderRadius:'6px',opacity:0.6}}>
-                            Call rep
-                          </button>
-                        )}
-                        {contactEmail.trim()?(
-                          <a href={`mailto:${contactEmail.trim()}`}
-                            style={{fontSize:'12px',color:C.gold,background:'transparent',border:`1px solid ${C.gold}60`,padding:'9px 14px',cursor:'pointer',borderRadius:'6px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>
-                            ✉ Email
-                          </a>
-                        ):null}
-                        <button onClick={()=>setView('history')}
-                          style={{fontSize:'12px',color:C.dim,background:'transparent',border:`1px solid ${C.border}`,padding:'9px 14px',cursor:'pointer',borderRadius:'6px'}}>
-                          Full history
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </>
-    );
-  }
-
   // ── REPORTS VIEW BODY (kept as-is, styled to new tokens) ──
   function renderReportsBody(){
     const{start,end,label}=periodRange(reportPeriod,reportOffset);
@@ -1058,7 +802,6 @@ export default function InvoicesView(){
   else if(view==='history') body=renderHistoryBody();
   else if(view==='detail') body=renderDetailBody();
   else if(view==='review') body=renderReviewBody();
-  else if(view==='suppliers') body=renderSuppliersBody();
   else if(view==='reports') body=renderReportsBody();
 
   return(

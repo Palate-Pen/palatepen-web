@@ -14,6 +14,7 @@ import CostingView from './components/CostingView';
 import MenuBuilderView from './components/MenuBuilderView';
 import InvoicesView from './components/InvoicesView';
 import StockView from './components/StockView';
+import SuppliersView from './components/SuppliersView';
 import BankView from './components/BankView';
 import WasteView from './components/WasteView';
 import ReportsView from './components/ReportsView';
@@ -133,6 +134,7 @@ export default function App() {
     menus: flagMenuBuilder ? <MenuBuilderView /> : <DashboardView setTab={setTab} />,
     invoices: <InvoicesView />,
     stock: <StockView />,
+    suppliers: <SuppliersView setTab={setTab} />,
     bank: <BankView />,
     waste: flagWasteTracking ? <WasteView /> : <DashboardView setTab={setTab} />,
     reports: <ReportsView setTab={setTab} />,

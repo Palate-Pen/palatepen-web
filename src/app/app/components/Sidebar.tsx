@@ -27,6 +27,7 @@ const NAV: NavItem[] = [
   { id: 'menus',     label: 'Menus',     icon: '🍽' },
   { id: 'invoices',  label: 'Invoices',  icon: '🧾' },
   { id: 'stock',     label: 'Stock',     icon: '📦' },
+  { id: 'suppliers', label: 'Suppliers', icon: '🏬' },
   { id: 'bank',      label: 'Bank',      icon: '🏦' },
   { id: 'waste',     label: 'Waste',     icon: '🗑' },
   { id: 'reports',   label: 'Reports',   icon: '📊' },
