@@ -1,5 +1,5 @@
 'use client';
-import{useState,useRef,useMemo}from'react';
+import{useState,useRef,useMemo,useEffect}from'react';
 import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
@@ -54,6 +54,42 @@ export default function InvoicesView(){
   const[expandedSupplier,setExpandedSupplier]=useState<string|null>(null);
   const[showInbox,setShowInbox]=useState(false);
   const[inboxCopied,setInboxCopied]=useState(false);
+  // Per-supplier contact fields — stored on profile.supplierContacts keyed by
+  // the same nameKey the reliability summary uses, so any supplier with
+  // invoice history can have a rep card attached without a new DB column.
+  // Editable fields buffer in local state so we can save-on-blur and keep
+  // typing smooth.
+  const[contactRep,setContactRep]=useState('');
+  const[contactPhone,setContactPhone]=useState('');
+  const[contactEmail,setContactEmail]=useState('');
+  const[contactNotes,setContactNotes]=useState('');
+  const supplierContacts=((profile as any).supplierContacts||{}) as Record<string,{name?:string;rep?:string;phone?:string;email?:string;notes?:string}>;
+  // Re-seed the local buffer whenever the user opens a different supplier.
+  useEffect(()=>{
+    if(!expandedSupplier){return;}
+    const c=supplierContacts[expandedSupplier]||{};
+    setContactRep(c.rep||'');
+    setContactPhone(c.phone||'');
+    setContactEmail(c.email||'');
+    setContactNotes(c.notes||'');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[expandedSupplier]);
+  function saveContact(){
+    if(!expandedSupplier)return;
+    const supplier=reliability.find(r=>r.nameKey===expandedSupplier);
+    const existing=supplierContacts[expandedSupplier]||{};
+    const next={
+      name:supplier?.name||existing.name||expandedSupplier,
+      rep:contactRep.trim(),
+      phone:contactPhone.trim(),
+      email:contactEmail.trim(),
+      notes:contactNotes.trim(),
+    };
+    // No-op short-circuit if nothing changed — avoids spamming the autosave
+    // debounce when the user just clicks through inputs without editing.
+    if(next.rep===(existing.rep||'')&&next.phone===(existing.phone||'')&&next.email===(existing.email||'')&&next.notes===(existing.notes||''))return;
+    appActions.updProfile({supplierContacts:{...supplierContacts,[expandedSupplier]:next}});
+  }
 
   const reliability=useMemo(()=>buildSupplierReliability(invoices),[invoices]);
   const reliabilityIdx=useMemo(()=>reliabilityByName(reliability),[reliability]);
@@ -736,7 +772,7 @@ export default function InvoicesView(){
                     <div style={{flex:1,minWidth:0}}>
                       <p style={{fontSize:'14px',color:C.text,fontWeight:500,marginBottom:'2px'}}>{r.name}</p>
                       <p style={{fontSize:'11px',color:C.faint}}>
-                        Last invoice {r.lastInvoiceTs?new Date(r.lastInvoiceTs).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'} · {r.totalInvoices} on file
+                        Last invoice {r.lastInvoiceTs?new Date(r.lastInvoiceTs).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'} · {r.totalInvoices} on file{supplierContacts[r.nameKey]?.rep?` · Rep: ${supplierContacts[r.nameKey].rep}`:''}
                       </p>
                     </div>
                     {!isMobile&&(
@@ -819,11 +855,36 @@ export default function InvoicesView(){
                         </>
                       )}
 
-                      {/* Contact (placeholder — no rep storage in current data model) */}
-                      <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'6px'}}>Contact</p>
-                      <div style={{display:'flex',flexDirection:'column',gap:'4px',marginBottom:'14px'}}>
-                        <p style={{fontSize:'12px',color:C.faint,fontStyle:'italic'}}>Add a supplier rep / phone / email to a future contact card — not currently stored.</p>
+                      {/* Contact — editable, saved per supplier to profile.supplierContacts */}
+                      <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px'}}>Contact</p>
+                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:'10px',marginBottom:'10px'}}>
+                        <div>
+                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Rep name</label>
+                          <input type="text" value={contactRep} onChange={e=>setContactRep(e.target.value)} onBlur={saveContact}
+                            placeholder="e.g. Sarah Wilkins"
+                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',minHeight:'40px'}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Phone</label>
+                          <input type="tel" value={contactPhone} onChange={e=>setContactPhone(e.target.value)} onBlur={saveContact}
+                            placeholder="020 7946 0123"
+                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',minHeight:'40px'}}/>
+                        </div>
+                        <div style={{gridColumn:isMobile?'auto':'span 2'}}>
+                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Email</label>
+                          <input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} onBlur={saveContact}
+                            placeholder="orders@supplier.co.uk"
+                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',minHeight:'40px'}}/>
+                        </div>
+                        <div style={{gridColumn:isMobile?'auto':'span 2'}}>
+                          <label style={{fontSize:'10px',color:C.faint,letterSpacing:'0.5px',textTransform:'uppercase',display:'block',marginBottom:'4px'}}>Notes</label>
+                          <textarea value={contactNotes} onChange={e=>setContactNotes(e.target.value)} onBlur={saveContact}
+                            placeholder="Cut-off times, delivery days, account number…"
+                            rows={2}
+                            style={{width:'100%',background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:'13px',padding:'9px 12px',borderRadius:'6px',outline:'none',boxSizing:'border-box',resize:'vertical',fontFamily:'inherit'}}/>
+                        </div>
                       </div>
+                      <p style={{fontSize:'10px',color:C.faint,fontStyle:'italic',marginBottom:'14px'}}>Auto-saves when you tab out of a field.</p>
 
                       {/* Action buttons */}
                       <div style={{display:'flex',gap:'8px',flexWrap:'wrap'}}>
@@ -831,10 +892,23 @@ export default function InvoicesView(){
                           style={{fontSize:'12px',fontWeight:700,color:C.bg,background:`${C.gold}80`,border:'none',padding:'9px 14px',cursor:'not-allowed',borderRadius:'6px',opacity:0.6}}>
                           Raise purchase order
                         </button>
-                        <button disabled title="No phone stored"
-                          style={{fontSize:'12px',color:C.dim,background:'transparent',border:`1px solid ${C.border}`,padding:'9px 14px',cursor:'not-allowed',borderRadius:'6px',opacity:0.6}}>
-                          Call rep
-                        </button>
+                        {contactPhone.trim()?(
+                          <a href={`tel:${contactPhone.trim().replace(/\s+/g,'')}`}
+                            style={{fontSize:'12px',color:C.gold,background:'transparent',border:`1px solid ${C.gold}60`,padding:'9px 14px',cursor:'pointer',borderRadius:'6px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>
+                            📞 Call {contactRep.trim()?contactRep.trim().split(/\s+/)[0]:'rep'}
+                          </a>
+                        ):(
+                          <button disabled title="Add a phone number above to enable"
+                            style={{fontSize:'12px',color:C.dim,background:'transparent',border:`1px solid ${C.border}`,padding:'9px 14px',cursor:'not-allowed',borderRadius:'6px',opacity:0.6}}>
+                            Call rep
+                          </button>
+                        )}
+                        {contactEmail.trim()?(
+                          <a href={`mailto:${contactEmail.trim()}`}
+                            style={{fontSize:'12px',color:C.gold,background:'transparent',border:`1px solid ${C.gold}60`,padding:'9px 14px',cursor:'pointer',borderRadius:'6px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>
+                            ✉ Email
+                          </a>
+                        ):null}
                         <button onClick={()=>setView('history')}
                           style={{fontSize:'12px',color:C.dim,background:'transparent',border:`1px solid ${C.border}`,padding:'9px 14px',cursor:'pointer',borderRadius:'6px'}}>
                           Full history
