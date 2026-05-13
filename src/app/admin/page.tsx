@@ -1662,10 +1662,13 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
     && !u.profile?.comp
   ).length, [users]);
 
-  // Estimate: ~£0.06/paid-user/mo on Haiku 4.5 (~13× cheaper than the
-  // previous Sonnet 4.6 baseline of £0.74). Recalibrate once we have a
-  // real Haiku-era invoice from Anthropic to verify.
-  const ANTHROPIC_PER_PAID_USER = 0.06;
+  // Heavy-user ceiling: £2.50/paid-account/mo (assumes Pro power-user
+  // workload — 25 invoice scans + 10 imports + 3 specs + 5 emails / mo
+  // on Haiku 4.5). Average paid accounts will spend far less. We use the
+  // ceiling here so forecasting surfaces show the worst case rather than
+  // the rosy middle, matching the heavy-user baseline in the Revenue
+  // cost-of-serve table.
+  const ANTHROPIC_PER_PAID_USER = 2.50;
   const estimatedMonthlyAnthropic = paidUsers * ANTHROPIC_PER_PAID_USER;
 
   // Actual usage — fetched live from /api/admin/anthropic-usage, falls back
@@ -1694,22 +1697,25 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
     { service: 'Vercel',        plan: 'Hobby',          type: 'Fixed',    cost: '£0 (warning)', trigger: 'July 2026 ToS', upgrade: '£20/mo Pro', warn: true },
     { service: 'Cloudflare',    plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: '100k req/day',       upgrade: '£20/mo Pro' },
     { service: 'Microsoft 365', plan: 'Business Basic', type: 'Fixed',    cost: '£5.75',  trigger: 'More mailboxes',     upgrade: '£4.50/user/mo' },
-    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: `£${variableCost.toFixed(2)}`, trigger: 'Scales with scans',  upgrade: '~£0.06/scan' },
+    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: `£${variableCost.toFixed(2)}`, trigger: 'Scales with scans',  upgrade: '~£2.50/acct heavy' },
     { service: 'GitHub',        plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: 'Never for 1 org',    upgrade: '—' },
   ];
 
   // Anthropic scale projections. First row is live (current paid users);
   // remaining rows stay as fixed projections to give a sense of headroom.
+  // Cost scaling grid uses the heavy ceiling (£2.50/paid-account). Typical
+  // accounts will spend ~£0.06 each, so real spend will land between
+  // these numbers and ~5% of the ceiling.
   const anthropicScale = [
     { users: paidUsers === 0
         ? 'No paid users yet (baseline)'
         : `${paidUsers} paid user${paidUsers === 1 ? '' : 's'} today`,
-      cost: paidUsers === 0 ? '£0/mo' : `~£${estimatedMonthlyAnthropic.toFixed(2)}/mo est.`,
+      cost: paidUsers === 0 ? '£0/mo' : `~£${estimatedMonthlyAnthropic.toFixed(0)}/mo ceiling`,
       live: true },
-    { users: '100 paid users',   cost: '~£6/mo est.'  },
-    { users: '250 paid users',   cost: '~£15/mo est.' },
-    { users: '500 paid users',   cost: '~£30/mo est.' },
-    { users: '1,000 paid users', cost: '~£60/mo est.' },
+    { users: '100 paid users',   cost: '~£250/mo ceiling'    },
+    { users: '250 paid users',   cost: '~£625/mo ceiling'    },
+    { users: '500 paid users',   cost: '~£1,250/mo ceiling'  },
+    { users: '1,000 paid users', cost: '~£2,500/mo ceiling'  },
   ];
 
   return (
@@ -1842,7 +1848,7 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
           progress={(
             <>
               <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 12 }}>
-                Pricing on Haiku 4.5: ~£0.06 per invoice scan, ~£0.02 per recipe URL import, ~£0.03 per spec sheet scan. Switched from Sonnet 4.6 2026-05-13 — 13× cost reduction.
+                Pricing on Haiku 4.5: ~£0.06 per invoice scan, ~£0.02 per recipe URL import, ~£0.03 per spec sheet scan. Switched from Sonnet 4.6 2026-05-13 — 13× cost reduction. Projection grid below uses the heavy-user ceiling (£2.50/paid-account/mo); real spend is typically a fraction of that.
               </p>
 
               {/* Actual vs estimate panel — rolling-window real spend
@@ -1862,7 +1868,7 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
                 <div style={{ padding: '12px 14px', background: C.amberSoft, border: `1px solid ${C.amber}40`, borderRadius: 4 }}>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.amber, marginBottom: 4 }}>Estimate · this month</p>
                   <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: C.amber, lineHeight: 1 }}>£{estimatedMonthlyAnthropic.toFixed(2)}</p>
-                  <p style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{paidUsers} paid user{paidUsers === 1 ? '' : 's'} × £0.06</p>
+                  <p style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{paidUsers} paid user{paidUsers === 1 ? '' : 's'} × £2.50 (heavy ceiling)</p>
                 </div>
               </div>
 
@@ -1931,22 +1937,22 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 10 }}>
         <div style={{ background: C.panel, border: `1px solid ${C.green}40`, borderLeft: `3px solid ${C.green}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.green, marginBottom: 6 }}>Today · 0 → ~500 paid users</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>£{totalMonthlyCost.toFixed(2)}–£375/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic £{variableCost.toFixed(2)} ({paidUsers} paid) scaling to ~£30 at 500 paid on Haiku 4.5. Upgrade Vercel Pro £20 in July.</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>£{totalMonthlyCost.toFixed(2)}–£1,300/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic £{variableCost.toFixed(2)} ({paidUsers} paid) — heavy ceiling £1,250 at 500 paid Pro accounts. Real spend will be a fraction. Upgrade Vercel Pro £20 in July.</p>
         </div>
         <div style={{ background: C.panel, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.amber, marginBottom: 6 }}>500–2,000 paid users</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£80–170/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>Add Supabase Pro £25 + Vercel Pro £20 + Anthropic £30–120 on Haiku 4.5.</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£1,300–£5,100/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>Add Supabase Pro £25 + Vercel Pro £20 + Anthropic £1,250–5,000 heavy ceiling on Haiku 4.5. Typical spend is ~5% of that.</p>
         </div>
         <div style={{ background: C.panel, border: `1px solid ${C.gold}40`, borderLeft: `3px solid ${C.gold}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.gold, marginBottom: 6 }}>2,000+ paid users</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£170–650/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>All services on paid plans + Anthropic at full scale on Haiku 4.5. Still under 1% of MRR.</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£5,000–£25,000/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>All services paid + Anthropic at full heavy ceiling on Haiku 4.5. Still 80%+ gross margin even at the ceiling.</p>
         </div>
       </div>
       <p style={{ fontSize: 11, color: C.faint, fontStyle: 'italic', textAlign: 'center', marginBottom: 6 }}>
-        Infrastructure cost stays under 3% of MRR at all projected scale points. The business is extremely capital efficient.
+        Even at the heavy-user ceiling (every paying account scanning every invoice through AI), gross margin stays at 80%+ across every tier. Typical accounts will land much closer to 95%+ margin.
       </p>
     </div>
   );
@@ -1987,8 +1993,10 @@ function ExpensesTimeline({ users }: { users: any[] }) {
     && ['pro', 'kitchen', 'group', 'enterprise'].includes(u.profile?.tier)
     && !u.profile?.comp
   ).length, [users]);
-  // £0.06/paid-user/mo on Haiku 4.5 — same baseline used in Infrastructure.
-  const estimatedVariable = paidUsers * 0.06;
+  // Heavy ceiling: £2.50/paid-account on Haiku 4.5 (matches Infrastructure
+  // and the Revenue cost-of-serve baseline). Real spend will be a
+  // fraction — shown here as the conservative worst-case planning number.
+  const estimatedVariable = paidUsers * 2.50;
   const liveTotal = 5.75 + estimatedVariable;
 
   const events: {
@@ -2036,22 +2044,22 @@ function ExpensesTimeline({ users }: { users: any[] }) {
     },
     {
       when: '~200 paid users',
-      monthlyAt: '~£79/mo',
+      monthlyAt: '~£550/mo (heavy)',
       tone: 'grey',
       cards: [{
         title: 'Supabase free tier limit approaching',
-        body: 'Free tier covers 500MB storage and 5GB bandwidth. At ~200–300 active paid users generating invoices and recipes you will approach these limits. Upgrade to Supabase Pro when storage exceeds 400MB.',
+        body: 'Free tier covers 500MB storage and 5GB bandwidth. At ~200–300 active paid users generating invoices and recipes you will approach these limits. Upgrade to Supabase Pro when storage exceeds 400MB. Anthropic API at this scale is ~£500/mo heavy ceiling (200 × £2.50 Pro power-user) — typical spend much lower.',
         cost: '+£25/mo',
       }],
     },
     {
       when: '~500 paid users',
-      monthlyAt: '~£200/mo',
+      monthlyAt: '~£1,300/mo (heavy)',
       tone: 'grey',
       cards: [{
-        title: 'Anthropic API cost scaling',
-        body: 'At 500 paid users scanning roughly 3 invoices per month each, Anthropic API costs ~£120/mo. At £25 Pro times 500 users equals £12,500 MRR, API is under 1% of revenue.',
-        cost: '~£120/mo',
+        title: 'Anthropic API cost scaling — heavy baseline',
+        body: 'Heavy ceiling on Haiku 4.5: 500 paid Pro accounts × £2.50/mo = £1,250/mo if every account is a power user scanning every invoice through AI. Realistic mix lands far below — most accounts scan a handful per month. At 500 × £25 Pro MRR = £12,500, API is at most 10% of revenue at the absolute ceiling. Typical operations: ~£30/mo at this scale (under 0.3% of MRR). Switch this card to a per-tier ratio once real Haiku-era usage data lands in the anthropic_usage table.',
+        cost: '~£1,250/mo ceiling',
       }],
     },
     {
@@ -2121,10 +2129,10 @@ function ExpensesTimeline({ users }: { users: any[] }) {
       {/* Cost summary */}
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 10 }}>Cost summary</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <StatTile label="Now · Jun 2026" value="~£34/mo" sub="current spend" />
-        <StatTile label="Jul 2026 · after Vercel Pro" value="~£54/mo" sub="commercial-use compliant" accent={C.amber} />
-        <StatTile label="At ~200 paid users" value="~£100/mo" sub="Supabase Pro added" />
-        <StatTile label="Infra as % of MRR at scale" value="< 3%" sub="extremely efficient" accent={C.green} />
+        <StatTile label="Now · Jun 2026" value={`£${liveTotal.toFixed(2)}/mo`} sub={`${paidUsers} paid user${paidUsers === 1 ? '' : 's'} · M365 + heavy API`} />
+        <StatTile label="Jul 2026 · after Vercel Pro" value={`£${(liveTotal + 20).toFixed(2)}/mo`} sub="commercial-use compliant" accent={C.amber} />
+        <StatTile label="At ~200 paid users (heavy)" value="~£550/mo" sub="200 × £2.50 + Supabase Pro" />
+        <StatTile label="Margin at heavy ceiling" value="80%+" sub="every tier · typical is 95%+" accent={C.green} />
       </div>
     </div>
   );
