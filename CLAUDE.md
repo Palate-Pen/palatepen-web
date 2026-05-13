@@ -291,6 +291,8 @@ The old `INV.suppliers.*` keys are deprecated. Their bullets are intentionally r
 
 ### Phase 3 — Kitchen and Group Tier
 
+> [in-flight 2026-05-14] Costing → Margins rename: recon complete, shape decision pending. See docs/strategy/working-notes/costing-margins-recon-2026-05-14.md.
+
 - [x] Multi-user access with team permissions *(All 4 stages shipped — schema + contexts + Team UI + invite/accept + role gating + Stripe webhook to accounts.tier; legacy user_id RLS still in place pending cleanup, see Progress Log)*
 - [ ] Multiple outlets under one account
 - [ ] Central kitchen management
