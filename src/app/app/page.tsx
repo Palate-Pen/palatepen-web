@@ -114,12 +114,17 @@ export default function App() {
     </div>
   );
 
+  // Hooks must come before any conditional return — Rules of Hooks. These
+  // were previously below the early-return guards and triggered React #310
+  // (rendered more hooks than during the previous render) every time the app
+  // transitioned from loading → loaded.
+  const flagWasteTracking = useFeatureFlag('wasteTracking', (state.profile as any)?.featureOverrides);
+  const flagMenuBuilder = useFeatureFlag('menuBuilder', (state.profile as any)?.featureOverrides);
+
   if (loading) return loader;
   if (!user) return <AuthPage />;
   if (!currentAccount || !state.ready) return loader;
 
-  const flagWasteTracking = useFeatureFlag('wasteTracking', (state.profile as any)?.featureOverrides);
-  const flagMenuBuilder = useFeatureFlag('menuBuilder', (state.profile as any)?.featureOverrides);
   const views: Record<string, React.ReactNode> = {
     dashboard: <DashboardView setTab={setTab} />,
     recipes: <RecipesView />,
