@@ -1,5 +1,5 @@
 'use client';
-import{useState,useRef}from'react';
+import{useState,useRef,useMemo}from'react';
 import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
@@ -8,6 +8,16 @@ import{supabase}from'@/lib/supabase';
 import{CATEGORIES,guessCategory}from'@/lib/categorize';
 import{useIsMobile}from'@/lib/useIsMobile';
 import{useFeatureFlag}from'@/lib/usePlatformConfig';
+import{buildSupplierReliability,reliabilityByName,recentDiscrepancySummary,type SupplierReliability}from'@/lib/supplierReliability';
+
+// Score colour ramp for the reliability badges. Green > 8.5, gold 6.5-8.5,
+// red below — chefs scanning the history want the at-a-glance signal first,
+// the precise number second.
+function scoreColour(score: number, C: any): string {
+  if (score >= 8.5) return C.greenLight;
+  if (score >= 6.5) return C.gold;
+  return C.red;
+}
 
 export default function InvoicesView(){
   const{state:appState,actions:appActions}=useApp();
@@ -26,13 +36,26 @@ export default function InvoicesView(){
   const[scanResults,setScanResults]=useState<any[]>([]);
   const[priceChanges,setPriceChanges]=useState<any[]>([]);
   const[supplierName,setSupplierName]=useState('');
-  const[view,setView]=useState<'bank'|'review'|'history'|'detail'|'reports'>('bank');
+  const[view,setView]=useState<'bank'|'review'|'history'|'detail'|'reports'|'suppliers'>('bank');
   const[search,setSearch]=useState('');
   const[deleteId,setDeleteId]=useState<string|null>(null);
   const[selectedInvoice,setSelectedInvoice]=useState<any>(null);
   const[reportPeriod,setReportPeriod]=useState<'week'|'month'>('week');
   const[reportOffset,setReportOffset]=useState(0);
   const fileRef=useRef<HTMLInputElement>(null);
+  // Delivery-check flow. Set when scan + review is confirmed; the actual
+  // save to state happens inside the modal handlers based on Yes / Flag.
+  // pendingInvoice carries the fully-built invoice object so user-cancel
+  // (refresh, navigate away) just drops it without committing.
+  const[pendingInvoice,setPendingInvoice]=useState<any>(null);
+  const[deliveryStep,setDeliveryStep]=useState<'check'|'flag'|null>(null);
+  const[flagItems,setFlagItems]=useState<Array<{name:string;invoicedQty:number;receivedQty:number;received:boolean;note:string;unitPrice:number;unit:string}>>([]);
+  const[expandedSupplier,setExpandedSupplier]=useState<string|null>(null);
+  // Pre-computed reliability table — memoised against state.invoices so we
+  // don't recompute on every keystroke during the flag flow.
+  const reliability=useMemo(()=>buildSupplierReliability(invoices),[invoices]);
+  const reliabilityIdx=useMemo(()=>reliabilityByName(reliability),[reliability]);
+  const discrepancySummary=useMemo(()=>recentDiscrepancySummary(invoices),[invoices]);
   // API key is server-side only — we send the user's session token for Pro verification
 
   async function handleFile(file:File){
@@ -79,7 +102,10 @@ export default function InvoicesView(){
       return {...i, category: existing?.category || guessCategory(i.name)};
     });
     appActions.upsertBank(withCat.map(i=>({name:i.name,qty:i.qty,unit:i.unit,unitPrice:i.unitPrice,totalPrice:i.totalPrice,supplier:supplierName||'Unknown',category:i.category})));
-    appActions.addInvoice({
+    // Stash the invoice payload — actual save happens once the chef
+    // answers the delivery check (or skips). Going straight to history
+    // without the check is still possible via the modal's Skip link.
+    setPendingInvoice({
       supplier:supplierName||'Unknown',
       itemCount:withCat.length,
       priceChanges:priceChanges.length,
@@ -87,12 +113,246 @@ export default function InvoicesView(){
       priceChangeDetails:priceChanges,
       scannedAt:Date.now(),
     });
+    setDeliveryStep('check');
     setScanResults([]);setPriceChanges([]);setView('bank');
+  }
+
+  // Save the pending invoice as confirmed — the happy path, one tap. Mirrors
+  // the legacy "scan and done" flow but stamps an explicit status so the
+  // reliability calc treats it as a deliberate "all arrived" signal rather
+  // than a legacy unflagged row.
+  function acceptDelivery(){
+    if(!pendingInvoice)return;
+    appActions.addInvoice({...pendingInvoice,status:'confirmed'});
+    setPendingInvoice(null);
+    setDeliveryStep(null);
+  }
+  // Open the flag sub-step. Seeds editable rows from pendingInvoice.items so
+  // the chef adjusts down from the invoiced qty rather than entering everything
+  // from scratch.
+  function openFlagStep(){
+    if(!pendingInvoice)return;
+    setFlagItems((pendingInvoice.items||[]).map((it:any)=>({
+      name:String(it?.name||''),
+      invoicedQty:Number(it?.qty)||0,
+      receivedQty:Number(it?.qty)||0,
+      received:true,
+      note:'',
+      unitPrice:Number(it?.unitPrice)||0,
+      unit:String(it?.unit||''),
+    })));
+    setDeliveryStep('flag');
+  }
+  // Save the pending invoice as flagged with the discrepancies captured by
+  // the chef. Only include rows where the chef actually changed something
+  // (qty reduced, marked not-received, or added a note) so the discrepancy
+  // count downstream is meaningful.
+  function saveFlagged(){
+    if(!pendingInvoice)return;
+    const discrepancies=flagItems.filter(d=>
+      !d.received || d.receivedQty<d.invoicedQty || d.note.trim().length>0
+    );
+    appActions.addInvoice({
+      ...pendingInvoice,
+      status:'flagged',
+      discrepancies:discrepancies.map(d=>({
+        name:d.name,
+        invoicedQty:d.invoicedQty,
+        receivedQty:d.received?d.receivedQty:0,
+        received:d.received,
+        note:d.note.trim()||undefined,
+        unitPrice:d.unitPrice,
+        unit:d.unit,
+      })),
+    });
+    setPendingInvoice(null);
+    setDeliveryStep(null);
+    setFlagItems([]);
+  }
+  // Skip the delivery check entirely (no status stamp). Keeps the flow
+  // non-blocking — closing the modal without choosing still saves the
+  // invoice so the chef's scan isn't lost.
+  function skipDelivery(){
+    if(!pendingInvoice){setDeliveryStep(null);return;}
+    appActions.addInvoice(pendingInvoice);
+    setPendingInvoice(null);
+    setDeliveryStep(null);
+    setFlagItems([]);
   }
 
   const filtered=bank.filter((i:any)=>(i.name||'').toLowerCase().includes(search.toLowerCase())||(i.supplier||'').toLowerCase().includes(search.toLowerCase()));
   const inp={width:'100%',background:C.surface2,border:'1px solid '+C.border,color:C.text,fontSize:'13px',padding:'9px 12px',outline:'none',fontFamily:'system-ui,sans-serif',boxSizing:'border-box' as const};
   const card={background:C.surface,border:'1px solid '+C.border,borderRadius:'4px'};
+
+  // Delivery-check modal — overlays the active view. Two-step: initial Yes/Flag
+  // choice, then the flag-detail sub-step with editable line items. Mobile-
+  // first: stacked big tap buttons in the first step, full-width inputs in the
+  // second. Backdrop click + ✕ both Skip (save without status) rather than
+  // dismiss-without-save so the chef never loses their scan.
+  const deliveryModalJSX = !deliveryStep || !pendingInvoice ? null : (
+    <div role="dialog" aria-modal="true"
+      onClick={()=>{ if(deliveryStep==='check') skipDelivery(); }}
+      style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',zIndex:100,padding:isMobile?0:'16px'}}>
+      <div onClick={e=>e.stopPropagation()}
+        style={{
+          background:C.surface,
+          width:isMobile?'100%':'480px',
+          maxWidth:'100%',
+          maxHeight:isMobile?'92vh':'88vh',
+          borderRadius:isMobile?'16px 16px 0 0':'8px',
+          display:'flex',flexDirection:'column',
+          overflow:'hidden',
+          boxShadow:'0 -8px 30px rgba(0,0,0,0.3)',
+        }}>
+        {deliveryStep==='check' ? (
+          // ── Step 1: Yes / Flag ────────────────────────────────
+          <>
+            <div style={{padding:'24px 24px 8px',position:'relative'}}>
+              <button onClick={skipDelivery}
+                aria-label="Skip delivery check"
+                style={{position:'absolute',top:14,right:14,background:'transparent',border:'none',color:C.faint,fontSize:'22px',cursor:'pointer',padding:'4px 8px',lineHeight:1}}>×</button>
+              <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.gold,marginBottom:'8px'}}>
+                {pendingInvoice.supplier} · {pendingInvoice.itemCount} items
+              </p>
+              <h2 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'24px',color:C.text,marginBottom:'6px',lineHeight:1.2}}>
+                Did everything arrive as expected?
+              </h2>
+              <p style={{fontSize:'13px',color:C.faint,lineHeight:1.5}}>
+                Confirm the delivery now if everything&apos;s correct — or flag any short / missing items so they&apos;re tracked against the supplier.
+              </p>
+            </div>
+            <div style={{padding:'20px 20px 24px',display:'flex',flexDirection:'column',gap:'10px'}}>
+              <button onClick={acceptDelivery}
+                style={{
+                  background:C.greenLight,color:C.bg,
+                  border:'none',padding:'18px 20px',
+                  fontSize:'16px',fontWeight:700,letterSpacing:'0.3px',
+                  cursor:'pointer',borderRadius:'8px',
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',
+                  minHeight:'56px',
+                }}>
+                <span style={{fontSize:'20px'}}>✓</span> Yes, all good
+              </button>
+              <button onClick={openFlagStep}
+                style={{
+                  background:C.gold+'14',color:C.gold,
+                  border:'1.5px solid '+C.gold+'60',padding:'18px 20px',
+                  fontSize:'16px',fontWeight:700,letterSpacing:'0.3px',
+                  cursor:'pointer',borderRadius:'8px',
+                  display:'flex',alignItems:'center',justifyContent:'center',gap:'10px',
+                  minHeight:'56px',
+                }}>
+                <span style={{fontSize:'18px'}}>⚑</span> Flag an issue
+              </button>
+              <button onClick={skipDelivery}
+                style={{background:'transparent',color:C.faint,border:'none',padding:'12px',fontSize:'12px',cursor:'pointer',marginTop:'4px'}}>
+                Skip this check
+              </button>
+            </div>
+          </>
+        ) : (
+          // ── Step 2: Flag detail editor ────────────────────────
+          <>
+            <div style={{padding:'20px 24px 12px',borderBottom:'1px solid '+C.border,position:'relative'}}>
+              <button onClick={()=>{setDeliveryStep('check');}}
+                aria-label="Back to check"
+                style={{position:'absolute',top:14,left:14,background:'transparent',border:'none',color:C.faint,fontSize:'14px',cursor:'pointer',padding:'4px 8px'}}>← Back</button>
+              <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.gold,marginTop:'12px',marginBottom:'6px',textAlign:'center'}}>Flag issues</p>
+              <h2 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'20px',color:C.text,textAlign:'center',marginBottom:'4px',lineHeight:1.2}}>
+                Adjust quantities or untick missing items
+              </h2>
+              <p style={{fontSize:'12px',color:C.faint,textAlign:'center'}}>
+                {pendingInvoice.supplier}
+              </p>
+            </div>
+            <div style={{flex:1,overflowY:'auto',padding:'10px 16px'}}>
+              {flagItems.map((d,idx)=>{
+                const short=d.receivedQty<d.invoicedQty;
+                const missing=!d.received;
+                return(
+                  <div key={idx} style={{
+                    padding:'14px',
+                    marginBottom:'8px',
+                    background:missing?(C.red+'08'):short?(C.gold+'08'):C.surface2,
+                    border:'1px solid '+(missing?C.red+'40':short?C.gold+'40':C.border),
+                    borderRadius:'8px',
+                  }}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'10px',marginBottom:'10px'}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <p style={{fontSize:'14px',color:missing?C.faint:C.text,fontWeight:500,textDecoration:missing?'line-through':'none'}}>{d.name}</p>
+                        <p style={{fontSize:'11px',color:C.faint,marginTop:'2px'}}>
+                          Invoiced: {d.invoicedQty} {d.unit} · {sym}{(d.unitPrice||0).toFixed(2)}/{d.unit}
+                        </p>
+                      </div>
+                      <button onClick={()=>setFlagItems(prev=>prev.map((x,i)=>i===idx?{...x,received:!x.received,receivedQty:!x.received?x.invoicedQty:0}:x))}
+                        aria-label={d.received?'Mark as not received':'Mark as received'}
+                        style={{
+                          width:'44px',height:'44px',
+                          background:d.received?C.greenLight+'20':C.red+'20',
+                          color:d.received?C.greenLight:C.red,
+                          border:'1.5px solid '+(d.received?C.greenLight+'60':C.red+'60'),
+                          borderRadius:'8px',cursor:'pointer',
+                          fontSize:'18px',fontWeight:700,
+                          flexShrink:0,
+                        }}>
+                        {d.received?'✓':'✗'}
+                      </button>
+                    </div>
+                    {d.received && (
+                      <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px'}}>
+                        <label style={{fontSize:'11px',color:C.faint,whiteSpace:'nowrap'}}>Received qty</label>
+                        <input type="number" min={0} max={d.invoicedQty} step="0.01"
+                          value={d.receivedQty}
+                          onChange={e=>setFlagItems(prev=>prev.map((x,i)=>i===idx?{...x,receivedQty:Math.max(0,Math.min(x.invoicedQty,parseFloat(e.target.value)||0))}:x))}
+                          style={{
+                            flex:1,
+                            background:C.surface,
+                            border:'1px solid '+(short?C.gold+'60':C.border),
+                            color:C.text,
+                            fontSize:'15px',
+                            padding:'10px 12px',
+                            borderRadius:'6px',
+                            outline:'none',
+                            minHeight:'44px',
+                            boxSizing:'border-box',
+                          }}/>
+                        <span style={{fontSize:'12px',color:C.faint,minWidth:'30px'}}>{d.unit}</span>
+                      </div>
+                    )}
+                    <input type="text" placeholder="Optional note (e.g. damaged, wrong cut)"
+                      value={d.note}
+                      onChange={e=>setFlagItems(prev=>prev.map((x,i)=>i===idx?{...x,note:e.target.value}:x))}
+                      style={{
+                        width:'100%',
+                        background:C.surface,
+                        border:'1px solid '+C.border,
+                        color:C.text,
+                        fontSize:'13px',
+                        padding:'10px 12px',
+                        borderRadius:'6px',
+                        outline:'none',
+                        minHeight:'44px',
+                        boxSizing:'border-box',
+                      }}/>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{padding:'14px 16px',borderTop:'1px solid '+C.border,display:'flex',gap:'8px'}}>
+              <button onClick={skipDelivery}
+                style={{flex:1,background:'transparent',color:C.faint,border:'1px solid '+C.border,padding:'14px',fontSize:'14px',fontWeight:600,cursor:'pointer',borderRadius:'6px',minHeight:'48px'}}>
+                Cancel
+              </button>
+              <button onClick={saveFlagged}
+                style={{flex:2,background:C.gold,color:C.bg,border:'none',padding:'14px',fontSize:'15px',fontWeight:700,cursor:'pointer',borderRadius:'6px',minHeight:'48px'}}>
+                Save flagged invoice
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 
   function periodRange(period:'week'|'month',offset:number){
     const now=new Date();
@@ -136,6 +396,7 @@ export default function InvoicesView(){
     const navBtn={fontSize:'14px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'6px 12px',cursor:'pointer',borderRadius:'2px'};
     const tabBtn=(active:boolean)=>({fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase' as const,background:active?C.gold:C.surface2,color:active?C.bg:C.dim,border:active?'none':'1px solid '+C.border,padding:'8px 16px',cursor:'pointer',borderRadius:'2px'});
     return(
+      <>
       <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
           <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Reports</h1>
@@ -215,11 +476,14 @@ export default function InvoicesView(){
           </div>
         )}
       </div>
+      {deliveryModalJSX}
+      </>
     );
   }
 
   // ── DETAIL VIEW ────────────────────────────────────────────
   if(view==='detail'&&selectedInvoice)return(
+    <>
     <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <button onClick={()=>{setView('history');setSelectedInvoice(null);}} style={{fontSize:'13px',color:C.gold,background:'none',border:'none',cursor:'pointer',marginBottom:'20px',display:'block'}}>
         ← Invoice History
@@ -294,29 +558,56 @@ Invoices scanned after this update will show full details.</p>
         </div>
       )}
     </div>
+    {deliveryModalJSX}
+    </>
   );
 
   // ── HISTORY VIEW ───────────────────────────────────────────
   if(view==='history')return(
+    <>
     <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
         <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text}}>Invoice History</h1>
-        <button onClick={()=>setView('bank')} style={{fontSize:'11px',color:C.gold,background:C.goldDim,border:'1px solid '+C.gold+'40',padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>← Ingredients Bank</button>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button onClick={()=>setView('suppliers')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>Suppliers</button>
+          <button onClick={()=>setView('bank')} style={{fontSize:'11px',color:C.gold,background:C.goldDim,border:'1px solid '+C.gold+'40',padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>← Ingredients Bank</button>
+        </div>
       </div>
+      {discrepancySummary.count>0&&(
+        <div style={{background:C.gold+'12',border:'1px solid '+C.gold+'40',borderRadius:'4px',padding:'12px 14px',marginBottom:'16px',display:'flex',alignItems:'center',gap:'12px'}}>
+          <span style={{fontSize:'18px'}}>⚑</span>
+          <p style={{fontSize:'12px',color:C.dim,flex:1}}>
+            <strong style={{color:C.gold}}>{discrepancySummary.count}</strong> flagged deliver{discrepancySummary.count===1?'y':'ies'} in the last 30 days · estimated <strong style={{color:C.gold}}>{sym}{discrepancySummary.value.toFixed(2)}</strong> in discrepancies. Tap any flagged invoice to review.
+          </p>
+        </div>
+      )}
       {invoices.length===0?(
         <div style={{textAlign:'center',padding:'60px 0'}}><p style={{fontSize:'13px',color:C.faint}}>No invoices scanned yet.</p></div>
       ):(
         <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
-          {[...invoices].sort((a:any,b:any)=>b.scannedAt-a.scannedAt).map((inv:any)=>(
-            <div key={inv.id} style={{...card,overflow:'hidden'}}>
+          {[...invoices].sort((a:any,b:any)=>b.scannedAt-a.scannedAt).map((inv:any)=>{
+            const rel=reliabilityIdx.get((inv.supplier||'').toLowerCase().replace(/\s+/g,' ').trim());
+            const isFlagged=inv.status==='flagged';
+            return(
+            <div key={inv.id} style={{...card,overflow:'hidden',borderColor:isFlagged?C.gold+'40':C.border}}>
               <button onClick={()=>{setSelectedInvoice(inv);setView('detail');}} style={{width:'100%',display:'flex',alignItems:'center',gap:'12px',padding:'16px',background:'none',border:'none',cursor:'pointer',textAlign:'left'}}>
-                <div style={{flex:1}}>
-                  <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'4px'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px',flexWrap:'wrap'}}>
+                    {isFlagged&&<span title="Delivery flagged" style={{fontSize:'13px',color:C.gold,flexShrink:0}}>⚑</span>}
                     <p style={{fontSize:'14px',color:C.text,fontWeight:500}}>{inv.supplier||'Unknown'}</p>
+                    {rel&&(
+                      <span title={`Reliability ${rel.score.toFixed(1)}/10 over ${rel.totalInvoices} invoice${rel.totalInvoices===1?'':'s'}`}
+                        style={{fontSize:'10px',fontWeight:700,color:scoreColour(rel.score,C),background:scoreColour(rel.score,C)+'14',border:'0.5px solid '+scoreColour(rel.score,C)+'40',padding:'1px 6px',borderRadius:'2px'}}>
+                        {rel.score.toFixed(1)}/10
+                      </span>
+                    )}
                     {inv.priceChanges>0&&(
                       <span style={{fontSize:'10px',fontWeight:700,color:C.red,background:C.red+'12',border:'0.5px solid '+C.red+'40',padding:'1px 6px',borderRadius:'2px'}}>
                         {inv.priceChanges} price change{inv.priceChanges>1?'s':''}
                       </span>
+                    )}
+                    {inv.status==='confirmed'&&(
+                      <span title="Delivery confirmed" style={{fontSize:'11px',color:C.greenLight,flexShrink:0}}>✓</span>
                     )}
                   </div>
                   <p style={{fontSize:'12px',color:C.faint}}>
@@ -335,14 +626,103 @@ Invoices scanned after this update will show full details.</p>
                 <button onClick={()=>setDeleteId(inv.id)} style={{width:'100%',padding:'8px 16px',background:'none',border:'none',borderTop:'1px solid '+C.border,cursor:'pointer',color:C.faint,fontSize:'11px',textAlign:'left'}}>Delete</button>
               )}
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>
+    {deliveryModalJSX}
+    </>
+  );
+
+  // ── SUPPLIERS VIEW ─────────────────────────────────────────
+  if(view==='suppliers')return(
+    <>
+    <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px',flexWrap:'wrap',gap:'12px'}}>
+        <div>
+          <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'4px'}}>Supplier reliability</h1>
+          <p style={{fontSize:'12px',color:C.faint}}>{reliability.length} supplier{reliability.length===1?'':'s'} ranked by delivery reliability score</p>
+        </div>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button onClick={()=>setView('history')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>History</button>
+          <button onClick={()=>setView('bank')} style={{fontSize:'11px',color:C.gold,background:C.goldDim,border:'1px solid '+C.gold+'40',padding:'8px 14px',cursor:'pointer',borderRadius:'2px'}}>← Ingredients Bank</button>
+        </div>
+      </div>
+      <p style={{fontSize:'11px',color:C.faint,marginBottom:'14px',lineHeight:1.5,maxWidth:'600px'}}>
+        Score (0–10) blends the share of deliveries confirmed-as-correct with the £ value of discrepancies on flagged invoices. Trend compares the last 45 days to the prior 45. Tap a supplier to see their most common issue.
+      </p>
+      {reliability.length===0?(
+        <div style={{textAlign:'center',padding:'60px 0'}}><p style={{fontSize:'13px',color:C.faint}}>No supplier history yet — scan a few invoices to start tracking.</p></div>
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+          {reliability.map(r=>{
+            const expanded=expandedSupplier===r.nameKey;
+            const trendIcon=r.trend==='improving'?'↑':r.trend==='declining'?'↓':r.trend==='stable'?'→':'·';
+            const trendColor=r.trend==='improving'?C.greenLight:r.trend==='declining'?C.red:C.faint;
+            return(
+              <div key={r.nameKey} style={{...card,overflow:'hidden'}}>
+                <button onClick={()=>setExpandedSupplier(expanded?null:r.nameKey)}
+                  style={{width:'100%',display:'grid',gridTemplateColumns:isMobile?'1fr auto':'1fr 80px 100px 100px 50px',gap:'10px',alignItems:'center',padding:'16px',background:'transparent',border:'none',cursor:'pointer',textAlign:'left'}}>
+                  <div style={{minWidth:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap',marginBottom:'4px'}}>
+                      <span style={{fontSize:'14px',color:C.text,fontWeight:500}}>{r.name}</span>
+                      <span title={`Reliability ${r.score.toFixed(1)}/10`}
+                        style={{fontSize:'11px',fontWeight:700,color:scoreColour(r.score,C),background:scoreColour(r.score,C)+'14',border:'0.5px solid '+scoreColour(r.score,C)+'40',padding:'2px 8px',borderRadius:'2px'}}>
+                        {r.score.toFixed(1)}/10
+                      </span>
+                      {r.flaggedCount>0&&(
+                        <span style={{fontSize:'10px',color:C.gold}}>⚑ {r.flaggedCount}</span>
+                      )}
+                    </div>
+                    <p style={{fontSize:'11px',color:C.faint}}>
+                      {r.totalInvoices} invoice{r.totalInvoices===1?'':'s'} · {sym}{r.totalValue.toFixed(0)} total · {r.confirmedCount}/{r.totalInvoices} confirmed
+                    </p>
+                  </div>
+                  {!isMobile&&(
+                    <span style={{fontSize:'12px',color:C.dim,textAlign:'right'}}>{sym}{r.avgInvoiceValue.toFixed(0)} avg</span>
+                  )}
+                  {!isMobile&&(
+                    <span title={`45d trend: ${r.trend}`}
+                      style={{fontSize:'12px',color:trendColor,textAlign:'right',fontWeight:600}}>
+                      {trendIcon} {r.trend==='insufficient_data'?'—':r.trend}
+                    </span>
+                  )}
+                  {!isMobile&&(
+                    <span style={{fontSize:'10px',color:C.faint,textAlign:'right'}}>{r.lastInvoiceTs?new Date(r.lastInvoiceTs).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—'}</span>
+                  )}
+                  <span style={{fontSize:'16px',color:C.faint}}>{expanded?'▾':'▸'}</span>
+                </button>
+                {expanded&&(
+                  <div style={{padding:'10px 16px 16px',borderTop:'1px solid '+C.border,background:C.surface2}}>
+                    <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr 1fr':'repeat(4, 1fr)',gap:'10px',marginBottom:'12px'}}>
+                      <div><p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px'}}>Last 45d</p><p style={{fontSize:'14px',color:scoreColour(r.scoreRecent,C),fontWeight:600}}>{r.scoreRecent.toFixed(1)}/10</p></div>
+                      <div><p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px'}}>Prior 45d</p><p style={{fontSize:'14px',color:scoreColour(r.scorePrior,C),fontWeight:600}}>{r.scorePrior.toFixed(1)}/10</p></div>
+                      <div><p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px'}}>Flagged</p><p style={{fontSize:'14px',color:r.flaggedCount>0?C.gold:C.dim,fontWeight:600}}>{r.flaggedCount}</p></div>
+                      <div><p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px'}}>Discrepancy £</p><p style={{fontSize:'14px',color:r.totalDiscrepancyValue>0?C.red:C.dim,fontWeight:600}}>{sym}{r.totalDiscrepancyValue.toFixed(2)}</p></div>
+                    </div>
+                    {r.topIssue?(
+                      <div style={{padding:'10px 12px',background:C.gold+'10',border:'0.5px solid '+C.gold+'40',borderRadius:'4px'}}>
+                        <p style={{fontSize:'10px',color:C.faint,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:'2px'}}>Most common issue</p>
+                        <p style={{fontSize:'13px',color:C.text}}><strong style={{color:C.gold}}>{r.topIssue.name}</strong> flagged {r.topIssue.count}×</p>
+                      </div>
+                    ):(
+                      <p style={{fontSize:'11px',color:C.faint,fontStyle:'italic'}}>No specific item issues — flags were on overall delivery.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+    {deliveryModalJSX}
+    </>
   );
 
   // ── REVIEW VIEW ────────────────────────────────────────────
   if(view==='review')return(
+    <>
     <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
         <div>
@@ -383,10 +763,13 @@ Invoices scanned after this update will show full details.</p>
         ))}
       </div>
     </div>
+    {deliveryModalJSX}
+    </>
   );
 
   // ── BANK VIEW (default) ────────────────────────────────────
   return(
+    <>
     <div style={{padding:isMobile?'20px 16px':'32px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:'24px'}}>
         <div>
@@ -408,6 +791,7 @@ Invoices scanned after this update will show full details.</p>
             );
           })()}
           <button onClick={()=>{setReportPeriod('week');setReportOffset(0);setView('reports');}} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Reports</button>
+          <button onClick={()=>setView('suppliers')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>Suppliers</button>
           <button onClick={()=>setView('history')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>
             History {invoices.length>0&&<span style={{marginLeft:'4px',fontSize:'10px',background:C.border,padding:'1px 5px',borderRadius:'2px'}}>{invoices.length}</span>}
           </button>
@@ -424,6 +808,16 @@ Invoices scanned after this update will show full details.</p>
         <div style={{background:C.gold+'10',border:'1px solid '+C.gold+'30',borderRadius:'4px',padding:'14px 16px',marginBottom:'16px'}}>
           <p style={{fontSize:'13px',color:C.gold}}>Invoice scanning is included on Pro, Kitchen, and Group plans. Upgrade to unlock.</p>
         </div>
+      )}
+      {discrepancySummary.count>0&&(
+        <button onClick={()=>setView('history')}
+          style={{display:'flex',alignItems:'center',gap:'12px',width:'100%',background:C.gold+'10',border:'1px solid '+C.gold+'40',borderRadius:'4px',padding:'12px 14px',marginBottom:'16px',cursor:'pointer',textAlign:'left'}}>
+          <span style={{fontSize:'18px',color:C.gold}}>⚑</span>
+          <p style={{fontSize:'12px',color:C.dim,flex:1,lineHeight:1.5}}>
+            <strong style={{color:C.gold}}>{discrepancySummary.count}</strong> flagged deliver{discrepancySummary.count===1?'y':'ies'} in the last 30 days — estimated <strong style={{color:C.gold}}>{sym}{discrepancySummary.value.toFixed(2)}</strong> in discrepancies. Tap to review.
+          </p>
+          <span style={{fontSize:'18px',color:C.gold}}>›</span>
+        </button>
       )}
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search ingredients or supplier..."
         style={{width:'100%',background:C.surface,border:'1px solid '+C.border,color:C.text,fontSize:'14px',padding:'12px 14px',outline:'none',fontFamily:'system-ui,sans-serif',marginBottom:'16px',boxSizing:'border-box'}}/>
@@ -465,5 +859,7 @@ Invoices scanned after this update will show full details.</p>
         </div>
       )}
     </div>
+    {deliveryModalJSX}
+    </>
   );
 }

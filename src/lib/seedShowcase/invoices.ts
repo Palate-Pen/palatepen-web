@@ -14,6 +14,14 @@ interface LineSpec {
   unitPrice?: number; // overrides bank price (for price-change scenarios)
 }
 
+interface DiscrepancySpec {
+  bankId: string;
+  invoicedQty: number;
+  receivedQty: number;
+  received: boolean;
+  note?: string;
+}
+
 interface InvoiceSpec {
   id: string;
   supplier: string;
@@ -24,32 +32,43 @@ interface InvoiceSpec {
   from?: string;        // sender (only used when source==='email')
   filename?: string;    // attachment filename
   priceChanges?: { bankId: string; oldPrice: number; newPrice: number }[];
+  // Optional delivery-check outcome. Most invoices in the seed are
+  // implicitly 'confirmed' (chef tapped Yes, all good). A handful carry
+  // explicit flagged status + discrepancies so the demo shows the
+  // supplier reliability score and 30-day discrepancy banner with real
+  // signal. 'confirmed' invoices have their status stamped explicitly
+  // so the reliability calc treats them as deliberate Yes-taps.
+  status?: 'confirmed' | 'flagged';
+  discrepancies?: DiscrepancySpec[];
 }
 
 const SPECS: InvoiceSpec[] = [
   // ── Brakes (broadline supplier — frequent, mid-volume) ──
-  { id: 'seed-inv-brakes-001', supplier: 'Brakes', daysAgo: 88, lines: [
+  { id: 'seed-inv-brakes-001', supplier: 'Brakes', daysAgo: 88, status: 'confirmed', lines: [
     { bankId: 'seed-bank-chicken-breast', qty: 5 },
     { bankId: 'seed-bank-salmon-fillet', qty: 3 },
     { bankId: 'seed-bank-cod-loin', qty: 2 },
     { bankId: 'seed-bank-arborio-rice', qty: 4 },
     { bankId: 'seed-bank-pasta-pappardelle', qty: 3 },
   ]},
-  { id: 'seed-inv-brakes-002', supplier: 'Brakes', daysAgo: 72, lines: [
+  { id: 'seed-inv-brakes-002', supplier: 'Brakes', daysAgo: 72, status: 'confirmed', lines: [
     { bankId: 'seed-bank-chicken-breast', qty: 5 },
     { bankId: 'seed-bank-salmon-fillet', qty: 4 },
     { bankId: 'seed-bank-olive-oil', qty: 5 },
     { bankId: 'seed-bank-soy-sauce', qty: 2 },
   ]},
-  { id: 'seed-inv-brakes-003', supplier: 'Brakes', daysAgo: 55, lines: [
+  { id: 'seed-inv-brakes-003', supplier: 'Brakes', daysAgo: 55, status: 'flagged', lines: [
     { bankId: 'seed-bank-chicken-breast', qty: 6, unitPrice: 8.95 }, // up from 8.40
     { bankId: 'seed-bank-cod-loin', qty: 3 },
     { bankId: 'seed-bank-tiger-prawns', qty: 2 },
     { bankId: 'seed-bank-balsamic', qty: 2 },
   ], priceChanges: [
     { bankId: 'seed-bank-chicken-breast', oldPrice: 8.40, newPrice: 8.95 },
+  ], discrepancies: [
+    { bankId: 'seed-bank-chicken-breast', invoicedQty: 6, receivedQty: 5.5, received: true, note: 'Half kg light — scales agreed at door' },
+    { bankId: 'seed-bank-tiger-prawns',   invoicedQty: 2, receivedQty: 0,   received: false, note: 'Missing from delivery, credit pending' },
   ]},
-  { id: 'seed-inv-brakes-004', supplier: 'Brakes', daysAgo: 35, lines: [
+  { id: 'seed-inv-brakes-004', supplier: 'Brakes', daysAgo: 35, status: 'confirmed', lines: [
     { bankId: 'seed-bank-chicken-breast', qty: 5, unitPrice: 9.20 }, // up further
     { bankId: 'seed-bank-salmon-fillet', qty: 3, unitPrice: 22.40 }, // up
     { bankId: 'seed-bank-cod-loin', qty: 3 },
@@ -58,7 +77,7 @@ const SPECS: InvoiceSpec[] = [
     { bankId: 'seed-bank-chicken-breast', oldPrice: 8.95, newPrice: 9.20 },
     { bankId: 'seed-bank-salmon-fillet', oldPrice: 21.50, newPrice: 22.40 },
   ]},
-  { id: 'seed-inv-brakes-005', supplier: 'Brakes', daysAgo: 12, lines: [
+  { id: 'seed-inv-brakes-005', supplier: 'Brakes', daysAgo: 12, status: 'confirmed', lines: [
     { bankId: 'seed-bank-chicken-breast', qty: 6, unitPrice: 9.40 },
     { bankId: 'seed-bank-salmon-fillet', qty: 4 },
     { bankId: 'seed-bank-arborio-rice', qty: 3 },
@@ -68,19 +87,20 @@ const SPECS: InvoiceSpec[] = [
   ]},
 
   // ── Smithfield Butchers (premium meat — lower frequency, high spend) ──
-  { id: 'seed-inv-butcher-001', supplier: 'Smithfield Butchers', daysAgo: 80, lines: [
+  // All confirmed → 10/10 reliability, models a top-tier supplier.
+  { id: 'seed-inv-butcher-001', supplier: 'Smithfield Butchers', daysAgo: 80, status: 'confirmed', lines: [
     { bankId: 'seed-bank-beef-fillet', qty: 4 },
     { bankId: 'seed-bank-lamb-shoulder', qty: 3 },
     { bankId: 'seed-bank-duck-breast', qty: 2 },
   ]},
-  { id: 'seed-inv-butcher-002', supplier: 'Smithfield Butchers', daysAgo: 50, lines: [
+  { id: 'seed-inv-butcher-002', supplier: 'Smithfield Butchers', daysAgo: 50, status: 'confirmed', lines: [
     { bankId: 'seed-bank-beef-fillet', qty: 5, unitPrice: 40.20 }, // up
     { bankId: 'seed-bank-lamb-shoulder', qty: 4 },
     { bankId: 'seed-bank-pork-belly', qty: 4 },
   ], priceChanges: [
     { bankId: 'seed-bank-beef-fillet', oldPrice: 38.50, newPrice: 40.20 },
   ]},
-  { id: 'seed-inv-butcher-003', supplier: 'Smithfield Butchers', daysAgo: 22, lines: [
+  { id: 'seed-inv-butcher-003', supplier: 'Smithfield Butchers', daysAgo: 22, status: 'confirmed', lines: [
     { bankId: 'seed-bank-beef-fillet', qty: 4, unitPrice: 41.80 },
     { bankId: 'seed-bank-lamb-shoulder', qty: 3 },
     { bankId: 'seed-bank-duck-breast', qty: 3 },
@@ -90,21 +110,26 @@ const SPECS: InvoiceSpec[] = [
   ]},
 
   // ── Borough Market Produce (produce — high frequency, low value) ──
-  { id: 'seed-inv-market-001', supplier: 'Borough Market Produce', daysAgo: 78, lines: [
+  // Two flagged out of 5 — produce is fragile, models a sometimes-iffy
+  // supplier. Drops the reliability score and surfaces a clear top issue.
+  { id: 'seed-inv-market-001', supplier: 'Borough Market Produce', daysAgo: 78, status: 'confirmed', lines: [
     { bankId: 'seed-bank-tomatoes-vine', qty: 8 },
     { bankId: 'seed-bank-onions', qty: 15 },
     { bankId: 'seed-bank-garlic', qty: 2 },
     { bankId: 'seed-bank-potatoes', qty: 25 },
     { bankId: 'seed-bank-basil', qty: 0.5 },
   ]},
-  { id: 'seed-inv-market-002', supplier: 'Borough Market Produce', daysAgo: 64, lines: [
+  { id: 'seed-inv-market-002', supplier: 'Borough Market Produce', daysAgo: 64, status: 'flagged', lines: [
     { bankId: 'seed-bank-tomatoes-vine', qty: 10 },
     { bankId: 'seed-bank-spinach', qty: 4 },
     { bankId: 'seed-bank-mushrooms', qty: 6 },
     { bankId: 'seed-bank-lemons', qty: 3 },
     { bankId: 'seed-bank-basil', qty: 0.6 },
+  ], discrepancies: [
+    { bankId: 'seed-bank-spinach',   invoicedQty: 4, receivedQty: 0,   received: false, note: 'Wrong veg — sent kale by mistake, refused' },
+    { bankId: 'seed-bank-tomatoes-vine', invoicedQty: 10, receivedQty: 8, received: true, note: 'Two tops soft, kept the good ones' },
   ]},
-  { id: 'seed-inv-market-003', supplier: 'Borough Market Produce', daysAgo: 41, lines: [
+  { id: 'seed-inv-market-003', supplier: 'Borough Market Produce', daysAgo: 41, status: 'confirmed', lines: [
     { bankId: 'seed-bank-tomatoes-vine', qty: 12, unitPrice: 3.60 }, // seasonal up
     { bankId: 'seed-bank-spinach', qty: 5 },
     { bankId: 'seed-bank-carrots', qty: 10 },
@@ -113,7 +138,7 @@ const SPECS: InvoiceSpec[] = [
   ], priceChanges: [
     { bankId: 'seed-bank-tomatoes-vine', oldPrice: 3.20, newPrice: 3.60 },
   ]},
-  { id: 'seed-inv-market-004', supplier: 'Borough Market Produce', daysAgo: 18, lines: [
+  { id: 'seed-inv-market-004', supplier: 'Borough Market Produce', daysAgo: 18, status: 'flagged', lines: [
     { bankId: 'seed-bank-tomatoes-vine', qty: 10 },
     { bankId: 'seed-bank-mushrooms', qty: 6, unitPrice: 5.80 }, // up
     { bankId: 'seed-bank-spinach', qty: 4 },
@@ -121,8 +146,11 @@ const SPECS: InvoiceSpec[] = [
     { bankId: 'seed-bank-parsley', qty: 0.5 },
   ], priceChanges: [
     { bankId: 'seed-bank-mushrooms', oldPrice: 5.20, newPrice: 5.80 },
+  ], discrepancies: [
+    { bankId: 'seed-bank-mushrooms', invoicedQty: 6,  receivedQty: 4, received: true, note: 'One tray with mould, returned' },
+    { bankId: 'seed-bank-tomatoes-vine', invoicedQty: 10, receivedQty: 7, received: true, note: 'Soft tops again — same supplier issue' },
   ]},
-  { id: 'seed-inv-market-005', supplier: 'Borough Market Produce', daysAgo: 4, lines: [
+  { id: 'seed-inv-market-005', supplier: 'Borough Market Produce', daysAgo: 4, status: 'confirmed', lines: [
     { bankId: 'seed-bank-tomatoes-vine', qty: 8 },
     { bankId: 'seed-bank-onions', qty: 12 },
     { bankId: 'seed-bank-carrots', qty: 8 },
@@ -131,14 +159,15 @@ const SPECS: InvoiceSpec[] = [
   ]},
 
   // ── Bidfood (dairy + dry — moderate frequency) ──
-  { id: 'seed-inv-bidfood-001', supplier: 'Bidfood', daysAgo: 67, lines: [
+  // All confirmed → 10/10, models a second top-tier supplier.
+  { id: 'seed-inv-bidfood-001', supplier: 'Bidfood', daysAgo: 67, status: 'confirmed', lines: [
     { bankId: 'seed-bank-butter-unsalted', qty: 10 },
     { bankId: 'seed-bank-double-cream', qty: 8 },
     { bankId: 'seed-bank-whole-milk', qty: 20 },
     { bankId: 'seed-bank-eggs-large', qty: 60 },
     { bankId: 'seed-bank-parmesan', qty: 4 },
   ]},
-  { id: 'seed-inv-bidfood-002', supplier: 'Bidfood', daysAgo: 30, lines: [
+  { id: 'seed-inv-bidfood-002', supplier: 'Bidfood', daysAgo: 30, status: 'confirmed', lines: [
     { bankId: 'seed-bank-butter-unsalted', qty: 10, unitPrice: 7.60 }, // up
     { bankId: 'seed-bank-double-cream', qty: 8 },
     { bankId: 'seed-bank-whole-milk', qty: 20 },
@@ -147,7 +176,7 @@ const SPECS: InvoiceSpec[] = [
   ], priceChanges: [
     { bankId: 'seed-bank-butter-unsalted', oldPrice: 7.20, newPrice: 7.60 },
   ]},
-  { id: 'seed-inv-bidfood-003', supplier: 'Bidfood', daysAgo: 7, lines: [
+  { id: 'seed-inv-bidfood-003', supplier: 'Bidfood', daysAgo: 7, status: 'confirmed', lines: [
     { bankId: 'seed-bank-butter-unsalted', qty: 12 },
     { bankId: 'seed-bank-double-cream', qty: 10 },
     { bankId: 'seed-bank-eggs-large', qty: 60 },
@@ -157,19 +186,22 @@ const SPECS: InvoiceSpec[] = [
     from: 'invoicing@bidfood.co.uk',
     filename: 'INV-2026-04401.pdf' },
 
-  // ── Cuisine de France (pastry — low frequency) ──
-  { id: 'seed-inv-pastry-001', supplier: 'Cuisine de France', daysAgo: 58, lines: [
+  // ── Cuisine de France (pastry — low frequency, occasional shortfall) ──
+  { id: 'seed-inv-pastry-001', supplier: 'Cuisine de France', daysAgo: 58, status: 'confirmed', lines: [
     { bankId: 'seed-bank-puff-pastry', qty: 5 },
     { bankId: 'seed-bank-sourdough', qty: 24 },
   ]},
-  { id: 'seed-inv-pastry-002', supplier: 'Cuisine de France', daysAgo: 28, lines: [
+  { id: 'seed-inv-pastry-002', supplier: 'Cuisine de France', daysAgo: 28, status: 'flagged', lines: [
     { bankId: 'seed-bank-puff-pastry', qty: 6 },
     { bankId: 'seed-bank-sourdough', qty: 30 },
   ], source: 'email',
     subject: 'Cuisine de France — order 12041',
     from: 'orders@cuisinedefrance.co.uk',
-    filename: 'cuisinedefrance-12041.pdf' },
-  { id: 'seed-inv-pastry-003', supplier: 'Cuisine de France', daysAgo: 9, lines: [
+    filename: 'cuisinedefrance-12041.pdf',
+    discrepancies: [
+      { bankId: 'seed-bank-sourdough', invoicedQty: 30, receivedQty: 24, received: true, note: 'Six loaves short of the order' },
+    ]},
+  { id: 'seed-inv-pastry-003', supplier: 'Cuisine de France', daysAgo: 9, status: 'confirmed', lines: [
     { bankId: 'seed-bank-puff-pastry', qty: 4 },
     { bankId: 'seed-bank-sourdough', qty: 24 },
   ]},
@@ -189,6 +221,8 @@ export interface ShowcaseInvoice {
   subject?: string;
   from?: string;
   filename?: string;
+  status?: 'confirmed' | 'flagged';
+  discrepancies?: Array<{ name: string; invoicedQty: number; receivedQty: number; received: boolean; note?: string; unitPrice: number; unit: string }>;
 }
 
 export interface ShowcasePriceAlert {
@@ -242,6 +276,21 @@ export function buildShowcaseInvoices(): { invoices: ShowcaseInvoice[]; priceAle
       return alert;
     });
 
+    // Materialise discrepancies — resolve bankId → name/unit/unitPrice so the
+    // app and reliability calc don't have to look anything up at read time.
+    const discrepancies = (spec.discrepancies || []).map(d => {
+      const b = bankById.get(d.bankId);
+      return {
+        name: b?.name ?? d.bankId,
+        invoicedQty: d.invoicedQty,
+        receivedQty: d.receivedQty,
+        received: d.received,
+        note: d.note,
+        unitPrice: b?.unitPrice ?? 0,
+        unit: b?.unit ?? '',
+      };
+    });
+
     invoices.push({
       id: spec.id,
       supplier: spec.supplier,
@@ -251,6 +300,8 @@ export function buildShowcaseInvoices(): { invoices: ShowcaseInvoice[]; priceAle
       items,
       scannedAt: ts,
       total,
+      ...(spec.status ? { status: spec.status } : {}),
+      ...(discrepancies.length > 0 ? { discrepancies } : {}),
       ...(spec.source === 'email' ? {
         source: 'email' as const,
         receivedAt: ts,
