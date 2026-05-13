@@ -9,10 +9,16 @@
 // account before inserting these, so the active outlet selection in
 // localStorage will reconcile cleanly against the new list.
 
+// outlets.id is a `uuid` column in the live schema, so these have to be
+// valid UUID strings — Postgres rejects readable seed-* tokens with 22P02
+// at insert time. The values themselves are arbitrary, only their
+// stability across runs matters (idempotency: re-seeding overwrites the
+// same rows + every JSONB entity that references one keeps pointing at
+// the same outlet).
 export const OUTLET_IDS = {
-  soho:          'seed-outlet-soho',
-  marylebone:    'seed-outlet-marylebone',
-  centralKitchen:'seed-outlet-ck',
+  soho:           '11111111-1111-1111-1111-111111111111',
+  marylebone:     '22222222-2222-2222-2222-222222222222',
+  centralKitchen: '33333333-3333-3333-3333-333333333333',
 } as const;
 
 export interface ShowcaseOutlet {
