@@ -509,3 +509,61 @@ When completing any roadmap item, add an entry here with the date, what was done
 - Sensitive Vercel env vars (Stripe, Supabase service role, Anthropic) cannot be pulled to local `.env.local`. To run admin/server routes locally that need them, paste manually. Pulled values come back as empty strings.
 - **Migrations run manually in Supabase SQL editor.** No supabase-cli pipeline yet — when a new migration lands in `supabase/migrations/NNN_*.sql`, paste it into the Supabase SQL editor and run it. Latest is migration 010 (`anthropic_usage`) which adds the per-call metering table the admin Infrastructure dashboard reads to show actual Anthropic spend vs the formula estimate. Run it before usage data will populate; without it the admin endpoint returns zeros + a `tableMissing` flag and the UI prompts you to run it.
 - **Anthropic credit balance is a live operational dependency.** Recipe import (`/api/palatable/import-recipe`) and invoice scanning (`/api/palatable/scan-invoice`) both call Sonnet 4.6 via api.anthropic.com. If the balance hits £0 the API returns HTTP 400 "Your credit balance is too low" — the UI surfaces this as a clear error pill but the feature is dead until topped up. Top-up: https://console.anthropic.com/settings/plans. Cost is roughly $0.005 per import or scan with Sonnet 4.6 — small refills go a long way.
+
+# Palatable — Strategic Direction (May 2026)
+
+This file gives Claude Code the strategic context to build in the right direction. Read all three referenced docs before making non-trivial product decisions.
+
+## The product, in one sentence
+
+Palatable is the hospitality platform where chefs do their work in the kitchen, managers see what they need to see, and owners watch the money — without anyone having to do extra work for anyone else.
+
+## The positioning
+
+**Chef-facing:** "The digital sous chef that handles the admin so you can cook."
+**Owner-facing:** "Software your chefs will actually use — so you finally get the data you need."
+**Internal:** Built in the kitchen. Useful to the whole business.
+
+## The core architectural insight
+
+One system, three role-aware surfaces:
+- **Chef surface** — the sous chef. Calm, mobile-first, hides finance.
+- **Manager surface** — site operational status. Exception management.
+- **Owner surface** — business pulse, multi-site intelligence, financial reports.
+
+Same underlying data. Role-aware experience. The chef's normal work feeds the manager and owner views automatically. **Nobody does work for anyone else.**
+
+## The v1 wedge (what we launch with that no competitor has)
+
+1. **Auto-maintained costing** — recipe costed once, kept current forever as supplier prices change
+2. **Margin leakage detection** — proactive alerts when GP slips, with root cause identified
+3. **Credit note workflow** — discrepancies drafted, sent, tracked without chef chasing
+
+## Principles for every product decision
+
+- Does this make Palatable a better sous chef, or does it make it admin software?
+- Is this work the chef needs to do anyway, or are we asking them to do work for someone else?
+- Is this surfaced to the right person in the right way for their role?
+- Suggestions, not commands. Trust is earned over time.
+- Don't ask the system to remember what it could figure out from data it already has.
+- The kitchen is sacred. The system protects it from interruption.
+
+## What we don't do
+
+Payroll. HR. Accounting replacement. POS replacement. Generic ERP. Anything that makes chefs do work for managers. Anything that interrupts the kitchen.
+
+## Reference documents
+
+Full strategy lives in:
+- `docs/strategy/palatable-way.md` — principles and brand voice
+- `docs/strategy/role-aware-surfaces.md` — chef / manager / owner surface design
+- `docs/strategy/pre-launch-build-sequence.md` — 10–12 week pre-launch plan
+
+When in doubt about a product or UX decision, read these first.
+
+## Build conventions (unchanged)
+
+- All file writes via Node.js setup scripts to avoid Windows encoding issues
+- Repo: Palate-Pen/palatepen-web, branch master
+- Palatable web app lives at `Documents/palateandpen/web/`; mobile sibling at `Documents/palateandpen/app/`
+- Stack: Next.js 14.2.5, React 18, Supabase (EU West London, project `xbnsytrcvyayzdxezpha`), Stripe, Tailwind, Anthropic Sonnet 4.6 server-side
