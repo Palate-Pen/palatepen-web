@@ -39,27 +39,27 @@ export function buildShowcaseMenus(): ShowcaseMenu[] {
         'seed-recipe-creme-brulee',
         'seed-recipe-lemon-tart',
       ],
-      // Weekly covers — populated so menu engineering classifies dishes.
-      // Numbers chosen to spread across all four Kasavana-Smith quadrants:
-      //   - Beef Wellington: high mix, low GP → Plough Horse
-      //   - Chocolate fondant: high mix, high GP → Star
-      //   - Confit duck: low mix, high GP → Puzzle
-      //   - Pumpkin soup: low mix, low GP → Dog (unlikely but possible at high cost basis)
+      // Weekly covers — populated so menu engineering classifies dishes
+      // across all four Kasavana-Smith quadrants. Spread chosen so the
+      // popularity threshold (70% × fair share = ~24 covers / dish for 14
+      // dishes) carves out a clear LOW-MIX group (Pumpkin / Prawn cocktail /
+      // Blinis / Confit duck / Cod-mussels / Lemon tart), and the profitability
+      // split against today's cost basis puts the right mix in each cell.
       salesData: {
         'seed-recipe-heritage-tomato-salad': 38,
-        'seed-recipe-pumpkin-soup': 18,
-        'seed-recipe-prawn-cocktail': 27,
-        'seed-recipe-smoked-salmon-blinis': 22,
+        'seed-recipe-pumpkin-soup': 16,
+        'seed-recipe-prawn-cocktail': 13,
+        'seed-recipe-smoked-salmon-blinis': 21,
         'seed-recipe-beef-wellington': 64,
         'seed-recipe-pan-roast-salmon': 48,
         'seed-recipe-lamb-shoulder': 31,
-        'seed-recipe-confit-duck': 19,
+        'seed-recipe-confit-duck': 18,
         'seed-recipe-mushroom-risotto': 36,
         'seed-recipe-pappardelle-ragu': 42,
-        'seed-recipe-cod-mussels': 28,
+        'seed-recipe-cod-mussels': 14,
         'seed-recipe-chocolate-fondant': 71,
         'seed-recipe-creme-brulee': 45,
-        'seed-recipe-lemon-tart': 38,
+        'seed-recipe-lemon-tart': 17,
       },
       published: true,
       publicSlug: 'palate-test-kitchen-dinner',

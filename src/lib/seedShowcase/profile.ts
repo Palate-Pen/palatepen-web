@@ -14,7 +14,11 @@ export function buildShowcaseProfile(): Record<string, unknown> {
     gpTarget: 72,
     stockDay: 1, // Monday
     stockFrequency: 'weekly',
-    tier: 'pro',
+    // Kitchen tier so the demo unlocks every showcase surface:
+    // - Public menus (`/m/[slug]` — tier-gated to kitchen/group)
+    // - API access (Settings → API key — kitchen+)
+    // - My Team management (kitchen+ + owner role)
+    tier: 'kitchen',
     invoiceInboxToken: generateInboxToken(),
   };
 }

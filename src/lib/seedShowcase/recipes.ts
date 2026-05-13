@@ -498,16 +498,24 @@ export function buildShowcaseRecipesAndCostings(): { recipes: ShowcaseRecipe[]; 
   const costings: ShowcaseCosting[] = [];
 
   for (const spec of SPECS) {
-    // Primary (most recent) costing — base prices.
-    const primary = buildCosting(spec, daysAgo(spec.daysAgoCosted), 1.0, '');
-    costings.push(primary);
+    // Build all costings for this spec — the original base-price one plus any
+    // re-costed historical entries with price drift. recipe.linkedCostingId
+    // then points to whichever has the MOST RECENT savedAt so menu
+    // engineering / GP reports evaluate the dish against today's cost basis,
+    // not 60-90 day old prices. (Earlier versions of this seed linked to the
+    // base-price entry by default, which made re-costed dishes look
+    // artificially high-margin — Star quadrant captured everything.)
+    const baseCosting = buildCosting(spec, daysAgo(spec.daysAgoCosted), 1.0, '-base');
+    costings.push(baseCosting);
 
-    // Historical re-costings with price drift — produces GP trend signal.
+    let latestCosting = baseCosting;
     if (spec.recostings) {
       for (const rc of spec.recostings) {
         const mult = 1 + rc.priceDeltaPct / 100;
         const id = `-rc-${rc.daysAgo}`;
-        costings.push(buildCosting(spec, daysAgo(rc.daysAgo), mult, id));
+        const c = buildCosting(spec, daysAgo(rc.daysAgo), mult, id);
+        costings.push(c);
+        if (c.savedAt > latestCosting.savedAt) latestCosting = c;
       }
     }
 
@@ -530,7 +538,7 @@ export function buildShowcaseRecipesAndCostings(): { recipes: ShowcaseRecipe[]; 
       title: spec.title,
       category: spec.category,
       locked: spec.locked,
-      linkedCostingId: primary.id,
+      linkedCostingId: latestCosting.id,
       imported,
       allergens: spec.manualMayContain
         ? { mayContain: spec.manualMayContain, contains: [] }

@@ -69,6 +69,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
   }
 
+  // Mirror the profile tier to accounts owned by this user — in the multi-
+  // user world `accounts.tier` is the source of truth (Stripe webhook writes
+  // here, the app reads from currentAccount). Without this, the seed leaves
+  // the account on whatever tier was there before and Kitchen-gated features
+  // (public menus, API access, My Team) don't light up.
+  const targetTier = (payload.profile as any)?.tier;
+  if (targetTier && typeof targetTier === 'string') {
+    const { error: acctErr } = await supabase
+      .from('accounts')
+      .update({ tier: targetTier, updated_at: new Date().toISOString() })
+      .eq('owner_user_id', userId);
+    if (acctErr) {
+      console.error('[seed-showcase] account tier mirror failed:', acctErr.code, acctErr.message);
+    }
+  }
+
   await audit(req, supabase, 'seed_showcase', userId, {
     counts: showcaseSummary(),
     target_account_id: existing.account_id,
