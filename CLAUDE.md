@@ -23,6 +23,13 @@ Palatable by Palate & Pen — Back office work you can stomach. A professional c
 - Logo: italic P + gold dot + alatable
 - Colours: Ink #0E0C0A, Gold #C8960A, Cream #F0E8DC, Paper #FAF7F2
 - Tiers: Free / Pro £25pm / Kitchen £59pm / Group £129pm / Enterprise (price on request — contact_sales route to hello@palateandpen.co.uk)
+- Tier limits (maxUsers · maxOutlets · maxScans/mo):
+  - Free: 1 · 1 · 0
+  - Pro: 1 · 1 · 80
+  - Kitchen: 5 · 1 · 200
+  - Group: **25 · 5 · 500** (5 users per outlet · 5 outlets max — upgrade to Enterprise for unlimited)
+  - Enterprise: unlimited · unlimited · unlimited
+- Full breakdown lives in [`docs/TIER_SCHEMA.md`](docs/TIER_SCHEMA.md); enforced via `TIER_LIMITS` in `src/lib/tierGate.ts` and `SEAT_LIMITS` in `src/lib/team.ts`.
 
 ## Issue Tracking
 
@@ -371,6 +378,8 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
 
 ### 2026-05-13
+
+- **Group tier capped at 5 outlets + 25 users (Enterprise differentiation).** Group was previously unlimited on both axes, which collapsed the Enterprise upsell ladder. New structure: Free/Pro 1 user · 1 outlet, Kitchen 5 users · 1 outlet, **Group 25 users (5 per outlet × 5 outlets) · 500 invoice scans/mo**, Enterprise unlimited everything. `TIER_LIMITS` in `src/lib/tierGate.ts` gains a `maxScans` field per tier. `SEAT_LIMITS` in `src/lib/team.ts` recalibrated to match (Kitchen 5, Group 25, Enterprise unlimited — was Kitchen 10, Group unlimited). The team-invite endpoint at `/api/accounts/[id]/invites/route.ts` now returns a tier-aware upgrade hint in the seat-limit error (Kitchen→Group→Enterprise), and `MyTeamView`'s seat-limit-reached banner points at the right next tier instead of always saying "upgrade to Group for unlimited members" (which is now false). UpgradeModal tier cards reworded — Pro/Kitchen/Group/Enterprise each surface the user · outlet · scans triple as the first feature line so the differentiation is glanceable. TIER_SCHEMA.md and CLAUDE.md updated with the new caps. Behavioural change worth flagging: existing Kitchen accounts with > 5 members (created when the cap was 10) will fail seat checks on the next invite; pre-launch this affects only seeded demo accounts.
 
 - **Five-tier pricing + Enterprise contact_sales + admin cost calculator.** Tier ladder extends from four (Free / Pro / Kitchen / Group) to five — Enterprise lands at the top as a sales-led tier with no Stripe price. Spans five surfaces:
   - **`/api/stripe/create-checkout` route.** `PRICES` map keeps the existing six monthly/yearly price IDs for Pro / Kitchen / Group. New short-circuit at the top of `POST`: if `priceKey === 'enterprise'`, returns `{ contact_sales: true, mailto, url: 'mailto:hello@palateandpen.co.uk?subject=Enterprise%20enquiry' }` without ever calling Stripe. Caller can use `data.url` like a normal redirect target.

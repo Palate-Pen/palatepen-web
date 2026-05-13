@@ -14,14 +14,16 @@ there, not at the call site.
 - 10 notebook entries
 - 1 user
 - 1 outlet
-- No AI features
+- 0 invoice scans / mo (AI is gated to Pro+)
 - No stock
 - No invoices
 
 ### Pro · £25/mo
 - Unlimited recipes
+- Unlimited notebook entries
 - 1 user
 - 1 outlet
+- **80 invoice scans / mo**
 - All AI features (recipe import, invoice scanning, spec-sheet scanning)
 - Stock counting + par levels
 - Invoices (manual + AI scan)
@@ -33,6 +35,7 @@ there, not at the call site.
 - Everything in Pro
 - Up to 5 users
 - 1 outlet
+- **200 invoice scans / mo**
 - Team permissions
 - Activity log
 - Shared notebook
@@ -44,8 +47,9 @@ there, not at the call site.
 
 ### Group · £129/mo
 - Everything in Kitchen
-- Unlimited users
-- Unlimited outlets
+- **Up to 25 users**
+- **Up to 5 outlets** *(5 users per outlet maximum. 5 outlets maximum. Upgrade to Enterprise for unlimited outlets and users.)*
+- **500 invoice scans / mo**
 - Multi-outlet management
 - Central kitchen
 - Per-outlet dashboards
@@ -61,6 +65,9 @@ there, not at the call site.
 
 ### Enterprise · Price on request
 - Everything in Group
+- **Unlimited users**
+- **Unlimited outlets**
+- **Unlimited invoice scans**
 - White label
 - SSO
 - Dedicated account manager
@@ -195,10 +202,10 @@ export function requiresTier(feature: string): Tier {
 }
 
 export const TIER_LIMITS = {
-  free:       { maxRecipes: 5, maxNotebook: 10, maxUsers: 1, maxOutlets: 1 },
-  pro:        { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 1, maxOutlets: 1 },
-  kitchen:    { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 5, maxOutlets: 1 },
-  group:      { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: Infinity, maxOutlets: Infinity },
-  enterprise: { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: Infinity, maxOutlets: Infinity },
+  free:       { maxRecipes: 5,        maxNotebook: 10,       maxUsers: 1,        maxOutlets: 1,        maxScans: 0 },
+  pro:        { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 1,        maxOutlets: 1,        maxScans: 80 },
+  kitchen:    { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 5,        maxOutlets: 1,        maxScans: 200 },
+  group:      { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 25,       maxOutlets: 5,        maxScans: 500 },
+  enterprise: { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: Infinity, maxOutlets: Infinity, maxScans: Infinity },
 }
 ```

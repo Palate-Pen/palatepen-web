@@ -29,9 +29,19 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const usage = await seatUsage(supabase, accountId, account.tier);
   if (!usage.hasRoom) {
+    // Direct the inviter at the right next tier rather than a generic
+    // "upgrade" — Group caps at 25, so the next step is Enterprise.
+    const nextTier =
+      account.tier === 'free'    ? 'Kitchen (5 users)' :
+      account.tier === 'pro'     ? 'Kitchen (5 users)' :
+      account.tier === 'kitchen' ? 'Group (25 users)' :
+      account.tier === 'group'   ? 'Enterprise (unlimited users)' :
+      'a higher plan';
     return NextResponse.json({
-      error: `Seat limit reached for ${account.tier} tier (${usage.used} of ${usage.limit}). Upgrade to add more.`,
+      error: `Seat limit reached for ${account.tier} tier (${usage.used} of ${usage.limit}). Upgrade to ${nextTier} to invite more.`,
       seatLimitReached: true,
+      currentTier: account.tier,
+      nextTier: account.tier === 'group' ? 'enterprise' : (account.tier === 'kitchen' ? 'group' : 'kitchen'),
     }, { status: 403 });
   }
 

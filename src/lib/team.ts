@@ -8,12 +8,16 @@ export function roleAtLeast(role: Role | null | undefined, min: Role): boolean {
   return ROLE_ORDER[role] >= ROLE_ORDER[min];
 }
 
-// Tier seat limits — undefined = unlimited.
+// Tier seat limits — undefined = unlimited. Keep in sync with TIER_LIMITS
+// in src/lib/tierGate.ts (which holds the same numbers plus outlet + scan
+// caps). Enterprise is the only unlimited tier; Group caps at 25 users
+// so going beyond that is an Enterprise upgrade path.
 export const SEAT_LIMITS: Record<string, number | undefined> = {
   free: 1,
   pro: 1,
-  kitchen: 10,
-  group: undefined,
+  kitchen: 5,
+  group: 25,
+  enterprise: undefined,
 };
 
 export interface SeatUsage {

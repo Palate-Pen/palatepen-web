@@ -197,11 +197,20 @@ export default function MyTeamView() {
             </>
           )}
 
-          {!team.seats.hasRoom && (
-            <div style={{ background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', padding: '14px 18px', fontSize: '12px', color: C.faint }}>
-              Seat limit reached for the {tier} tier ({team.seats.used} of {team.seats.limit}). Upgrade to Group for unlimited members.
-            </div>
-          )}
+          {!team.seats.hasRoom && (() => {
+            // Group caps at 25 users now — the next step is Enterprise.
+            // Kitchen caps at 5, next step is Group. Anything below
+            // Kitchen still upgrades to Kitchen for a team.
+            const upgradeHint =
+              tier === 'group'   ? 'Upgrade to Enterprise for unlimited members.' :
+              tier === 'kitchen' ? 'Upgrade to Group for up to 25 members.' :
+              'Upgrade to Kitchen for up to 5 members.';
+            return (
+              <div style={{ background: C.surface2, border: '0.5px dashed ' + C.border, borderRadius: '3px', padding: '14px 18px', fontSize: '12px', color: C.faint }}>
+                Seat limit reached for the {tier} tier ({team.seats.used} of {team.seats.limit}). {upgradeHint}
+              </div>
+            );
+          })()}
         </>
       )}
 

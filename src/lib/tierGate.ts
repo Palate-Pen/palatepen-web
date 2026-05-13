@@ -75,10 +75,14 @@ export function requiresTier(feature: string): Tier {
   return FEATURE_MIN_TIER[feature] ?? 'free'
 }
 
+// Hard limits per tier. `Infinity` means no cap. Group is intentionally
+// capped at 5 outlets + 25 users (5 users per outlet maximum) — upgrade
+// to Enterprise for unlimited outlets and users. maxScans is invoice
+// scans per calendar month — Free is 0 (AI-gated to Pro+).
 export const TIER_LIMITS = {
-  free:       { maxRecipes: 5, maxNotebook: 10, maxUsers: 1, maxOutlets: 1 },
-  pro:        { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 1, maxOutlets: 1 },
-  kitchen:    { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 5, maxOutlets: 1 },
-  group:      { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: Infinity, maxOutlets: Infinity },
-  enterprise: { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: Infinity, maxOutlets: Infinity },
+  free:       { maxRecipes: 5,        maxNotebook: 10,       maxUsers: 1,        maxOutlets: 1,        maxScans: 0 },
+  pro:        { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 1,        maxOutlets: 1,        maxScans: 80 },
+  kitchen:    { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 5,        maxOutlets: 1,        maxScans: 200 },
+  group:      { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: 25,       maxOutlets: 5,        maxScans: 500 },
+  enterprise: { maxRecipes: Infinity, maxNotebook: Infinity, maxUsers: Infinity, maxOutlets: Infinity, maxScans: Infinity },
 }
