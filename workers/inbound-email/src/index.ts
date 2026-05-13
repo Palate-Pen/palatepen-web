@@ -1,9 +1,11 @@
 import PostalMime from 'postal-mime';
 
 // Cloudflare Email Worker — runs for every email Cloudflare Email Routing
-// delivers to the `mail.palateandpen.co.uk` subdomain. We parse the raw
-// MIME, extract attachments (PDF/image), and POST JSON to the Palatable
-// webhook in the exact shape `/api/inbound-email/route.ts` expects.
+// delivers via the apex catch-all rule on palateandpen.co.uk (jack@/hello@
+// have their own explicit forwarding rules to JackHarrison@PalatePen.
+// onmicrosoft.com on M365). We parse the raw MIME, extract attachments
+// (PDF/image), and POST JSON to the Palatable webhook in the exact shape
+// `/api/inbound-email/route.ts` expects.
 //
 // Why this exists instead of using a SaaS inbound provider: keeps invoice
 // data out of any third-party email service (chef invoices may include

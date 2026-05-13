@@ -1,8 +1,15 @@
 # palatable-inbound-email Worker
 
-Cloudflare Email Worker that catches mail sent to `*@mail.palateandpen.co.uk`,
+Cloudflare Email Worker that catches mail sent to `*@palateandpen.co.uk`
+(caught by the catch-all rule in Cloudflare Email Routing on the apex zone),
 parses MIME with `postal-mime`, extracts PDF/image attachments, and POSTs JSON
 to `https://app.palateandpen.co.uk/api/inbound-email` with the shared bearer.
+
+Apex coexistence note: Cloudflare Email Routing replaces the apex MX, so
+`jack@palateandpen.co.uk` and `hello@palateandpen.co.uk` are configured as
+forwarding rules in the dashboard that send to `JackHarrison@PalatePen.onmicrosoft.com`
+(the underlying M365 mailbox). The catch-all then fires this Worker for
+anything else, which the Worker uses for the `invoices+TOKEN` chef pattern.
 
 ## Deploy
 
@@ -17,9 +24,11 @@ npx wrangler deploy
 After deploy, wire the Cloudflare dashboard:
 
 1. Cloudflare → `palateandpen.co.uk` zone → **Email** → **Email Routing**
-2. Enable Email Routing on the **`mail.palateandpen.co.uk`** subdomain (NOT the apex — apex MX must stay on Microsoft 365 for jack@/hello@)
-3. Cloudflare auto-adds the MX records for the subdomain
-4. **Routing rules → Add** → Custom address: `*@mail.palateandpen.co.uk` → Action: **Send to Worker** → select `palatable-inbound-email`
+2. Enable Email Routing on the **`palateandpen.co.uk`** apex zone (CF will replace the M365 MX records — this is intentional)
+3. Add destination address `JackHarrison@PalatePen.onmicrosoft.com` and verify it (CF sends a confirmation email)
+4. **Routing rules → Custom address** → `jack@palateandpen.co.uk` → Action: **Send to an email** → `JackHarrison@PalatePen.onmicrosoft.com`
+5. Repeat for `hello@palateandpen.co.uk` (same destination, same M365 mailbox)
+6. **Catch-all address** → Action: **Send to a Worker** → select `palatable-inbound-email`
 
 ## Test
 
