@@ -12,10 +12,23 @@ import{generateApiKey,maskApiKey}from'@/lib/apiKey';
 import{generateInboxToken}from'@/lib/inboundToken';
 import{useTierAndFlag}from'@/lib/usePlatformConfig';
 import{canAccess}from'@/lib/tierGate';
+import{TIER_OUTLET_LIMITS,GROUP_MAX_OUTLETS}from'@/lib/outlets';
+import type{Outlet,OutletType}from'@/types/outlets';
+import AddOutletModal from'./AddOutletModal';
+import EditOutletModal from'./EditOutletModal';
 
 export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>void;onShowGuide?:()=>void}={}){
   const{settings,update}=useSettings();
-  const{user,tier,signOut}=useAuth();
+  const{user,tier,signOut,outlets,refreshOutlets}=useAuth();
+  const isOutletsTier=tier==='group'||tier==='enterprise';
+  const outletLimit=TIER_OUTLET_LIMITS[tier]??1;
+  const[showAddOutlet,setShowAddOutlet]=useState(false);
+  const[editingOutlet,setEditingOutlet]=useState<Outlet|null>(null);
+
+  const OUTLET_TYPE_LABEL:Record<OutletType,string>={
+    restaurant:'Restaurant',pub:'Pub',cafe:'Café',bar:'Bar',
+    hotel:'Hotel',central_kitchen:'Central kitchen',other:'Other',
+  };
   const{state,actions}=useApp();
   const perms=usePerms();
   const isMobile=useIsMobile();
@@ -60,7 +73,21 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
     }
   }
   // Section nav — sectional layout instead of one long scroll
-  const[section,setSection]=useState<'profile'|'preferences'|'data'|'integrations'|'help'|'account'>('profile');
+  const[section,setSection]=useState<'profile'|'preferences'|'data'|'integrations'|'outlets'|'help'|'account'>('profile');
+  // Outlet management is Group/Enterprise-only. The sidebar's empty-state
+  // "Add your first outlet" CTA sets this flag in sessionStorage before
+  // navigating, so SettingsView opens straight on the Outlets section.
+  useEffect(()=>{
+    try{
+      const want=window.sessionStorage.getItem('palatable_settings_section');
+      if(want){
+        window.sessionStorage.removeItem('palatable_settings_section');
+        if(want==='outlets'||want==='profile'||want==='preferences'||want==='data'||want==='integrations'||want==='help'||want==='account'){
+          setSection(want);
+        }
+      }
+    }catch{}
+  },[]);
   const[uploadingLogo,setUploadingLogo]=useState(false);
   const[logoError,setLogoError]=useState('');
   const[importPreview,setImportPreview]=useState<null|{kind:'recipes'|'costings'|'stock';rows:any[];fileName:string}>(null);
@@ -249,6 +276,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
     {id:'preferences', label:'Preferences',   help:'Theme, text size, defaults'},
     {id:'data',        label:'Data',          help:'Export and import as CSV'},
     {id:'integrations',label:'Integrations',  help:'Email forwarding, API access'},
+    ...(isOutletsTier?[{id:'outlets' as typeof section,label:'Outlets',help:`${outlets.length} of ${outletLimit===Infinity?'∞':outletLimit} outlets`}]:[]),
     {id:'help',        label:'Help & Tips',   help:'Quick Start Guide and shortcuts'},
     {id:'account',     label:'Account',       help:'Sign out and delete'},
   ];
@@ -651,6 +679,13 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       )}
 
       {/* Import preview modal — always rendered when there's a preview */}
+      {showAddOutlet && (
+        <AddOutletModal onClose={()=>setShowAddOutlet(false)} onCreated={()=>{refreshOutlets();}} />
+      )}
+      {editingOutlet && (
+        <EditOutletModal outlet={editingOutlet} onClose={()=>setEditingOutlet(null)} onSaved={()=>{refreshOutlets();}} />
+      )}
+
       {importPreview && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:50,padding:'16px'}}>
           <div style={{background:C.surface,border:'1px solid '+C.border,width:'100%',maxWidth:'480px',maxHeight:'80vh',overflow:'auto',borderRadius:'4px'}}>
@@ -685,6 +720,72 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Outlets — Group/Enterprise only. Hard-gated in the SECTIONS
+          array, so a Pro/Kitchen user cannot land here even by URL hash. */}
+      {section==='outlets' && isOutletsTier && (
+        <div style={{...card}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:'12px',flexWrap:'wrap',marginBottom:'12px'}}>
+            <div>
+              <p style={sec}>Outlets</p>
+              <p style={{fontSize:'12px',color:C.faint,marginTop:'-12px',marginBottom:0}}>Each outlet gets its own stock, invoices and waste log. Recipes and costings stay shared across the account.</p>
+            </div>
+            <span style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:outlets.length>=GROUP_MAX_OUTLETS&&tier==='group'?C.gold:C.faint,background:outlets.length>=GROUP_MAX_OUTLETS&&tier==='group'?C.gold+'18':C.surface2,border:'0.5px solid '+(outlets.length>=GROUP_MAX_OUTLETS&&tier==='group'?C.gold+'30':C.border),padding:'4px 10px',borderRadius:'2px',whiteSpace:'nowrap'}}>
+              {outlets.length} of {outletLimit===Infinity?'∞':outletLimit} outlets
+            </span>
+          </div>
+
+          {outlets.length===0?(
+            <div style={{background:C.surface2,border:'0.5px dashed '+C.border,borderRadius:'4px',padding:'24px',textAlign:'center'}}>
+              <p style={{fontSize:'13px',color:C.dim,marginBottom:'12px'}}>No outlets yet. Add your first one to start scoping stock, invoices and waste per site.</p>
+              <button onClick={()=>setShowAddOutlet(true)}
+                style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 18px',cursor:'pointer',borderRadius:'2px'}}>
+                + Add your first outlet
+              </button>
+            </div>
+          ):(
+            <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'14px'}}>
+              {outlets.map(o=>(
+                <div key={o.id} style={{display:'flex',alignItems:'center',gap:'12px',background:C.surface2,border:'0.5px solid '+C.border,borderRadius:'4px',padding:'12px 14px'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <p style={{fontSize:'14px',color:C.text,fontWeight:600,marginBottom:'2px'}}>{o.name}</p>
+                    <p style={{fontSize:'11px',color:C.faint}}>
+                      <span style={{display:'inline-block',padding:'2px 8px',background:C.gold+'14',border:'0.5px solid '+C.gold+'30',color:C.gold,fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',fontSize:'9px',borderRadius:'2px',marginRight:'8px'}}>
+                        {OUTLET_TYPE_LABEL[o.type]}
+                      </span>
+                      {o.is_central_kitchen&&'· Central kitchen'}
+                      {o.address&&(o.is_central_kitchen?' · ':'')+o.address}
+                    </p>
+                  </div>
+                  <button onClick={()=>setEditingOutlet(o)} title="Edit outlet"
+                    style={{flexShrink:0,background:'transparent',border:'0.5px solid '+C.border,color:C.dim,padding:'8px 10px',cursor:'pointer',borderRadius:'2px',fontSize:'13px'}}>
+                    ✎ Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {outlets.length>0&&(()=>{
+            const atLimit=outlets.length>=outletLimit;
+            const groupAtLimit=tier==='group'&&atLimit;
+            return (
+              <div style={{display:'flex',alignItems:'center',gap:'10px',flexWrap:'wrap'}}>
+                <button onClick={()=>setShowAddOutlet(true)} disabled={atLimit}
+                  title={groupAtLimit?'Upgrade to Enterprise for unlimited outlets':''}
+                  style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:atLimit?C.surface2:C.gold,color:atLimit?C.faint:C.bg,border:atLimit?'1px solid '+C.border:'none',padding:'10px 18px',cursor:atLimit?'not-allowed':'pointer',borderRadius:'2px'}}>
+                  + Add outlet
+                </button>
+                {groupAtLimit&&(
+                  <span style={{fontSize:'11px',color:C.gold}}>
+                    5-outlet limit reached. Upgrade to Enterprise for unlimited outlets.
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

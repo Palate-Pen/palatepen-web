@@ -90,6 +90,34 @@ export async function createOutlet(
   return { outlet: data as Outlet, error: null }
 }
 
+// Update an outlet's editable fields. Returns the updated row.
+export async function updateOutlet(
+  outletId: string,
+  patch: Partial<Pick<Outlet, 'name' | 'type' | 'address' | 'timezone' | 'is_central_kitchen'>>,
+): Promise<{ outlet: Outlet | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from('outlets')
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq('id', outletId)
+    .select()
+    .single()
+
+  if (error) return { outlet: null, error: error.message }
+  return { outlet: data as Outlet, error: null }
+}
+
+// Delete an outlet. account_members.outlet_id is ON DELETE SET NULL so
+// existing memberships that pointed at this outlet become account-scoped.
+// purchase_orders.outlet_id has the same cascade rule.
+export async function deleteOutlet(outletId: string): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('outlets')
+    .delete()
+    .eq('id', outletId)
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
 // Get all memberships for an account from the live `account_members` table.
 export async function getMemberships(accountId: string): Promise<Membership[]> {
   const { data, error } = await supabase

@@ -49,7 +49,11 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   collapsed: boolean;
   setCollapsed: (b: boolean) => void;
 }) {
-  const { tier, accounts, currentAccount, currentRole, switchAccount } = useAuth();
+  const { tier, accounts, currentAccount, currentRole, switchAccount, outlets, activeOutletId, setActiveOutlet } = useAuth();
+  const isOutletsTier = tier === 'group' || tier === 'enterprise';
+  const activeOutlet = outlets.find(o => o.id === activeOutletId) || null;
+  const [outletMenuOpen, setOutletMenuOpen] = useState(false);
+  const outletMenuRef = useRef<HTMLDivElement>(null);
   const { state } = useApp();
   const canBill = currentRole === 'owner';
   const flagOverrides = (state.profile as any)?.featureOverrides;
@@ -80,6 +84,15 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [accountMenuOpen]);
+
+  useEffect(() => {
+    if (!outletMenuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (outletMenuRef.current && !outletMenuRef.current.contains(e.target as Node)) setOutletMenuOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [outletMenuOpen]);
 
   const showSwitcher = accounts.length > 1 && currentAccount;
   const roleLabel = currentRole ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1) : '';
@@ -200,6 +213,117 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '12px', color: C.text, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.account.name}</p>
                       <p style={{ fontSize: '9px', color: C.faint, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{m.role}</p>
+                    </div>
+                    {active && <span style={{ fontSize: '12px', color: C.gold }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Outlet switcher — Group/Enterprise only. Three states:
+          - 0 outlets: "+ Add your first outlet" CTA → opens Settings > Outlets.
+          - 1 outlet: static label, no dropdown (no choice to make).
+          - 2+ outlets: dropdown matching the account-switcher pattern. */}
+      {isOutletsTier && outlets.length === 0 && (
+        <button
+          onClick={() => {
+            try { window.sessionStorage.setItem('palatable_settings_section', 'outlets'); } catch {}
+            setTab('settings');
+          }}
+          title={collapsed ? 'Add your first outlet' : ''}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center',
+            gap: collapsed ? 0 : '8px',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            padding: collapsed ? '10px 0' : '10px 14px',
+            background: 'transparent',
+            border: 'none', borderBottom: '1px solid ' + C.border,
+            cursor: 'pointer', textAlign: 'left',
+            color: C.gold,
+            fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px',
+          }}
+        >
+          {collapsed ? '+' : '+ Add your first outlet →'}
+        </button>
+      )}
+      {isOutletsTier && outlets.length === 1 && (
+        <div title={collapsed ? activeOutlet?.name : ''} style={{
+          width: '100%', display: 'flex', alignItems: 'center',
+          gap: collapsed ? 0 : '8px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          padding: collapsed ? '10px 0' : '10px 14px',
+          background: 'transparent',
+          borderBottom: '1px solid ' + C.border,
+        }}>
+          <span style={{
+            width: '18px', height: '18px', borderRadius: '4px',
+            background: C.gold + '22', color: C.gold,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '10px', flexShrink: 0,
+          }}>🏬</span>
+          {!collapsed && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '9px', color: C.faint, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1px' }}>Outlet</p>
+              <p style={{ fontSize: '12px', color: C.text, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeOutlet?.name || outlets[0].name}</p>
+            </div>
+          )}
+        </div>
+      )}
+      {isOutletsTier && outlets.length > 1 && (
+        <div ref={outletMenuRef} style={{ position: 'relative', borderBottom: '1px solid ' + C.border }}>
+          <button onClick={() => setOutletMenuOpen(o => !o)}
+            title={collapsed ? (activeOutlet?.name || 'Pick outlet') : ''}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center',
+              gap: collapsed ? 0 : '8px',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              padding: collapsed ? '10px 0' : '10px 14px',
+              background: outletMenuOpen ? C.surface2 : 'transparent',
+              border: 'none', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <span style={{
+              width: '18px', height: '18px', borderRadius: '4px',
+              background: C.gold + '22', color: C.gold,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '10px', flexShrink: 0,
+            }}>🏬</span>
+            {!collapsed && (
+              <>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '9px', color: C.faint, letterSpacing: '0.8px', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1px' }}>Outlet</p>
+                  <p style={{ fontSize: '12px', color: C.text, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeOutlet?.name || 'Pick outlet'}</p>
+                </div>
+                <span style={{ fontSize: '10px', color: C.faint }}>{outletMenuOpen ? '▴' : '▾'}</span>
+              </>
+            )}
+          </button>
+          {outletMenuOpen && (
+            <div style={{
+              position: 'absolute', top: '100%', left: collapsed ? '64px' : 0, right: collapsed ? 'auto' : 0,
+              minWidth: collapsed ? '220px' : 'auto',
+              background: C.surface, border: '1px solid ' + C.border, borderRadius: '3px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.18)', zIndex: 50, overflow: 'hidden',
+            }}>
+              <p style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.faint, padding: '8px 12px 4px' }}>Switch outlet</p>
+              {outlets.map(o => {
+                const active = o.id === activeOutletId;
+                return (
+                  <button key={o.id}
+                    onClick={() => { setActiveOutlet(o.id); setOutletMenuOpen(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      width: '100%', padding: '8px 12px', background: active ? C.gold + '12' : 'transparent',
+                      border: 'none', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>🏬</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', color: C.text, fontWeight: active ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.name}</p>
+                      {o.is_central_kitchen && <p style={{ fontSize: '9px', color: C.faint, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Central kitchen</p>}
                     </div>
                     {active && <span style={{ fontSize: '12px', color: C.gold }}>✓</span>}
                   </button>

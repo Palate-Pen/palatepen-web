@@ -3,6 +3,8 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { isAdminEmail } from '@/lib/adminEmails';
+import { getOutlets } from '@/lib/outlets';
+import type { Outlet } from '@/types/outlets';
 
 export type Role = 'owner' | 'manager' | 'chef' | 'viewer';
 export interface Account {
@@ -24,6 +26,12 @@ interface AuthCtxType {
   currentRole: Role | null;
   switchAccount: (id: string) => void;
   refreshAccounts: () => Promise<void>;
+  // Phase 3 multi-outlet — only relevant on Group/Enterprise tiers.
+  // On other tiers `outlets` stays empty and `activeOutletId` is null.
+  outlets: Outlet[];
+  activeOutletId: string | null;
+  setActiveOutlet: (id: string | null) => void;
+  refreshOutlets: () => Promise<void>;
   signIn: (e: string, p: string) => Promise<void>;
   signUp: (e: string, p: string, n: string, opts?: { skipPersonal?: boolean }) => Promise<void>;
   signOut: () => Promise<void>;
@@ -31,6 +39,7 @@ interface AuthCtxType {
 
 const AuthCtx = createContext<AuthCtxType | null>(null);
 const ACTIVE_ACCOUNT_KEY = 'palatable_active_account_id';
+const ACTIVE_OUTLET_KEY = 'palatable_active_outlet';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -105,6 +114,73 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user?.id) await loadAccounts(user.id);
   };
 
+  // ── Phase 3 multi-outlet ──────────────────────────────────
+  const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [activeOutletId, setActiveOutletIdState] = useState<string | null>(null);
+
+  const loadOutlets = useCallback(async (accountId: string) => {
+    const list = await getOutlets(accountId);
+    setOutlets(list);
+    // Reconcile active outlet against the new list — if the persisted id
+    // isn't in this account's outlets, fall back to the first one.
+    let pick: string | null = null;
+    try {
+      const stored = window.localStorage.getItem(ACTIVE_OUTLET_KEY);
+      if (stored && list.some(o => o.id === stored)) pick = stored;
+    } catch {}
+    if (!pick && list.length > 0) pick = list[0].id;
+    setActiveOutletIdState(pick);
+    if (pick) {
+      try { window.localStorage.setItem(ACTIVE_OUTLET_KEY, pick); } catch {}
+    }
+  }, []);
+
+  // (Re)load outlets whenever currentAccount changes. Skipped for tiers
+  // that don't use multi-outlet — saves a network round-trip per account
+  // switch for the 90% of users on Pro / Kitchen.
+  const currentMembershipPre = accounts.find(m => m.account.id === currentAccountId) || null;
+  const currentAccountPre = currentMembershipPre?.account || null;
+  const tierForOutlets = isAdminEmail(user?.email)
+    ? 'enterprise'
+    : (currentAccountPre?.tier || user?.user_metadata?.tier || 'free');
+
+  useEffect(() => {
+    if (!currentAccountId) { setOutlets([]); setActiveOutletIdState(null); return; }
+    if (tierForOutlets !== 'group' && tierForOutlets !== 'enterprise') {
+      setOutlets([]); setActiveOutletIdState(null); return;
+    }
+    loadOutlets(currentAccountId);
+  }, [currentAccountId, tierForOutlets, loadOutlets]);
+
+  const setActiveOutlet = (id: string | null) => {
+    if (id && !outlets.some(o => o.id === id)) return;
+    setActiveOutletIdState(id);
+    try {
+      if (id) window.localStorage.setItem(ACTIVE_OUTLET_KEY, id);
+      else window.localStorage.removeItem(ACTIVE_OUTLET_KEY);
+    } catch {}
+  };
+
+  const refreshOutlets = async () => {
+    if (currentAccountId && (tierForOutlets === 'group' || tierForOutlets === 'enterprise')) {
+      await loadOutlets(currentAccountId);
+    }
+  };
+
+  // Cross-tab sync — when another tab writes to localStorage we want this
+  // tab's active outlet to follow along so the user sees the same scoping
+  // everywhere.
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key !== ACTIVE_OUTLET_KEY) return;
+      const next = e.newValue;
+      if (next === null) { setActiveOutletIdState(null); return; }
+      if (outlets.some(o => o.id === next)) setActiveOutletIdState(next);
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [outlets]);
+
   const currentMembership = accounts.find(m => m.account.id === currentAccountId) || null;
   const currentAccount = currentMembership?.account || null;
   const currentRole = currentMembership?.role || null;
@@ -128,7 +204,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }
   async function signOut() {
-    try { window.localStorage.removeItem(ACTIVE_ACCOUNT_KEY); } catch {}
+    try {
+      window.localStorage.removeItem(ACTIVE_ACCOUNT_KEY);
+      window.localStorage.removeItem(ACTIVE_OUTLET_KEY);
+    } catch {}
     await supabase.auth.signOut();
   }
 
@@ -137,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user, loading, tier,
       accounts, currentAccount, currentRole,
       switchAccount, refreshAccounts,
+      outlets, activeOutletId, setActiveOutlet, refreshOutlets,
       signIn, signUp, signOut,
     }}>{children}</AuthCtx.Provider>
   );
