@@ -305,7 +305,7 @@ The old `INV.suppliers.*` keys are deprecated. Their bullets are intentionally r
 - [x] Outlet creation UI — add/name/type outlets from Settings *(shipped 2026-05-13 — see progress log)*
 - [x] Data scoping per outlet — recipes, stock, invoices, waste all filter by active outlet *(shipped 2026-05-13 — entity-level outletId in JSONB, see progress log)*
 - [ ] Group dashboard — Overview, Outlets, Alerts, Cross-outlet stock, Purchase orders, Reports tabs
-- [ ] Backfill migration — run in Supabase SQL editor to create default accounts for existing users
+- [x] Backfill migration — run in Supabase SQL editor to create default accounts for existing users
 
 ### Phase 4 — Digital and Integration
 
@@ -380,6 +380,10 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 ## Progress Log
 
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
+
+### 2026-05-14
+
+- **Phase 3 backfill migration applied — defensive no-op, schema invariants intact.** `supabase/migrations/20260514_backfill_default_accounts.sql` run in the Supabase SQL editor. Walks `auth.users` directly (migration 007's backfill joined through `user_data` and would have skipped any user with no `user_data` row); inserts an account + owner membership for any user without one, idempotent on re-run via `ON CONFLICT DO NOTHING` and `WHERE NOT EXISTS` guards. Pre-flight recon returned `users_missing_account=0` and `accounts_missing_owner_membership=0`, so the migration ran as a no-op (0 new accounts, 0 new owner memberships inserted). Three invariants confirmed clean as of this date: (a) every `auth.users` row has an `accounts` row with matching id — the `accounts.id = accounts.owner_user_id` aliasing from migration 007 holds 1:1; (b) every `accounts` row has an owner membership in `account_members`; (c) `accounts.tier` values all sit within the post-Phase 3 enum (`free`/`pro`/`kitchen`/`group`/`enterprise`) — no exotic values that would have failed the CHECK on insert. The migration stays on disk as an idempotent recovery script for future signup-trigger failures or out-of-band auth user creation. Closes the open Phase 3 roadmap line.
 
 ### 2026-05-13
 
