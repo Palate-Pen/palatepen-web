@@ -1,5 +1,14 @@
+// Helpers for the Phase 3 multi-outlet schema. Reconciled against the live
+// schema: account lookups use `owner_user_id`, membership reads use the
+// existing `account_members` table (not `memberships`), and role values
+// use the live taxonomy (owner / manager / chef / viewer).
+//
+// Tier caps mirror the constants in src/lib/tierGate.ts (TIER_LIMITS) and
+// src/lib/team.ts (SEAT_LIMITS). They're duplicated here for ergonomic
+// imports from outlet-specific code — keep them in sync when caps change.
+
 import { supabase } from './supabase'
-import type { Account, Outlet, Membership, PurchaseOrder, PurchaseOrderItem } from '../types/outlets'
+import type { Account, Outlet, Membership, PurchaseOrder } from '../types/outlets'
 
 export const TIER_OUTLET_LIMITS: Record<string, number> = {
   free: 1,
@@ -21,27 +30,28 @@ export const GROUP_USERS_PER_OUTLET = 5
 export const GROUP_MAX_OUTLETS = 5
 export const GROUP_MAX_USERS = 25
 
-// Get or create the account for the current user
+// Get or create the account owned by this user. Lookup is by
+// `owner_user_id` to match the live schema (migration 007).
 export async function getOrCreateAccount(userId: string, tier: string, name?: string): Promise<Account | null> {
   const { data: existing } = await supabase
     .from('accounts')
     .select('*')
-    .eq('owner_id', userId)
-    .single()
+    .eq('owner_user_id', userId)
+    .maybeSingle()
 
-  if (existing) return existing
+  if (existing) return existing as Account
 
   const { data: created, error } = await supabase
     .from('accounts')
-    .insert({ name: name || 'My Kitchen', tier, owner_id: userId })
+    .insert({ name: name || 'My Kitchen', tier, owner_user_id: userId })
     .select()
     .single()
 
   if (error) { console.error('Failed to create account:', error); return null }
-  return created
+  return created as Account
 }
 
-// Get all outlets for an account
+// Get all outlets for an account.
 export async function getOutlets(accountId: string): Promise<Outlet[]> {
   const { data, error } = await supabase
     .from('outlets')
@@ -50,10 +60,11 @@ export async function getOutlets(accountId: string): Promise<Outlet[]> {
     .order('created_at', { ascending: true })
 
   if (error) { console.error('Failed to get outlets:', error); return [] }
-  return data || []
+  return (data as Outlet[]) || []
 }
 
-// Create a new outlet (enforces 5-outlet limit for group tier)
+// Create a new outlet. Enforces the 5-outlet Group cap with explicit
+// Enterprise-upgrade messaging.
 export async function createOutlet(
   accountId: string,
   tier: string,
@@ -76,21 +87,22 @@ export async function createOutlet(
     .single()
 
   if (error) return { outlet: null, error: error.message }
-  return { outlet: data, error: null }
+  return { outlet: data as Outlet, error: null }
 }
 
-// Get all memberships for an account
+// Get all memberships for an account from the live `account_members` table.
 export async function getMemberships(accountId: string): Promise<Membership[]> {
   const { data, error } = await supabase
-    .from('memberships')
+    .from('account_members')
     .select('*')
     .eq('account_id', accountId)
 
   if (error) { console.error('Failed to get memberships:', error); return [] }
-  return data || []
+  return (data as Membership[]) || []
 }
 
-// Check if adding a user would exceed the group limit (25 users, 5 per outlet)
+// Check if adding a user would exceed Group tier limits (25 users total,
+// 5 per outlet when outletId is set).
 export async function canAddUser(
   accountId: string,
   tier: string,
@@ -116,7 +128,7 @@ export async function canAddUser(
   return { allowed: true }
 }
 
-// Get purchase orders for an account, optionally filtered by outlet
+// Get purchase orders for an account, optionally filtered by outlet.
 export async function getPurchaseOrders(accountId: string, outletId?: string): Promise<PurchaseOrder[]> {
   let query = supabase
     .from('purchase_orders')
@@ -128,10 +140,10 @@ export async function getPurchaseOrders(accountId: string, outletId?: string): P
 
   const { data, error } = await query
   if (error) { console.error('Failed to get purchase orders:', error); return [] }
-  return data || []
+  return (data as PurchaseOrder[]) || []
 }
 
-// Create a purchase order
+// Create a purchase order.
 export async function createPurchaseOrder(
   po: Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>
 ): Promise<PurchaseOrder | null> {
@@ -142,5 +154,5 @@ export async function createPurchaseOrder(
     .single()
 
   if (error) { console.error('Failed to create PO:', error); return null }
-  return data
+  return data as PurchaseOrder
 }

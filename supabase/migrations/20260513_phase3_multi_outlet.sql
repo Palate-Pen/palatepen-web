@@ -1,142 +1,181 @@
--- accounts table (one per subscription, owner is the paying user)
-create table if not exists public.accounts (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  tier text not null default 'free' check (tier in ('free','pro','kitchen','group','enterprise')),
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  stripe_customer_id text,
-  stripe_subscription_id text,
-  logo_url text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+-- Phase 3 — multi-outlet schema, reconciled against the existing live schema
+-- from migration 007 (accounts + account_members + account_invites).
+--
+-- WHAT THIS DOES
+-- 1. Extends the existing `accounts` table with `logo_url`. Updates the tier
+--    CHECK constraint to allow 'enterprise' (the new five-tier ladder we
+--    rolled out earlier today).
+-- 2. Extends the existing `account_members` table with `outlet_id` so a
+--    membership can be scoped to a specific outlet on Group-tier accounts.
+-- 3. Creates the genuinely new tables — `outlets`, `purchase_orders`,
+--    `purchase_order_items` — that didn't exist yet.
+-- 4. RLS for the new tables uses the same `public.is_account_member()` +
+--    `public.role_at_least()` helpers migration 007 defined, so the role
+--    hierarchy stays single-source (owner > manager > chef > viewer).
+--
+-- WHAT THIS DOES NOT DO
+-- - Re-create `accounts` or `account_members` (they exist; renames would
+--   break every existing route handler).
+-- - Introduce a new `memberships` table (would shadow `account_members`).
+-- - Use admin/editor role names (the live schema is manager/chef and the
+--   app code throughout reads/writes those values).
+--
+-- BACKFILL
+-- No accounts backfill is needed — migration 007 already seeds one account
+-- per existing user. To give every existing account a default outlet, run
+-- the commented INSERT at the bottom of this file from the SQL editor.
 
--- outlets table (up to 5 per group account)
+-- ============================================================
+-- 1. Extend accounts: logo_url column + enterprise in tier check
+-- ============================================================
+alter table public.accounts
+  add column if not exists logo_url text;
+
+-- The existing CHECK constraint was created without 'enterprise'. Drop it
+-- (if present) and reinstate with the five-tier ladder. The constraint
+-- name is auto-generated; we use the dynamic block to find and drop it.
+do $$
+declare
+  c text;
+begin
+  select conname into c
+  from pg_constraint
+  where conrelid = 'public.accounts'::regclass
+    and pg_get_constraintdef(oid) ilike '%tier%in%';
+  if c is not null then
+    execute format('alter table public.accounts drop constraint %I', c);
+  end if;
+end $$;
+
+alter table public.accounts
+  add constraint accounts_tier_check
+  check (tier in ('free','pro','kitchen','group','enterprise'));
+
+-- ============================================================
+-- 2. outlets — new table. Up to 5 per Group account; enforcement
+--    happens in app code (src/lib/outlets.ts → createOutlet).
+-- ============================================================
 create table if not exists public.outlets (
-  id uuid primary key default gen_random_uuid(),
-  account_id uuid not null references public.accounts(id) on delete cascade,
-  name text not null,
-  type text not null default 'restaurant' check (type in ('restaurant','pub','cafe','bar','hotel','central_kitchen','other')),
-  address text,
-  timezone text default 'Europe/London',
-  is_central_kitchen boolean not null default false,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id                  uuid primary key default gen_random_uuid(),
+  account_id          uuid not null references public.accounts(id) on delete cascade,
+  name                text not null,
+  type                text not null default 'restaurant'
+                      check (type in ('restaurant','pub','cafe','bar','hotel','central_kitchen','other')),
+  address             text,
+  timezone            text default 'Europe/London',
+  is_central_kitchen  boolean not null default false,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
 );
-
--- memberships table (links users to accounts and optionally to a specific outlet)
-create table if not exists public.memberships (
-  id uuid primary key default gen_random_uuid(),
-  account_id uuid not null references public.accounts(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  outlet_id uuid references public.outlets(id) on delete set null,
-  role text not null default 'editor' check (role in ('owner','admin','editor','viewer')),
-  invited_by uuid references auth.users(id),
-  invited_at timestamptz not null default now(),
-  accepted_at timestamptz,
-  unique(account_id, user_id)
-);
-
--- purchase_orders table
-create table if not exists public.purchase_orders (
-  id uuid primary key default gen_random_uuid(),
-  account_id uuid not null references public.accounts(id) on delete cascade,
-  outlet_id uuid references public.outlets(id) on delete set null,
-  supplier_name text not null,
-  status text not null default 'draft' check (status in ('draft','sent','received','flagged','cancelled')),
-  total_amount numeric(10,2),
-  notes text,
-  raised_by uuid references auth.users(id),
-  raised_at timestamptz not null default now(),
-  expected_at timestamptz,
-  received_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- purchase_order_items table
-create table if not exists public.purchase_order_items (
-  id uuid primary key default gen_random_uuid(),
-  purchase_order_id uuid not null references public.purchase_orders(id) on delete cascade,
-  ingredient_name text not null,
-  quantity numeric(10,3) not null,
-  unit text not null,
-  unit_price numeric(10,4),
-  total_price numeric(10,2),
-  received_quantity numeric(10,3),
-  notes text
-);
-
--- RLS policies
-alter table public.accounts enable row level security;
+create index if not exists outlets_account_id_idx on public.outlets (account_id);
 alter table public.outlets enable row level security;
-alter table public.memberships enable row level security;
+
+-- ============================================================
+-- 3. Extend account_members: outlet_id (nullable — Group-tier
+--    chefs can be scoped to one outlet; managers + owners stay
+--    account-wide and leave this null).
+-- ============================================================
+alter table public.account_members
+  add column if not exists outlet_id uuid references public.outlets(id) on delete set null;
+
+create index if not exists account_members_outlet_idx on public.account_members (outlet_id);
+
+-- ============================================================
+-- 4. purchase_orders + purchase_order_items
+-- ============================================================
+create table if not exists public.purchase_orders (
+  id              uuid primary key default gen_random_uuid(),
+  account_id      uuid not null references public.accounts(id) on delete cascade,
+  outlet_id       uuid references public.outlets(id) on delete set null,
+  supplier_name   text not null,
+  status          text not null default 'draft'
+                  check (status in ('draft','sent','received','flagged','cancelled')),
+  total_amount    numeric(10,2),
+  notes           text,
+  raised_by       uuid references auth.users(id) on delete set null,
+  raised_at       timestamptz not null default now(),
+  expected_at     timestamptz,
+  received_at     timestamptz,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists purchase_orders_account_id_idx on public.purchase_orders (account_id);
+create index if not exists purchase_orders_outlet_id_idx  on public.purchase_orders (outlet_id);
 alter table public.purchase_orders enable row level security;
+
+create table if not exists public.purchase_order_items (
+  id                  uuid primary key default gen_random_uuid(),
+  purchase_order_id   uuid not null references public.purchase_orders(id) on delete cascade,
+  ingredient_name     text not null,
+  quantity            numeric(10,3) not null,
+  unit                text not null,
+  unit_price          numeric(10,4),
+  total_price         numeric(10,2),
+  received_quantity   numeric(10,3),
+  notes               text
+);
+create index if not exists purchase_order_items_po_idx on public.purchase_order_items (purchase_order_id);
 alter table public.purchase_order_items enable row level security;
 
--- accounts: owner can do everything, members can read
-create policy "accounts_owner_all" on public.accounts for all using (auth.uid() = owner_id);
-create policy "accounts_member_read" on public.accounts for select using (
-  exists (select 1 from public.memberships where account_id = accounts.id and user_id = auth.uid())
-);
+-- ============================================================
+-- 5. RLS — uses the existing public.is_account_member() and
+--    public.role_at_least() helpers from migration 007 so the
+--    role hierarchy (owner > manager > chef > viewer) stays the
+--    single source of truth.
+-- ============================================================
 
--- outlets: account owner or member can read, owner/admin can write
-create policy "outlets_read" on public.outlets for select using (
-  exists (select 1 from public.accounts where id = outlets.account_id and owner_id = auth.uid())
-  or exists (select 1 from public.memberships where account_id = outlets.account_id and user_id = auth.uid())
-);
-create policy "outlets_write" on public.outlets for all using (
-  exists (select 1 from public.accounts where id = outlets.account_id and owner_id = auth.uid())
-  or exists (select 1 from public.memberships where account_id = outlets.account_id and user_id = auth.uid() and role in ('owner','admin'))
-);
+-- outlets: any member can read, manager+ can write
+drop policy if exists outlets_select_member  on public.outlets;
+create policy outlets_select_member on public.outlets for select
+  using (public.is_account_member(account_id));
 
--- memberships: own membership visible to self, account owner sees all
-create policy "memberships_self" on public.memberships for select using (user_id = auth.uid());
-create policy "memberships_account_owner" on public.memberships for all using (
-  exists (select 1 from public.accounts where id = memberships.account_id and owner_id = auth.uid())
-);
+drop policy if exists outlets_write_manager on public.outlets;
+create policy outlets_write_manager on public.outlets for all
+  using      (public.role_at_least(account_id, 'manager'))
+  with check (public.role_at_least(account_id, 'manager'));
 
--- purchase orders: account members can read, editors/admins/owners can write
-create policy "po_read" on public.purchase_orders for select using (
-  exists (select 1 from public.accounts where id = purchase_orders.account_id and owner_id = auth.uid())
-  or exists (select 1 from public.memberships where account_id = purchase_orders.account_id and user_id = auth.uid())
-);
-create policy "po_write" on public.purchase_orders for all using (
-  exists (select 1 from public.accounts where id = purchase_orders.account_id and owner_id = auth.uid())
-  or exists (select 1 from public.memberships where account_id = purchase_orders.account_id and user_id = auth.uid() and role in ('owner','admin','editor'))
-);
+-- purchase_orders: any member can read, chef+ can write (raising a PO is
+-- content-y, same gate as the user_data content tables in migration 007)
+drop policy if exists po_select_member on public.purchase_orders;
+create policy po_select_member on public.purchase_orders for select
+  using (public.is_account_member(account_id));
 
--- purchase order items inherit from parent PO via account membership
-create policy "poi_read" on public.purchase_order_items for select using (
-  exists (
+drop policy if exists po_write_chef on public.purchase_orders;
+create policy po_write_chef on public.purchase_orders for all
+  using      (public.role_at_least(account_id, 'chef'))
+  with check (public.role_at_least(account_id, 'chef'));
+
+-- purchase_order_items: inherit from parent PO via account membership.
+drop policy if exists poi_select_member on public.purchase_order_items;
+create policy poi_select_member on public.purchase_order_items for select
+  using (exists (
     select 1 from public.purchase_orders po
-    join public.accounts a on a.id = po.account_id
     where po.id = purchase_order_items.purchase_order_id
-    and (a.owner_id = auth.uid() or exists (select 1 from public.memberships m where m.account_id = a.id and m.user_id = auth.uid()))
-  )
-);
-create policy "poi_write" on public.purchase_order_items for all using (
-  exists (
+      and public.is_account_member(po.account_id)
+  ));
+
+drop policy if exists poi_write_chef on public.purchase_order_items;
+create policy poi_write_chef on public.purchase_order_items for all
+  using (exists (
     select 1 from public.purchase_orders po
-    join public.accounts a on a.id = po.account_id
-    join public.memberships m on m.account_id = a.id
     where po.id = purchase_order_items.purchase_order_id
-    and (a.owner_id = auth.uid() or (m.user_id = auth.uid() and m.role in ('owner','admin','editor')))
-  )
-);
+      and public.role_at_least(po.account_id, 'chef')
+  ))
+  with check (exists (
+    select 1 from public.purchase_orders po
+    where po.id = purchase_order_items.purchase_order_id
+      and public.role_at_least(po.account_id, 'chef')
+  ));
 
--- useful indexes
-create index if not exists outlets_account_id_idx on public.outlets(account_id);
-create index if not exists memberships_account_id_idx on public.memberships(account_id);
-create index if not exists memberships_user_id_idx on public.memberships(user_id);
-create index if not exists purchase_orders_account_id_idx on public.purchase_orders(account_id);
-create index if not exists purchase_orders_outlet_id_idx on public.purchase_orders(outlet_id);
-
--- migration helper: create a default account + outlet for existing Pro/Kitchen/Group users
--- this runs as a one-time backfill. It reads from auth.users via service role.
--- Run this manually in Supabase SQL editor after deploying:
--- insert into public.accounts (name, tier, owner_id)
--- select 'My Kitchen', u.raw_user_meta_data->>'tier', u.id
--- from auth.users u
--- where u.raw_user_meta_data->>'tier' in ('pro','kitchen','group')
--- and not exists (select 1 from public.accounts a where a.owner_id = u.id);
+-- ============================================================
+-- Optional backfill — run from the Supabase SQL editor after
+-- applying. Creates one default outlet per existing account that
+-- doesn't already have one. New signups will create their outlet
+-- via the app the first time they hit a multi-outlet surface.
+-- ============================================================
+-- insert into public.outlets (account_id, name, type, is_central_kitchen)
+-- select a.id, a.name, 'restaurant', false
+-- from public.accounts a
+-- where not exists (
+--   select 1 from public.outlets o where o.account_id = a.id
+-- );
