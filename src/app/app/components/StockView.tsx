@@ -6,6 +6,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { CATEGORIES, guessCategory } from '@/lib/categorize';
 import { useIsMobile } from '@/lib/useIsMobile';
+import { useOutlet } from '@/context/OutletContext';
+import { scopeByOutlet } from '@/lib/outlets';
 
 // Amber distinct from brand gold — gold is the brand accent, amber is the
 // "attention" channel (low stock, variances).
@@ -33,7 +35,8 @@ export default function StockView() {
   const isMobile = useIsMobile();
   const sym = (state.profile||{}).currencySymbol||'£';
   const bank = state.ingredientsBank||[];
-  const stock = state.stockItems||[];
+  const { activeOutletId, isMultiOutlet } = useOutlet();
+  const stock = scopeByOutlet(state.stockItems||[], activeOutletId, isMultiOutlet);
   const profile = state.profile||{};
 
   const [view, setView] = useState<'list'|'count'|'report'>('list');
@@ -243,7 +246,7 @@ export default function StockView() {
     const dupe = stock.find((s:any) => (s.name || '').toLowerCase().trim() === trimmed.toLowerCase());
     if (dupe) { alert('"' + trimmed + '" is already in your stock list.'); return; }
     const bankMatch = bank.find((b:any)=>b.name.toLowerCase()===addName.toLowerCase());
-    actions.addStock({name:trimmed,unit:addUnit,category:addCategory,parLevel:parseFloat(addPar)||null,minLevel:parseFloat(addMin)||null,unitPrice:bankMatch?.unitPrice||null,currentQty:null,lastCounted:null});
+    actions.addStock({name:trimmed,unit:addUnit,category:addCategory,parLevel:parseFloat(addPar)||null,minLevel:parseFloat(addMin)||null,unitPrice:bankMatch?.unitPrice||null,currentQty:null,lastCounted:null,...(isMultiOutlet&&activeOutletId?{outletId:activeOutletId}:{})});
     setAddName(''); setAddUnit('kg'); setAddPar(''); setAddMin(''); setAddCategory('Other'); setShowAdd(false);
   }
 

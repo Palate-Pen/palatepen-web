@@ -5,6 +5,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { buildSupplierReliability, type SupplierReliability } from '@/lib/supplierReliability';
+import { useOutlet } from '@/context/OutletContext';
+import { scopeByOutlet } from '@/lib/outlets';
 
 // Amber distinct from brand gold (matches the rest of the redesigned views).
 const AMBER = '#E8AE20';
@@ -54,7 +56,11 @@ export default function SuppliersView({ setTab }: { setTab?: (t: string) => void
   const C = settings.resolved === 'light' ? light : dark;
   const isMobile = useIsMobile();
   const sym = (state.profile || {}).currencySymbol || '£';
-  const invoices = state.invoices || [];
+  const { activeOutletId, isMultiOutlet } = useOutlet();
+  // Suppliers are derived from invoices (reliability scores, items list,
+  // last-seen dates). Scoping invoices here automatically scopes the
+  // supplier surface too.
+  const invoices = scopeByOutlet(state.invoices || [], activeOutletId, isMultiOutlet);
   const profile = state.profile || {};
   const supplierContacts = ((profile as any).supplierContacts || {}) as Record<string, SupplierContact>;
 

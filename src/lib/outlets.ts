@@ -10,6 +10,28 @@
 import { supabase } from './supabase'
 import type { Account, Outlet, Membership, PurchaseOrder } from '../types/outlets'
 
+// Client-side filter applied at the view layer to JSONB arrays
+// (recipes, invoices, stock_items etc). user_data is one row per account
+// with arrays stored as JSONB — there is no row-level outlet_id to query,
+// so scoping happens here. Legacy entities without an outletId are
+// considered "all outlets" and stay visible everywhere; this avoids
+// hiding pre-multi-outlet data during the transition. New entities
+// created while an outlet is active get stamped with outletId on insert.
+// Loose generic — `T` could be `any` since the existing state arrays are
+// untyped JSONB. We just need each item to potentially carry an `outletId`
+// string. Keeping the constraint as `Record<string, any>` lets callers
+// retain their full property surface (TS would otherwise narrow T to the
+// constraint and strip everything else).
+export function scopeByOutlet<T extends Record<string, any>>(
+  items: T[] | undefined | null,
+  activeOutletId: string | null,
+  isMultiOutlet: boolean,
+): T[] {
+  const list = items || [];
+  if (!isMultiOutlet || !activeOutletId) return list;
+  return list.filter(i => !i.outletId || i.outletId === activeOutletId);
+}
+
 export const TIER_OUTLET_LIMITS: Record<string, number> = {
   free: 1,
   pro: 1,

@@ -7,6 +7,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { useTierAndFlag } from '@/lib/usePlatformConfig';
+import { useOutlet } from '@/context/OutletContext';
+import { scopeByOutlet } from '@/lib/outlets';
 
 const CATS = ['Starter','Main','Dessert','Sauce','Bread','Pastry','Stock','Snack','Other'];
 
@@ -129,6 +131,11 @@ function gpColor(pct: number, target: number, C: any) {
 
 export default function RecipesView() {
   const { state, actions } = useApp();
+  const { activeOutletId, isMultiOutlet } = useOutlet();
+  // Recipes filter — on Group/Enterprise with an outlet selected, only
+  // show recipes scoped to that outlet (plus legacy entries with no
+  // outletId, treated as visible everywhere).
+  const visibleRecipes = scopeByOutlet(state.recipes, activeOutletId, isMultiOutlet);
   const { user } = useAuth();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
@@ -369,7 +376,7 @@ export default function RecipesView() {
     if (fresh.length > 0) actions.upsertBank(fresh);
   }
 
-  const filtered = state.recipes.filter((r: any) =>
+  const filtered = visibleRecipes.filter((r: any) =>
     r.title.toLowerCase().includes(search.toLowerCase()) ||
     (r.category||'').toLowerCase().includes(search.toLowerCase())
   );
@@ -653,7 +660,7 @@ export default function RecipesView() {
         glutenTypes: Array.isArray(data.allergens.glutenTypes) ? data.allergens.glutenTypes : [],
       };
     }
-    actions.addRecipe(recipe);
+    actions.addRecipe({ ...recipe, ...(isMultiOutlet && activeOutletId ? { outletId: activeOutletId } : {}) });
     bankEnsureMany(cleanIngs.map((i: any) => ({ name: i.name, unit: i.unit })));
     setShowScanSpec(false);
     setScannedData(null);
@@ -733,7 +740,7 @@ export default function RecipesView() {
         method: importedData.method || [],
       };
     }
-    actions.addRecipe(recipe);
+    actions.addRecipe({ ...recipe, ...(isMultiOutlet && activeOutletId ? { outletId: activeOutletId } : {}) });
 
     // Capture the photo file before the form is reset, then upload + patch.
     const photoFile = newPhotoFile;
@@ -2389,7 +2396,7 @@ export default function RecipesView() {
       }}>
         <div>
           <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '28px', color: C.text, marginBottom: '4px' }}>Recipe Library</h1>
-          <p style={{ fontSize: '12px', color: C.faint }}>{state.recipes.length} recipe{state.recipes.length !== 1 ? 's' : ''} saved</p>
+          <p style={{ fontSize: '12px', color: C.faint }}>{visibleRecipes.length} recipe{visibleRecipes.length !== 1 ? 's' : ''} saved</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' }}>
           <button onClick={() => setShowRecipeBook(true)} disabled={state.recipes.length === 0}

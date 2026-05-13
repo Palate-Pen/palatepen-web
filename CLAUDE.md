@@ -303,7 +303,7 @@ The old `INV.suppliers.*` keys are deprecated. Their bullets are intentionally r
 - [ ] Group outlets in dashboard to show summary information per outlet including GP, stock value and alerts
 - [ ] Allow Group tier users to create and manage multiple restaurants, pubs and outlets under one account
 - [x] Outlet creation UI — add/name/type outlets from Settings *(shipped 2026-05-13 — see progress log)*
-- [ ] Data scoping per outlet — recipes, stock, invoices, waste all filter by active outlet
+- [x] Data scoping per outlet — recipes, stock, invoices, waste all filter by active outlet *(shipped 2026-05-13 — entity-level outletId in JSONB, see progress log)*
 - [ ] Group dashboard — Overview, Outlets, Alerts, Cross-outlet stock, Purchase orders, Reports tabs
 - [ ] Backfill migration — run in Supabase SQL editor to create default accounts for existing users
 
@@ -382,6 +382,12 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
 
 ### 2026-05-13
+
+- **Phase 3 data scoping — every content view filters by active outlet.** Spec called for row-level `outlet_id` filtering on `user_data`, but the live schema is one JSONB row per account with arrays inside (`recipes`, `invoices`, `stock_items` etc) — no row-level filter is possible. Scoping is therefore implemented at the entity level: each recipe / costing / invoice / stock-item / menu / waste-log / note can now carry an optional `outletId` field inside the JSONB array. New entities created while an outlet is active get stamped with that outlet's id on insert. Reads filter the array client-side via a new `scopeByOutlet(items, activeOutletId, isMultiOutlet)` helper in `src/lib/outlets.ts`. Legacy entities without an `outletId` stay visible everywhere (no data is hidden during the transition). For Free/Pro/Kitchen users `isMultiOutlet` is false → no filtering, no stamping, behaviour is identical to before.
+  - **New `OutletContext`** in `src/context/OutletContext.tsx` exposes `useOutlet()` to view code. It's a thin facade over `AuthContext` (which already owns the outlet state from the previous task), so there's one source of truth for `activeOutletId` and one localStorage writer.
+  - **Views wired** (read scoping + insert stamping): RecipesView, CostingView, InvoicesView, StockView, WasteView, SuppliersView, MenuBuilderView, NotebookView. RecipesView's library list + saved-count read from the scoped array; CostingView's history sidebar + count badges; InvoicesView's bank/history/reports + supplier reliability; StockView's filter tiles + list; WasteView's log + summary cards; MenuBuilderView's list + dashboard tiles; NotebookView's feed + create flow.
+  - **DashboardView outlet-aware**: greeting becomes "Good morning, Jack — *Outlet Name*" when on Group/Enterprise with 2+ outlets. All 4 stat tiles (recipes / avg GP / stock value / price alerts) now read from the scoped arrays. Group user with 0 outlets sees a gold welcome banner with "Add your first outlet →" that opens Settings on the Outlets section via the same sessionStorage hint the sidebar uses.
+  - **Skipped from the spec**: the `user_data.outlet_id` column migration. That column would be a no-op given the JSONB-per-account architecture — autosave still upserts a single row keyed by user_id, so a row-level outlet_id wouldn't be queryable. Documented in the commit message in case the next architectural step is to split user_data into per-(account, outlet) rows.
 
 - **Phase 3 outlet creation UI + sidebar switcher.** Group/Enterprise users can now create, edit and delete outlets from Settings, and switch the active outlet from the sidebar. New surfaces:
   - **`SettingsView` Outlets section** — sits between Integrations and Help, only renders when tier is `group` or `enterprise`. Counter in the header reads `X of 5 outlets` (or `∞` for Enterprise). Each outlet row shows name + gold type badge + central-kitchen marker + address + ✎ Edit button. Add button disables and changes label to "Upgrade to Enterprise for unlimited outlets" once the 5-outlet Group cap is hit. Empty state shows a single "Add your first outlet" call-to-action.

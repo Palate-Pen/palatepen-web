@@ -6,6 +6,8 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
 import { canAccess } from '@/lib/tierGate';
+import { useOutlet } from '@/context/OutletContext';
+import { scopeByOutlet } from '@/lib/outlets';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -56,12 +58,20 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   const logoUrl = profile.logoUrl as string | undefined;
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const isPaid = canAccess(tier, 'invoices_view');
+  const { outlets, activeOutletId, isMultiOutlet } = useOutlet();
+  const activeOutlet = outlets.find(o => o.id === activeOutletId) || null;
+  const showOutletInGreeting = isMultiOutlet && outlets.length > 1 && !!activeOutlet;
+  // Group/Enterprise empty state — landed on Dashboard with zero outlets.
+  // Surface a banner pointing at Settings so they create their first one.
+  const showNoOutletBanner = isMultiOutlet && outlets.length === 0;
 
   const stats = useMemo(() => {
-    const recipes = state.recipes || [];
-    const notes = state.notes || [];
-    const gpHistory = state.gpHistory || [];
-    const stockItems = state.stockItems || [];
+    // Outlet-scoped views of the content arrays. Pre-multi-outlet entities
+    // (no outletId) stay visible everywhere so legacy data isn't hidden.
+    const recipes = scopeByOutlet(state.recipes || [], activeOutletId, isMultiOutlet);
+    const notes = scopeByOutlet(state.notes || [], activeOutletId, isMultiOutlet);
+    const gpHistory = scopeByOutlet(state.gpHistory || [], activeOutletId, isMultiOutlet);
+    const stockItems = scopeByOutlet(state.stockItems || [], activeOutletId, isMultiOutlet);
     const priceAlerts = state.priceAlerts || [];
     const invoices = state.invoices || [];
     const menus = state.menus || [];
@@ -97,7 +107,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
       recentRecipes: [...recipes].sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 5),
       recentAlerts: [...priceAlerts].sort((a: any, b: any) => (b.detectedAt || 0) - (a.detectedAt || 0)).slice(0, 5),
     };
-  }, [state]);
+  }, [state, activeOutletId, isMultiOutlet]);
 
   function recipeGP(r: any): number | null {
     let c = null;
@@ -131,7 +141,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
               <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>{businessName}</p>
             )}
             <h1 style={{ fontFamily: 'Georgia,serif', fontWeight: 300, fontSize: '32px', color: C.text, marginBottom: '4px' }}>
-              {greeting()}, {userName}
+              {greeting()}, {userName}{showOutletInGreeting ? <span style={{ color: C.gold }}> — {activeOutlet!.name}</span> : null}
             </h1>
             <p style={{ fontSize: '13px', color: C.faint }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
@@ -144,6 +154,22 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
           padding: '6px 12px', borderRadius: '2px',
         }}>{tierLabel}</span>
       </div>
+
+      {showNoOutletBanner && (
+        <div style={{ background: C.gold + '14', border: '1px solid ' + C.gold + '40', borderLeft: '3px solid ' + C.gold, borderRadius: '4px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: C.gold, marginBottom: '4px' }}>Welcome to Group</p>
+            <p style={{ fontSize: '13px', color: C.text }}>Set up your first outlet in Settings to get started — stock, invoices and waste will scope to it automatically.</p>
+          </div>
+          <button onClick={() => {
+            try { window.sessionStorage.setItem('palatable_settings_section', 'outlets'); } catch {}
+            setTab('settings');
+          }}
+            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 16px', cursor: 'pointer', borderRadius: '2px', whiteSpace: 'nowrap' }}>
+            Add your first outlet →
+          </button>
+        </div>
+      )}
 
       {/* Quick stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>

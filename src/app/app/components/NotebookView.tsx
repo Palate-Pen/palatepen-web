@@ -4,16 +4,20 @@ import{useApp}from'@/context/AppContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 import{useIsMobile}from'@/lib/useIsMobile';
+import{useOutlet}from'@/context/OutletContext';
+import{scopeByOutlet}from'@/lib/outlets';
 export default function NotebookView(){
   const{state,actions}=useApp();
   const{settings}=useSettings();
+  const{activeOutletId,isMultiOutlet}=useOutlet();
   const C=settings.resolved==='light'?light:dark;
   const isMobile=useIsMobile();
   const[sel,setSel]=useState<any>(null);
   const[search,setSearch]=useState('');
   const[deleteId,setDeleteId]=useState<string|null>(null);
-  const filtered=state.notes.filter((n:any)=>(n.title||'').toLowerCase().includes(search.toLowerCase())||(n.content||'').toLowerCase().includes(search.toLowerCase()));
-  function createNote(){const note=actions.addNote({});setSel(note);}
+  const visibleNotes=scopeByOutlet(state.notes,activeOutletId,isMultiOutlet);
+  const filtered=visibleNotes.filter((n:any)=>(n.title||'').toLowerCase().includes(search.toLowerCase())||(n.content||'').toLowerCase().includes(search.toLowerCase()));
+  function createNote(){const note=actions.addNote({...(isMultiOutlet&&activeOutletId?{outletId:activeOutletId}:{})});setSel(note);}
   if(sel)return(
     <div style={{padding:isMobile?'20px 16px':'32px',maxWidth:'760px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <button onClick={()=>setSel(null)} style={{fontSize:'13px',color:C.gold,background:'none',border:'none',cursor:'pointer',marginBottom:'20px',display:'flex',alignItems:'center',gap:'6px'}}>← Notebook</button>

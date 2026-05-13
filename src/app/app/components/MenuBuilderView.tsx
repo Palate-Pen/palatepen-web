@@ -7,6 +7,8 @@ import { usePerms } from '@/lib/perms';
 import { useTierAndFlag } from '@/lib/usePlatformConfig';
 import { dark, light } from '@/lib/theme';
 import MenuDesigner from './MenuDesigner';
+import { useOutlet } from '@/context/OutletContext';
+import { scopeByOutlet } from '@/lib/outlets';
 
 // Slug for the public URL. Random 8-char alphanumeric using a reduced
 // alphabet (no 0/1/l/i/o) to avoid ambiguity when read aloud or printed.
@@ -55,7 +57,8 @@ export default function MenuBuilderView() {
   const canEdit = perms.canEditMenus;
   const sym = (state.profile || {}).currencySymbol || '£';
   const gpTarget = (state.profile || {}).gpTarget || 72;
-  const menus = state.menus || [];
+  const { activeOutletId, isMultiOutlet } = useOutlet();
+  const menus = scopeByOutlet(state.menus || [], activeOutletId, isMultiOutlet);
 
   const [selId, setSelId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -145,7 +148,7 @@ export default function MenuBuilderView() {
   function addMenu() {
     if (!newName.trim()) return;
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    actions.addMenu({ id, name: newName.trim(), description: newDesc.trim(), recipeIds: [] });
+    actions.addMenu({ id, name: newName.trim(), description: newDesc.trim(), recipeIds: [], ...(isMultiOutlet && activeOutletId ? { outletId: activeOutletId } : {}) });
     setShowAdd(false); setNewName(''); setNewDesc('');
     setTimeout(() => setSelId(id), 50);
   }

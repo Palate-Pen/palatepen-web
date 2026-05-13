@@ -6,11 +6,16 @@ import{useSettings}from'@/context/SettingsContext';
 import{usePerms}from'@/lib/perms';
 import{useIsMobile}from'@/lib/useIsMobile';
 import{dark,light}from'@/lib/theme';
+import{useOutlet}from'@/context/OutletContext';
+import{scopeByOutlet}from'@/lib/outlets';
 const UNITS=['kg','g','L','ml','each','bunch','tbsp','oz','lb'];
 function gpColor(pct:number,target:number,C:any){if(pct>=target)return C.greenLight;if(pct>=65)return C.gold;return C.red;}
 export default function CostingView(){
   const{state,actions}=useApp();
   const{tier}=useAuth();
+  const{activeOutletId,isMultiOutlet}=useOutlet();
+  // Filter saved costings by active outlet for Group/Enterprise users.
+  const visibleGpHistory=scopeByOutlet(state.gpHistory,activeOutletId,isMultiOutlet);
   const perms=usePerms();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
@@ -97,7 +102,7 @@ export default function CostingView(){
   function saveCosting(){
     if(!dish.trim())return;
     const item={id:editingId||uid(),name:dish,sell:s,cost,gp,pct,currency:'GBP',target:tgt,portions:p,ingredients:ings,savedAt:Date.now()};
-    if(editingId)actions.updGP(editingId,item);else actions.addGP(item);
+    if(editingId)actions.updGP(editingId,item);else actions.addGP({...item,...(isMultiOutlet&&activeOutletId?{outletId:activeOutletId}:{})});
     setEditingId(item.id);setPriceAlerts([]);
   }
   function clearForm(){setDish('');setSell('');setPortions('1');setIngs([]);setEditingId(null);setPriceAlerts([]);}
@@ -246,12 +251,12 @@ export default function CostingView(){
       <div style={{width:historyOpen?'272px':'40px',borderLeft:'1px solid '+C.border,background:C.surface,display:'flex',flexDirection:'column',transition:'width 0.2s',overflow:'hidden',flexShrink:0}}>
         <button onClick={()=>setHistoryOpen(!historyOpen)} style={{display:'flex',alignItems:'center',gap:'8px',padding:'16px',borderBottom:'1px solid '+C.border,background:'none',border:'none',cursor:'pointer',color:C.dim,whiteSpace:'nowrap',width:'100%'}}>
           <span style={{fontSize:'16px',transform:historyOpen?'rotate(0deg)':'rotate(180deg)',transition:'transform 0.2s'}}>›</span>
-          {historyOpen&&<span style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>History ({state.gpHistory.length})</span>}
+          {historyOpen&&<span style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>History ({visibleGpHistory.length})</span>}
         </button>
         {historyOpen&&(
           <div style={{overflow:'auto',flex:1}}>
-            {state.gpHistory.length===0?<p style={{fontSize:'12px',color:C.faint,padding:'20px',textAlign:'center'}}>No saved costings yet</p>:
-            state.gpHistory.map((h:any)=>{
+            {visibleGpHistory.length===0?<p style={{fontSize:'12px',color:C.faint,padding:'20px',textAlign:'center'}}>No saved costings yet</p>:
+            visibleGpHistory.map((h:any)=>{
               const col=gpColor(h.pct||0,h.target||72,C);
               const isEditing=editingId===h.id;
               return(
@@ -314,12 +319,12 @@ export default function CostingView(){
                   <span style={{width:'36px',height:'4px',borderRadius:'2px',background:C.border}} />
                 </div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 16px 12px',borderBottom:'1px solid '+C.border}}>
-                  <p style={{fontSize:'14px',fontWeight:700,color:C.text}}>History ({state.gpHistory.length})</p>
+                  <p style={{fontSize:'14px',fontWeight:700,color:C.text}}>History ({visibleGpHistory.length})</p>
                   <button onClick={()=>setHistoryOpen(false)} style={{background:'transparent',border:'none',color:C.faint,fontSize:'20px',cursor:'pointer'}}>×</button>
                 </div>
                 <div style={{overflow:'auto',flex:1}}>
-                  {state.gpHistory.length===0?<p style={{fontSize:'12px',color:C.faint,padding:'24px',textAlign:'center'}}>No saved costings yet</p>:
-                  state.gpHistory.map((h:any)=>{
+                  {visibleGpHistory.length===0?<p style={{fontSize:'12px',color:C.faint,padding:'24px',textAlign:'center'}}>No saved costings yet</p>:
+                  visibleGpHistory.map((h:any)=>{
                     const col=gpColor(h.pct||0,h.target||72,C);
                     const isEditing=editingId===h.id;
                     return(

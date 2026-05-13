@@ -4,6 +4,8 @@ import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { CATEGORIES } from '@/lib/categorize';
+import { useOutlet } from '@/context/OutletContext';
+import { scopeByOutlet } from '@/lib/outlets';
 
 const REASONS = [
   'Spoilage',
@@ -52,7 +54,8 @@ export default function WasteView() {
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const sym = (state.profile || {}).currencySymbol || '£';
-  const log = state.wasteLog || [];
+  const { activeOutletId, isMultiOutlet } = useOutlet();
+  const log = scopeByOutlet(state.wasteLog || [], activeOutletId, isMultiOutlet);
   const bank = state.ingredientsBank || [];
 
   const [showAdd, setShowAdd] = useState(false);
@@ -106,6 +109,7 @@ export default function WasteView() {
       notes: notes.trim(),
       category: pickedBank?.category || 'Other',
       supplier: pickedBank?.supplier || null,
+      ...(isMultiOutlet && activeOutletId ? { outletId: activeOutletId } : {}),
     });
     resetForm();
   }

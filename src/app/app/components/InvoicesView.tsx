@@ -9,6 +9,8 @@ import{CATEGORIES,guessCategory}from'@/lib/categorize';
 import{useIsMobile}from'@/lib/useIsMobile';
 import{useTierAndFlag}from'@/lib/usePlatformConfig';
 import{canAccess}from'@/lib/tierGate';
+import{useOutlet}from'@/context/OutletContext';
+import{scopeByOutlet}from'@/lib/outlets';
 import{buildSupplierReliability,reliabilityByName,recentDiscrepancySummary,type SupplierReliability}from'@/lib/supplierReliability';
 
 // Amber is a distinct token from brand gold in the redesign spec — gold is
@@ -36,7 +38,8 @@ export default function InvoicesView(){
   const sym=(appState.profile||{}).currencySymbol||'£';
   const bank=appState.ingredientsBank||[];
   const alerts=appState.priceAlerts||[];
-  const invoices=appState.invoices||[];
+  const{activeOutletId,isMultiOutlet}=useOutlet();
+  const invoices=scopeByOutlet(appState.invoices||[],activeOutletId,isMultiOutlet);
   const profile=appState.profile||{};
 
   const[scanning,setScanning]=useState(false);
@@ -129,6 +132,7 @@ export default function InvoicesView(){
       items:withCat,
       priceChangeDetails:priceChanges,
       scannedAt:Date.now(),
+      ...(isMultiOutlet&&activeOutletId?{outletId:activeOutletId}:{}),
     });
     setDeliveryStep('check');
     setScanResults([]);setPriceChanges([]);setView('bank');
