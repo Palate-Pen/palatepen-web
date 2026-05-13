@@ -4,8 +4,9 @@ import { useApp } from '@/context/AppContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { toCsv, downloadCsv, dateStamp } from '@/lib/csv';
+import { buildHistory, statsFor, WINDOW_MS, type IngredientHistory, type BenchmarkStats } from '@/lib/priceBenchmark';
 
-type SectionKey = 'gp' | 'waste' | 'stock' | 'menus' | 'prices';
+type SectionKey = 'gp' | 'waste' | 'stock' | 'menus' | 'prices' | 'benchmark';
 type Range = '7d' | '30d' | '90d' | 'all';
 
 const RANGE_OPTIONS: { value: Range; label: string }[] = [
@@ -52,15 +53,16 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
 
   // Section expansion + per-section date range + which one is currently printing
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
-    gp: true, waste: true, stock: true, menus: true, prices: true,
+    gp: true, waste: true, stock: true, menus: true, prices: true, benchmark: true,
   });
-  const [ranges, setRanges] = useState<Record<'gp' | 'waste' | 'prices', Range>>({
-    gp: 'all', waste: '30d', prices: '30d',
+  const [ranges, setRanges] = useState<Record<'gp' | 'waste' | 'prices' | 'benchmark', Range>>({
+    gp: 'all', waste: '30d', prices: '30d', benchmark: '30d',
   });
   const [printingKey, setPrintingKey] = useState<SectionKey | null>(null);
+  const [expandedIngredient, setExpandedIngredient] = useState<string | null>(null);
 
   function toggle(k: SectionKey) { setExpanded(prev => ({ ...prev, [k]: !prev[k] })); }
-  function setRange(k: 'gp' | 'waste' | 'prices', r: Range) { setRanges(prev => ({ ...prev, [k]: r })); }
+  function setRange(k: 'gp' | 'waste' | 'prices' | 'benchmark', r: Range) { setRanges(prev => ({ ...prev, [k]: r })); }
 
   // ── GP performance ────────────────────────────────────────
   const gp = useMemo(() => {
@@ -246,6 +248,25 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       .sort((a: any, b: any) => (b.detectedAt || 0) - (a.detectedAt || 0));
   }, [state.priceAlerts, ranges.prices]);
 
+  // ── Ingredient price benchmarking ─────────────────
+  const benchmark = useMemo(() => {
+    const history = buildHistory(state.invoices || [], state.ingredientsBank || []);
+    const windowMs = WINDOW_MS[ranges.benchmark];
+    const rows: { entry: IngredientHistory; stats: BenchmarkStats }[] = [];
+    history.forEach(entry => {
+      const stats = statsFor(entry, windowMs);
+      if (!stats) return;
+      // Need at least 2 points in the window for "benchmark" to mean anything —
+      // a single observation gives no spread / no avg vs latest signal.
+      if (stats.count < 2) return;
+      rows.push({ entry, stats });
+    });
+    // Default sort: most volatile first — the actionable signal for a chef
+    // scanning the table is "which ingredient prices are jumping around".
+    rows.sort((a, b) => b.stats.volatilityPct - a.stats.volatilityPct);
+    return { rows, totalIngredients: history.size };
+  }, [state.invoices, state.ingredientsBank, ranges.benchmark]);
+
   // ── Per-section CSV exports ────────────────────────────
   function exportSection(k: SectionKey) {
     const stamp = dateStamp();
@@ -273,6 +294,23 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
       downloadCsv(`price-changes-${stamp}.csv`, toCsv(
         ['Ingredient', 'From', 'To', '%', 'Detected At'],
         priceAlerts.map((a: any) => [a.name, (a.oldPrice ?? 0).toFixed(2), (a.newPrice ?? 0).toFixed(2), typeof a.pct === 'number' ? a.pct.toFixed(1) : '', a.detectedAt ? new Date(a.detectedAt).toISOString() : ''])
+      ));
+    } else if (k === 'benchmark') {
+      downloadCsv(`price-benchmark-${stamp}.csv`, toCsv(
+        ['Ingredient', 'Unit', 'Current Bank', 'Last Paid', 'Avg', 'Min', 'Max', 'vs Bank %', 'Volatility %', 'Data Points', 'Last Seen'],
+        benchmark.rows.map(({ entry, stats }) => [
+          entry.name,
+          entry.unit,
+          entry.currentBankPrice != null ? entry.currentBankPrice.toFixed(2) : '',
+          stats.last.toFixed(2),
+          stats.avg.toFixed(2),
+          stats.min.toFixed(2),
+          stats.max.toFixed(2),
+          stats.vsBankPct != null ? stats.vsBankPct.toFixed(1) : '',
+          stats.volatilityPct.toFixed(1),
+          stats.count,
+          stats.lastTs ? new Date(stats.lastTs).toISOString() : '',
+        ])
       ));
     }
   }
@@ -452,6 +490,72 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
         </Section>
       </div>
 
+      {/* Ingredient price benchmarking — per-ingredient avg/min/max/volatility
+          across all invoices in the window. Sort defaults to most volatile. */}
+      <Section C={C} sectionKey="benchmark" title="Ingredient price benchmarking"
+        subtitle={benchmark.rows.length > 0
+          ? `${benchmark.rows.length} ingredient${benchmark.rows.length === 1 ? '' : 's'} with ≥2 invoice points in ${rangeLabel(ranges.benchmark)} · sorted by volatility`
+          : `No ingredients with ≥2 invoice prices in ${rangeLabel(ranges.benchmark)}`}
+        expanded={expanded.benchmark} onToggle={() => toggle('benchmark')}
+        range={ranges.benchmark} onRangeChange={(r) => setRange('benchmark', r as Range)}
+        onPrint={() => setPrintingKey('benchmark')} onExport={() => exportSection('benchmark')}>
+        {benchmark.rows.length === 0 ? (
+          <Empty C={C} text={(state.invoices || []).length === 0
+            ? 'No invoices scanned yet — once you scan a few, every ingredient builds a price history.'
+            : 'Need at least 2 invoice prices per ingredient in this window. Try widening to 90d or All.'} />
+        ) : (
+          <div style={{ background: C.surface2, border: '0.5px solid ' + C.border, borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 70px 70px 70px 70px 70px 90px 70px', gap: '6px', padding: '8px 12px', background: C.surface, fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint }}>
+              <span>Ingredient</span>
+              <span style={{ textAlign: 'right' }}>Bank</span>
+              <span style={{ textAlign: 'right' }}>Last</span>
+              <span style={{ textAlign: 'right' }}>Avg</span>
+              <span style={{ textAlign: 'right' }}>Min</span>
+              <span style={{ textAlign: 'right' }}>Max</span>
+              <span style={{ textAlign: 'right' }}>vs Bank</span>
+              <span style={{ textAlign: 'right' }}>Volat.</span>
+            </div>
+            {benchmark.rows.slice(0, 50).map(({ entry, stats }) => {
+              const isExpanded = expandedIngredient === entry.nameKey;
+              const vsBank = stats.vsBankPct;
+              const volColor = stats.volatilityPct >= 15 ? C.red : stats.volatilityPct >= 7 ? C.gold : C.greenLight;
+              return (
+                <div key={entry.nameKey} style={{ borderTop: '0.5px solid ' + C.border }}>
+                  <button type="button"
+                    onClick={() => setExpandedIngredient(isExpanded ? null : entry.nameKey)}
+                    style={{ display: 'grid', gridTemplateColumns: '2fr 70px 70px 70px 70px 70px 90px 70px', gap: '6px', padding: '8px 12px', alignItems: 'center', width: '100%', background: isExpanded ? C.surface : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 0 }}>
+                    <span style={{ fontSize: '13px', color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '10px', color: C.faint, width: '10px' }}>{isExpanded ? '▾' : '▸'}</span>
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.name}</span>
+                      <span style={{ fontSize: '10px', color: C.faint, textTransform: 'uppercase', letterSpacing: '0.5px', flexShrink: 0 }}>/ {entry.unit}</span>
+                    </span>
+                    <span style={{ fontSize: '12px', color: entry.currentBankPrice != null ? C.dim : C.faint, textAlign: 'right' }}>
+                      {entry.currentBankPrice != null ? `${sym}${entry.currentBankPrice.toFixed(2)}` : '—'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: C.text, fontWeight: 600, textAlign: 'right' }}>{sym}{stats.last.toFixed(2)}</span>
+                    <span style={{ fontSize: '12px', color: C.dim, textAlign: 'right' }}>{sym}{stats.avg.toFixed(2)}</span>
+                    <span style={{ fontSize: '12px', color: C.greenLight, textAlign: 'right' }}>{sym}{stats.min.toFixed(2)}</span>
+                    <span style={{ fontSize: '12px', color: C.red, textAlign: 'right' }}>{sym}{stats.max.toFixed(2)}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: vsBank == null ? C.faint : Math.abs(vsBank) < 1 ? C.dim : vsBank > 0 ? C.red : C.greenLight, textAlign: 'right' }}>
+                      {vsBank == null ? '—' : `${vsBank > 0 ? '+' : ''}${vsBank.toFixed(1)}%`}
+                    </span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: volColor, textAlign: 'right' }}>{stats.volatilityPct.toFixed(1)}%</span>
+                  </button>
+                  {isExpanded && (
+                    <BenchmarkSparkline C={C} entry={entry} stats={stats} sym={sym} />
+                  )}
+                </div>
+              );
+            })}
+            {benchmark.rows.length > 50 && (
+              <div style={{ padding: '8px 12px', fontSize: '11px', color: C.faint, textAlign: 'center', borderTop: '0.5px solid ' + C.border }}>
+                +{benchmark.rows.length - 50} more (full list in CSV export)
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+
       {/* Price changes table */}
       <Section C={C} sectionKey="prices" title="Price changes" subtitle={`${priceAlerts.length} change${priceAlerts.length === 1 ? '' : 's'} in ${rangeLabel(ranges.prices)}`}
         expanded={expanded.prices} onToggle={() => toggle('prices')}
@@ -504,11 +608,12 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
             printingKey === 'gp' ? rangeLabel(ranges.gp)
             : printingKey === 'waste' ? rangeLabel(ranges.waste)
             : printingKey === 'prices' ? rangeLabel(ranges.prices)
+            : printingKey === 'benchmark' ? rangeLabel(ranges.benchmark)
             : ''
           }
           sym={sym}
           gpTarget={gpTarget}
-          gp={gp} waste={waste} stock={stock} menus={menus} priceAlerts={priceAlerts}
+          gp={gp} waste={waste} stock={stock} menus={menus} priceAlerts={priceAlerts} benchmark={benchmark}
         />
       )}
     </div>
@@ -590,7 +695,7 @@ function Section({ C, sectionKey, title, subtitle, expanded, onToggle, range, on
 // Per-section print modal — opens a clean light-themed A4 preview with just one
 // section's data. Uses the same @media print pattern as the recipe prints
 // (visibility: hidden on the body, visible on the print container).
-function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, gpTarget, gp, waste, stock, menus, priceAlerts }: {
+function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, gpTarget, gp, waste, stock, menus, priceAlerts, benchmark }: {
   C: any;
   sectionKey: SectionKey;
   onClose: () => void;
@@ -599,7 +704,7 @@ function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, g
   range: string;
   sym: string;
   gpTarget: number;
-  gp: any; waste: any; stock: any; menus: any; priceAlerts: any[];
+  gp: any; waste: any; stock: any; menus: any; priceAlerts: any[]; benchmark: any;
 }) {
   const titleMap: Record<SectionKey, string> = {
     gp: 'GP Performance',
@@ -607,6 +712,7 @@ function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, g
     stock: 'Stock Value by Category',
     menus: 'Menu Engineering',
     prices: 'Price Changes',
+    benchmark: 'Ingredient Price Benchmark',
   };
   return (
     <>
@@ -657,6 +763,7 @@ function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, g
             {sectionKey === 'stock' && <StockPrint sym={sym} stock={stock} />}
             {sectionKey === 'menus' && <MenusPrint menus={menus} />}
             {sectionKey === 'prices' && <PricesPrint sym={sym} priceAlerts={priceAlerts} />}
+            {sectionKey === 'benchmark' && <BenchmarkPrint sym={sym} benchmark={benchmark} />}
 
             <div style={{ borderTop: '1px solid #DDD', paddingTop: '12px', marginTop: '24px', fontSize: '10px', color: '#888', display: 'flex', justifyContent: 'space-between' }}>
               <span>{businessName || 'Palatable'} · Generated {today}</span>
@@ -777,6 +884,90 @@ function MenusPrint({ menus }: { menus: any }) {
         rows={menus.perMenu.map((m: any) => [m.name, String(m.dishes), String(m.totalCovers || 0), String(m.stars || 0), String(m.ploughs || 0), String(m.puzzles || 0), String(m.dogs || 0)])}
       />
     </>
+  );
+}
+
+function BenchmarkPrint({ sym, benchmark }: { sym: string; benchmark: any }) {
+  if (!benchmark || benchmark.rows.length === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No ingredients with enough invoice prices to benchmark in this range.</p>;
+  return (
+    <PrintTable
+      headers={['Ingredient', 'Unit', 'Bank', 'Last', 'Avg', 'Min', 'Max', 'vs Bank', 'Volat. %']}
+      rows={benchmark.rows.map(({ entry, stats }: { entry: IngredientHistory; stats: BenchmarkStats }) => [
+        entry.name,
+        entry.unit,
+        entry.currentBankPrice != null ? sym + entry.currentBankPrice.toFixed(2) : '—',
+        sym + stats.last.toFixed(2),
+        sym + stats.avg.toFixed(2),
+        sym + stats.min.toFixed(2),
+        sym + stats.max.toFixed(2),
+        stats.vsBankPct != null ? (stats.vsBankPct > 0 ? '+' : '') + stats.vsBankPct.toFixed(1) + '%' : '—',
+        stats.volatilityPct.toFixed(1) + '%',
+      ])}
+    />
+  );
+}
+
+// Inline expansion under a benchmark table row — renders the last N points as
+// vertical bars with the bank price overlaid as a dashed reference line.
+// Mirrors the 4-week waste-trend pattern visually so the report stays cohesive.
+function BenchmarkSparkline({ C, entry, stats, sym }: { C: any; entry: IngredientHistory; stats: BenchmarkStats; sym: string }) {
+  // Show up to last 12 invoice points — older history is interesting in the
+  // CSV export but visual noise in a 60px-tall sparkline.
+  const points = entry.points.slice(-12);
+  if (points.length === 0) return null;
+  const prices = points.map(p => p.unitPrice);
+  const min = Math.min(...prices, entry.currentBankPrice ?? Infinity);
+  const max = Math.max(...prices, entry.currentBankPrice ?? -Infinity);
+  const range = max - min || 1;
+  // Bank price overlay position (0–100% from bottom). If no bank price we hide
+  // the dashed line entirely.
+  const bankPctFromBottom = entry.currentBankPrice != null
+    ? ((entry.currentBankPrice - min) / range) * 100
+    : null;
+  return (
+    <div style={{ padding: '12px 16px 16px 28px', background: C.surface2, borderTop: '0.5px solid ' + C.border }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+        <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint }}>
+          Last {points.length} invoice price{points.length === 1 ? '' : 's'}
+        </p>
+        <p style={{ fontSize: '10px', color: C.faint }}>
+          {stats.count} point{stats.count === 1 ? '' : 's'} in range · last seen {new Date(stats.lastTs).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+        </p>
+      </div>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: '3px', height: '64px', paddingTop: '4px' }}>
+        {bankPctFromBottom != null && (
+          <div
+            title={`Bank price: ${sym}${(entry.currentBankPrice as number).toFixed(2)}`}
+            style={{
+              position: 'absolute', left: 0, right: 0,
+              bottom: `${Math.max(0, Math.min(100, bankPctFromBottom))}%`,
+              height: 0,
+              borderTop: `1px dashed ${C.gold}`,
+              opacity: 0.7,
+              pointerEvents: 'none',
+            }}
+          />
+        )}
+        {points.map((p, i) => {
+          const pct = ((p.unitPrice - min) / range) * 100;
+          const isLast = i === points.length - 1;
+          const colour = isLast ? C.gold : C.gold + '70';
+          return (
+            <div key={i} title={`${sym}${p.unitPrice.toFixed(2)} · ${p.supplier} · ${new Date(p.ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: '8px' }}>
+              <div style={{ width: '100%', height: `${Math.max(4, pct)}%`, background: colour, borderRadius: '2px 2px 0 0' }} />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: C.faint, marginTop: '6px' }}>
+        <span>{sym}{min.toFixed(2)} min</span>
+        {entry.currentBankPrice != null && (
+          <span style={{ color: C.gold }}>— — bank {sym}{entry.currentBankPrice.toFixed(2)}</span>
+        )}
+        <span>{sym}{max.toFixed(2)} max</span>
+      </div>
+    </div>
   );
 }
 
