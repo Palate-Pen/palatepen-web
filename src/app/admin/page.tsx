@@ -1027,7 +1027,7 @@ function UserDetail({ user, onClose, onChanged }: { user: any; onClose: () => vo
               Replace this user&apos;s data with the canonical showcase set
               {seedSummary && (
                 <>
-                  {' '}({seedSummary.recipes} recipes · {seedSummary.costings} costings · {seedSummary.bank} bank · {seedSummary.stock} stock · {seedSummary.invoices} invoices · {seedSummary.menus} menus · {seedSummary.notes} notes · {seedSummary.waste} waste)
+                  {' '}({seedSummary.outlets} outlets · {seedSummary.recipes} recipes · {seedSummary.costings} costings · {seedSummary.bank} bank · {seedSummary.stock} stock · {seedSummary.invoices} invoices · {seedSummary.menus} menus · {seedSummary.notes} notes · {seedSummary.waste} waste)
                 </>
               )}.
             </p>

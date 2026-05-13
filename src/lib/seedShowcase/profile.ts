@@ -20,11 +20,12 @@ export function buildShowcaseProfile(): Record<string, unknown> {
     gpTarget: 72,
     stockDay: 1, // Monday
     stockFrequency: 'weekly',
-    // Kitchen tier so the demo unlocks every showcase surface:
-    // - Public menus (`/m/[slug]` — tier-gated to kitchen/group)
-    // - API access (Settings → API key — kitchen+)
-    // - My Team management (kitchen+ + owner role)
-    tier: 'kitchen',
+    // Group tier so the demo unlocks every showcase surface including
+    // multi-outlet (sidebar switcher, dashboard greeting, per-outlet
+    // scoping). Public menus and API access (Group-only since the tier
+    // tightening) and My Team management also light up automatically.
+    // Three outlets ship with the seed — see ./outlets.ts.
+    tier: 'group',
     invoiceInboxToken: generateInboxToken(),
     supplierContacts: {
       'brakes': {

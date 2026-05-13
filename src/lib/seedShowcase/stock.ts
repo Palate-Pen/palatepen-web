@@ -1,5 +1,6 @@
 import { SHOWCASE_BANK } from './bank';
 import { daysAgo } from './time';
+import { OUTLET_IDS } from './outlets';
 
 // Stock seed — a curated subset of bank items with par/min levels and current
 // counts. Mix of states (some critical, some healthy, some 0) so StockView's
@@ -17,6 +18,7 @@ interface StockShape {
   unitPrice: number;
   lastCounted: number;
   createdAt: number;
+  outletId: string;
 }
 
 // Bank-id → { par, min, current } overrides. Anything in this list ends up
@@ -60,9 +62,20 @@ export function buildShowcaseStock(): StockShape[] {
   const bankById = new Map(SHOWCASE_BANK.map(b => [b.id, b] as const));
   const out: StockShape[] = [];
   let idx = 0;
+  // Distribute stock across all 3 outlets. Soho is the main restaurant
+  // (gets the bulk of items), Marylebone has a smaller selection focused
+  // on cocktail/small-plate kit, Central Kitchen holds bulk produce. The
+  // round-robin pattern (idx % 3) gives every outlet enough variety that
+  // the per-outlet stock view has signal at every par/min status.
+  const outletCycle = [
+    OUTLET_IDS.soho, OUTLET_IDS.soho, OUTLET_IDS.soho,
+    OUTLET_IDS.marylebone, OUTLET_IDS.marylebone,
+    OUTLET_IDS.centralKitchen,
+  ];
   for (const [bankId, profile] of Object.entries(STOCK_PROFILE)) {
     const b = bankById.get(bankId);
     if (!b) continue;
+    const outletId = outletCycle[idx % outletCycle.length];
     out.push({
       id: `seed-stock-${bankId.replace('seed-bank-', '')}`,
       name: b.name,
@@ -76,6 +89,7 @@ export function buildShowcaseStock(): StockShape[] {
       // shows variation — most counted in the last week, a few older.
       lastCounted: daysAgo(idx % 5 === 0 ? 14 : idx % 3 === 0 ? 7 : 2),
       createdAt: daysAgo(60),
+      outletId,
     });
     idx++;
   }

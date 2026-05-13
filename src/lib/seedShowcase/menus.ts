@@ -1,4 +1,5 @@
 import { daysAgo } from './time';
+import { OUTLET_IDS } from './outlets';
 
 // Menus seed — two showcase menus. The "Dinner à la carte" has salesData
 // populated so the menu engineering report classifies dishes into Star /
@@ -13,6 +14,7 @@ export interface ShowcaseMenu {
   published?: boolean;
   publicSlug?: string;
   createdAt: number;
+  outletId: string;
 }
 
 export function buildShowcaseMenus(): ShowcaseMenu[] {
@@ -64,6 +66,8 @@ export function buildShowcaseMenus(): ShowcaseMenu[] {
       published: true,
       publicSlug: 'palate-test-kitchen-dinner',
       createdAt: daysAgo(85),
+      // The full a la carte menu lives at the main Soho site.
+      outletId: OUTLET_IDS.soho,
     },
     {
       id: 'seed-menu-lunch',
@@ -77,6 +81,8 @@ export function buildShowcaseMenus(): ShowcaseMenu[] {
       ],
       published: false,
       createdAt: daysAgo(20),
+      // Set lunch runs at Marylebone (sister site, different menu format).
+      outletId: OUTLET_IDS.marylebone,
     },
   ];
 }

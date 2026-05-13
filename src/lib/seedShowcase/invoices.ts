@@ -1,5 +1,6 @@
 import { SHOWCASE_BANK } from './bank';
 import { daysAgo } from './time';
+import { OUTLET_IDS } from './outlets';
 
 // Invoice seed — spread over 90 days across 5 suppliers, mix of manually
 // scanned and email-forwarded (so the inbound-email pipe shows usage). A
@@ -216,6 +217,7 @@ export interface ShowcaseInvoice {
   items: any[];
   scannedAt: number;
   total?: number;
+  outletId: string;
   source?: 'email';
   receivedAt?: number;
   subject?: string;
@@ -234,6 +236,22 @@ export interface ShowcasePriceAlert {
   change: number;
   pct: number;
   detectedAt: number;
+}
+
+// Map each seed invoice to an outlet so the demo shows per-outlet scoping.
+// Default: Soho (main restaurant). Brakes + Bidfood deliveries route to the
+// Central Kitchen (realistic — bulk supplier ships to prep hub). A handful
+// of invoices are pinned to Marylebone for variety on the sister site.
+function outletForInvoice(id: string): string {
+  const marylebone: Record<string, true> = {
+    'seed-inv-market-003': true,
+    'seed-inv-market-005': true,
+    'seed-inv-pastry-002': true,
+    'seed-inv-butcher-002': true,
+  };
+  if (marylebone[id]) return OUTLET_IDS.marylebone;
+  if (id.includes('brakes') || id.includes('bidfood')) return OUTLET_IDS.centralKitchen;
+  return OUTLET_IDS.soho;
 }
 
 export function buildShowcaseInvoices(): { invoices: ShowcaseInvoice[]; priceAlerts: ShowcasePriceAlert[] } {
@@ -300,6 +318,7 @@ export function buildShowcaseInvoices(): { invoices: ShowcaseInvoice[]; priceAle
       items,
       scannedAt: ts,
       total,
+      outletId: outletForInvoice(spec.id),
       ...(spec.status ? { status: spec.status } : {}),
       ...(discrepancies.length > 0 ? { discrepancies } : {}),
       ...(spec.source === 'email' ? {

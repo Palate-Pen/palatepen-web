@@ -87,6 +87,38 @@ export async function POST(req: Request) {
     }
   }
 
+  // Replace the outlets for this account with the showcase set. The seed
+  // entities (invoices, stock, waste, menus, some notes) carry stable
+  // outlet IDs that match SHOWCASE_OUTLETS, so the demo's multi-outlet
+  // scoping works the moment the page reloads. Idempotent — delete + insert
+  // every time so re-seeding never accumulates duplicates.
+  let outletErrMsg: string | null = null;
+  if (existing.account_id) {
+    const { error: delErr } = await supabase
+      .from('outlets')
+      .delete()
+      .eq('account_id', existing.account_id);
+    if (delErr) {
+      outletErrMsg = `delete: ${delErr.code}: ${delErr.message}`;
+      console.error('[seed-showcase] outlet delete failed:', outletErrMsg);
+    } else {
+      const outletRows = payload.outlets.map(o => ({
+        id: o.id,
+        account_id: existing.account_id,
+        name: o.name,
+        type: o.type,
+        address: o.address,
+        timezone: o.timezone,
+        is_central_kitchen: o.is_central_kitchen,
+      }));
+      const { error: insErr } = await supabase.from('outlets').insert(outletRows);
+      if (insErr) {
+        outletErrMsg = `insert: ${insErr.code}: ${insErr.message}`;
+        console.error('[seed-showcase] outlet insert failed:', outletErrMsg);
+      }
+    }
+  }
+
   // Read back the account row so the caller can verify the mirror landed.
   // accounts.id is aliased to user.id for personal accounts (per migration
   // 007 backfill) so we look up either by id or owner_user_id.
@@ -107,5 +139,6 @@ export async function POST(req: Request) {
     counts: showcaseSummary(),
     account: acctRow ? { id: acctRow.id, tier: acctRow.tier, name: acctRow.name } : null,
     accountUpdateError: acctErrMsg,
+    outletUpdateError: outletErrMsg,
   });
 }

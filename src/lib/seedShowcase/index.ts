@@ -6,6 +6,8 @@ import { buildShowcaseMenus } from './menus';
 import { buildShowcaseNotes } from './notes';
 import { buildShowcaseWaste } from './waste';
 import { buildShowcaseProfile } from './profile';
+import { SHOWCASE_OUTLETS, type ShowcaseOutlet } from './outlets';
+export { SHOWCASE_OUTLETS, OUTLET_IDS, type ShowcaseOutlet } from './outlets';
 
 // Orchestrator. Returns the full user_data payload (snake_case columns as
 // Postgres expects them) for a single seed run. Idempotent — every call
@@ -27,6 +29,7 @@ export interface ShowcasePayload {
   menus: any[];
   notes: any[];
   waste_log: any[];
+  outlets: ShowcaseOutlet[];
 }
 
 export function buildShowcasePayload(): ShowcasePayload {
@@ -43,6 +46,7 @@ export function buildShowcasePayload(): ShowcasePayload {
     menus: buildShowcaseMenus(),
     notes: buildShowcaseNotes(),
     waste_log: buildShowcaseWaste(),
+    outlets: SHOWCASE_OUTLETS,
   };
 }
 
@@ -61,5 +65,6 @@ export function showcaseSummary(): Record<string, number> {
     menus: p.menus.length,
     notes: p.notes.length,
     waste: p.waste_log.length,
+    outlets: p.outlets.length,
   };
 }

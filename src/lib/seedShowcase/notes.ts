@@ -1,4 +1,5 @@
 import { daysAgo } from './time';
+import { OUTLET_IDS } from './outlets';
 
 // Notebook seed — chef-style notes pinned to specific recipes (recipeId)
 // plus a couple of unpinned reflections. Notebook displays as a feed with
@@ -11,6 +12,10 @@ export interface ShowcaseNote {
   recipeId?: string;
   createdAt: number;
   updatedAt?: number;
+  // Some notes are site-specific (service incidents, prep at the central
+  // kitchen). Others are account-level chef ideas — left unscoped so they
+  // surface on every outlet via the legacy-fallback path.
+  outletId?: string;
 }
 
 export function buildShowcaseNotes(): ShowcaseNote[] {
@@ -41,6 +46,7 @@ export function buildShowcaseNotes(): ShowcaseNote[] {
       content: 'Wednesday delivery — flesh dull, smelled too strong. Returned. Brakes credited the invoice. Going to flag this if it happens again next week.',
       recipeId: 'seed-recipe-cod-mussels',
       createdAt: daysAgo(8),
+      outletId: OUTLET_IDS.soho,
     },
     {
       id: 'seed-note-005',
@@ -65,6 +71,21 @@ export function buildShowcaseNotes(): ShowcaseNote[] {
       id: 'seed-note-008',
       content: 'Holiday Friday — heavy bookings (124 covers projected). Pre-portion fillets at 3pm, set up two wellington stations.',
       createdAt: daysAgo(2),
+      outletId: OUTLET_IDS.soho,
+    },
+    {
+      id: 'seed-note-009',
+      title: 'Marylebone bar — cocktail garnish stock',
+      content: 'Citrus dehydrator wheels keep running low Friday/Saturday. Bump par to 200 wheels and pre-batch the rosemary/thyme bundles on Thursday morning.',
+      createdAt: daysAgo(6),
+      outletId: OUTLET_IDS.marylebone,
+    },
+    {
+      id: 'seed-note-010',
+      title: 'CK prep schedule — wellington fillets',
+      content: 'Bermondsey prep team to portion + chain-wrap fillets every Tuesday morning for Soho service. Delivery 1pm via fridge van. Mark batch with weight + date.',
+      createdAt: daysAgo(14),
+      outletId: OUTLET_IDS.centralKitchen,
     },
   ];
 }

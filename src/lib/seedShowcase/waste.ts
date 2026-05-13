@@ -1,5 +1,6 @@
 import { SHOWCASE_BANK } from './bank';
 import { daysAgo } from './time';
+import { OUTLET_IDS } from './outlets';
 
 // Waste log seed — ~20 entries spread over 60 days across the 9 standard
 // reasons. Cost computed against bank unit-price so the Waste cost dashboard
@@ -55,6 +56,7 @@ export interface ShowcaseWasteEntry {
   totalCost: number;
   supplier?: string | null;
   createdAt: number;
+  outletId: string;
 }
 
 function toStandard(qty: number, unit: string, bankUnit: string): number {
@@ -63,6 +65,16 @@ function toStandard(qty: number, unit: string, bankUnit: string): number {
   if (unit === 'ml' && bankUnit === 'L')  return qty / 1000;
   return qty;
 }
+
+// Distribute waste entries across the 3 outlets. Soho is the busiest
+// kitchen so it generates the most waste; Marylebone has bar-shift waste
+// (citrus, dairy); Central Kitchen has the bulk-prep losses (trim,
+// overproduction on portioned items).
+const WASTE_OUTLET_CYCLE = [
+  OUTLET_IDS.soho, OUTLET_IDS.soho, OUTLET_IDS.soho,
+  OUTLET_IDS.marylebone, OUTLET_IDS.marylebone,
+  OUTLET_IDS.centralKitchen,
+];
 
 export function buildShowcaseWaste(): ShowcaseWasteEntry[] {
   return SPECS.map((s, i) => {
@@ -79,6 +91,7 @@ export function buildShowcaseWaste(): ShowcaseWasteEntry[] {
       totalCost: Math.round(cost * 100) / 100,
       supplier: b?.supplier ?? null,
       createdAt: daysAgo(s.daysAgo),
+      outletId: WASTE_OUTLET_CYCLE[i % WASTE_OUTLET_CYCLE.length],
     };
   });
 }
