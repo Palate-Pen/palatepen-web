@@ -38,7 +38,7 @@ const TIER_BADGE: Record<string, { fg: string; bg: string; bd: string }> = {
   enterprise: { fg: C.text,     bg: C.bg,          bd: C.text + '60' },
 };
 
-type Section = 'overview' | 'users' | 'revenue' | 'platform' | 'audit' | 'system';
+type Section = 'overview' | 'users' | 'revenue' | 'infra' | 'expenses' | 'platform' | 'audit' | 'system';
 
 // ── Icon set ─────────────────────────────────────────────────
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
@@ -62,6 +62,8 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
     case 'message':   return (<svg xmlns="http://www.w3.org/2000/svg" {...s} viewBox="0 0 24 24"><path d="M21 12c0 4-4 7-9 7-1.4 0-2.7-.2-3.9-.6L3 20l1.5-4C3.5 14.8 3 13.4 3 12c0-4 4-7 9-7s9 3 9 7Z" /></svg>);
     case 'trash':     return (<svg xmlns="http://www.w3.org/2000/svg" {...s} viewBox="0 0 24 24"><polyline points="4,7 20,7" /><path d="M6 7v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7" /><path d="M10 11v6M14 11v6" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /></svg>);
     case 'download':  return (<svg xmlns="http://www.w3.org/2000/svg" {...s} viewBox="0 0 24 24"><path d="M12 3v12" /><polyline points="7,10 12,15 17,10" /><line x1="4" y1="21" x2="20" y2="21" /></svg>);
+    case 'server':    return (<svg xmlns="http://www.w3.org/2000/svg" {...s} viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1.5" /><rect x="3" y="14" width="18" height="6" rx="1.5" /><line x1="7" y1="7" x2="7.01" y2="7" /><line x1="7" y1="17" x2="7.01" y2="17" /></svg>);
+    case 'calendar':  return (<svg xmlns="http://www.w3.org/2000/svg" {...s} viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="8" y1="3" x2="8" y2="7" /><line x1="16" y1="3" x2="16" y2="7" /></svg>);
     default: return null;
   }
 }
@@ -81,6 +83,7 @@ function Wordmark({ size = 18, hideText = false }: { size?: number; hideText?: b
 function Topbar({ section }: { section: Section }) {
   const labels: Record<Section, string> = {
     overview: 'Overview', users: 'Users', revenue: 'Revenue',
+    infra: 'Infrastructure', expenses: 'Expenses Timeline',
     platform: 'Platform', audit: 'Audit', system: 'System',
   };
   const now = new Date();
@@ -101,6 +104,8 @@ function Sidebar({ section, onChange }: { section: Section; onChange: (s: Sectio
     { id: 'overview', icon: 'dashboard', label: 'Overview' },
     { id: 'users',    icon: 'users',     label: 'Users' },
     { id: 'revenue',  icon: 'chart',     label: 'Revenue' },
+    { id: 'infra',    icon: 'server',    label: 'Infrastructure' },
+    { id: 'expenses', icon: 'calendar',  label: 'Expenses Timeline' },
     { id: 'platform', icon: 'toggle',    label: 'Platform' },
     { id: 'audit',    icon: 'list',      label: 'Audit' },
     { id: 'system',   icon: 'activity',  label: 'System' },
@@ -374,6 +379,8 @@ export default function AdminPage() {
           />
         )}
         {section === 'revenue' && (<Revenue users={users} />)}
+        {section === 'infra' && (<Infrastructure authUserCount={authUsers.length} />)}
+        {section === 'expenses' && (<ExpensesTimeline />)}
         {section === 'platform' && (<Platform />)}
         {section === 'audit' && (<Audit entries={audit} users={users} />)}
         {section === 'system' && (<System />)}
@@ -1335,6 +1342,472 @@ function Revenue({ users }: { users: any[] }) {
             </div>
           </Card>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// Infrastructure
+// ──────────────────────────────────────────────────────────
+// Snapshot of every paid + free service the platform runs on. All numbers
+// are hardcoded estimates EXCEPT the Supabase auth-user count (passed in
+// from the live admin load). Per the brief — do not query any application
+// data tables to keep the dashboard honest about cost, not seeded demos.
+
+function ProgressBar({ value, max, color, est }: { value: number; max: number; color: string; est?: boolean }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: C.dim, marginBottom: 3 }}>
+        <span>{value.toLocaleString()}{est ? ' est.' : ''} / {max.toLocaleString()}</span>
+        <span style={{ color, fontWeight: 600 }}>{pct.toFixed(pct < 1 ? 2 : 1)}%</span>
+      </div>
+      <div style={{ height: 6, background: C.bg, borderRadius: 3, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width 0.3s' }} />
+      </div>
+    </div>
+  );
+}
+
+function StatusChip({ label, tone }: { label: string; tone: 'green' | 'amber' | 'blue' | 'red' }) {
+  const map = {
+    green: { fg: C.green, bg: C.greenSoft, bd: C.green + '40' },
+    amber: { fg: C.amber, bg: C.amberSoft, bd: C.amber + '40' },
+    blue:  { fg: C.blue,  bg: C.blueSoft,  bd: C.blue + '40' },
+    red:   { fg: C.red,   bg: C.redSoft,   bd: C.red + '40' },
+  };
+  const t = map[tone];
+  return (
+    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: t.fg, background: t.bg, border: `1px solid ${t.bd}`, padding: '3px 9px', borderRadius: 2, whiteSpace: 'nowrap' }}>
+      {label}
+    </span>
+  );
+}
+
+function ServiceCard({ title, plan, cost, costColor, status, statusTone, progress, warning, note, fullWidth }: {
+  title: string;
+  plan: string;
+  cost: string;
+  costColor?: string;
+  status: string;
+  statusTone: 'green' | 'amber' | 'blue' | 'red';
+  progress?: React.ReactNode;
+  warning?: string;
+  note?: string;
+  fullWidth?: boolean;
+}) {
+  return (
+    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, padding: 18, gridColumn: fullWidth ? '1 / -1' : 'auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 }}>{title}</p>
+          <p style={{ fontSize: 11, color: C.faint, lineHeight: 1.5 }}>{plan}</p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: costColor || C.text, lineHeight: 1 }}>{cost}</p>
+          <StatusChip label={status} tone={statusTone} />
+        </div>
+      </div>
+      {progress && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+          {progress}
+        </div>
+      )}
+      {warning && (
+        <div style={{ marginTop: 12, padding: '8px 12px', background: C.amberSoft, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 3, fontSize: 11, color: C.dim, lineHeight: 1.5 }}>
+          ⚠ {warning}
+        </div>
+      )}
+      {note && (
+        <p style={{ fontSize: 11, color: C.faint, marginTop: 12, fontStyle: 'italic', lineHeight: 1.5 }}>{note}</p>
+      )}
+    </div>
+  );
+}
+
+function Infrastructure({ authUserCount }: { authUserCount: number }) {
+  const SUPABASE_AUTH_LIMIT = 50000;
+  const supabaseAuthPct = (authUserCount / SUPABASE_AUTH_LIMIT) * 100;
+
+  const breakdown = [
+    { service: 'Supabase',      plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: '~500 users storage', upgrade: '£25/mo Pro' },
+    { service: 'Vercel',        plan: 'Hobby',          type: 'Fixed',    cost: '£0 (warning)', trigger: 'July 2026 ToS', upgrade: '£20/mo Pro', warn: true },
+    { service: 'Cloudflare',    plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: '100k req/day',       upgrade: '£20/mo Pro' },
+    { service: 'Microsoft 365', plan: 'Business Basic', type: 'Fixed',    cost: '£5.75',  trigger: 'More mailboxes',     upgrade: '£4.50/user/mo' },
+    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: '~£28',   trigger: 'Scales with scans',  upgrade: '~£0.80/scan' },
+    { service: 'GitHub',        plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: 'Never for 1 org',    upgrade: '—' },
+  ];
+
+  const anthropicScale = [
+    { users: '38 paid users today',    cost: '~£28/mo est.'  },
+    { users: '100 paid users',         cost: '~£74/mo est.'  },
+    { users: '250 paid users',         cost: '~£185/mo est.' },
+    { users: '500 paid users',         cost: '~£370/mo est.' },
+    { users: '1,000 paid users',       cost: '~£740/mo est.' },
+  ];
+
+  return (
+    <div>
+      <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, marginBottom: 6 }}>Infrastructure</h1>
+      <p style={{ fontSize: 12, color: C.faint, marginBottom: 18 }}>What we run on, what it costs, and where the next upgrade trigger sits. All figures are hardcoded estimates except the live Supabase auth-user count.</p>
+
+      {/* Summary tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 14 }}>
+        <StatTile label="Fixed infrastructure" value="£5.75/mo" sub="M365 only — rest free tier" />
+        <StatTile label="Variable cost (Anthropic)" value="~£28/mo" sub="estimated · current activity" accent={C.amber} />
+        <StatTile label="Total monthly cost" value="~£33.75/mo" sub="fixed + variable" accent={C.gold} />
+        <StatTile label="Services on free tier" value="3 of 4" sub="Supabase · Vercel · Cloudflare" accent={C.green} />
+      </div>
+
+      {/* Amber warning banner */}
+      <div style={{ background: C.amberSoft, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: 16, marginBottom: 14 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.amber, marginBottom: 10 }}>⚠ Action required</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.5 }}>
+            <strong style={{ color: C.text }}>1. Vercel Hobby commercial-use ToS.</strong> Vercel Hobby plan prohibits commercial use per their Terms of Service. Upgrade to Vercel Pro (£20/mo) in July before accepting paying customers.
+          </div>
+          <div style={{ fontSize: 12, color: C.dim, lineHeight: 1.5 }}>
+            <strong style={{ color: C.text }}>2. Microsoft 365 price rise.</strong> Microsoft 365 Business Basic prices rise ~17% on 1 July 2026. Renew your annual subscription before 30 June 2026 to lock in current £5.75 rate for 12 months.
+          </div>
+        </div>
+      </div>
+
+      {/* Service cards 2-col grid (Anthropic spans full width as the 5th row) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+        <ServiceCard
+          title="Supabase"
+          plan="Free tier · EU West London · project xbnsytrcvyayzdxezpha"
+          cost="£0/month"
+          status="Free"
+          statusTone="green"
+          progress={(
+            <>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Auth users (live)</p>
+                <ProgressBar value={authUserCount} max={SUPABASE_AUTH_LIMIT} color={supabaseAuthPct > 80 ? C.red : supabaseAuthPct > 50 ? C.amber : C.green} />
+              </div>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Database storage</p>
+                <ProgressBar value={50} max={500} color={C.green} est />
+              </div>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Bandwidth</p>
+                <ProgressBar value={1.5} max={5} color={C.green} est />
+              </div>
+            </>
+          )}
+          note="Upgrade to Pro (£25/mo) when approaching 500MB storage or 5GB bandwidth."
+        />
+
+        <ServiceCard
+          title="Vercel"
+          plan="Hobby (free) — flagged"
+          cost="£0/month"
+          costColor={C.amber}
+          status="Needs upgrade"
+          statusTone="amber"
+          progress={(
+            <>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Bandwidth</p>
+                <ProgressBar value={10} max={100} color={C.green} est />
+              </div>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Serverless executions / mo</p>
+                <ProgressBar value={50000} max={1000000} color={C.green} est />
+              </div>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Build minutes / mo</p>
+                <ProgressBar value={300} max={6000} color={C.green} est />
+              </div>
+            </>
+          )}
+          warning="Hobby plan ToS prohibits commercial use. Upgrade to Vercel Pro (£20/mo) in July before launch."
+        />
+
+        <ServiceCard
+          title="Cloudflare"
+          plan="Free · DNS + Email Routing + Workers"
+          cost="£0/month"
+          status="Free — no upgrade needed"
+          statusTone="green"
+          progress={(
+            <>
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Workers requests / day</p>
+                <ProgressBar value={500} max={100000} color={C.green} est />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: C.dim, padding: '6px 0' }}>
+                <span>Email routing</span><span style={{ color: C.green, fontWeight: 600 }}>Unlimited</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: C.dim, padding: '6px 0' }}>
+                <span>DNS queries</span><span style={{ color: C.green, fontWeight: 600 }}>Unlimited</span>
+              </div>
+            </>
+          )}
+          note="Cloudflare free tier is extremely generous. No upgrade needed at current or projected scale."
+        />
+
+        <ServiceCard
+          title="Microsoft 365"
+          plan="Business Basic · 1 user · jack@palateandpen.co.uk"
+          cost="£5.75/month"
+          status="Paid"
+          statusTone="blue"
+          note="Excl. VAT. Pre-existing Palate and Pen business cost, not specific to Palatable infrastructure."
+          warning="Trial ends 6 September 2026 then converts to paid subscription. Price increases ~17% to approximately £6.72/mo on 1 July 2026. Renew annual subscription before 30 June 2026 to lock in current £5.75 rate."
+        />
+
+        <ServiceCard
+          fullWidth
+          title="Anthropic API"
+          plan="Pay per use · server-side only · Pro+ tier users only"
+          cost="Variable"
+          costColor={C.amber}
+          status="Variable"
+          statusTone="amber"
+          progress={(
+            <>
+              <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 6 }}>
+                Pricing: ~£0.80 per invoice scan, ~£0.20 per recipe URL import, ~£0.40 per spec sheet scan.
+              </p>
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Cost scaling (est.)</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                {anthropicScale.map(row => (
+                  <div key={row.users} style={{ padding: '10px 12px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                    <p style={{ fontSize: 10, color: C.faint, fontWeight: 600, marginBottom: 4 }}>{row.users}</p>
+                    <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 18, color: C.amber }}>{row.cost}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          note="Free tier users generate zero Anthropic cost — invoice scanning and AI import are gated to Pro+ only."
+        />
+      </div>
+
+      {/* Full cost breakdown table */}
+      <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 6, padding: 18, marginBottom: 14 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 12 }}>Full cost breakdown</p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+              <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Service</th>
+              <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Plan</th>
+              <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Type</th>
+              <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Current cost</th>
+              <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Upgrade trigger</th>
+              <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Upgrade cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {breakdown.map(r => (
+              <tr key={r.service} style={{ borderTop: `1px solid ${C.border}` }}>
+                <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.service}</td>
+                <td style={{ padding: '8px', color: C.dim }}>{r.plan}</td>
+                <td style={{ padding: '8px', color: C.dim }}>{r.type}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: r.warn ? C.amber : C.text, fontWeight: 600 }}>{r.cost}</td>
+                <td style={{ padding: '8px', color: C.faint }}>{r.trigger}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.upgrade}</td>
+              </tr>
+            ))}
+            <tr style={{ borderTop: `2px solid ${C.border}`, background: C.bg }}>
+              <td style={{ padding: '10px 8px', color: C.text, fontWeight: 700 }} colSpan={3}>Total</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£33.75/mo</td>
+              <td style={{ padding: '10px 8px', color: C.dim, fontSize: 11 }} colSpan={2}>£53.75/mo after Vercel Pro upgrade in July</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Scale milestones */}
+      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 10 }}>Scale milestones</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 10 }}>
+        <div style={{ background: C.panel, border: `1px solid ${C.green}40`, borderLeft: `3px solid ${C.green}`, borderRadius: 6, padding: 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.green, marginBottom: 6 }}>Now → ~500 paid users</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£34/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic ~£28. Upgrade Vercel Pro £20 in July.</p>
+        </div>
+        <div style={{ background: C.panel, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.amber, marginBottom: 6 }}>500–2,000 paid users</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£140/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>Add Supabase Pro £25 + Vercel Pro £20 + Anthropic scaling.</p>
+        </div>
+        <div style={{ background: C.panel, border: `1px solid ${C.gold}40`, borderLeft: `3px solid ${C.gold}`, borderRadius: 6, padding: 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.gold, marginBottom: 6 }}>2,000+ paid users</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£350–550/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>All services on paid plans + Anthropic at full scale. Still under 3% of MRR.</p>
+        </div>
+      </div>
+      <p style={{ fontSize: 11, color: C.faint, fontStyle: 'italic', textAlign: 'center', marginBottom: 6 }}>
+        Infrastructure cost stays under 3% of MRR at all projected scale points. The business is extremely capital efficient.
+      </p>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// Expenses Timeline
+// ──────────────────────────────────────────────────────────
+// Visual chronological timeline of upcoming infrastructure cost events.
+// Hardcoded — these are the dates/triggers we already know about.
+
+type TimelineTone = 'green' | 'amber' | 'red' | 'blue' | 'grey';
+
+function TimelineDot({ tone }: { tone: TimelineTone }) {
+  const colour = tone === 'green' ? C.green
+               : tone === 'amber' ? C.amber
+               : tone === 'red'   ? C.red
+               : tone === 'blue'  ? C.blue
+               : '#9A9A95';
+  return (
+    <div style={{
+      width: 14, height: 14, borderRadius: '50%',
+      background: colour,
+      border: `3px solid ${C.panel}`,
+      boxShadow: `0 0 0 2px ${colour}50`,
+      flexShrink: 0,
+      marginTop: 4,
+    }} />
+  );
+}
+
+function ExpensesTimeline() {
+  const events: {
+    when: string;
+    monthlyAt: string;
+    tone: TimelineTone;
+    cards: { title: string; body: string; cost: string }[];
+  }[] = [
+    {
+      when: 'June 2026',
+      monthlyAt: '~£34/mo',
+      tone: 'amber',
+      cards: [{
+        title: 'Renew M365 Business Basic before 30 June',
+        body: 'Microsoft raises Business Basic prices ~17% on 1 July 2026. Renewing your annual subscription before 30 June locks in £5.75/user/mo for 12 months. If missed, cost rises to ~£6.72/mo at the September trial conversion.',
+        cost: 'Lock in £5.75',
+      }],
+    },
+    {
+      when: 'July 2026',
+      monthlyAt: '~£54/mo',
+      tone: 'red',
+      cards: [{
+        title: 'Upgrade Vercel Hobby to Pro',
+        body: 'Vercel Hobby plan ToS prohibits commercial use. Must be on Pro before accepting paying customers. Upgrade in July ahead of launch. Also the point Microsoft new pricing kicks in — if you missed the June renewal window your M365 cost rises to ~£6.72/mo.',
+        cost: '+£20/mo',
+      }],
+    },
+    {
+      when: 'September 2026',
+      monthlyAt: '~£54/mo',
+      tone: 'blue',
+      cards: [
+        {
+          title: 'M365 trial ends — paid subscription starts',
+          body: 'Trial ends 6 September 2026. Paid subscription auto-starts. If renewed before June: £5.75/mo. If missed window: ~£6.72/mo. Billing is monthly as per current plan settings.',
+          cost: '£5.75/mo',
+        },
+        {
+          title: 'Switch Stripe from sandbox to live keys',
+          body: 'No cost — just a config change in Vercel env vars. Stripe charges 1.5% + £0.99 per UK card transaction only when payments process. No monthly fee.',
+          cost: '£0 fixed',
+        },
+      ],
+    },
+    {
+      when: '~200 paid users',
+      monthlyAt: '~£79/mo',
+      tone: 'grey',
+      cards: [{
+        title: 'Supabase free tier limit approaching',
+        body: 'Free tier covers 500MB storage and 5GB bandwidth. At ~200–300 active paid users generating invoices and recipes you will approach these limits. Upgrade to Supabase Pro when storage exceeds 400MB.',
+        cost: '+£25/mo',
+      }],
+    },
+    {
+      when: '~500 paid users',
+      monthlyAt: '~£200/mo',
+      tone: 'grey',
+      cards: [{
+        title: 'Anthropic API cost scaling',
+        body: 'At 500 paid users scanning roughly 3 invoices per month each, Anthropic API costs ~£120/mo. At £25 Pro times 500 users equals £12,500 MRR, API is under 1% of revenue.',
+        cost: '~£120/mo',
+      }],
+    },
+    {
+      when: 'September 2027',
+      monthlyAt: 'TBC',
+      tone: 'grey',
+      cards: [{
+        title: 'M365 annual renewal if locked in June 2026',
+        body: 'If you renewed before 30 June 2026 your locked rate expires September 2027. At next renewal you will pay the post-July 2026 rate ~£6.72/mo. Set a calendar reminder for August 2027.',
+        cost: '~£6.72/mo',
+      }],
+    },
+  ];
+
+  return (
+    <div>
+      <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, marginBottom: 6 }}>Expenses Timeline</h1>
+      <p style={{ fontSize: 12, color: C.faint, marginBottom: 14 }}>Every known upcoming infrastructure cost event in chronological order.</p>
+
+      {/* Current spend banner */}
+      <div style={{ background: C.goldSoft, border: `1px solid ${C.gold}40`, borderLeft: `3px solid ${C.gold}`, borderRadius: 6, padding: 14, marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.gold, marginBottom: 3 }}>Current spend</p>
+          <p style={{ fontSize: 13, color: C.text }}>~£5.75/mo fixed + ~£28/mo variable Anthropic API</p>
+        </div>
+        <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, color: C.gold }}>~£33.75/mo</p>
+      </div>
+
+      {/* Timeline */}
+      <div style={{ position: 'relative', paddingLeft: 28, marginBottom: 22 }}>
+        {/* Vertical track */}
+        <div style={{ position: 'absolute', left: 6, top: 4, bottom: 4, width: 2, background: C.border }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          {events.map((e, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <div style={{ position: 'absolute', left: -28, top: 0 }}>
+                <TimelineDot tone={e.tone} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{e.when}</p>
+                <span style={{ fontSize: 11, color: C.faint }}>·</span>
+                <p style={{ fontSize: 12, color: C.gold, fontWeight: 600 }}>{e.monthlyAt}</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {e.cards.map((c, j) => {
+                  const borderColour = e.tone === 'green' ? C.green
+                                     : e.tone === 'amber' ? C.amber
+                                     : e.tone === 'red'   ? C.red
+                                     : e.tone === 'blue'  ? C.blue
+                                     : '#B5B3AC';
+                  return (
+                    <div key={j} style={{ background: C.panel, border: `1px solid ${C.border}`, borderLeft: `3px solid ${borderColour}`, borderRadius: 6, padding: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{c.title}</p>
+                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.4, color: borderColour, background: borderColour + '14', border: `1px solid ${borderColour}40`, padding: '3px 8px', borderRadius: 2, whiteSpace: 'nowrap' }}>{c.cost}</span>
+                      </div>
+                      <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6 }}>{c.body}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cost summary */}
+      <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 10 }}>Cost summary</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <StatTile label="Now · Jun 2026" value="~£34/mo" sub="current spend" />
+        <StatTile label="Jul 2026 · after Vercel Pro" value="~£54/mo" sub="commercial-use compliant" accent={C.amber} />
+        <StatTile label="At ~200 paid users" value="~£100/mo" sub="Supabase Pro added" />
+        <StatTile label="Infra as % of MRR at scale" value="< 3%" sub="extremely efficient" accent={C.green} />
       </div>
     </div>
   );
