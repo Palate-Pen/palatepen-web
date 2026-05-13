@@ -19,13 +19,23 @@ async function loadMenu(slug: string) {
   if (!isFeatureEnabled('publicMenus', flags)) return null;
 
   const supabase = svc();
+  // NOTE: this used to be a `.contains('menus', [{ publicSlug, published: true }])`
+  // query — but supabase-js's JSONB-array-of-object containment serialisation
+  // trips PostgREST with `22P02: invalid input syntax for type json`. We fetch
+  // candidate rows and filter in JS instead. Single-tenant demo today; for
+  // 10k+ tenants this should move to a Postgres function or a denormalised
+  // `published_menus` table.
   const { data: rows } = await supabase
     .from('user_data')
     .select('account_id, menus, recipes, gp_history, profile')
-    .contains('menus', [{ publicSlug: slug, published: true }])
-    .limit(1);
+    .limit(500);
   if (!rows || rows.length === 0) return null;
-  const row = rows[0] as any;
+  let row: any = null;
+  for (const r of rows) {
+    const hit = (r.menus || []).find((m: any) => m?.publicSlug === slug && m?.published === true);
+    if (hit) { row = r; break; }
+  }
+  if (!row) return null;
 
   const { data: account } = await supabase
     .from('accounts')
