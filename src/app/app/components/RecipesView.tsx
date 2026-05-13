@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
+import { useFeatureFlag } from '@/lib/usePlatformConfig';
 
 const CATS = ['Starter','Main','Dessert','Sauce','Bread','Pastry','Stock','Snack','Other'];
 
@@ -134,6 +135,9 @@ export default function RecipesView() {
   const isMobile = useIsMobile();
   const sym = (state.profile||{}).currencySymbol || '£';
   const gpTarget = (state.profile||{}).gpTarget || 72;
+  const userOverrides = (state.profile as any)?.featureOverrides;
+  const flagAiRecipeImport = useFeatureFlag('aiRecipeImport', userOverrides);
+  const flagAiSpecSheet = useFeatureFlag('aiSpecSheet', userOverrides);
 
   const [search, setSearch] = useState('');
   const [sel, setSel] = useState<any>(null);
@@ -2393,11 +2397,13 @@ export default function RecipesView() {
             style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: state.recipes.length === 0 ? C.faint : C.gold, background: state.recipes.length === 0 ? 'transparent' : C.gold + '12', border: '1px solid ' + (state.recipes.length === 0 ? C.border : C.gold + '40'), padding: '10px 16px', cursor: state.recipes.length === 0 ? 'not-allowed' : 'pointer', borderRadius: '2px', opacity: state.recipes.length === 0 ? 0.5 : 1 }}>
             🖨 Print Recipe Book
           </button>
-          <button onClick={() => { setShowScanSpec(true); setScanError(''); setScannedData(null); }}
-            title="Scan a spec sheet with AI to import recipe + costing in one shot"
-            style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '40', padding: '10px 16px', cursor: 'pointer', borderRadius: '2px' }}>
-            ✨ Scan Spec Sheet
-          </button>
+          {flagAiSpecSheet && (
+            <button onClick={() => { setShowScanSpec(true); setScanError(''); setScannedData(null); }}
+              title="Scan a spec sheet with AI to import recipe + costing in one shot"
+              style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.gold, background: C.gold + '12', border: '1px solid ' + C.gold + '40', padding: '10px 16px', cursor: 'pointer', borderRadius: '2px' }}>
+              ✨ Scan Spec Sheet
+            </button>
+          )}
           <button onClick={() => setShowAdd(true)}
             style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', background: C.gold, color: C.bg, border: 'none', padding: '10px 18px', cursor: 'pointer', borderRadius: '2px' }}>
             + Add Recipe
@@ -2470,6 +2476,7 @@ export default function RecipesView() {
             </div>
 
             {/* Import from URL or file */}
+            {flagAiRecipeImport && (
             <div style={{ padding: '16px 20px', background: C.gold + '08', borderBottom: '1px solid ' + C.border }}>
               <label style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: C.gold, display: 'block', marginBottom: '8px' }}>
                 Import with AI <span style={{ fontWeight: 400, color: C.faint, textTransform: 'none', letterSpacing: 'normal' }}>— Claude reads a URL or file and fills the fields below</span>
@@ -2521,6 +2528,7 @@ export default function RecipesView() {
                 </p>
               )}
             </div>
+            )}
 
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>

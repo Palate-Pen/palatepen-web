@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { usePerms } from '@/lib/perms';
+import { useFeatureFlag } from '@/lib/usePlatformConfig';
 import { dark, light } from '@/lib/theme';
 import MenuDesigner from './MenuDesigner';
 
@@ -27,7 +28,8 @@ export default function MenuBuilderView() {
   const { tier } = useAuth();
   const { settings } = useSettings();
   const perms = usePerms();
-  const publishingAllowed = tier === 'kitchen' || tier === 'group';
+  const flagPublicMenus = useFeatureFlag('publicMenus', (state.profile as any)?.featureOverrides);
+  const publishingAllowed = (tier === 'kitchen' || tier === 'group') && flagPublicMenus;
   const [copyConfirm, setCopyConfirm] = useState(false);
 
   function publishMenu(m: any) {
@@ -252,8 +254,8 @@ export default function MenuBuilderView() {
           </div>
         </div>
 
-        {/* Publish (Kitchen/Group only) */}
-        {(() => {
+        {/* Publish (Kitchen/Group only) — hidden entirely when publicMenus flag is off */}
+        {flagPublicMenus && (() => {
           const publicUrl = sel.publicSlug && typeof window !== 'undefined'
             ? window.location.origin + '/m/' + sel.publicSlug
             : '';

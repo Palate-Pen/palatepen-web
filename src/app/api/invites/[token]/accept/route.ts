@@ -40,7 +40,10 @@ export async function POST(req: Request, { params }: { params: { token: string }
 
   const emailMatch = !!email && email.toLowerCase() === invite.email.toLowerCase();
 
-  // Membership upsert (idempotent — already a member is fine).
+  // Membership insert — idempotent via ignoreDuplicates (PostgREST issues an
+  // INSERT ... ON CONFLICT DO NOTHING). A double-click on Accept now no-ops
+  // on the second call rather than overwriting role/added_by on an existing
+  // membership row, which would silently downgrade or change attribution.
   const { error: memberErr } = await supabase
     .from('account_members')
     .upsert({
@@ -48,7 +51,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
       user_id: userId,
       role: invite.role,
       added_by: userId,
-    }, { onConflict: 'account_id,user_id' });
+    }, { onConflict: 'account_id,user_id', ignoreDuplicates: true });
   if (memberErr) return NextResponse.json({ error: memberErr.message }, { status: 500 });
 
   // Mark invite accepted before any merge work — even if merge fails the

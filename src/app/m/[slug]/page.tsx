@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { svc } from '@/lib/admin';
 import { MenuBackgroundLayer, menuFontFor, type MenuBackground, type MenuFontFamily, type MenuDishStyle } from '@/lib/menuBackgrounds';
+import { getGlobalFeatureFlags, isFeatureEnabled } from '@/lib/featureFlags';
 import type { Metadata } from 'next';
 
 export const runtime = 'nodejs';
@@ -12,6 +13,11 @@ export const dynamic = 'force-dynamic';
 // downgrades, their published menus go dark — same behaviour as if they had
 // unpublished manually.
 async function loadMenu(slug: string) {
+  // Platform-wide feature flag: when publicMenus is off, every existing
+  // public URL goes dark (loadMenu returns null → caller calls notFound()).
+  const flags = await getGlobalFeatureFlags();
+  if (!isFeatureEnabled('publicMenus', flags)) return null;
+
   const supabase = svc();
   const { data: rows } = await supabase
     .from('user_data')

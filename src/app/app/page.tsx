@@ -27,6 +27,7 @@ import UpgradeModal from './components/UpgradeModal';
 import QuickStartGuide from './components/QuickStartGuide';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import MaintenanceGate from './components/MaintenanceGate';
+import { useFeatureFlag } from '@/lib/usePlatformConfig';
 
 export default function App() {
   const { user, loading, currentAccount, currentRole } = useAuth();
@@ -117,16 +118,18 @@ export default function App() {
   if (!user) return <AuthPage />;
   if (!currentAccount || !state.ready) return loader;
 
+  const flagWasteTracking = useFeatureFlag('wasteTracking', (state.profile as any)?.featureOverrides);
+  const flagMenuBuilder = useFeatureFlag('menuBuilder', (state.profile as any)?.featureOverrides);
   const views: Record<string, React.ReactNode> = {
     dashboard: <DashboardView setTab={setTab} />,
     recipes: <RecipesView />,
     notebook: <NotebookView />,
     costing: <CostingView />,
-    menus: <MenuBuilderView />,
+    menus: flagMenuBuilder ? <MenuBuilderView /> : <DashboardView setTab={setTab} />,
     invoices: <InvoicesView />,
     stock: <StockView />,
     bank: <BankView />,
-    waste: <WasteView />,
+    waste: flagWasteTracking ? <WasteView /> : <DashboardView setTab={setTab} />,
     reports: <ReportsView setTab={setTab} />,
     team: <MyTeamView />,
     profile: <ProfileView />,
@@ -156,9 +159,9 @@ export default function App() {
 
   const MOBILE_MORE_ITEMS = [
     { id: 'notebook', label: 'Notebook', icon: <IconNote /> },
-    { id: 'menus',    label: 'Menus',    icon: <IconMenu /> },
+    ...(flagMenuBuilder ? [{ id: 'menus', label: 'Menus', icon: <IconMenu /> }] : []),
     { id: 'bank',     label: 'Bank',     icon: <IconBank /> },
-    { id: 'waste',    label: 'Waste',    icon: <IconBin /> },
+    ...(flagWasteTracking ? [{ id: 'waste', label: 'Waste', icon: <IconBin /> }] : []),
     { id: 'reports',  label: 'Reports',  icon: <IconChart /> },
     ...(teamTabAvailable ? [{ id: 'team', label: 'My Team', icon: <IconUsers /> }] : []),
     { id: 'settings', label: 'Settings', icon: <IconCog /> },

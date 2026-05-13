@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { svc } from './admin';
+import { getGlobalFeatureFlags, isFeatureEnabled } from './featureFlags';
 
 // Authenticates an incoming public-API request using its Bearer key.
 // - Looks the key up on `user_data.profile.apiKey` via service-role Supabase
@@ -33,6 +34,12 @@ export type ApiAuthResult =
   | { data: ApiUserData; account: ApiAccountSummary };
 
 export async function authenticateApi(req: NextRequest): Promise<ApiAuthResult> {
+  // Platform-level kill switch — admin can disable all /api/v1/* in one shot.
+  const flags = await getGlobalFeatureFlags();
+  if (!isFeatureEnabled('apiAccess', flags)) {
+    return { error: NextResponse.json({ error: 'Public API is currently disabled by the platform admin.' }, { status: 403 }) };
+  }
+
   const auth = req.headers.get('authorization') || '';
   if (!auth.toLowerCase().startsWith('bearer ')) {
     return { error: NextResponse.json({ error: 'Missing Authorization: Bearer <key>' }, { status: 401 }) };

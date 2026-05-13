@@ -10,6 +10,7 @@ import{exportRecipesCsv,exportCostingsCsv,exportStockCsv,downloadRecipesTemplate
 import{supabase}from'@/lib/supabase';
 import{generateApiKey,maskApiKey}from'@/lib/apiKey';
 import{generateInboxToken}from'@/lib/inboundToken';
+import{useFeatureFlag}from'@/lib/usePlatformConfig';
 
 export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>void;onShowGuide?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -19,6 +20,11 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const isMobile=useIsMobile();
   const C=settings.resolved==='light'?light:dark;
   const profile=state.profile||{};
+  const flagOverrides=(profile as any)?.featureOverrides;
+  const flagEmailForwarding=useFeatureFlag('emailForwarding',flagOverrides);
+  const flagApiAccess=useFeatureFlag('apiAccess',flagOverrides);
+  const flagCsvExport=useFeatureFlag('csvExport',flagOverrides);
+  const flagCsvImport=useFeatureFlag('csvImport',flagOverrides);
   const[saved,setSaved]=useState(false);
   const[businessName,setBusinessName]=useState(profile.businessName||'');
   const[name,setName]=useState(profile.name||'');
@@ -373,7 +379,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       {/* Email invoice forwarding — Pro+. Each account gets a unique inbox
           address. Forward a supplier email and the AI extracts invoice lines
           straight into the Invoices tab. */}
-      {section==='integrations' && (
+      {section==='integrations' && flagEmailForwarding && (
       <div style={card}>
         <p style={sec}>Invoice Email Forwarding</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>
@@ -432,7 +438,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
 
       {/* API Access — Kitchen / Group only. Read-only public API for third-party
           integrations: dashboards, accounting, POS pipelines, custom websites. */}
-      {section==='integrations' && (
+      {section==='integrations' && flagApiAccess && (
       <div style={card}>
         <p style={sec}>API Access</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>
@@ -513,7 +519,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       )}
 
       {/* Data export */}
-      {section==='data' && (
+      {section==='data' && flagCsvExport && (
       <div style={card}>
         <p style={sec}>Export Data</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>Download a snapshot of your data as CSV files — one per type. Open in Excel, Google Sheets, or Numbers.</p>
@@ -535,7 +541,7 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
       )}
 
       {/* Data import */}
-      {section==='data' && (
+      {section==='data' && flagCsvImport && (
       <div style={card}>
         <p style={sec}>Import Data</p>
         <p style={{fontSize:'12px',color:C.faint,marginBottom:'14px'}}>Bring data in from a CSV. Download a template to see the exact headers, fill it out in Excel or Google Sheets, then upload. Imported rows are added alongside existing data — they don&apos;t overwrite or replace.</p>

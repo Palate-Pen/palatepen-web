@@ -7,6 +7,7 @@ import{dark,light}from'@/lib/theme';
 import{supabase}from'@/lib/supabase';
 import{CATEGORIES,guessCategory}from'@/lib/categorize';
 import{useIsMobile}from'@/lib/useIsMobile';
+import{useFeatureFlag}from'@/lib/usePlatformConfig';
 
 export default function InvoicesView(){
   const{state:appState,actions:appActions}=useApp();
@@ -15,6 +16,7 @@ export default function InvoicesView(){
   const C=settings.resolved==='light'?light:dark;
   const isPaid=['pro','kitchen','group'].includes(tier);
   const isMobile=useIsMobile();
+  const flagAiInvoiceScan=useFeatureFlag('aiInvoiceScan',(appState.profile as any)?.featureOverrides);
   const sym=(appState.profile||{}).currencySymbol||'£';
   const bank=appState.ingredientsBank||[];
   const alerts=appState.priceAlerts||[];
@@ -409,10 +411,12 @@ Invoices scanned after this update will show full details.</p>
           <button onClick={()=>setView('history')} style={{fontSize:'11px',color:C.dim,background:C.surface2,border:'1px solid '+C.border,padding:'10px 14px',cursor:'pointer',borderRadius:'2px'}}>
             History {invoices.length>0&&<span style={{marginLeft:'4px',fontSize:'10px',background:C.border,padding:'1px 5px',borderRadius:'2px'}}>{invoices.length}</span>}
           </button>
-          <button onClick={()=>fileRef.current?.click()} disabled={scanning||!isPaid}
-            style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px',opacity:(scanning||!isPaid)?0.5:1}}>
-            {scanning?'Scanning...':(!isPaid?'Paid Plan Required':'+ Upload Invoice')}
-          </button>
+          {flagAiInvoiceScan && (
+            <button onClick={()=>fileRef.current?.click()} disabled={scanning||!isPaid}
+              style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,border:'none',padding:'10px 16px',cursor:'pointer',borderRadius:'2px',opacity:(scanning||!isPaid)?0.5:1}}>
+              {scanning?'Scanning...':(!isPaid?'Paid Plan Required':'+ Upload Invoice')}
+            </button>
+          )}
           <input ref={fileRef} type="file" accept="image/*,.pdf" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)handleFile(f);e.target.value='';}}/>
         </div>
       </div>

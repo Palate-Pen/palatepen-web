@@ -129,20 +129,11 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 
 Surfaced during the system-wide audit at end of day. Tackle top-down.
 
-**Quick wins (~2 hours total)**
-- [ ] **Lazy-init Stripe** — `src/app/api/stripe/webhook/route.ts:5` and `src/app/api/stripe/create-checkout/route.ts:5` both have `const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, …)` at module top level. Crashes module load if the env var is missing. Move the `new Stripe(...)` inside the POST handler (or behind a memoised lazy getter). Fix unblocks local `next build` too.
-- [ ] **Wire feature-flag enforcement** — flags are stored in `app_settings` and surfaced by the admin Platform section, but `grep featureFlags src/app/app` returns nothing. Every toggle is currently cosmetic. Create a small `usePlatformConfig()` client hook that fetches `/api/platform-config` once + caches. Gate the relevant features:
-  - `aiRecipeImport` → hide the Import URL/file button in RecipesView, return 403 from `/api/palatable/import-recipe`
-  - `aiInvoiceScan` → hide the scan UI in InvoicesView, return 403 from `/api/palatable/scan-invoice`
-  - `aiSpecSheet` → hide the Scan Spec Sheet button in RecipesView library, return 403 from `/api/palatable/scan-spec-sheet`
-  - `emailForwarding` → hide the Email Forwarding card in SettingsView, return 403 from `/api/inbound-email` (still accept POST but skip processing)
-  - `publicMenus` → hide Publish button on MenuBuilderView **AND** return 404 from `/m/[slug]/page.tsx`'s `loadMenu` so existing public URLs go dark when flag is off
-  - `apiAccess` → hide the API Access card in SettingsView, return 403 from every `/api/v1/*` route via the existing `authenticateApi` helper
-  - `csvImport`, `csvExport` → hide the buttons in Settings → Data
-  - `wasteTracking` → hide Waste in sidebar nav + don't render the WasteView
-  - `menuBuilder` → hide Menus in sidebar nav + don't render the MenuBuilderView
-- [ ] **`publicMenus` flag check on `/m/[slug]`** — covered by the bullet above, but call out separately since it's a single-line check at the top of `loadMenu()`.
-- [ ] **Idempotency on invite accept** — `src/app/api/invites/[token]/accept/route.ts` should use `INSERT ... ON CONFLICT DO NOTHING` for the membership insert (or check-then-insert) so a double-click doesn't create duplicate rows.
+**Quick wins (~2 hours total)** — all done 2026-05-13, see Progress Log.
+- [x] **Lazy-init Stripe**
+- [x] **Wire feature-flag enforcement** (UI gates + server gates for all 10 flags)
+- [x] **`publicMenus` flag check on `/m/[slug]`**
+- [x] **Idempotency on invite accept**
 
 **Medium-priority follow-ups (next session or later)**
 - [ ] **SettingsView autosave perms-aware** — `src/app/app/components/SettingsView.tsx:183` autosave `useEffect` deps array is missing `perms.canManageSettings`. Wrap the autosave body in a perms check (or add to deps + guard).
@@ -166,6 +157,19 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 ## Progress Log
 
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
+
+### 2026-05-13
+
+- **Lazy-init Stripe.** New `src/lib/stripe.ts` exposes `getStripe()` — memoised singleton that throws `STRIPE_SECRET_KEY is not configured` only when first called rather than at module load. `apiVersion: '2026-04-22.dahlia'` lives in this one place now. `src/app/api/stripe/webhook/route.ts` and `src/app/api/stripe/create-checkout/route.ts` switched from top-level `new Stripe(process.env.STRIPE_SECRET_KEY!, …)` to calling `getStripe()` inside their POST handlers (webhook: just before `constructEvent`; checkout: just before `sessions.create`, after user auth). Webhook still imports `type Stripe` for the `Stripe.Event` type annotation. Unblocks local `next build` when the env var isn't present.
+
+- **Feature-flag enforcement wired end-to-end.** Flags stored in `app_settings.value.featureFlags` (global) + `user_data.profile.featureOverrides` (per-user) are now honoured by both UI and API. Default for every flag is ON — admins toggle OFF to disable.
+  - **Foundation.** New `src/lib/featureFlags.ts` defines the 10 flag keys (`aiRecipeImport`, `aiInvoiceScan`, `aiSpecSheet`, `emailForwarding`, `publicMenus`, `apiAccess`, `csvImport`, `csvExport`, `wasteTracking`, `menuBuilder`), with `isFeatureEnabled(key, globalFlags, userOverrides)` resolution (user override > global > default-true), `getGlobalFeatureFlags()` for server-side reads from `app_settings`, and `denyIfFlagOff(key, userOverrides)` convenience that returns a NextResponse 403 to short-circuit API routes when off. Settings outages fail-open — a missing/erroring row returns `{}` so default-true behaviour kicks in and no one accidentally locks features for the whole platform.
+  - **Client hook.** New `src/lib/usePlatformConfig.ts` exposes `usePlatformConfig()` and `useFeatureFlag(key, userOverrides)`. Module-level cache + subscriber set so `/api/platform-config` is fetched exactly once per session and every component subscribed to a flag re-renders when the cache fills.
+  - **UI gates applied.** RecipesView (Scan Spec Sheet button, Import URL/file panel), InvoicesView (Upload Invoice button — entire scan UI), SettingsView (Email Forwarding card, API Access card, Export Data card, Import Data card), MenuBuilderView (Publish card hidden entirely when flag off — including the existing "upgrade" nudge, since that wording would mislead Kitchen/Group users), Sidebar (Waste + Menus nav items filtered), `/app/page.tsx` views map (when waste/menus flags off, direct URL navigation to those tabs falls through to DashboardView so a bookmarked link doesn't render a disabled feature), mobile More sheet items filtered too.
+  - **Server gates applied.** `/api/palatable/import-recipe` (aiRecipeImport), `/api/palatable/scan-invoice` (aiInvoiceScan), `/api/palatable/scan-spec-sheet` (aiSpecSheet) — each returns 403 at the top of POST before any work. `/api/inbound-email` (emailForwarding) — still returns 200 to the inbound provider so it doesn't retry-storm, but skips the expensive Anthropic vision pass + DB write. `/m/[slug]/page.tsx` `loadMenu()` (publicMenus) — returns null at the very top, which causes the caller's `notFound()` to fire, so every existing public menu URL goes dark instantly when admin flips the switch. `/api/v1/*` (apiAccess) — gated centrally in `src/lib/apiAuth.ts`'s `authenticateApi()` so every v1 endpoint inherits the kill switch with zero per-route changes.
+  - **What's NOT gated server-side** (deliberate): `wasteTracking`, `menuBuilder`, `csvImport`, `csvExport`. These flags are UI-only — they hide entry points, but there's no remote endpoint exclusively guarding waste/menu/CSV data writes (writes go through the generic user_data autosave). If admin needs hard enforcement on those they'd need either app_settings-side data scrubbing or per-feature endpoints, neither of which is in scope for v1.
+
+- **Invite accept idempotency.** `src/app/api/invites/[token]/accept/route.ts` membership insert now passes `{ onConflict: 'account_id,user_id', ignoreDuplicates: true }` so a double-click on Accept issues an `INSERT ... ON CONFLICT DO NOTHING` rather than overwriting role/added_by on an existing membership. Previously a second call could silently change the membership row if anything else had touched it between request 1 and request 2. The merge path is already idempotent (second call finds no personal account, returns early) and the `accepted_at` check at the top short-circuits any other re-runs.
 
 ### 2026-05-12
 

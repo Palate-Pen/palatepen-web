@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' as any });
+import { getStripe } from '@/lib/stripe';
 
 const TIER_MAP: Record<string, string> = {
   pro_monthly: 'pro',
@@ -18,6 +17,8 @@ export async function POST(req: NextRequest) {
   const sig = req.headers.get('stripe-signature');
 
   if (!sig) return NextResponse.json({ error: 'No signature' }, { status: 400 });
+
+  const stripe = getStripe();
 
   let event: Stripe.Event;
   try {

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { denyIfFlagOff } from '@/lib/featureFlags';
 
 export async function POST(req: NextRequest) {
   try {
+    const flagDeny = await denyIfFlagOff('aiInvoiceScan');
+    if (flagDeny) return flagDeny;
+
     const { base64, mediaType, userToken } = await req.json();
 
     // Verify user is on a paid tier (pro/kitchen/group)

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { denyIfFlagOff } from '@/lib/featureFlags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -74,6 +75,9 @@ If the source has no recipe/spec data, return exactly: {"error":"No spec sheet c
 
 export async function POST(req: NextRequest) {
   try {
+    const flagDeny = await denyIfFlagOff('aiSpecSheet');
+    if (flagDeny) return flagDeny;
+
     const { base64, mediaType, userToken } = await req.json();
 
     // Verify user is on a paid tier (pro/kitchen/group)

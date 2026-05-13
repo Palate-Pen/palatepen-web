@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { svc } from '@/lib/admin';
 import { extractInboxToken } from '@/lib/inboundToken';
+import { getGlobalFeatureFlags, isFeatureEnabled } from '@/lib/featureFlags';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -105,6 +106,14 @@ export async function POST(req: NextRequest) {
     if (bearer !== secret && qsSecret !== secret) {
       return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
+  }
+
+  // Feature-flag gate: when emailForwarding is disabled platform-wide we
+  // still accept the POST (200) so the provider doesn't retry, but skip the
+  // expensive Anthropic vision pass + DB write.
+  const flags = await getGlobalFeatureFlags();
+  if (!isFeatureEnabled('emailForwarding', flags)) {
+    return NextResponse.json({ ok: true, skipped: 'feature-disabled' });
   }
 
   let body: any;

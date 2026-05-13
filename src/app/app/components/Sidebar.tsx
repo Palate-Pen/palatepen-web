@@ -7,6 +7,7 @@ import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
 import NotificationsTab from './NotificationsTab';
 import { Icon } from './icons/PalatableIcons';
+import { useFeatureFlag } from '@/lib/usePlatformConfig';
 
 // Map a sidebar nav id to the custom-icon name. Most align 1:1 — the
 // exception is `bank`, which renders the `ingredients` icon since the
@@ -46,6 +47,9 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   const { tier, accounts, currentAccount, currentRole, switchAccount } = useAuth();
   const { state } = useApp();
   const canBill = currentRole === 'owner';
+  const flagOverrides = (state.profile as any)?.featureOverrides;
+  const flagWasteTracking = useFeatureFlag('wasteTracking', flagOverrides);
+  const flagMenuBuilder = useFeatureFlag('menuBuilder', flagOverrides);
   const isMobile = useIsMobile();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
@@ -227,6 +231,8 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
         {NAV.filter(item => {
           // My Team for Owner + Manager on Kitchen/Group tiers (Chef + Viewer don't see it)
           if (item.id === 'team') return (currentRole === 'owner' || currentRole === 'manager') && (tier === 'kitchen' || tier === 'group');
+          if (item.id === 'waste') return flagWasteTracking;
+          if (item.id === 'menus') return flagMenuBuilder;
           return true;
         }).map(item => {
           const proGate = PRO_GATED.includes(item.id) && !isPaid;
