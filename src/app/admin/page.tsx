@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { ADMIN_PASSWORD } from '@/lib/admin';
+import { isAdminEmail } from '@/lib/adminEmails';
 
 // ── Admin control desk ─────────────────────────────────────────────
 // Always light theme — independent from the user's chosen app theme.
@@ -39,18 +40,13 @@ const TIER_BADGE: Record<string, { fg: string; bg: string; bd: string }> = {
   admin:      { fg: C.red,      bg: C.redSoft,     bd: C.red + '60' },
 };
 
-// Internal/operator accounts. These users are excluded from Free + paid
-// tier counts in the admin dashboard and contribute £0 to the variable
-// infrastructure cost calculation in Revenue. They're real auth users
-// (so they still show in the Supabase auth-user count on Infrastructure)
-// but they don't represent customer demand or cost-of-serve.
-const ADMIN_EMAILS = new Set([
-  'hello@palateandpen.co.uk',
-  'jack@palateandpen.co.uk',
-]);
+// Internal/operator accounts — the source list lives in src/lib/adminEmails.ts
+// so AuthContext and the server-side AI routes can override their tier to
+// 'enterprise' (full app access) using the same allow-list. Here in the
+// admin dashboard we use it to bucket them as 'admin' (not Free) and
+// exclude them from the variable infrastructure cost calculation.
 function isAdminUser(u: any): boolean {
-  const email = (u?.profile?.email || u?.email || '').toLowerCase();
-  return ADMIN_EMAILS.has(email);
+  return isAdminEmail(u?.profile?.email || u?.email || '');
 }
 function tierForUser(u: any): { tier: string; comp: boolean } {
   if (isAdminUser(u)) return { tier: 'admin', comp: false };

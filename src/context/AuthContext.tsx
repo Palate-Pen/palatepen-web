@@ -2,6 +2,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import { isAdminEmail } from '@/lib/adminEmails';
 
 export type Role = 'owner' | 'manager' | 'chef' | 'viewer';
 export interface Account {
@@ -107,7 +108,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const currentMembership = accounts.find(m => m.account.id === currentAccountId) || null;
   const currentAccount = currentMembership?.account || null;
   const currentRole = currentMembership?.role || null;
-  const tier = currentAccount?.tier || user?.user_metadata?.tier || 'free';
+  // Admin/operator emails get an enterprise tier read regardless of what
+  // their stored account.tier or user_metadata.tier says — see
+  // src/lib/adminEmails.ts. Everywhere downstream that reads useAuth().tier
+  // sees the override automatically (canAccess, useTierAndFlag, sidebar
+  // badges, etc).
+  const tier = isAdminEmail(user?.email)
+    ? 'enterprise'
+    : (currentAccount?.tier || user?.user_metadata?.tier || 'free');
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });

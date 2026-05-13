@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { denyIfBlocked } from '@/lib/featureFlags';
 import { ANTHROPIC_MODEL, recordAnthropicCall } from '@/lib/anthropic';
+import { isAdminEmail } from '@/lib/adminEmails';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
     );
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
-    const tier = user.user_metadata?.tier || 'free';
+    const tier = isAdminEmail(user.email) ? 'enterprise' : (user.user_metadata?.tier || 'free');
 
     const denial = await denyIfBlocked(tier, 'recipes_spec_sheet', 'aiSpecSheet');
     if (denial) return denial;
