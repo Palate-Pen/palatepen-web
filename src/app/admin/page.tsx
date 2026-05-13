@@ -1164,16 +1164,17 @@ function BulkEmail({ users, onClose }: { users: any[]; onClose: () => void }) {
 // ──────────────────────────────────────────────────────────
 // Per-tier cost-of-serve assumptions used by the unit economics table + the
 // MRR cost subtraction. Calibrated against the Infrastructure dashboard's
-// £0.74/paid-user/mo Anthropic estimate (from the £74/100 paid users scale
-// row). Free users incur ~no variable cost since AI is gated to Pro+; the
-// step-up at Kitchen/Group reflects more scans per user as team activity
-// rises. Revise once real Anthropic-usage actuals from the metering table
-// give us per-tier numbers to anchor against.
+// £0.06/paid-user/mo Anthropic estimate on Haiku 4.5 (~13× cheaper than
+// the previous Sonnet 4.6 baseline). Free users incur ~no variable cost
+// since AI is gated to Pro+; the step-up at Kitchen/Group reflects more
+// scans per user as team activity rises. Revise once real Haiku-era
+// Anthropic-usage actuals from the metering table give us per-tier numbers
+// to anchor against.
 const TIER_COST_PER_USER: Record<'free' | 'pro' | 'kitchen' | 'group', number> = {
-  free: 0.05,
-  pro: 0.74,
-  kitchen: 1.50,
-  group: 3.50,
+  free: 0.01,
+  pro: 0.06,
+  kitchen: 0.15,
+  group: 0.30,
 };
 const TIER_PRICE: Record<'pro' | 'kitchen' | 'group', number> = {
   pro: 25,
@@ -1220,7 +1221,9 @@ function Revenue({ users }: { users: any[] }) {
   const supportLabel = supportTier === 'priority' ? 'Priority (+£200/mo)' : supportTier === 'dam' ? 'Dedicated AM (+£500/mo)' : 'Standard (included)';
 
   const totalUsers = outlets * usersPerOutlet;
-  const infraCost = 45 + outlets * 2.5 + outlets * usersPerOutlet * 0.10 + aiScansPerMonth * 0.80 + supportCost;
+  // AI cost per scan on Haiku 4.5 is ~£0.06; the calculator uses £0.10 to
+  // bake in a buffer for Opus fallback on tricky enterprise spec sheets.
+  const infraCost = 45 + outlets * 2.5 + outlets * usersPerOutlet * 0.10 + aiScansPerMonth * 0.10 + supportCost;
   const minViablePrice = infraCost * 4;
   const suggestedPrice = infraCost * 6;
   const annualValue = suggestedPrice * 12;
@@ -1384,9 +1387,136 @@ function Revenue({ users }: { users: any[] }) {
             </tbody>
           </table>
           <p style={{ fontSize: 10, color: C.faint, marginTop: 10, fontStyle: 'italic' }}>
-            Fixed infra cost £{FIXED_INFRA_COST.toFixed(2)}/mo (M365 only — Vercel, Supabase and Cloudflare are free tier). Variable cost per user as shown — calibrated against the Infrastructure dashboard&apos;s £0.74/paid-user Anthropic estimate. Margin % shown as &mdash; when MRR is zero (ratio undefined).
+            Fixed infra cost £{FIXED_INFRA_COST.toFixed(2)}/mo (M365 only — Vercel, Supabase and Cloudflare are free tier). Variable cost per user as shown — calibrated against the Infrastructure dashboard&apos;s £0.06/paid-user Anthropic estimate on Haiku 4.5. Margin % shown as &mdash; when MRR is zero (ratio undefined).
           </p>
         </Card>
+
+        {/* Baseline cost reference — every line item that makes up our
+            cost of doing business. Glance-able lookup table so the founder
+            can answer "how much does X cost us?" without leaving the page. */}
+        <div style={{ marginTop: 14 }}>
+          <Card title="Baseline cost reference">
+            <p style={{ fontSize: 11, color: C.faint, marginBottom: 12, lineHeight: 1.5 }}>
+              Every line item that contributes to our cost of doing business. AI rates are Haiku 4.5 baseline. Revise these constants in <code>src/app/admin/page.tsx</code> + <code>src/lib/anthropic.ts</code> when a real Anthropic / Stripe / Vercel invoice gives us a more accurate number.
+            </p>
+
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6, marginTop: 4 }}>Fixed infrastructure</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 16 }}>
+              <thead>
+                <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Service</th>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Status</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Cost</th>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { svc: 'Microsoft 365 Business Basic', status: 'Live',    cost: '£5.75/mo',  note: 'Per mailbox excl. VAT. Rises ~17% on 1 Jul 2026 — renew annual before 30 Jun to lock in.' },
+                  { svc: 'Vercel Hobby',                 status: 'Live',    cost: '£0/mo',     note: '⚠ Commercial-use ToS — upgrade to Pro before accepting paying customers.' },
+                  { svc: 'Supabase Free',                status: 'Live',    cost: '£0/mo',     note: 'Up to 500MB DB, 5GB bandwidth, 50k auth users.' },
+                  { svc: 'Cloudflare Free',              status: 'Live',    cost: '£0/mo',     note: 'DNS + Workers + Email Routing. No upgrade needed at projected scale.' },
+                  { svc: 'GitHub Free',                  status: 'Live',    cost: '£0/mo',     note: 'Single org. Never need to upgrade.' },
+                  { svc: 'Vercel Pro',                   status: 'Planned', cost: '+£20/mo',   note: 'Required before launch (Jul 2026).' },
+                  { svc: 'Supabase Pro',                 status: 'Planned', cost: '+£25/mo',   note: 'At ~500 paid users / 400MB storage.' },
+                ].map(r => (
+                  <tr key={r.svc} style={{ borderTop: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.svc}</td>
+                    <td style={{ padding: '8px', color: r.status === 'Live' ? C.green : C.amber, fontWeight: 600 }}>{r.status}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.text, fontWeight: 600 }}>{r.cost}</td>
+                    <td style={{ padding: '8px', color: C.faint, fontSize: 11 }}>{r.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6 }}>AI per call · Haiku 4.5</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 16 }}>
+              <thead>
+                <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Operation</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Cost / call</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>vs Sonnet</th>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Triggered by</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { op: 'Invoice scan',          cost: '£0.06', vs: '−£0.74', via: 'User uploads invoice in Invoices tab' },
+                  { op: 'Spec sheet scan',       cost: '£0.03', vs: '−£0.37', via: 'User uploads recipe spec sheet PDF/image' },
+                  { op: 'Recipe URL import',     cost: '£0.02', vs: '−£0.18', via: 'User pastes recipe URL or file in Recipes' },
+                  { op: 'Inbound email scan',    cost: '£0.06', vs: '−£0.74', via: 'Email forwarded to invoices+{token}@…' },
+                ].map(r => (
+                  <tr key={r.op} style={{ borderTop: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.op}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.text, fontWeight: 600 }}>{r.cost}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.green, fontWeight: 600 }}>{r.vs}</td>
+                    <td style={{ padding: '8px', color: C.faint, fontSize: 11 }}>{r.via}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6 }}>Cost of serve · per user / mo</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 16 }}>
+              <thead>
+                <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Tier</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Sell £</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Cost £</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Margin / user</th>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Assumption</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { tier: 'Free',       sell: '£0',     cost: '£0.01', margin: '−£0.01', assume: 'Storage only — AI is gated to Pro+' },
+                  { tier: 'Pro',        sell: '£25',    cost: '£0.06', margin: '£24.94', assume: '~1 invoice scan/mo + light recipe import' },
+                  { tier: 'Kitchen',    sell: '£59',    cost: '£0.15', margin: '£58.85', assume: '5 users, more invoices, shared notebook' },
+                  { tier: 'Group',      sell: '£129',   cost: '£0.30', margin: '£128.70', assume: 'Multi-outlet, ~5 invoices/mo, group reporting load' },
+                  { tier: 'Enterprise', sell: 'Custom', cost: 'Custom', margin: 'Custom',  assume: 'ACV negotiated per deal — see quote calculator' },
+                ].map(r => (
+                  <tr key={r.tier} style={{ borderTop: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.tier}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.sell}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>{r.cost}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: r.margin.startsWith('−') ? C.red : C.green, fontWeight: 600 }}>{r.margin}</td>
+                    <td style={{ padding: '8px', color: C.faint, fontSize: 11 }}>{r.assume}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6 }}>Payments · Stripe</p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Card type</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Variable fee</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Fixed fee</th>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Net on £25 Pro charge</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { card: 'UK / domestic card',  pct: '1.5%', fixed: '£0.20', net: '£24.43 received' },
+                  { card: 'EEA card',            pct: '2.5%', fixed: '£0.20', net: '£24.18 received' },
+                  { card: 'International card',  pct: '3.25%', fixed: '£0.20', net: '£23.99 received' },
+                ].map(r => (
+                  <tr key={r.card} style={{ borderTop: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.card}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.text }}>{r.pct}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.text }}>{r.fixed}</td>
+                    <td style={{ padding: '8px', color: C.faint, fontSize: 11 }}>{r.net}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p style={{ fontSize: 10, color: C.faint, marginTop: 8, fontStyle: 'italic' }}>
+              Stripe rates per their UK published rate card 2026-05. No monthly fee. Failed payment retries are free.
+            </p>
+          </Card>
+        </div>
       </div>
 
       {/* Part B — Enterprise quote calculator */}
@@ -1425,7 +1555,7 @@ function Revenue({ users }: { users: any[] }) {
             </div>
             <div style={{ padding: '10px 12px', background: C.goldSoft, border: `1px solid ${C.gold}40`, borderRadius: 3, fontSize: 11, color: C.dim, lineHeight: 1.5 }}>
               <p><strong style={{ color: C.gold }}>Pricing rule:</strong> Min viable = 4× infrastructure cost. Suggested quote = 6× cost (83% gross margin target).</p>
-              <p style={{ marginTop: 4 }}>Formula: base £45 + outlets × £2.50 + users × £0.10 + AI scans × £0.80 + support tier.</p>
+              <p style={{ marginTop: 4 }}>Formula: base £45 + outlets × £2.50 + users × £0.10 + AI scans × £0.10 + support tier.</p>
             </div>
           </Card>
         </div>
@@ -1525,8 +1655,10 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
     && !u.profile?.comp
   ).length, [users]);
 
-  // Estimate: £0.74/paid-user/mo (extrapolated from 100 paid users → £74/mo).
-  const ANTHROPIC_PER_PAID_USER = 0.74;
+  // Estimate: ~£0.06/paid-user/mo on Haiku 4.5 (~13× cheaper than the
+  // previous Sonnet 4.6 baseline of £0.74). Recalibrate once we have a
+  // real Haiku-era invoice from Anthropic to verify.
+  const ANTHROPIC_PER_PAID_USER = 0.06;
   const estimatedMonthlyAnthropic = paidUsers * ANTHROPIC_PER_PAID_USER;
 
   // Actual usage — fetched live from /api/admin/anthropic-usage, falls back
@@ -1555,7 +1687,7 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
     { service: 'Vercel',        plan: 'Hobby',          type: 'Fixed',    cost: '£0 (warning)', trigger: 'July 2026 ToS', upgrade: '£20/mo Pro', warn: true },
     { service: 'Cloudflare',    plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: '100k req/day',       upgrade: '£20/mo Pro' },
     { service: 'Microsoft 365', plan: 'Business Basic', type: 'Fixed',    cost: '£5.75',  trigger: 'More mailboxes',     upgrade: '£4.50/user/mo' },
-    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: `£${variableCost.toFixed(2)}`, trigger: 'Scales with scans',  upgrade: '~£0.80/scan' },
+    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: `£${variableCost.toFixed(2)}`, trigger: 'Scales with scans',  upgrade: '~£0.06/scan' },
     { service: 'GitHub',        plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: 'Never for 1 org',    upgrade: '—' },
   ];
 
@@ -1565,12 +1697,12 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
     { users: paidUsers === 0
         ? 'No paid users yet (baseline)'
         : `${paidUsers} paid user${paidUsers === 1 ? '' : 's'} today`,
-      cost: paidUsers === 0 ? '£0/mo' : `~£${estimatedMonthlyAnthropic.toFixed(0)}/mo est.`,
+      cost: paidUsers === 0 ? '£0/mo' : `~£${estimatedMonthlyAnthropic.toFixed(2)}/mo est.`,
       live: true },
-    { users: '100 paid users',   cost: '~£74/mo est.'  },
-    { users: '250 paid users',   cost: '~£185/mo est.' },
-    { users: '500 paid users',   cost: '~£370/mo est.' },
-    { users: '1,000 paid users', cost: '~£740/mo est.' },
+    { users: '100 paid users',   cost: '~£6/mo est.'  },
+    { users: '250 paid users',   cost: '~£15/mo est.' },
+    { users: '500 paid users',   cost: '~£30/mo est.' },
+    { users: '1,000 paid users', cost: '~£60/mo est.' },
   ];
 
   return (
@@ -1703,7 +1835,7 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
           progress={(
             <>
               <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 12 }}>
-                Pricing: ~£0.80 per invoice scan, ~£0.20 per recipe URL import, ~£0.40 per spec sheet scan.
+                Pricing on Haiku 4.5: ~£0.06 per invoice scan, ~£0.02 per recipe URL import, ~£0.03 per spec sheet scan. Switched from Sonnet 4.6 2026-05-13 — 13× cost reduction.
               </p>
 
               {/* Actual vs estimate panel — rolling-window real spend
@@ -1723,7 +1855,7 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
                 <div style={{ padding: '12px 14px', background: C.amberSoft, border: `1px solid ${C.amber}40`, borderRadius: 4 }}>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.amber, marginBottom: 4 }}>Estimate · this month</p>
                   <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: C.amber, lineHeight: 1 }}>£{estimatedMonthlyAnthropic.toFixed(2)}</p>
-                  <p style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{paidUsers} paid user{paidUsers === 1 ? '' : 's'} × £0.74</p>
+                  <p style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{paidUsers} paid user{paidUsers === 1 ? '' : 's'} × £0.06</p>
                 </div>
               </div>
 
@@ -1793,17 +1925,17 @@ function Infrastructure({ authUserCount, users }: { authUserCount: number; users
         <div style={{ background: C.panel, border: `1px solid ${C.green}40`, borderLeft: `3px solid ${C.green}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.green, marginBottom: 6 }}>Today · 0 → ~500 paid users</p>
           <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>£{totalMonthlyCost.toFixed(2)}–£375/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic £{variableCost.toFixed(2)} ({paidUsers} paid) scaling to ~£370 at 500 paid. Upgrade Vercel Pro £20 in July.</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic £{variableCost.toFixed(2)} ({paidUsers} paid) scaling to ~£30 at 500 paid on Haiku 4.5. Upgrade Vercel Pro £20 in July.</p>
         </div>
         <div style={{ background: C.panel, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.amber, marginBottom: 6 }}>500–2,000 paid users</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£140/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>Add Supabase Pro £25 + Vercel Pro £20 + Anthropic scaling.</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£80–170/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>Add Supabase Pro £25 + Vercel Pro £20 + Anthropic £30–120 on Haiku 4.5.</p>
         </div>
         <div style={{ background: C.panel, border: `1px solid ${C.gold}40`, borderLeft: `3px solid ${C.gold}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.gold, marginBottom: 6 }}>2,000+ paid users</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£350–550/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>All services on paid plans + Anthropic at full scale. Still under 3% of MRR.</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£170–650/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>All services on paid plans + Anthropic at full scale on Haiku 4.5. Still under 1% of MRR.</p>
         </div>
       </div>
       <p style={{ fontSize: 11, color: C.faint, fontStyle: 'italic', textAlign: 'center', marginBottom: 6 }}>
@@ -1848,7 +1980,8 @@ function ExpensesTimeline({ users }: { users: any[] }) {
     && ['pro', 'kitchen', 'group', 'enterprise'].includes(u.profile?.tier)
     && !u.profile?.comp
   ).length, [users]);
-  const estimatedVariable = paidUsers * 0.74;
+  // £0.06/paid-user/mo on Haiku 4.5 — same baseline used in Infrastructure.
+  const estimatedVariable = paidUsers * 0.06;
   const liveTotal = 5.75 + estimatedVariable;
 
   const events: {
