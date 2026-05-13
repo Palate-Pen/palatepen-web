@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { denyIfFlagOff } from '@/lib/featureFlags';
-import { ANTHROPIC_MODEL } from '@/lib/anthropic';
+import { ANTHROPIC_MODEL, recordAnthropicCall } from '@/lib/anthropic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await res.json();
+    if (res.ok) await recordAnthropicCall({ kind: 'scan-invoice', userId: user.id });
     const text = (data.content?.[0]?.text || '[]').replace(/```json|```/g, '').trim();
     try {
       const items = JSON.parse(text);

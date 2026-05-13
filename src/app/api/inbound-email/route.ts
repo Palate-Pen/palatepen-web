@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { svc } from '@/lib/admin';
 import { extractInboxToken } from '@/lib/inboundToken';
 import { getGlobalFeatureFlags, isFeatureEnabled } from '@/lib/featureFlags';
-import { ANTHROPIC_MODEL } from '@/lib/anthropic';
+import { ANTHROPIC_MODEL, recordAnthropicCall } from '@/lib/anthropic';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,7 +53,7 @@ function isInvoiceAttachment(a: { contentType: string; filename: string }): bool
   return false;
 }
 
-async function scanAttachment(base64: string, contentType: string): Promise<any[]> {
+async function scanAttachment(base64: string, contentType: string, userId?: string | null): Promise<any[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return [];
   const isPdf = contentType === 'application/pdf';
@@ -77,6 +77,7 @@ async function scanAttachment(base64: string, contentType: string): Promise<any[
     }),
   });
   if (!res.ok) return [];
+  await recordAnthropicCall({ kind: 'inbound-email', userId: userId ?? null });
   const data = await res.json();
   const text = (data.content?.[0]?.text || '[]').replace(/```json|```/g, '').trim();
   try {
@@ -193,7 +194,7 @@ export async function POST(req: NextRequest) {
 
   // Process each attachment in parallel
   const results = await Promise.all(invoiceAttachments.map(async att => {
-    const items = await scanAttachment(att.base64, att.contentType);
+    const items = await scanAttachment(att.base64, att.contentType, row.user_id || account.owner_user_id || null);
     return { att, items };
   }));
 

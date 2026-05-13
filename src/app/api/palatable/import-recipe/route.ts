@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { denyIfFlagOff } from '@/lib/featureFlags';
-import { ANTHROPIC_MODEL } from '@/lib/anthropic';
+import { ANTHROPIC_MODEL, recordAnthropicCall } from '@/lib/anthropic';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -199,6 +199,8 @@ export async function POST(req: NextRequest) {
       }, { status: 502 });
     }
     if (parsed.error) return NextResponse.json({ error: parsed.error }, { status: 400 });
+
+    await recordAnthropicCall({ kind: 'import-recipe', userId: user.id });
 
     return NextResponse.json({
       ...parsed,

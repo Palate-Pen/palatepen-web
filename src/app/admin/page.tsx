@@ -404,8 +404,8 @@ export default function AdminPage() {
           />
         )}
         {section === 'revenue' && (<Revenue users={users} />)}
-        {section === 'infra' && (<Infrastructure authUserCount={authUsers.length} />)}
-        {section === 'expenses' && (<ExpensesTimeline />)}
+        {section === 'infra' && (<Infrastructure authUserCount={authUsers.length} users={users} />)}
+        {section === 'expenses' && (<ExpensesTimeline users={users} />)}
         {section === 'platform' && (<Platform />)}
         {section === 'audit' && (<Audit entries={audit} users={users} />)}
         {section === 'system' && (<System />)}
@@ -1503,25 +1503,64 @@ function ServiceCard({ title, plan, cost, costColor, status, statusTone, progres
   );
 }
 
-function Infrastructure({ authUserCount }: { authUserCount: number }) {
+function Infrastructure({ authUserCount, users }: { authUserCount: number; users: any[] }) {
   const SUPABASE_AUTH_LIMIT = 50000;
   const supabaseAuthPct = (authUserCount / SUPABASE_AUTH_LIMIT) * 100;
+
+  // Live paid-user count drives the baseline Anthropic estimate. Free users
+  // generate £0 (AI is gated to Pro+); admins and comp users are excluded.
+  const paidUsers = useMemo(() => users.filter(u =>
+    !isAdminUser(u)
+    && ['pro', 'kitchen', 'group', 'enterprise'].includes(u.profile?.tier)
+    && !u.profile?.comp
+  ).length, [users]);
+
+  // Estimate: £0.74/paid-user/mo (extrapolated from 100 paid users → £74/mo).
+  const ANTHROPIC_PER_PAID_USER = 0.74;
+  const estimatedMonthlyAnthropic = paidUsers * ANTHROPIC_PER_PAID_USER;
+
+  // Actual usage — fetched live from /api/admin/anthropic-usage, falls back
+  // to zeros until the migration runs and traffic flows. last7Days and
+  // last30Days are pence totals; we convert to £ for display.
+  const [usage, setUsage] = useState<{ last7Days: { totalPence: number; count: number; byKind: Record<string, { count: number; pence: number }> }; last30Days: { totalPence: number; count: number; byKind: Record<string, { count: number; pence: number }> }; tableMissing?: boolean } | null>(null);
+  useEffect(() => {
+    fetch('/api/admin/anthropic-usage', { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } })
+      .then(r => r.json())
+      .then(setUsage)
+      .catch(() => setUsage({ last7Days: { totalPence: 0, count: 0, byKind: {} }, last30Days: { totalPence: 0, count: 0, byKind: {} } }));
+  }, []);
+  const last7Pounds  = (usage?.last7Days.totalPence  ?? 0) / 100;
+  const last30Pounds = (usage?.last30Days.totalPence ?? 0) / 100;
+  // Project last 7 days × 52/12 to get a 30-day-equivalent comparison number.
+  const projected30FromWeekly = last7Pounds * (30 / 7);
+
+  // Total monthly cost — fixed M365 + variable Anthropic. Variable is shown
+  // as the rolling-7-day projection if we have data, else the estimate.
+  const fixedCost = 5.75;
+  const variableCost = last7Pounds > 0 ? projected30FromWeekly : estimatedMonthlyAnthropic;
+  const totalMonthlyCost = fixedCost + variableCost;
 
   const breakdown = [
     { service: 'Supabase',      plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: '~500 users storage', upgrade: '£25/mo Pro' },
     { service: 'Vercel',        plan: 'Hobby',          type: 'Fixed',    cost: '£0 (warning)', trigger: 'July 2026 ToS', upgrade: '£20/mo Pro', warn: true },
     { service: 'Cloudflare',    plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: '100k req/day',       upgrade: '£20/mo Pro' },
     { service: 'Microsoft 365', plan: 'Business Basic', type: 'Fixed',    cost: '£5.75',  trigger: 'More mailboxes',     upgrade: '£4.50/user/mo' },
-    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: '~£28',   trigger: 'Scales with scans',  upgrade: '~£0.80/scan' },
+    { service: 'Anthropic API', plan: 'Pay per use',    type: 'Variable', cost: `£${variableCost.toFixed(2)}`, trigger: 'Scales with scans',  upgrade: '~£0.80/scan' },
     { service: 'GitHub',        plan: 'Free',           type: 'Fixed',    cost: '£0',     trigger: 'Never for 1 org',    upgrade: '—' },
   ];
 
+  // Anthropic scale projections. First row is live (current paid users);
+  // remaining rows stay as fixed projections to give a sense of headroom.
   const anthropicScale = [
-    { users: '38 paid users today',    cost: '~£28/mo est.'  },
-    { users: '100 paid users',         cost: '~£74/mo est.'  },
-    { users: '250 paid users',         cost: '~£185/mo est.' },
-    { users: '500 paid users',         cost: '~£370/mo est.' },
-    { users: '1,000 paid users',       cost: '~£740/mo est.' },
+    { users: paidUsers === 0
+        ? 'No paid users yet (baseline)'
+        : `${paidUsers} paid user${paidUsers === 1 ? '' : 's'} today`,
+      cost: paidUsers === 0 ? '£0/mo' : `~£${estimatedMonthlyAnthropic.toFixed(0)}/mo est.`,
+      live: true },
+    { users: '100 paid users',   cost: '~£74/mo est.'  },
+    { users: '250 paid users',   cost: '~£185/mo est.' },
+    { users: '500 paid users',   cost: '~£370/mo est.' },
+    { users: '1,000 paid users', cost: '~£740/mo est.' },
   ];
 
   return (
@@ -1531,9 +1570,16 @@ function Infrastructure({ authUserCount }: { authUserCount: number }) {
 
       {/* Summary tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 14 }}>
-        <StatTile label="Fixed infrastructure" value="£5.75/mo" sub="M365 only — rest free tier" />
-        <StatTile label="Variable cost (Anthropic)" value="~£28/mo" sub="estimated · current activity" accent={C.amber} />
-        <StatTile label="Total monthly cost" value="~£33.75/mo" sub="fixed + variable" accent={C.gold} />
+        <StatTile label="Fixed infrastructure" value={`£${fixedCost.toFixed(2)}/mo`} sub="M365 only — rest free tier" />
+        <StatTile
+          label="Variable cost (Anthropic)"
+          value={`£${variableCost.toFixed(2)}/mo`}
+          sub={last7Pounds > 0
+            ? `actual · ${usage?.last7Days.count ?? 0} calls last 7d, projected`
+            : `estimate · ${paidUsers} paid user${paidUsers === 1 ? '' : 's'}`}
+          accent={C.amber}
+        />
+        <StatTile label="Total monthly cost" value={`£${totalMonthlyCost.toFixed(2)}/mo`} sub="fixed + variable" accent={C.gold} />
         <StatTile label="Services on free tier" value="3 of 4" sub="Supabase · Vercel · Cloudflare" accent={C.green} />
       </div>
 
@@ -1646,21 +1692,54 @@ function Infrastructure({ authUserCount }: { authUserCount: number }) {
           statusTone="amber"
           progress={(
             <>
-              <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 6 }}>
+              <p style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginBottom: 12 }}>
                 Pricing: ~£0.80 per invoice scan, ~£0.20 per recipe URL import, ~£0.40 per spec sheet scan.
               </p>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Cost scaling (est.)</p>
+
+              {/* Actual vs estimate panel — rolling-window real spend
+                  from the anthropic_usage table next to the formula
+                  projection. Updated every time the admin page loads. */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
+                <div style={{ padding: '12px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Actual · last 7 days</p>
+                  <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: C.text, lineHeight: 1 }}>£{last7Pounds.toFixed(2)}</p>
+                  <p style={{ fontSize: 11, color: C.faint, marginTop: 4 }}>{usage?.last7Days.count ?? 0} call{(usage?.last7Days.count ?? 0) === 1 ? '' : 's'} · projected ~£{projected30FromWeekly.toFixed(2)}/30d</p>
+                </div>
+                <div style={{ padding: '12px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Actual · last 30 days</p>
+                  <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: C.text, lineHeight: 1 }}>£{last30Pounds.toFixed(2)}</p>
+                  <p style={{ fontSize: 11, color: C.faint, marginTop: 4 }}>{usage?.last30Days.count ?? 0} call{(usage?.last30Days.count ?? 0) === 1 ? '' : 's'} total</p>
+                </div>
+                <div style={{ padding: '12px 14px', background: C.amberSoft, border: `1px solid ${C.amber}40`, borderRadius: 4 }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.amber, marginBottom: 4 }}>Estimate · this month</p>
+                  <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 22, color: C.amber, lineHeight: 1 }}>£{estimatedMonthlyAnthropic.toFixed(2)}</p>
+                  <p style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>{paidUsers} paid user{paidUsers === 1 ? '' : 's'} × £0.74</p>
+                </div>
+              </div>
+
+              {usage?.tableMissing && (
+                <div style={{ padding: '8px 12px', background: C.amberSoft, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 3, fontSize: 11, color: C.dim, marginBottom: 12 }}>
+                  ⚠ Migration 010 hasn&apos;t been applied. Run <code style={{ fontFamily: 'monospace' }}>supabase/migrations/010_anthropic_usage.sql</code> in the Supabase SQL editor to start collecting actuals.
+                </div>
+              )}
+
+              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: C.faint, marginBottom: 4 }}>Cost scaling projection</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
                 {anthropicScale.map(row => (
-                  <div key={row.users} style={{ padding: '10px 12px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 4 }}>
-                    <p style={{ fontSize: 10, color: C.faint, fontWeight: 600, marginBottom: 4 }}>{row.users}</p>
-                    <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 18, color: C.amber }}>{row.cost}</p>
+                  <div key={row.users} style={{
+                    padding: '10px 12px',
+                    background: row.live ? C.goldSoft : C.bg,
+                    border: `1px solid ${row.live ? C.gold + '40' : C.border}`,
+                    borderRadius: 4,
+                  }}>
+                    <p style={{ fontSize: 10, color: row.live ? C.gold : C.faint, fontWeight: 600, marginBottom: 4 }}>{row.users}{row.live ? ' · LIVE' : ''}</p>
+                    <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 18, color: row.live ? C.gold : C.amber }}>{row.cost}</p>
                   </div>
                 ))}
               </div>
             </>
           )}
-          note="Free tier users generate zero Anthropic cost — invoice scanning and AI import are gated to Pro+ only."
+          note="Free tier users generate zero Anthropic cost — invoice scanning and AI import are gated to Pro+ only. Actual spend is logged per call to the anthropic_usage table; weekly rolling totals refresh whenever the admin opens this page."
         />
       </div>
 
@@ -1691,8 +1770,8 @@ function Infrastructure({ authUserCount }: { authUserCount: number }) {
             ))}
             <tr style={{ borderTop: `2px solid ${C.border}`, background: C.bg }}>
               <td style={{ padding: '10px 8px', color: C.text, fontWeight: 700 }} colSpan={3}>Total</td>
-              <td style={{ padding: '10px 8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£33.75/mo</td>
-              <td style={{ padding: '10px 8px', color: C.dim, fontSize: 11 }} colSpan={2}>£53.75/mo after Vercel Pro upgrade in July</td>
+              <td style={{ padding: '10px 8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£{totalMonthlyCost.toFixed(2)}/mo</td>
+              <td style={{ padding: '10px 8px', color: C.dim, fontSize: 11 }} colSpan={2}>£{(totalMonthlyCost + 20).toFixed(2)}/mo after Vercel Pro upgrade in July</td>
             </tr>
           </tbody>
         </table>
@@ -1702,9 +1781,9 @@ function Infrastructure({ authUserCount }: { authUserCount: number }) {
       <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 10 }}>Scale milestones</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 10 }}>
         <div style={{ background: C.panel, border: `1px solid ${C.green}40`, borderLeft: `3px solid ${C.green}`, borderRadius: 6, padding: 16 }}>
-          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.green, marginBottom: 6 }}>Now → ~500 paid users</p>
-          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>~£34/mo</p>
-          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic ~£28. Upgrade Vercel Pro £20 in July.</p>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.green, marginBottom: 6 }}>Today · 0 → ~500 paid users</p>
+          <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 24, color: C.text, marginBottom: 6 }}>£{totalMonthlyCost.toFixed(2)}–£375/mo</p>
+          <p style={{ fontSize: 11, color: C.dim, lineHeight: 1.5 }}>M365 £5.75 + Anthropic £{variableCost.toFixed(2)} ({paidUsers} paid) scaling to ~£370 at 500 paid. Upgrade Vercel Pro £20 in July.</p>
         </div>
         <div style={{ background: C.panel, border: `1px solid ${C.amber}40`, borderLeft: `3px solid ${C.amber}`, borderRadius: 6, padding: 16 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: C.amber, marginBottom: 6 }}>500–2,000 paid users</p>
@@ -1750,7 +1829,18 @@ function TimelineDot({ tone }: { tone: TimelineTone }) {
   );
 }
 
-function ExpensesTimeline() {
+function ExpensesTimeline({ users }: { users: any[] }) {
+  // Live current-spend banner — drops £0 variable when there are no paid
+  // users, just like the Infrastructure dashboard. Matches the no-user
+  // baseline we now use everywhere.
+  const paidUsers = useMemo(() => users.filter(u =>
+    !isAdminUser(u)
+    && ['pro', 'kitchen', 'group', 'enterprise'].includes(u.profile?.tier)
+    && !u.profile?.comp
+  ).length, [users]);
+  const estimatedVariable = paidUsers * 0.74;
+  const liveTotal = 5.75 + estimatedVariable;
+
   const events: {
     when: string;
     monthlyAt: string;
@@ -1835,9 +1925,9 @@ function ExpensesTimeline() {
       <div style={{ background: C.goldSoft, border: `1px solid ${C.gold}40`, borderLeft: `3px solid ${C.gold}`, borderRadius: 6, padding: 14, marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
         <div>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.gold, marginBottom: 3 }}>Current spend</p>
-          <p style={{ fontSize: 13, color: C.text }}>~£5.75/mo fixed + ~£28/mo variable Anthropic API</p>
+          <p style={{ fontSize: 13, color: C.text }}>£5.75/mo fixed + £{estimatedVariable.toFixed(2)}/mo variable Anthropic ({paidUsers} paid user{paidUsers === 1 ? '' : 's'})</p>
         </div>
-        <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, color: C.gold }}>~£33.75/mo</p>
+        <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, color: C.gold }}>£{liveTotal.toFixed(2)}/mo</p>
       </div>
 
       {/* Timeline */}
