@@ -235,9 +235,11 @@ function fmtRel(ts: string | number | null): string {
 
 // Compute MRR from user list (tier × price per tier).
 // Admin/operator emails are bucketed into counts.admin and contribute £0
-// to MRR — they're not customer-shaped usage.
+// to MRR — they're not customer-shaped usage. Enterprise users are
+// custom-priced (POA) so their count is tracked, but they don't auto-add
+// to MRR — actual ACV is tracked separately per deal.
 function computeMrr(users: any[]): { mrr: number; counts: Record<string, number> } {
-  const counts: Record<string, number> = { free: 0, pro: 0, kitchen: 0, group: 0, admin: 0 };
+  const counts: Record<string, number> = { free: 0, pro: 0, kitchen: 0, group: 0, enterprise: 0, admin: 0 };
   for (const u of users) {
     if (isAdminUser(u)) { counts.admin++; continue; }
     const t = u.profile?.tier || 'free';
@@ -417,7 +419,7 @@ export default function AdminPage() {
 // ──────────────────────────────────────────────────────────
 function Overview({ users, authUsers, loading, onRefresh, setSection }: { users: any[]; authUsers: any[]; loading: boolean; onRefresh: () => void; setSection: (s: Section) => void; }) {
   const total = users.length;
-  const paid = users.filter(u => !isAdminUser(u) && ['pro', 'kitchen', 'group'].includes(u.profile?.tier) && !u.profile?.comp).length;
+  const paid = users.filter(u => !isAdminUser(u) && ['pro', 'kitchen', 'group', 'enterprise'].includes(u.profile?.tier) && !u.profile?.comp).length;
   const { mrr, counts } = useMemo(() => computeMrr(users), [users]);
   const active7d = useMemo(() => {
     const cutoff = Date.now() - 7 * 86400000;
@@ -435,7 +437,7 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
 
   const churnRisk = useMemo(() => {
     const cutoff = Date.now() - 14 * 86400000;
-    return users.filter(u => !isAdminUser(u) && ['pro', 'kitchen', 'group'].includes(u.profile?.tier) && !u.profile?.comp && new Date(u.updated_at || u.created_at).getTime() < cutoff);
+    return users.filter(u => !isAdminUser(u) && ['pro', 'kitchen', 'group', 'enterprise'].includes(u.profile?.tier) && !u.profile?.comp && new Date(u.updated_at || u.created_at).getTime() < cutoff);
   }, [users]);
 
   const compExpiring = useMemo(() => {
@@ -688,13 +690,14 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
 
           <Card title="Tier breakdown">
             {(() => {
-              const max = Math.max(counts.free, counts.pro, counts.kitchen, counts.group, counts.admin, 1);
+              const max = Math.max(counts.free, counts.pro, counts.kitchen, counts.group, counts.enterprise, counts.admin, 1);
               const rows: { tier: string; value: number; color: string }[] = [
-                { tier: 'Free',    value: counts.free,    color: '#999' },
-                { tier: 'Pro',     value: counts.pro,     color: C.gold },
-                { tier: 'Kitchen', value: counts.kitchen, color: C.blue },
-                { tier: 'Group',   value: counts.group,   color: C.purple },
-                { tier: 'Admin',   value: counts.admin,   color: C.red },
+                { tier: 'Free',       value: counts.free,       color: '#999' },
+                { tier: 'Pro',        value: counts.pro,        color: C.gold },
+                { tier: 'Kitchen',    value: counts.kitchen,    color: C.blue },
+                { tier: 'Group',      value: counts.group,      color: C.purple },
+                { tier: 'Enterprise', value: counts.enterprise, color: C.text },
+                { tier: 'Admin',      value: counts.admin,      color: C.red },
               ];
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -752,6 +755,7 @@ function Users({ users, allUsers, search, setSearch, tierFilter, setTierFilter, 
     { id: 'pro', label: 'Pro' },
     { id: 'kitchen', label: 'Kitchen' },
     { id: 'group', label: 'Group' },
+    { id: 'enterprise', label: 'Enterprise' },
     { id: 'comp', label: 'Comp' },
     { id: 'admin', label: 'Admin' },
   ];
@@ -970,6 +974,7 @@ function UserDetail({ user, onClose, onChanged }: { user: any; onClose: () => vo
               <option value="pro">Pro</option>
               <option value="kitchen">Kitchen</option>
               <option value="group">Group</option>
+              <option value="enterprise">Enterprise</option>
             </select>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.dim, cursor: 'pointer' }}>
               <input type="checkbox" checked={comp} onChange={e => setComp(e.target.checked)} /> Comp
@@ -1119,10 +1124,10 @@ function SnapshotModal({ user, onClose }: { user: any; onClose: () => void }) {
 }
 
 function BulkEmail({ users, onClose }: { users: any[]; onClose: () => void }) {
-  const [aud, setAud] = useState<'all' | 'free' | 'pro' | 'kitchen' | 'group'>('all');
+  const [aud, setAud] = useState<'all' | 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise'>('all');
   const filtered = useMemo(() => {
-    if (aud === 'all') return users;
-    return users.filter(u => (u.profile?.tier || 'free') === aud);
+    if (aud === 'all') return users.filter(u => !isAdminUser(u));
+    return users.filter(u => !isAdminUser(u) && (u.profile?.tier || 'free') === aud);
   }, [users, aud]);
   const emails = filtered.map(u => u.profile?.email).filter(Boolean).join(',');
 
@@ -1139,8 +1144,8 @@ function BulkEmail({ users, onClose }: { users: any[]; onClose: () => void }) {
       <div onClick={e => e.stopPropagation()} style={{ background: C.panel, borderRadius: 6, width: '100%', maxWidth: 480, padding: 22 }}>
         <p style={{ fontFamily: 'Georgia, serif', fontSize: 20, fontWeight: 300, marginBottom: 4 }}>Bulk email</p>
         <p style={{ fontSize: 12, color: C.faint, marginBottom: 14 }}>Pick an audience — opens your mail client with the addresses in BCC.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: 14 }}>
-          {(['all', 'free', 'pro', 'kitchen', 'group'] as const).map(o => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 4, marginBottom: 14 }}>
+          {(['all', 'free', 'pro', 'kitchen', 'group', 'enterprise'] as const).map(o => (
             <button key={o} onClick={() => setAud(o)}
               style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', padding: '8px 6px', border: `1px solid ${aud === o ? C.gold + '60' : C.border}`, background: aud === o ? C.goldSoft : 'transparent', color: aud === o ? C.gold : C.dim, cursor: 'pointer', borderRadius: 3 }}>
               {o}
@@ -1195,7 +1200,7 @@ function Revenue({ users }: { users: any[] }) {
 
   // Per-tier table filter — defaults to All. Changing this scopes which
   // rows the table shows; the bottom total row stays as the overall total.
-  const [revenueFilter, setRevenueFilter] = useState<'all' | 'free' | 'pro' | 'kitchen' | 'group' | 'admin'>('all');
+  const [revenueFilter, setRevenueFilter] = useState<'all' | 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise' | 'admin'>('all');
 
   // ── Enterprise quote calculator ──
   const [outlets, setOutlets] = useState(10);
@@ -1216,12 +1221,22 @@ function Revenue({ users }: { users: any[] }) {
 
   // Per-tier breakdown row. Admins sit alongside the customer tiers but
   // contribute £0 on both axes — internal accounts, no cost-of-serve count.
-  const tierRows = [
-    { key: 'free' as const,    name: 'Free',    count: counts.free,    unitPrice: 0,                  unitCost: TIER_COST_PER_USER.free },
-    { key: 'pro' as const,     name: 'Pro',     count: counts.pro,     unitPrice: TIER_PRICE.pro,     unitCost: TIER_COST_PER_USER.pro },
-    { key: 'kitchen' as const, name: 'Kitchen', count: counts.kitchen, unitPrice: TIER_PRICE.kitchen, unitCost: TIER_COST_PER_USER.kitchen },
-    { key: 'group' as const,   name: 'Group',   count: counts.group,   unitPrice: TIER_PRICE.group,   unitCost: TIER_COST_PER_USER.group },
-    { key: 'admin' as const,   name: 'Admin',   count: counts.admin,   unitPrice: 0,                  unitCost: 0 },
+  // Enterprise is custom-priced (POA) and ACV tracked outside this dashboard,
+  // so we show its count but flag the £ columns as 'custom'.
+  const tierRows: {
+    key: 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise' | 'admin';
+    name: string;
+    count: number;
+    unitPrice: number;
+    unitCost: number;
+    custom?: boolean;
+  }[] = [
+    { key: 'free',       name: 'Free',       count: counts.free,       unitPrice: 0,                  unitCost: TIER_COST_PER_USER.free },
+    { key: 'pro',        name: 'Pro',        count: counts.pro,        unitPrice: TIER_PRICE.pro,     unitCost: TIER_COST_PER_USER.pro },
+    { key: 'kitchen',    name: 'Kitchen',    count: counts.kitchen,    unitPrice: TIER_PRICE.kitchen, unitCost: TIER_COST_PER_USER.kitchen },
+    { key: 'group',      name: 'Group',      count: counts.group,      unitPrice: TIER_PRICE.group,   unitCost: TIER_COST_PER_USER.group },
+    { key: 'enterprise', name: 'Enterprise', count: counts.enterprise, unitPrice: 0,                  unitCost: 0,                          custom: true },
+    { key: 'admin',      name: 'Admin',      count: counts.admin,      unitPrice: 0,                  unitCost: 0 },
   ];
 
   function SliderRow({ label, value, setValue, min, max, step = 1, unit = '' }: {
@@ -1274,7 +1289,7 @@ function Revenue({ users }: { users: any[] }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 14 }}>
           <StatTile label="MRR"            value={`£${mrr.toLocaleString()}`} sub="per month" accent={C.gold} />
           <StatTile label="ARR"            value={`£${arr.toLocaleString()}`} sub="annualised" accent={C.gold} />
-          <StatTile label="Paid users"     value={paid} sub={`${counts.pro} pro · ${counts.kitchen} kit · ${counts.group} grp`} />
+          <StatTile label="Paid users"     value={paid} sub={`${counts.pro} pro · ${counts.kitchen} kit · ${counts.group} grp · ${counts.enterprise} ent`} />
           <StatTile
             label="Gross margin (est.)"
             value={`£${Math.round(grossMargin).toLocaleString()}`}
@@ -1285,12 +1300,13 @@ function Revenue({ users }: { users: any[] }) {
 
         <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
           {([
-            { id: 'all',     label: 'All' },
-            { id: 'free',    label: 'Free' },
-            { id: 'pro',     label: 'Pro' },
-            { id: 'kitchen', label: 'Kitchen' },
-            { id: 'group',   label: 'Group' },
-            { id: 'admin',   label: 'Admin' },
+            { id: 'all',        label: 'All' },
+            { id: 'free',       label: 'Free' },
+            { id: 'pro',        label: 'Pro' },
+            { id: 'kitchen',    label: 'Kitchen' },
+            { id: 'group',      label: 'Group' },
+            { id: 'enterprise', label: 'Enterprise' },
+            { id: 'admin',      label: 'Admin' },
           ] as const).map(f => {
             const active = revenueFilter === f.id;
             return (
@@ -1321,6 +1337,17 @@ function Revenue({ users }: { users: any[] }) {
                 const cost = r.count * r.unitCost;
                 const margin = rev - cost;
                 const pct = rev > 0 ? (margin / rev) * 100 : null;
+                if (r.custom) {
+                  return (
+                    <tr key={r.key} style={{ borderTop: `1px solid ${C.border}` }}>
+                      <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.name}</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.count}</td>
+                      <td style={{ padding: '8px', textAlign: 'right', color: C.faint, fontStyle: 'italic' }} colSpan={5}>
+                        Custom — ACV tracked per deal
+                      </td>
+                    </tr>
+                  );
+                }
                 return (
                   <tr key={r.key} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.name}</td>
