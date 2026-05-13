@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe';
 
+// Five-tier structure. Enterprise is sales-led — no Stripe price; the
+// checkout handler short-circuits with a mailto redirect when the
+// caller asks for the `enterprise` key.
 const PRICES = {
   pro_monthly:     'price_1TVovPRczq0AZU58plLiBROd',
   pro_yearly:      'price_1TVovkRczq0AZU580KtYD0cG',
@@ -11,9 +14,15 @@ const PRICES = {
   group_yearly:    'price_1TVoypRczq0AZU58AUQoPfd9',
 };
 
+const ENTERPRISE_MAILTO = 'mailto:hello@palateandpen.co.uk?subject=Enterprise%20enquiry';
+
 export async function POST(req: NextRequest) {
   try {
     const { priceKey, userToken } = await req.json();
+
+    if (priceKey === 'enterprise') {
+      return NextResponse.json({ contact_sales: true, mailto: ENTERPRISE_MAILTO, url: ENTERPRISE_MAILTO });
+    }
 
     const priceId = PRICES[priceKey as keyof typeof PRICES];
     if (!priceId) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });

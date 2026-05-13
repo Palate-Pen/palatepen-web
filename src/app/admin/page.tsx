@@ -31,10 +31,11 @@ const C = {
 const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 
 const TIER_BADGE: Record<string, { fg: string; bg: string; bd: string }> = {
-  free:    { fg: '#666',     bg: '#EFEEEC',  bd: '#DDD' },
-  pro:     { fg: C.gold,     bg: C.goldSoft, bd: C.gold + '60' },
-  kitchen: { fg: C.blue,     bg: C.blueSoft, bd: C.blue + '60' },
-  group:   { fg: C.purple,   bg: C.purpleSoft, bd: C.purple + '60' },
+  free:       { fg: '#666',     bg: '#EFEEEC',     bd: '#DDD' },
+  pro:        { fg: C.gold,     bg: C.goldSoft,    bd: C.gold + '60' },
+  kitchen:    { fg: C.blue,     bg: C.blueSoft,    bd: C.blue + '60' },
+  group:      { fg: C.purple,   bg: C.purpleSoft,  bd: C.purple + '60' },
+  enterprise: { fg: C.text,     bg: C.bg,          bd: C.text + '60' },
 };
 
 type Section = 'overview' | 'users' | 'revenue' | 'platform' | 'audit' | 'system';
@@ -1128,92 +1129,212 @@ function BulkEmail({ users, onClose }: { users: any[]; onClose: () => void }) {
 // ──────────────────────────────────────────────────────────
 // Revenue
 // ──────────────────────────────────────────────────────────
+// Per-tier cost-of-serve assumptions used by the unit economics table + the
+// MRR cost subtraction. Numbers are rough estimates of database/storage/AI
+// per active user per month — easy to revise once we have real Vercel +
+// Supabase + Anthropic invoices to look at.
+const TIER_COST_PER_USER: Record<'free' | 'pro' | 'kitchen' | 'group', number> = {
+  free: 0.08,
+  pro: 1.20,
+  kitchen: 3.50,
+  group: 8.00,
+};
+const TIER_PRICE: Record<'pro' | 'kitchen' | 'group', number> = {
+  pro: 25,
+  kitchen: 59,
+  group: 129,
+};
+const FIXED_INFRA_COST = 83; // £/mo: Vercel + Supabase + domain + base Anthropic
+
 function Revenue({ users }: { users: any[] }) {
   const { mrr, counts } = useMemo(() => computeMrr(users), [users]);
   const arr = mrr * 12;
-  const total = users.length;
   const paid = counts.pro + counts.kitchen + counts.group;
-  const conversion = total > 0 ? (paid / total) * 100 : 0;
+
+  // Variable per-user infra. Free users still cost a little (auth + storage),
+  // paid users cost more (AI scans + larger user_data rows).
+  const variableCost = counts.free * TIER_COST_PER_USER.free
+                     + counts.pro * TIER_COST_PER_USER.pro
+                     + counts.kitchen * TIER_COST_PER_USER.kitchen
+                     + counts.group * TIER_COST_PER_USER.group;
+  const totalCost = FIXED_INFRA_COST + variableCost;
+  const grossMargin = mrr - totalCost;
+  const marginPct = mrr > 0 ? (grossMargin / mrr) * 100 : 0;
+
+  // ── Enterprise quote calculator ──
+  const [outlets, setOutlets] = useState(10);
+  const [usersPerOutlet, setUsersPerOutlet] = useState(5);
+  const [invoicesPerMonth, setInvoicesPerMonth] = useState(100);
+  const [aiScansPerMonth, setAiScansPerMonth] = useState(80);
+  const [supportTier, setSupportTier] = useState<'standard' | 'priority' | 'dam'>('standard');
+  const supportCost = supportTier === 'priority' ? 200 : supportTier === 'dam' ? 500 : 0;
+  const supportLabel = supportTier === 'priority' ? 'Priority (+£200/mo)' : supportTier === 'dam' ? 'Dedicated AM (+£500/mo)' : 'Standard (included)';
+
+  const totalUsers = outlets * usersPerOutlet;
+  const infraCost = 45 + outlets * 2.5 + outlets * usersPerOutlet * 0.10 + aiScansPerMonth * 0.80 + supportCost;
+  const minViablePrice = infraCost * 4;
+  const suggestedPrice = infraCost * 6;
+  const annualValue = suggestedPrice * 12;
+  const quoteMarginPct = suggestedPrice > 0 ? ((suggestedPrice - infraCost) / suggestedPrice) * 100 : 0;
+  const pricePerUser = totalUsers > 0 ? suggestedPrice / totalUsers : 0;
+
+  // Per-tier breakdown row
+  const tierRows = [
+    { key: 'free' as const,    name: 'Free',    count: counts.free,    unitPrice: 0,                  unitCost: TIER_COST_PER_USER.free },
+    { key: 'pro' as const,     name: 'Pro',     count: counts.pro,     unitPrice: TIER_PRICE.pro,     unitCost: TIER_COST_PER_USER.pro },
+    { key: 'kitchen' as const, name: 'Kitchen', count: counts.kitchen, unitPrice: TIER_PRICE.kitchen, unitCost: TIER_COST_PER_USER.kitchen },
+    { key: 'group' as const,   name: 'Group',   count: counts.group,   unitPrice: TIER_PRICE.group,   unitCost: TIER_COST_PER_USER.group },
+  ];
+
+  function SliderRow({ label, value, setValue, min, max, step = 1, unit = '' }: {
+    label: string; value: number; setValue: (n: number) => void; min: number; max: number; step?: number; unit?: string;
+  }) {
+    return (
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: C.dim }}>{label}</span>
+          <input
+            type="number"
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            onChange={e => {
+              const n = Number(e.target.value);
+              if (!Number.isFinite(n)) return;
+              setValue(Math.max(min, Math.min(max, n)));
+            }}
+            style={{ width: 80, padding: '4px 8px', fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 3, textAlign: 'right', background: C.panel, color: C.text, fontFamily: FONT }}
+          />
+        </div>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={e => setValue(Number(e.target.value))}
+          style={{ width: '100%', accentColor: C.gold }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: C.faint, marginTop: 2 }}>
+          <span>{min}{unit}</span>
+          <span>{max}{unit}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, marginBottom: 18 }}>Revenue</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 18 }}>
-        <StatTile label="MRR"            value={`£${mrr}`} sub="per month" accent={C.gold} />
-        <StatTile label="ARR"            value={`£${arr.toLocaleString()}`} sub="annualised" />
-        <StatTile label="Paid users"     value={paid} sub={`${conversion.toFixed(1)}% conversion`} accent={C.gold} />
-        <StatTile label="Free users"     value={counts.free} sub="potential upgrades" />
-        <StatTile label="Conversion"     value={`${conversion.toFixed(1)}%`} sub="paid / total" />
-      </div>
+      <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 26, marginBottom: 6 }}>Revenue</h1>
+      <p style={{ fontSize: 12, color: C.faint, marginBottom: 18 }}>Unit economics + enterprise quote calculator. Cost assumptions are estimates — revise once real invoice data is in.</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Card title="Tier breakdown">
-          {(() => {
-            const max = Math.max(counts.free, counts.pro, counts.kitchen, counts.group, 1);
-            const rows: { tier: string; value: number; color: string }[] = [
-              { tier: 'Free',    value: counts.free,    color: '#999' },
-              { tier: 'Pro',     value: counts.pro,     color: C.gold },
-              { tier: 'Kitchen', value: counts.kitchen, color: C.blue },
-              { tier: 'Group',   value: counts.group,   color: C.purple },
-            ];
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {rows.map(r => (
-                  <div key={r.tier}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: C.dim, marginBottom: 4 }}>
-                      <span style={{ fontWeight: 600 }}>{r.tier}</span>
-                      <span style={{ color: r.color, fontWeight: 600 }}>{r.value} user{r.value === 1 ? '' : 's'}</span>
-                    </div>
-                    <div style={{ height: 10, background: C.bg, borderRadius: 5, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${(r.value / max) * 100}%`, background: r.color, borderRadius: 5 }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </Card>
+      {/* Part A — Unit economics overview */}
+      <div style={{ marginBottom: 22 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 10 }}>Unit economics</p>
 
-        <Card title="Monthly revenue by tier">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 14 }}>
+          <StatTile label="MRR"            value={`£${mrr.toLocaleString()}`} sub="per month" accent={C.gold} />
+          <StatTile label="ARR"            value={`£${arr.toLocaleString()}`} sub="annualised" accent={C.gold} />
+          <StatTile label="Paid users"     value={paid} sub={`${counts.pro} pro · ${counts.kitchen} kit · ${counts.group} grp`} />
+          <StatTile
+            label="Gross margin (est.)"
+            value={`£${Math.round(grossMargin).toLocaleString()}`}
+            sub={`${marginPct.toFixed(1)}% · MRR less ~£${Math.round(totalCost)} infra`}
+            accent={grossMargin >= 0 ? C.green : C.red}
+          />
+        </div>
+
+        <Card title="Per-tier cost & margin">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 700 }}>Tier</th>
+                <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Tier</th>
                 <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Users</th>
-                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Monthly</th>
-                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Annual</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Monthly £</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Cost / user</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Tier cost</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Margin £</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Margin %</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                { tier: 'Pro',     count: counts.pro,     unit: 25 },
-                { tier: 'Kitchen', count: counts.kitchen, unit: 59 },
-                { tier: 'Group',   count: counts.group,   unit: 129 },
-              ].map(r => (
-                <tr key={r.tier} style={{ borderTop: `1px solid ${C.border}` }}>
-                  <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.tier}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.count}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: C.text }}>£{r.count * r.unit}</td>
-                  <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>£{(r.count * r.unit * 12).toLocaleString()}</td>
-                </tr>
-              ))}
-              <tr style={{ borderTop: `1px solid ${C.border}`, background: C.bg }}>
-                <td style={{ padding: '8px', color: C.text, fontWeight: 700 }}>Total</td>
-                <td style={{ padding: '8px', textAlign: 'right', color: C.text, fontWeight: 700 }}>{paid}</td>
-                <td style={{ padding: '8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£{mrr}</td>
-                <td style={{ padding: '8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£{arr.toLocaleString()}</td>
+              {tierRows.map(r => {
+                const rev = r.count * r.unitPrice;
+                const cost = r.count * r.unitCost;
+                const margin = rev - cost;
+                const pct = rev > 0 ? (margin / rev) * 100 : null;
+                return (
+                  <tr key={r.key} style={{ borderTop: `1px solid ${C.border}` }}>
+                    <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.name}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.count}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.text }}>£{rev.toLocaleString()}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>£{r.unitCost.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>£{cost.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: margin >= 0 ? C.green : C.red, fontWeight: 600 }}>£{margin.toFixed(2)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: pct == null ? C.faint : pct >= 70 ? C.green : pct >= 0 ? C.amber : C.red, fontWeight: 600 }}>
+                      {pct == null ? '—' : `${pct.toFixed(1)}%`}
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr style={{ borderTop: `2px solid ${C.border}`, background: C.bg }}>
+                <td style={{ padding: '8px', color: C.text, fontWeight: 700 }}>Total + fixed</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: C.text, fontWeight: 700 }}>{users.length}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£{mrr.toLocaleString()}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>—</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>£{totalCost.toFixed(0)}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: grossMargin >= 0 ? C.green : C.red, fontWeight: 700 }}>£{Math.round(grossMargin).toLocaleString()}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: marginPct >= 70 ? C.green : marginPct >= 0 ? C.amber : C.red, fontWeight: 700 }}>{marginPct.toFixed(1)}%</td>
               </tr>
             </tbody>
           </table>
+          <p style={{ fontSize: 10, color: C.faint, marginTop: 10, fontStyle: 'italic' }}>
+            Fixed infra cost £{FIXED_INFRA_COST}/mo (Vercel + Supabase base + domain + base Anthropic). Variable cost per user as shown — revise constants in <code>page.tsx</code> when real data is in.
+          </p>
         </Card>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <Card title="Live Stripe data">
-          <p style={{ fontSize: 12, color: C.faint, fontStyle: 'italic' }}>
-            Stripe live data (subscriptions, churn, MRR movement, refunds, failed payments) will appear here once switched to live keys and the analytics route is wired in. Currently calculated from `user_data.profile.tier` which mirrors Stripe state via the existing webhook.
-          </p>
-        </Card>
+      {/* Part B — Enterprise quote calculator */}
+      <div>
+        <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.faint, marginBottom: 10 }}>Enterprise quote calculator</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Card title="Deal inputs">
+            <SliderRow label="Number of outlets"        value={outlets}          setValue={setOutlets}          min={1}  max={100} />
+            <SliderRow label="Users per outlet"          value={usersPerOutlet}   setValue={setUsersPerOutlet}   min={1}  max={50} />
+            <SliderRow label="Invoices per month total"  value={invoicesPerMonth} setValue={setInvoicesPerMonth} min={10} max={1000} step={10} />
+            <SliderRow label="AI scans per month total"  value={aiScansPerMonth}  setValue={setAiScansPerMonth}  min={0}  max={500} step={5} />
+            <div style={{ marginTop: 14 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: C.dim, marginBottom: 6 }}>Support tier</p>
+              <select value={supportTier} onChange={e => setSupportTier(e.target.value as any)}
+                style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: `1px solid ${C.border}`, borderRadius: 3, background: C.panel, color: C.text, fontFamily: FONT }}>
+                <option value="standard">Standard (included)</option>
+                <option value="priority">Priority (+£200/mo)</option>
+                <option value="dam">Dedicated account manager (+£500/mo)</option>
+              </select>
+            </div>
+            <div style={{ marginTop: 14, padding: '10px 12px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 3, fontSize: 11, color: C.dim }}>
+              <p style={{ marginBottom: 4 }}><strong style={{ color: C.text }}>Total users:</strong> {totalUsers}</p>
+              <p><strong style={{ color: C.text }}>Support:</strong> {supportLabel}</p>
+            </div>
+          </Card>
+
+          <Card title="Quote">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: 12 }}>
+              <StatTile label="Infra cost / mo" value={`£${Math.round(infraCost).toLocaleString()}`} sub="estimated" />
+              <StatTile label="Min viable" value={`£${Math.round(minViablePrice).toLocaleString()}`} sub="4× cost" />
+              <StatTile label="Suggested quote / mo" value={`£${Math.round(suggestedPrice).toLocaleString()}`} sub="6× cost" accent={C.gold} />
+              <StatTile label="Annual contract value" value={`£${Math.round(annualValue).toLocaleString()}`} sub="suggested × 12" accent={C.gold} />
+              <StatTile label="Gross margin %" value={`${quoteMarginPct.toFixed(1)}%`} sub="at suggested price" accent={quoteMarginPct >= 70 ? C.green : C.amber} />
+              <StatTile label="Price / user / mo" value={`£${pricePerUser.toFixed(2)}`} sub={`${totalUsers} users total`} />
+            </div>
+            <div style={{ padding: '10px 12px', background: C.goldSoft, border: `1px solid ${C.gold}40`, borderRadius: 3, fontSize: 11, color: C.dim, lineHeight: 1.5 }}>
+              <p><strong style={{ color: C.gold }}>Pricing rule:</strong> Min viable = 4× infrastructure cost. Suggested quote = 6× cost (83% gross margin target).</p>
+              <p style={{ marginTop: 4 }}>Formula: base £45 + outlets × £2.50 + users × £0.10 + AI scans × £0.80 + support tier.</p>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );

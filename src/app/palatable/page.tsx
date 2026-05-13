@@ -121,16 +121,18 @@ export default function PalatablePage() {
             <span className="text-xs font-bold tracking-widest uppercase text-palatable-gold">Pricing</span>
             <h2 className="font-fraunces font-light text-palatable-text" style={{fontSize:'clamp(28px,4vw,48px)'}}>Simple, honest <i>pricing</i></h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               {
                 key: 'free',
                 name: 'Free',
                 price: '£0',
-                period: '/mo',
+                period: ' forever',
                 yearly: 'No card required',
+                who: 'Trying it out',
                 features: ['5 recipes', 'Basic costing', '10 notebook ideas'],
                 cta: 'Get Started Free',
+                href: '/palatable/app',
                 highlight: false,
               },
               {
@@ -138,9 +140,11 @@ export default function PalatablePage() {
                 name: 'Pro',
                 price: '£25',
                 period: '/mo',
-                yearly: 'or £249/year — save 17%',
+                yearly: 'or £249/year',
+                who: 'The working chef — full toolkit',
                 features: ['Unlimited recipes', 'AI invoice scanning', 'Stock & par levels', 'Menu builder', 'Allergens & nutrition', 'Price alerts'],
                 cta: 'Start with Pro',
+                href: '/palatable/app',
                 highlight: true,
               },
               {
@@ -149,8 +153,10 @@ export default function PalatablePage() {
                 price: '£59',
                 period: '/mo',
                 yearly: 'or £590/year',
+                who: 'Small team, single site',
                 features: ['Up to 5 users', 'Everything in Pro', 'Team permissions', 'Supplier ordering', 'Waste tracking'],
                 cta: 'Choose Kitchen',
+                href: '/palatable/app',
                 highlight: false,
               },
               {
@@ -158,9 +164,23 @@ export default function PalatablePage() {
                 name: 'Group',
                 price: '£129',
                 period: '/mo',
-                yearly: 'or £1290/year',
+                yearly: 'or £1,290/year',
+                who: 'Multi-site operators',
                 features: ['Unlimited users', 'Multiple outlets', 'Central kitchen management', 'Group reporting', 'POS integration'],
                 cta: 'Choose Group',
+                href: '/palatable/app',
+                highlight: false,
+              },
+              {
+                key: 'enterprise',
+                name: 'Enterprise',
+                price: 'POA',
+                period: '',
+                yearly: 'Price on request',
+                who: 'Hotel groups, contract caterers, franchises',
+                features: ['Custom integrations', 'Dedicated account manager', 'Volume pricing & SLA', 'Onboarding & training', 'Custom contract terms'],
+                cta: 'Contact Sales',
+                href: 'mailto:hello@palateandpen.co.uk?subject=Enterprise%20enquiry',
                 highlight: false,
               },
             ].map(plan => (
@@ -172,17 +192,18 @@ export default function PalatablePage() {
                 <p className="font-fraunces font-light text-palatable-text mb-1" style={{ fontSize: '40px', lineHeight: 1 }}>
                   {plan.price}<span className="text-base text-palatable-faint">{plan.period}</span>
                 </p>
-                <p className={`text-xs mb-6 ${plan.highlight ? 'text-palatable-gold' : 'text-palatable-faint'}`}>{plan.yearly}</p>
+                <p className={`text-xs mb-3 ${plan.highlight ? 'text-palatable-gold' : 'text-palatable-faint'}`}>{plan.yearly}</p>
+                <p className="text-xs italic text-palatable-dim mb-6">{plan.who}</p>
                 <div className="space-y-2.5 mb-8 flex-1">
                   {plan.features.map(f => (
-                    <div key={f} className="flex items-center gap-2.5">
+                    <div key={f} className="flex items-start gap-2.5">
                       <span className={`text-sm flex-shrink-0 ${plan.highlight ? 'text-palatable-gold' : 'text-palatable-dim'}`}>{plan.highlight ? '✓' : '·'}</span>
                       <span className={`text-sm ${plan.highlight ? 'text-palatable-text' : 'text-palatable-dim'}`}>{f}</span>
                     </div>
                   ))}
                 </div>
                 <Link
-                  href="/palatable/app"
+                  href={plan.href}
                   className={`block text-center text-xs font-semibold tracking-widest uppercase px-5 py-3 transition-colors ${plan.highlight
                     ? 'bg-palatable-gold text-palatable-bg hover:bg-yellow-400'
                     : 'border border-palatable-border-light text-palatable-dim hover:border-palatable-gold hover:text-palatable-gold'}`}

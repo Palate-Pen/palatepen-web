@@ -3,6 +3,9 @@ import type Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { getStripe } from '@/lib/stripe';
 
+// Maps the price_key Stripe sees on checkout back to the tier the app stores.
+// Enterprise is sales-led (contact_sales) so it never reaches this webhook —
+// onboarding for that tier is handled manually after the deal closes.
 const TIER_MAP: Record<string, string> = {
   pro_monthly: 'pro',
   pro_yearly: 'pro',
