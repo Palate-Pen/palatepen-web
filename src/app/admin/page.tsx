@@ -798,6 +798,36 @@ function UserDetail({ user, onClose, onChanged }: { user: any; onClose: () => vo
   const userFlags = user.profile?.featureOverrides || {};
   const [flags, setFlags] = useState<Record<string, boolean | null>>(userFlags);
 
+  // Demo tools — seed showcase data
+  const [seedConfirm, setSeedConfirm] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMsg, setSeedMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+  const [seedSummary, setSeedSummary] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    fetch('/api/admin/seed-showcase', { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } })
+      .then(r => r.json()).then(j => setSeedSummary(j.summary || null)).catch(() => {});
+  }, []);
+
+  async function seedShowcase() {
+    setSeeding(true);
+    setSeedMsg(null);
+    try {
+      const res = await fetch('/api/admin/seed-showcase', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${ADMIN_PASSWORD}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.user_id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'seed failed');
+      setSeedMsg({ kind: 'ok', text: 'Seeded — refresh the app to see it.' });
+      setSeedConfirm(false);
+      onChanged();
+    } catch (e: any) {
+      setSeedMsg({ kind: 'err', text: e?.message || 'failed' });
+    }
+    setSeeding(false);
+  }
+
   async function saveTier() {
     setSaving(true);
     setMsg(null);
@@ -953,6 +983,41 @@ function UserDetail({ user, onClose, onChanged }: { user: any; onClose: () => vo
           {msg && (
             <p style={{ fontSize: 11, color: msg.kind === 'ok' ? C.green : C.red, marginBottom: 8, textAlign: 'center' }}>{msg.text}</p>
           )}
+
+          {/* Demo tools — seed showcase data into this user's account so the
+              live app demos with every feature populated. Destructive (replaces
+              all entity arrays) so gated behind a confirm step. */}
+          <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 14, paddingTop: 14 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: C.gold, marginBottom: 6 }}>Demo tools</p>
+            <p style={{ fontSize: 11, color: C.faint, marginBottom: 8, lineHeight: 1.5 }}>
+              Replace this user&apos;s data with the canonical showcase set
+              {seedSummary && (
+                <>
+                  {' '}({seedSummary.recipes} recipes · {seedSummary.costings} costings · {seedSummary.bank} bank · {seedSummary.stock} stock · {seedSummary.invoices} invoices · {seedSummary.menus} menus · {seedSummary.notes} notes · {seedSummary.waste} waste)
+                </>
+              )}.
+            </p>
+            {seedConfirm ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={seedShowcase} disabled={seeding}
+                  style={{ flex: 1, background: C.gold, color: '#fff', border: 'none', padding: '8px 10px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', cursor: seeding ? 'wait' : 'pointer', borderRadius: 3 }}>
+                  {seeding ? 'Seeding…' : 'Replace data — confirm'}
+                </button>
+                <button onClick={() => { setSeedConfirm(false); setSeedMsg(null); }} disabled={seeding}
+                  style={{ background: 'transparent', color: C.dim, border: `1px solid ${C.border}`, padding: '8px 10px', fontSize: 11, cursor: seeding ? 'wait' : 'pointer', borderRadius: 3 }}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setSeedConfirm(true)}
+                style={{ width: '100%', background: C.goldSoft, color: C.gold, border: `1px solid ${C.gold}40`, padding: '8px 10px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', cursor: 'pointer', borderRadius: 3 }}>
+                ✨ Seed showcase data
+              </button>
+            )}
+            {seedMsg && (
+              <p style={{ fontSize: 11, color: seedMsg.kind === 'ok' ? C.green : C.red, marginTop: 8, textAlign: 'center' }}>{seedMsg.text}</p>
+            )}
+          </div>
 
           {/* Danger zone */}
           <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 14, paddingTop: 14 }}>
