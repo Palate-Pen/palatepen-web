@@ -135,11 +135,11 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 - [x] **`publicMenus` flag check on `/m/[slug]`**
 - [x] **Idempotency on invite accept**
 
-**Medium-priority follow-ups (next session or later)**
-- [ ] **SettingsView autosave perms-aware** — `src/app/app/components/SettingsView.tsx:183` autosave `useEffect` deps array is missing `perms.canManageSettings`. Wrap the autosave body in a perms check (or add to deps + guard).
-- [ ] **Invite expiry check** — `src/app/api/invites/[token]/route.ts` doesn't verify `expires_at` on the invite row. Add a `new Date(invite.expires_at) < new Date()` check before accepting.
-- [ ] **Anthropic model into a constant** — 4 files hardcode `claude-sonnet-4-6` (`import-recipe`, `scan-invoice`, `scan-spec-sheet`, `inbound-email`). Pull into `src/lib/anthropic.ts` so we can swap to Haiku/Opus in one place.
-- [ ] **Inbound-email row guard** — `src/app/api/inbound-email/route.ts:197` writes invoices keyed by `user_id`. Add a sanity check that the row's `account_id` matches the account resolved from the token. Tiny extra cost, prevents a theoretical token-collision write to the wrong account.
+**Medium-priority follow-ups** — all done 2026-05-13, see Progress Log.
+- [x] **SettingsView autosave perms-aware** (already in place — `if(!perms.canManageSettings)return;` guards the effect body)
+- [x] **Invite expiry check** (accept route blocks at line 39 with 410)
+- [x] **Anthropic model into a constant** (`src/lib/anthropic.ts` exports `ANTHROPIC_MODEL`)
+- [x] **Inbound-email row guard** (collision detection + account_id-keyed write)
 
 **Long-tail (no action needed yet, log for memory)**
 - API-key lookup via JSONB containment is fine at current scale; revisit if user count > 10k.
@@ -170,6 +170,12 @@ When completing any roadmap item, add an entry here with the date, what was done
   - **What's NOT gated server-side** (deliberate): `wasteTracking`, `menuBuilder`, `csvImport`, `csvExport`. These flags are UI-only — they hide entry points, but there's no remote endpoint exclusively guarding waste/menu/CSV data writes (writes go through the generic user_data autosave). If admin needs hard enforcement on those they'd need either app_settings-side data scrubbing or per-feature endpoints, neither of which is in scope for v1.
 
 - **Invite accept idempotency.** `src/app/api/invites/[token]/accept/route.ts` membership insert now passes `{ onConflict: 'account_id,user_id', ignoreDuplicates: true }` so a double-click on Accept issues an `INSERT ... ON CONFLICT DO NOTHING` rather than overwriting role/added_by on an existing membership. Previously a second call could silently change the membership row if anything else had touched it between request 1 and request 2. The merge path is already idempotent (second call finds no personal account, returns early) and the `accepted_at` check at the top short-circuits any other re-runs.
+
+- **Anthropic model pulled into a constant.** New `src/lib/anthropic.ts` exports `ANTHROPIC_MODEL = 'claude-sonnet-4-6'`. The 4 endpoints that fan out to Claude — `/api/palatable/import-recipe`, `/api/palatable/scan-invoice`, `/api/palatable/scan-spec-sheet`, `/api/inbound-email` — now reference the constant. Future model swap (Haiku for cost, Opus for accuracy on hand-written spec sheets) is a one-line change.
+
+- **Inbound-email row guard + write tightening.** `src/app/api/inbound-email/route.ts` lookup now fetches up to 2 rows matching the JSONB-contained `invoiceInboxToken` and refuses to route when more than one matches — defends against theoretical token collisions. Additionally added an explicit `account.id === row.account_id` assertion (true by construction today but guards against future refactors that change the lookup path), and the final invoices write was switched from `.eq('user_id', row.user_id)` to `.eq('account_id', row.account_id)` since account_id is the more specific identity in the multi-account world (a single user could own multiple accounts on Group tier). All failure paths still return `{ ok: true, skipped: '...' }` so the inbound provider doesn't retry-storm.
+
+- **Punch-list verifications (no code change needed).** SettingsView autosave at `SettingsView.tsx:183` already guards on `perms.canManageSettings` at the top of the effect body — punch-list note was based on a stale read. Invite accept at `accept/route.ts:39` already blocks expired invites with a 410 — defense-in-depth in place.
 
 ### 2026-05-12
 
