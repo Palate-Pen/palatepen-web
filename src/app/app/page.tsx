@@ -139,7 +139,7 @@ export default function App() {
     waste: flagWasteTracking ? <WasteView /> : <DashboardView setTab={setTab} />,
     reports: <ReportsView setTab={setTab} />,
     team: <MyTeamView />,
-    profile: <ProfileView />,
+    profile: <ProfileView onUpgrade={() => setShowUpgrade(true)} />,
     settings: <SettingsView onUpgrade={() => setShowUpgrade(true)} onShowGuide={() => setShowGuide(true)} />,
   };
 

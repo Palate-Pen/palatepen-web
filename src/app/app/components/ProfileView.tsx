@@ -5,7 +5,7 @@ import{useApp}from'@/context/AppContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
 import{canAccess}from'@/lib/tierGate';
-export default function ProfileView(){
+export default function ProfileView({onUpgrade}:{onUpgrade?:()=>void}={}){
   const{user,tier}=useAuth();
   const{state,actions}=useApp();
   const{settings}=useSettings();
@@ -20,7 +20,7 @@ export default function ProfileView(){
       {!canAccess(tier,'invoices_view')&&(
         <div style={{background:C.gold,padding:'16px 20px',marginBottom:'16px',display:'flex',justifyContent:'space-between',alignItems:'center',borderRadius:'4px'}}>
           <div><p style={{fontSize:'11px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',color:C.bg,marginBottom:'2px'}}>Upgrade to a paid plan</p><p style={{fontSize:'13px',color:C.bg+'99'}}>From £25/month — invoices, stock and price alerts on Pro; Kitchen + Group add team seats.</p></div>
-          <button style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.bg,color:C.gold,padding:'10px 18px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade</button>
+          <button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.bg,color:C.gold,padding:'10px 18px',border:'none',cursor:onUpgrade?'pointer':'default',borderRadius:'2px'}}>Upgrade</button>
         </div>
       )}
       <div style={{background:C.surface,border:'1px solid '+C.border,borderRadius:'4px',padding:'20px',display:'flex',alignItems:'center',gap:'20px',marginBottom:'16px'}}>

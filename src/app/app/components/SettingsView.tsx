@@ -34,6 +34,31 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const[stockDay,setStockDay]=useState(String(profile.stockDay||1));
   const[stockFreq,setStockFreq]=useState(profile.stockFrequency||'weekly');
   const[deleteConfirm,setDeleteConfirm]=useState(false);
+  const[deleting,setDeleting]=useState(false);
+  const[deleteError,setDeleteError]=useState('');
+
+  async function doDeleteAccount(){
+    setDeleting(true);
+    setDeleteError('');
+    try{
+      const{data:{session}}=await supabase.auth.getSession();
+      const token=session?.access_token||'';
+      const res=await fetch('/api/account/delete',{method:'POST',headers:{Authorization:'Bearer '+token}});
+      const json=await res.json().catch(()=>({}));
+      if(!res.ok){
+        setDeleteError(json.error||'Delete failed. Please try again.');
+        setDeleting(false);
+        return;
+      }
+      // Success — sign out and redirect home. The auth.users row is gone
+      // so the session is already invalid; signOut is best-effort.
+      try{await signOut();}catch{}
+      window.location.href='/';
+    }catch(e:any){
+      setDeleteError(e?.message||'Network error. Please try again.');
+      setDeleting(false);
+    }
+  }
   // Section nav — sectional layout instead of one long scroll
   const[section,setSection]=useState<'profile'|'preferences'|'data'|'integrations'|'help'|'account'>('profile');
   const[uploadingLogo,setUploadingLogo]=useState(false);
@@ -672,10 +697,13 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
           {perms.canManageBilling&&(!deleteConfirm?(
             <button onClick={()=>setDeleteConfirm(true)} style={{fontSize:'12px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:C.red,background:'transparent',border:'1px solid '+C.red,padding:'10px 20px',cursor:'pointer',borderRadius:'2px'}}>Delete Account</button>
           ):(
-            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-              <p style={{fontSize:'12px',color:C.red}}>Are you sure? This cannot be undone.</p>
-              <button onClick={()=>setDeleteConfirm(false)} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:'pointer',padding:'6px 10px'}}>Cancel</button>
-              <button style={{fontSize:'12px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'10px 20px',cursor:'pointer',borderRadius:'2px'}}>Confirm Delete</button>
+            <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+              <p style={{fontSize:'12px',color:C.red}}>Are you sure? This permanently deletes your account, all your recipes, costings, stock, invoices and menus. This cannot be undone.</p>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}}>
+                <button onClick={()=>{setDeleteConfirm(false);setDeleteError('');}} disabled={deleting} style={{fontSize:'11px',color:C.dim,background:'none',border:'none',cursor:deleting?'wait':'pointer',padding:'6px 10px'}}>Cancel</button>
+                <button onClick={doDeleteAccount} disabled={deleting} style={{fontSize:'12px',fontWeight:700,color:'#fff',background:C.red,border:'none',padding:'10px 20px',cursor:deleting?'wait':'pointer',borderRadius:'2px',opacity:deleting?0.7:1}}>{deleting?'Deleting…':'Confirm Delete'}</button>
+              </div>
+              {deleteError&&<p style={{fontSize:'11px',color:C.red,background:C.red+'10',border:'1px solid '+C.red+'30',padding:'8px 10px',borderRadius:'3px'}}>⚠ {deleteError}</p>}
             </div>
           ))}
         </div>
