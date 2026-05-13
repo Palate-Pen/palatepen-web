@@ -36,7 +36,26 @@ const TIER_BADGE: Record<string, { fg: string; bg: string; bd: string }> = {
   kitchen:    { fg: C.blue,     bg: C.blueSoft,    bd: C.blue + '60' },
   group:      { fg: C.purple,   bg: C.purpleSoft,  bd: C.purple + '60' },
   enterprise: { fg: C.text,     bg: C.bg,          bd: C.text + '60' },
+  admin:      { fg: C.red,      bg: C.redSoft,     bd: C.red + '60' },
 };
+
+// Internal/operator accounts. These users are excluded from Free + paid
+// tier counts in the admin dashboard and contribute £0 to the variable
+// infrastructure cost calculation in Revenue. They're real auth users
+// (so they still show in the Supabase auth-user count on Infrastructure)
+// but they don't represent customer demand or cost-of-serve.
+const ADMIN_EMAILS = new Set([
+  'hello@palateandpen.co.uk',
+  'jack@palateandpen.co.uk',
+]);
+function isAdminUser(u: any): boolean {
+  const email = (u?.profile?.email || u?.email || '').toLowerCase();
+  return ADMIN_EMAILS.has(email);
+}
+function tierForUser(u: any): { tier: string; comp: boolean } {
+  if (isAdminUser(u)) return { tier: 'admin', comp: false };
+  return { tier: u?.profile?.tier || 'free', comp: !!u?.profile?.comp };
+}
 
 type Section = 'overview' | 'users' | 'revenue' | 'infra' | 'expenses' | 'platform' | 'audit' | 'system';
 
@@ -214,10 +233,13 @@ function fmtRel(ts: string | number | null): string {
   return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-// Compute MRR from user list (tier × price per tier)
+// Compute MRR from user list (tier × price per tier).
+// Admin/operator emails are bucketed into counts.admin and contribute £0
+// to MRR — they're not customer-shaped usage.
 function computeMrr(users: any[]): { mrr: number; counts: Record<string, number> } {
-  const counts: Record<string, number> = { free: 0, pro: 0, kitchen: 0, group: 0 };
+  const counts: Record<string, number> = { free: 0, pro: 0, kitchen: 0, group: 0, admin: 0 };
   for (const u of users) {
+    if (isAdminUser(u)) { counts.admin++; continue; }
     const t = u.profile?.tier || 'free';
     const isComp = !!u.profile?.comp;
     if (isComp) { counts.free++; continue; } // comped users don't contribute to MRR
@@ -304,8 +326,9 @@ export default function AdminPage() {
       (u.profile?.email || '').toLowerCase().includes(q)
     );
     if (tierFilter !== 'all') {
-      if (tierFilter === 'comp') list = list.filter(u => u.profile?.comp);
-      else list = list.filter(u => (u.profile?.tier || 'free') === tierFilter && !u.profile?.comp);
+      if (tierFilter === 'comp') list = list.filter(u => !isAdminUser(u) && u.profile?.comp);
+      else if (tierFilter === 'admin') list = list.filter(isAdminUser);
+      else list = list.filter(u => !isAdminUser(u) && (u.profile?.tier || 'free') === tierFilter && !u.profile?.comp);
     }
     const sorted = [...list];
     sorted.sort((a, b) => {
@@ -394,7 +417,7 @@ export default function AdminPage() {
 // ──────────────────────────────────────────────────────────
 function Overview({ users, authUsers, loading, onRefresh, setSection }: { users: any[]; authUsers: any[]; loading: boolean; onRefresh: () => void; setSection: (s: Section) => void; }) {
   const total = users.length;
-  const paid = users.filter(u => ['pro', 'kitchen', 'group'].includes(u.profile?.tier) && !u.profile?.comp).length;
+  const paid = users.filter(u => !isAdminUser(u) && ['pro', 'kitchen', 'group'].includes(u.profile?.tier) && !u.profile?.comp).length;
   const { mrr, counts } = useMemo(() => computeMrr(users), [users]);
   const active7d = useMemo(() => {
     const cutoff = Date.now() - 7 * 86400000;
@@ -412,12 +435,12 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
 
   const churnRisk = useMemo(() => {
     const cutoff = Date.now() - 14 * 86400000;
-    return users.filter(u => ['pro', 'kitchen', 'group'].includes(u.profile?.tier) && !u.profile?.comp && new Date(u.updated_at || u.created_at).getTime() < cutoff);
+    return users.filter(u => !isAdminUser(u) && ['pro', 'kitchen', 'group'].includes(u.profile?.tier) && !u.profile?.comp && new Date(u.updated_at || u.created_at).getTime() < cutoff);
   }, [users]);
 
   const compExpiring = useMemo(() => {
     const soon = Date.now() + 7 * 86400000;
-    return users.filter(u => u.profile?.comp && u.profile?.compExpiresAt && new Date(u.profile.compExpiresAt).getTime() < soon);
+    return users.filter(u => !isAdminUser(u) && u.profile?.comp && u.profile?.compExpiresAt && new Date(u.profile.compExpiresAt).getTime() < soon);
   }, [users]);
 
   const top = useMemo(() => topRecipe(users), [users]);
@@ -629,7 +652,7 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
                     <p style={{ fontSize: 12, color: C.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.profile?.name || '—'}</p>
                     <p style={{ fontSize: 10, color: C.faint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.profile?.email}</p>
                   </div>
-                  <TierBadge tier={u.profile?.tier || 'free'} comp={u.profile?.comp} />
+                  {(() => { const t = tierForUser(u); return <TierBadge tier={t.tier} comp={t.comp} />; })()}
                   <span style={{ fontSize: 10, color: C.faint, width: 38, textAlign: 'right' }}>{fmtRel(u.created_at)}</span>
                 </div>
               ))}
@@ -665,12 +688,13 @@ function Overview({ users, authUsers, loading, onRefresh, setSection }: { users:
 
           <Card title="Tier breakdown">
             {(() => {
-              const max = Math.max(counts.free, counts.pro, counts.kitchen, counts.group, 1);
+              const max = Math.max(counts.free, counts.pro, counts.kitchen, counts.group, counts.admin, 1);
               const rows: { tier: string; value: number; color: string }[] = [
                 { tier: 'Free',    value: counts.free,    color: '#999' },
                 { tier: 'Pro',     value: counts.pro,     color: C.gold },
                 { tier: 'Kitchen', value: counts.kitchen, color: C.blue },
                 { tier: 'Group',   value: counts.group,   color: C.purple },
+                { tier: 'Admin',   value: counts.admin,   color: C.red },
               ];
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -729,6 +753,7 @@ function Users({ users, allUsers, search, setSearch, tierFilter, setTierFilter, 
     { id: 'kitchen', label: 'Kitchen' },
     { id: 'group', label: 'Group' },
     { id: 'comp', label: 'Comp' },
+    { id: 'admin', label: 'Admin' },
   ];
 
   return (
@@ -779,7 +804,7 @@ function Users({ users, allUsers, search, setSearch, tierFilter, setTierFilter, 
             <Avatar name={u.profile?.name || u.profile?.email || ''} size={28} />
             <span style={{ fontSize: 13, color: C.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.profile?.name || '—'}</span>
             <span style={{ fontSize: 12, color: C.dim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.profile?.email}</span>
-            <TierBadge tier={u.profile?.tier || 'free'} comp={u.profile?.comp} />
+            {(() => { const t = tierForUser(u); return <TierBadge tier={t.tier} comp={t.comp} />; })()}
             <span style={{ fontSize: 12, color: C.dim }}>{(u.recipes || []).length}</span>
             <span style={{ fontSize: 11, color: C.faint }}>{fmtRel(u.created_at)}</span>
           </button>
@@ -899,7 +924,7 @@ function UserDetail({ user, onClose, onChanged }: { user: any; onClose: () => vo
               <p style={{ fontFamily: 'Georgia, serif', fontWeight: 300, fontSize: 20, color: C.text, lineHeight: 1.2 }}>{user.profile?.name || '—'}</p>
               <p style={{ fontSize: 11, color: C.faint, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.profile?.email}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                <TierBadge tier={user.profile?.tier || 'free'} comp={user.profile?.comp} />
+                {(() => { const t = tierForUser(user); return <TierBadge tier={t.tier} comp={t.comp} />; })()}
                 <span style={{ fontSize: 10, color: C.faint }}>· last active {fmtRel(user.updated_at)}</span>
               </div>
             </div>
@@ -1185,12 +1210,14 @@ function Revenue({ users }: { users: any[] }) {
   const quoteMarginPct = suggestedPrice > 0 ? ((suggestedPrice - infraCost) / suggestedPrice) * 100 : 0;
   const pricePerUser = totalUsers > 0 ? suggestedPrice / totalUsers : 0;
 
-  // Per-tier breakdown row
+  // Per-tier breakdown row. Admins sit alongside the customer tiers but
+  // contribute £0 on both axes — internal accounts, no cost-of-serve count.
   const tierRows = [
     { key: 'free' as const,    name: 'Free',    count: counts.free,    unitPrice: 0,                  unitCost: TIER_COST_PER_USER.free },
     { key: 'pro' as const,     name: 'Pro',     count: counts.pro,     unitPrice: TIER_PRICE.pro,     unitCost: TIER_COST_PER_USER.pro },
     { key: 'kitchen' as const, name: 'Kitchen', count: counts.kitchen, unitPrice: TIER_PRICE.kitchen, unitCost: TIER_COST_PER_USER.kitchen },
     { key: 'group' as const,   name: 'Group',   count: counts.group,   unitPrice: TIER_PRICE.group,   unitCost: TIER_COST_PER_USER.group },
+    { key: 'admin' as const,   name: 'Admin',   count: counts.admin,   unitPrice: 0,                  unitCost: 0 },
   ];
 
   function SliderRow({ label, value, setValue, min, max, step = 1, unit = '' }: {
