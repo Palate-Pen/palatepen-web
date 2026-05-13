@@ -8,7 +8,7 @@ export interface Account {
   id: string;
   name: string;
   owner_user_id: string;
-  tier: 'free' | 'pro' | 'kitchen' | 'group';
+  tier: 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise';
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
 }
@@ -78,6 +78,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user?.id) { setAccounts([]); setCurrentAccountId(null); return; }
     loadAccounts(user.id);
+  }, [user?.id, loadAccounts]);
+
+  // Re-read accounts on tab focus. Admin edits in the founder console mirror
+  // to the accounts table, but the app loads accounts exactly once per
+  // user.id change — so without a focus refresh, a user with the app open
+  // wouldn't see a tier upgrade until they signed out. Cheap (one PostgREST
+  // round-trip) and matches the React Query refetchOnFocus default.
+  useEffect(() => {
+    if (!user?.id) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadAccounts(user.id);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [user?.id, loadAccounts]);
 
   const switchAccount = (id: string) => {

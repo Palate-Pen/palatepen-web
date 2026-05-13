@@ -134,6 +134,25 @@ export function AppProvider({children}:{children:React.ReactNode}){
     return()=>document.removeEventListener('visibilitychange',onHide);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[accountId]);
+
+  // Re-read PROFILE on tab focus so admin edits to tier/comp/featureOverrides/
+  // name surface without a sign-out. We deliberately do NOT re-read the
+  // content arrays (recipes/notes/etc) on focus — those have a 500ms
+  // debounced autosave running locally and a remote re-read would clobber
+  // any unsaved edits. Admin can only change profile fields anyway.
+  useEffect(()=>{
+    if(!accountId)return;
+    const onShow=async()=>{
+      if(document.visibilityState!=='visible')return;
+      if(!stateRef.current.ready)return;
+      const{data,error}=await supabase.from('user_data').select('profile').eq('account_id',accountId).maybeSingle();
+      if(error){console.error('[profile refresh]',error.message);return;}
+      if(data?.profile&&typeof data.profile==='object')dispatch({type:'UPD_PROFILE',data:data.profile});
+    };
+    document.addEventListener('visibilitychange',onShow);
+    return()=>document.removeEventListener('visibilitychange',onShow);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[accountId]);
   // editor() reads via ref so token-refresh user-object swaps don't tear
   // the addedBy stamp. Stored on every newly-created item to power the
   // owner-only My Team contributions view.

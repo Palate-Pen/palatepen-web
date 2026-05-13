@@ -46,6 +46,19 @@ export async function PATCH(req: Request, { params }: { params: { userId: string
     if (acctErr) console.error('[admin patch] account sync failed:', acctErr.code, acctErr.message);
   }
 
+  // Mirror tier change to auth.users.user_metadata so the legacy fallback
+  // path in AuthContext (when currentAccount is null) returns the new tier
+  // too. Matches what the Stripe webhook does on subscription change.
+  if (afterTier && afterTier !== beforeTier) {
+    const { data: u } = await supabase.auth.admin.getUserById(params.userId);
+    if (u?.user) {
+      const { error: metaErr } = await supabase.auth.admin.updateUserById(params.userId, {
+        user_metadata: { ...(u.user.user_metadata || {}), tier: afterTier },
+      });
+      if (metaErr) console.error('[admin patch] user_metadata sync failed:', metaErr.message);
+    }
+  }
+
   const diff = profileDiff(beforeProfile, body.profile);
   if (Object.keys(diff).length > 0) {
     await audit(req, supabase, 'update_user', params.userId, { diff });
