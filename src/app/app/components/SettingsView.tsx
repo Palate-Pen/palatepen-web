@@ -75,6 +75,28 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const inboxEligible = tier === 'pro' || tier === 'kitchen' || tier === 'group';
   const [inboxCopied, setInboxCopied] = useState(false);
   const [showInboxHelp, setShowInboxHelp] = useState(false);
+  // Most-recent email-sourced invoice, used to surface a "Last received Xm ago"
+  // confirmation under the inbox address so chefs aren't guessing whether the
+  // pipe is alive. Derived from state.invoices (no schema change) — the
+  // inbound-email webhook stamps `source: 'email'` + `receivedAt` on every row.
+  let lastEmailInvoice: { receivedAt: number } | null = null;
+  for (const inv of (state.invoices || []) as any[]) {
+    if (inv?.source !== 'email') continue;
+    const ts = Number(inv?.receivedAt || 0);
+    if (!ts) continue;
+    if (!lastEmailInvoice || ts > lastEmailInvoice.receivedAt) {
+      lastEmailInvoice = { receivedAt: ts };
+    }
+  }
+  const lastEmailAgo = lastEmailInvoice ? (() => {
+    const ms = Date.now() - lastEmailInvoice.receivedAt;
+    const m = Math.floor(ms / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  })() : null;
   function createInboxToken() {
     if (!inboxEligible) return;
     actions.updProfile({ invoiceInboxToken: generateInboxToken() });
@@ -413,22 +435,48 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
                 Regenerate
               </button>
             </div>
+
+            {/* Status row directly under the address — keeps the two pieces of
+                critical context (which attachment types work + whether the pipe
+                is alive) visible without forcing chefs to expand the how-to. */}
+            <div style={{display:'flex',gap:'10px',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',marginTop:'8px',fontSize:'11px'}}>
+              <span style={{color:C.faint}}>
+                <span style={{color:C.gold,marginRight:'4px'}}>●</span>
+                PDF / JPG / PNG / WebP / HEIC attachments only — invoices in the email body without an attachment are skipped.
+              </span>
+              <span style={{color:lastEmailAgo?C.greenLight:C.faint,fontWeight:600,whiteSpace:'nowrap'}}>
+                {lastEmailAgo ? `✓ Last received ${lastEmailAgo}` : 'Waiting for first invoice…'}
+              </span>
+            </div>
+
             <button onClick={() => setShowInboxHelp(v => !v)}
               style={{marginTop:'10px',fontSize:'11px',fontWeight:700,letterSpacing:'0.5px',textTransform:'uppercase',color:C.gold,background:'transparent',border:'1px solid '+C.gold+'40',padding:'7px 12px',cursor:'pointer',borderRadius:'2px'}}>
               {showInboxHelp ? 'Hide how-to' : 'How to use'}
             </button>
             {showInboxHelp && (
               <div style={{marginTop:'10px',padding:'14px',background:C.surface,border:'0.5px solid '+C.border,borderRadius:'3px',fontSize:'12px',color:C.dim,lineHeight:1.65}}>
+                <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginBottom:'8px'}}>One-off forward</p>
                 <ol style={{paddingLeft:'18px',margin:0,display:'flex',flexDirection:'column',gap:'6px'}}>
                   <li>When a supplier sends you an invoice email, hit <strong>Forward</strong>.</li>
                   <li>Send it to <code style={{color:C.gold}}>{inboxAddress}</code>.</li>
                   <li>Within a minute or so the invoice appears in your <strong>Invoices</strong> tab, with the supplier name, line items and total filled in.</li>
                   <li>Open it to review and adjust before saving to stock.</li>
                 </ol>
-                <p style={{fontSize:'11px',color:C.faint,marginTop:'10px'}}>
-                  Works with PDF and image attachments (JPG / PNG / WebP / HEIC). If a supplier embeds the invoice in the body without an attachment, that email is currently skipped — coming in a future update.
+
+                {/* Auto-forwarding rule — the workflow most chefs will actually
+                    use day-to-day. Manual forwarding gets tedious fast; a one-
+                    time rule per supplier removes the daily friction. */}
+                <p style={{fontSize:'10px',fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',color:C.faint,marginTop:'14px',marginBottom:'8px'}}>Better: auto-forward rule (one-time setup per supplier)</p>
+                <p style={{fontSize:'12px',color:C.dim,marginBottom:'6px'}}>
+                  Set a rule in your email client so anything from a supplier auto-forwards here — no clicking forward every time.
                 </p>
-                <p style={{fontSize:'11px',color:C.faint,marginTop:'6px'}}>
+                <ul style={{paddingLeft:'18px',margin:0,display:'flex',flexDirection:'column',gap:'4px',fontSize:'11px',color:C.faint}}>
+                  <li><strong style={{color:C.dim}}>Outlook (web):</strong> Settings → Mail → Rules → Add new rule → condition <em>From contains supplier@…</em> → action <em>Forward to</em> <code style={{color:C.gold}}>{inboxAddress}</code>.</li>
+                  <li><strong style={{color:C.dim}}>Gmail:</strong> Search the supplier in your inbox → ⋮ menu → Filter messages like these → Next → tick <em>Forward to</em>, add the address (verify once), Save.</li>
+                  <li><strong style={{color:C.dim}}>Apple Mail / iCloud:</strong> Mail → Preferences → Rules → Add → If <em>From contains supplier</em> → Forward to <code style={{color:C.gold}}>{inboxAddress}</code>.</li>
+                </ul>
+
+                <p style={{fontSize:'11px',color:C.faint,marginTop:'12px',paddingTop:'10px',borderTop:'0.5px dashed '+C.border}}>
                   Keep this address private — anyone who knows it can submit invoices to your account. Regenerate any time if it leaks.
                 </p>
               </div>
