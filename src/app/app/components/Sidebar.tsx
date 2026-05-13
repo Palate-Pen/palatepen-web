@@ -18,8 +18,11 @@ function iconNameFor(navId: string): string {
   return navId;
 }
 
-interface NavItem { id: string; label: string; icon: string; comingSoon?: boolean; }
+interface NavItem { id: string; label: string; icon: string; comingSoon?: boolean; isProfile?: boolean; }
 
+// Profile sits just above Settings — renders a gold-circle avatar with
+// the user's initials instead of an icon. Otherwise inherits all the
+// same nav-button styling (active state, collapse behaviour, etc).
 const NAV: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '⌂' },
   { id: 'recipes',   label: 'Recipes',   icon: '📖' },
@@ -33,6 +36,7 @@ const NAV: NavItem[] = [
   { id: 'waste',     label: 'Waste',     icon: '🗑' },
   { id: 'reports',   label: 'Reports',   icon: '📊' },
   { id: 'team',      label: 'My Team',   icon: '◎' },  // owner-only, Kitchen/Group — filtered below
+  { id: 'profile',   label: 'Profile',   icon: '',     isProfile: true },
   { id: 'settings',  label: 'Settings',  icon: '⚙' },
 ];
 
@@ -56,6 +60,11 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   const C = settings.resolved === 'light' ? light : dark;
   const businessName = (state.profile?.businessName || '').trim();
   const logoUrl = state.profile?.logoUrl as string | undefined;
+  // Initials for the Profile avatar — fall back to '?' if name is blank.
+  const profileName = (state.profile?.name || '').trim();
+  const initials = profileName
+    ? profileName.split(/\s+/).filter(Boolean).slice(0, 2).map((w: string) => w[0].toUpperCase()).join('')
+    : '?';
   // canAccess routes through the tier-gate map and includes Enterprise.
   const isPaid = canAccess(tier, 'invoices_view');
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
@@ -262,13 +271,26 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
                 position: 'relative',
               }}
             >
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-                color: active ? C.gold : (disabled ? C.faint : C.dim),
-              }}>
-                <Icon name={iconNameFor(item.id)} size={20} />
-              </span>
+              {item.isProfile ? (
+                // Gold-circle avatar with the user's initials — visually
+                // distinct from the line-icon family so Profile reads as
+                // "the person using the app" rather than another feature.
+                <span title={profileName || 'Your profile'} style={{
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: C.gold, color: C.bg,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '11px',
+                  flexShrink: 0, letterSpacing: '0.3px',
+                }}>{initials}</span>
+              ) : (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  color: active ? C.gold : (disabled ? C.faint : C.dim),
+                }}>
+                  <Icon name={iconNameFor(item.id)} size={20} />
+                </span>
+              )}
               {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
               {!collapsed && disabled && (
                 <span style={{ fontSize: '9px', fontWeight: 700, color: C.faint, background: C.surface2, border: '0.5px solid ' + C.border, padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>

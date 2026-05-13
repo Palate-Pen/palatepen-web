@@ -1,5 +1,5 @@
 'use client';
-import{useState,useRef,useMemo}from'react';
+import{useState,useRef,useMemo,useEffect}from'react';
 import{useApp,uid}from'@/context/AppContext';
 import{useAuth}from'@/context/AuthContext';
 import{useSettings}from'@/context/SettingsContext';
@@ -55,6 +55,16 @@ export default function InvoicesView(){
   const[flagItems,setFlagItems]=useState<Array<{name:string;invoicedQty:number;receivedQty:number;received:boolean;note:string;unitPrice:number;unit:string}>>([]);
   const[showInbox,setShowInbox]=useState(false);
   const[inboxCopied,setInboxCopied]=useState(false);
+  // Inline error surface — replaces the alert() calls scan / review used to
+  // throw. Setting `error` displays the red-tinted card just below the
+  // topbar; the effect below clears it after 4 seconds (or sooner if the
+  // user triggers another action that overwrites it).
+  const[error,setError]=useState<string|null>(null);
+  useEffect(()=>{
+    if(!error)return;
+    const t=window.setTimeout(()=>setError(null),4000);
+    return ()=>window.clearTimeout(t);
+  },[error]);
   // (Suppliers tab promoted to its own top-level view — see SuppliersView.tsx.
   // The reliability index is kept here only to render the score chip on
   // history rows.)
@@ -69,7 +79,7 @@ export default function InvoicesView(){
   const inboxAddress=inboxToken?`invoices+${inboxToken}@palateandpen.co.uk`:'';
 
   async function handleFile(file:File){
-    if(!isPaid){alert('Invoice scanning requires Pro, Kitchen, or Group.');return;}
+    if(!isPaid){setError('Invoice scanning requires Pro, Kitchen, or Group.');return;}
     setScanning(true);
     try{
       const arrayBuffer=await file.arrayBuffer();
@@ -80,12 +90,12 @@ export default function InvoicesView(){
       const res=await fetch('/api/palatable/scan-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base64,mediaType,userToken:await supabase.auth.getSession().then(r=>r.data.session?.access_token||'')})});
       const data=await res.json();
       processScanResults(data.items||[],file.name);
-    }catch(e){alert('Scan failed. Check your API key in admin.');setScanning(false);}
+    }catch(e){setError('Scan failed. Check your API key in admin.');setScanning(false);}
   }
 
   function processScanResults(items:any[],filename:string){
     setScanning(false);
-    if(!items.length){alert('No items found. Try a clearer image.');return;}
+    if(!items.length){setError('No items found. Try a clearer image.');return;}
     const changes=items.map(item=>{
       const match=bank.find((b:any)=>b.name.toLowerCase()===item.name.toLowerCase());
       if(match&&match.unitPrice&&item.unitPrice){
@@ -105,7 +115,7 @@ export default function InvoicesView(){
 
   function confirmScan(){
     const selected=scanResults.filter(i=>i.selected);
-    if(!selected.length){alert('Select at least one item');return;}
+    if(!selected.length){setError('Select at least one item');return;}
     if(priceChanges.length>0)appActions.addAlerts(priceChanges);
     const withCat=selected.map(i=>{
       const existing=bank.find((b:any)=>b.name.toLowerCase()===i.name.toLowerCase());
@@ -806,9 +816,35 @@ export default function InvoicesView(){
   else if(view==='review') body=renderReviewBody();
   else if(view==='reports') body=renderReportsBody();
 
+  // Inline error card — sits below the topbar, above everything else, so
+  // scan/review errors are visible regardless of which sub-view is active.
+  // Auto-dismisses after 4s via the useEffect above.
+  const errorCard = error ? (
+    <div role="alert" style={{
+      background: 'rgba(200,64,64,0.08)',
+      border: '1px solid rgba(200,64,64,0.3)',
+      color: '#C84040',
+      borderRadius: '4px',
+      padding: '10px 14px',
+      marginBottom: '12px',
+      fontSize: '13px',
+      fontWeight: 500,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+    }}>
+      <span style={{flex:1}}>{error}</span>
+      <button onClick={()=>setError(null)} aria-label="Dismiss"
+        style={{background:'none',border:'none',color:'#C84040',cursor:'pointer',fontSize:'18px',lineHeight:1,padding:'0 4px'}}>
+        ×
+      </button>
+    </div>
+  ) : null;
+
   return(
     <div style={{padding:PAD,fontFamily:'-apple-system,system-ui,sans-serif',color:C.text,minHeight:'100vh'}}>
       {topBar}
+      {errorCard}
       {inboxStrip}
       {showChrome&&!deliveryStep&&navPills}
       {showChrome&&!deliveryStep&&summaryTiles}

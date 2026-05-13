@@ -456,7 +456,7 @@ function InviteModal({ accountId, onClose, onCreated, C }: any) {
   }
   async function copy() {
     if (!created) return;
-    try { await navigator.clipboard.writeText(created.url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch {}
+    try { await navigator.clipboard.writeText(created.url); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
   }
 
   return (
@@ -496,12 +496,26 @@ function InviteModal({ accountId, onClose, onCreated, C }: any) {
         ) : (
           <>
             <p style={{ fontSize: '13px', color: C.dim, marginBottom: '16px' }}>
-              Share this link with <strong style={{ color: C.text }}>{created.email}</strong> — it&apos;s valid for 14 days. Email delivery isn&apos;t wired in yet, so paste it into your preferred channel.
+              Copy this link and send it to <strong style={{ color: C.text }}>{created.email}</strong> — they&apos;ll be prompted to create an account and join your kitchen. The link is valid for 14 days.
             </p>
-            <div style={{ background: C.surface2, border: '1px solid ' + C.border, borderRadius: '3px', padding: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ background: C.surface2, border: '1px solid ' + C.border, borderRadius: '4px', padding: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <code style={{ flex: 1, fontSize: '11px', color: C.dim, fontFamily: 'monospace', wordBreak: 'break-all' }}>{created.url}</code>
-              <button onClick={copy} style={{ flexShrink: 0, fontSize: '10px', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', background: copied ? C.gold + '22' : C.gold, color: copied ? C.gold : C.bg, border: 'none', padding: '6px 12px', cursor: 'pointer', borderRadius: '2px' }}>
-                {copied ? '✓ Copied' : 'Copy'}
+              <button onClick={copy} style={{
+                flexShrink: 0,
+                fontSize: '12px',
+                fontWeight: 700,
+                letterSpacing: '0.8px',
+                textTransform: 'uppercase',
+                background: copied ? '#2A8A2A' : C.gold,
+                color: copied ? '#fff' : C.bg,
+                border: 'none',
+                padding: '10px 18px',
+                cursor: 'pointer',
+                borderRadius: '3px',
+                transition: 'background 0.15s, color 0.15s',
+                minWidth: '110px',
+              }}>
+                {copied ? '✓ Copied!' : 'Copy link'}
               </button>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

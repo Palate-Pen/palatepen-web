@@ -164,6 +164,23 @@ export default function App() {
   const teamTabAvailable = (currentRole === 'owner' || currentRole === 'manager')
     && (currentAccount?.tier === 'kitchen' || currentAccount?.tier === 'group');
 
+  // Profile gets a mini gold avatar with initials in the More sheet too,
+  // matching the desktop sidebar treatment so 'how do I get to Profile?'
+  // has the same answer on every device.
+  const mobileProfileName = (state.profile?.name || '').trim();
+  const mobileInitials = mobileProfileName
+    ? mobileProfileName.split(/\s+/).filter(Boolean).slice(0, 2).map((w: string) => w[0].toUpperCase()).join('')
+    : '?';
+  const mobileAvatar = (
+    <span style={{
+      width: '20px', height: '20px', borderRadius: '50%',
+      background: C.gold, color: C.bg,
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      fontFamily: 'Georgia,serif', fontWeight: 700, fontSize: '10px',
+      flexShrink: 0,
+    }}>{mobileInitials}</span>
+  );
+
   const MOBILE_MORE_ITEMS = [
     { id: 'notebook', label: 'Notebook', icon: <IconNote /> },
     ...(flagMenuBuilder ? [{ id: 'menus', label: 'Menus', icon: <IconMenu /> }] : []),
@@ -171,6 +188,7 @@ export default function App() {
     ...(flagWasteTracking ? [{ id: 'waste', label: 'Waste', icon: <IconBin /> }] : []),
     { id: 'reports',  label: 'Reports',  icon: <IconChart /> },
     ...(teamTabAvailable ? [{ id: 'team', label: 'My Team', icon: <IconUsers /> }] : []),
+    { id: 'profile',  label: 'Profile',  icon: mobileAvatar },
     { id: 'settings', label: 'Settings', icon: <IconCog /> },
   ];
 
