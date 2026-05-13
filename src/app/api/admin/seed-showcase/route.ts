@@ -75,20 +75,37 @@ export async function POST(req: Request) {
   // the account on whatever tier was there before and Kitchen-gated features
   // (public menus, API access, My Team) don't light up.
   const targetTier = (payload.profile as any)?.tier;
+  let acctErrMsg: string | null = null;
   if (targetTier && typeof targetTier === 'string') {
     const { error: acctErr } = await supabase
       .from('accounts')
       .update({ tier: targetTier, updated_at: new Date().toISOString() })
       .eq('owner_user_id', userId);
     if (acctErr) {
-      console.error('[seed-showcase] account tier mirror failed:', acctErr.code, acctErr.message);
+      acctErrMsg = `${acctErr.code}: ${acctErr.message}`;
+      console.error('[seed-showcase] account tier mirror failed:', acctErrMsg);
     }
   }
+
+  // Read back the account row so the caller can verify the mirror landed.
+  // accounts.id is aliased to user.id for personal accounts (per migration
+  // 007 backfill) so we look up either by id or owner_user_id.
+  const { data: acctRow } = await supabase
+    .from('accounts')
+    .select('id, owner_user_id, tier, name')
+    .eq('owner_user_id', userId)
+    .maybeSingle();
 
   await audit(req, supabase, 'seed_showcase', userId, {
     counts: showcaseSummary(),
     target_account_id: existing.account_id,
+    account_tier_after: acctRow?.tier ?? null,
   });
 
-  return NextResponse.json({ ok: true, counts: showcaseSummary() });
+  return NextResponse.json({
+    ok: true,
+    counts: showcaseSummary(),
+    account: acctRow ? { id: acctRow.id, tier: acctRow.tier, name: acctRow.name } : null,
+    accountUpdateError: acctErrMsg,
+  });
 }
