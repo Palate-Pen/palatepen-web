@@ -1,5 +1,5 @@
 // Generate a short URL-safe token used in the chef's inbound invoice email
-// address (e.g. `invoices+a1b2c3d4@palateandpen.co.uk`). 10 chars from a
+// address (e.g. `invoices+a1b2c3d4@mail.palateandpen.co.uk`). 10 chars from a
 // reduced alphabet (no 0/1/l/i/o) so it's easy to read in an email client.
 
 const TOKEN_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';

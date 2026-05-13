@@ -66,9 +66,12 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   }
 
   // Invoice email-forwarding: per-account inbox token, surfaces as
-  // invoices+{token}@palateandpen.co.uk. Pro tier and above.
+  // invoices+{token}@mail.palateandpen.co.uk. Pro tier and above. The
+  // `mail.` subdomain is dedicated to inbound invoice ingestion via the
+  // Cloudflare Email Worker — the apex domain's MX is on Microsoft 365 for
+  // jack@/hello@ and is intentionally untouched.
   const inboxToken: string = profile.invoiceInboxToken || '';
-  const inboxAddress = inboxToken ? `invoices+${inboxToken}@palateandpen.co.uk` : '';
+  const inboxAddress = inboxToken ? `invoices+${inboxToken}@mail.palateandpen.co.uk` : '';
   const inboxEligible = tier === 'pro' || tier === 'kitchen' || tier === 'group';
   const [inboxCopied, setInboxCopied] = useState(false);
   const [showInboxHelp, setShowInboxHelp] = useState(false);

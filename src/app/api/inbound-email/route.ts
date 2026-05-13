@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 // Inbound email webhook. Chefs forward supplier emails to
-// `invoices+{token}@palateandpen.co.uk`. The email provider (Resend,
-// Postmark, Mailgun) POSTs the parsed email here. We:
+// `invoices+{token}@mail.palateandpen.co.uk`. The Cloudflare Email Worker
+// (workers/inbound-email/) POSTs the parsed email here. We:
 //   1. Verify the shared secret (provider auth)
 //   2. Extract the token from any of the To addresses
 //   3. Look up the account by token + tier-gate (Pro/Kitchen/Group)
