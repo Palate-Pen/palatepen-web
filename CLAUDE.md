@@ -30,6 +30,10 @@ GitHub Issues at https://github.com/Palate-Pen/palatepen-web/issues are reserved
 
 The forward-looking work list lives in the Roadmap section of this file — not in Issues. Tick the box and add a Progress Log entry when something ships.
 
+## Key Documentation
+
+- [`docs/TIER_SCHEMA.md`](docs/TIER_SCHEMA.md) — source of truth for tier ladder (Free/Pro/Kitchen/Group/Enterprise), per-feature minimum tier, hard limits per tier (maxRecipes/maxNotebook/maxUsers/maxOutlets), and the canonical TypeScript shapes for Account/Outlet/Membership. Mirrored in code at `src/types/tiers.ts` and `src/lib/tierGate.ts`. When adding a feature, add a `FEATURE_MIN_TIER` entry there first — gating starts at the schema, not at the call site.
+
 ## Editing key — shared vocabulary
 
 Use these dotted keys when pointing at a specific surface so we both know exactly which view, tab, or component is meant. Add a new row to the relevant table as new features land.
