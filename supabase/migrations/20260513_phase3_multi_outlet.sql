@@ -31,22 +31,11 @@
 alter table public.accounts
   add column if not exists logo_url text;
 
--- The existing CHECK constraint was created without 'enterprise'. Drop it
--- (if present) and reinstate with the five-tier ladder. The constraint
--- name is auto-generated; we use the dynamic block to find and drop it.
-do $$
-declare
-  c text;
-begin
-  select conname into c
-  from pg_constraint
-  where conrelid = 'public.accounts'::regclass
-    and pg_get_constraintdef(oid) ilike '%tier%in%';
-  if c is not null then
-    execute format('alter table public.accounts drop constraint %I', c);
-  end if;
-end $$;
-
+-- The existing CHECK constraint (created inline in migration 007) is named
+-- `accounts_tier_check` by Postgres convention for column-level CHECKs.
+-- Drop it by name and reinstate with the five-tier ladder. Idempotent —
+-- re-running this migration is safe even if it already ran once.
+alter table public.accounts drop constraint if exists accounts_tier_check;
 alter table public.accounts
   add constraint accounts_tier_check
   check (tier in ('free','pro','kitchen','group','enterprise'));
