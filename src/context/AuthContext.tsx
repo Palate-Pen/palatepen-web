@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { isAdminEmail } from '@/lib/adminEmails';
@@ -90,19 +90,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadAccounts(user.id);
   }, [user?.id, loadAccounts]);
 
-  // Re-read accounts on tab focus. Admin edits in the founder console mirror
-  // to the accounts table, but the app loads accounts exactly once per
-  // user.id change — so without a focus refresh, a user with the app open
-  // wouldn't see a tier upgrade until they signed out. Cheap (one PostgREST
-  // round-trip) and matches the React Query refetchOnFocus default.
-  useEffect(() => {
-    if (!user?.id) return;
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') loadAccounts(user.id);
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [user?.id, loadAccounts]);
+  // Ref that always points at the latest currentAccountId — read by the
+  // visibility listener below so it can pick up the active id at fire time
+  // without re-binding every account switch.
+  const currentAccountIdRef = useRef<string | null>(null);
+  useEffect(() => { currentAccountIdRef.current = currentAccountId; }, [currentAccountId]);
 
   const switchAccount = (id: string) => {
     if (!accounts.some(m => m.account.id === id)) return;
@@ -180,6 +172,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [outlets]);
+
+  // Re-read accounts AND outlets on tab focus. Admin edits in the founder
+  // console (tier changes, Seed Showcase) and outlet edits from Settings
+  // need to be visible as soon as the user tabs back to the app, without
+  // requiring a sign-out / full reload. Cheap (two PostgREST round-trips)
+  // and matches the React Query refetchOnFocus default.
+  useEffect(() => {
+    if (!user?.id) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      loadAccounts(user.id);
+      const acct = currentAccountIdRef.current;
+      if (acct) loadOutlets(acct);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [user?.id, loadAccounts, loadOutlets]);
 
   const currentMembership = accounts.find(m => m.account.id === currentAccountId) || null;
   const currentAccount = currentMembership?.account || null;
