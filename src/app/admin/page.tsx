@@ -1163,18 +1163,20 @@ function BulkEmail({ users, onClose }: { users: any[]; onClose: () => void }) {
 // Revenue
 // ──────────────────────────────────────────────────────────
 // Per-tier cost-of-serve assumptions used by the unit economics table + the
-// MRR cost subtraction. Calibrated against the Infrastructure dashboard's
-// £0.06/paid-user/mo Anthropic estimate on Haiku 4.5 (~13× cheaper than
-// the previous Sonnet 4.6 baseline). Free users incur ~no variable cost
-// since AI is gated to Pro+; the step-up at Kitchen/Group reflects more
-// scans per user as team activity rises. Revise once real Haiku-era
-// Anthropic-usage actuals from the metering table give us per-tier numbers
-// to anchor against.
+// MRR cost subtraction. Calibrated as a HEAVY-USER baseline on Haiku 4.5
+// pricing so the worst-case margin is what shows up — actual cost-of-serve
+// for an average account will be below these numbers. Workload mix used:
+//   Pro:     25 invoice scans + 10 recipe imports + 3 spec scans + 5 emails
+//   Kitchen: 80 invoice scans + 20 recipe imports + 10 spec scans + 15 emails
+//   Group:   250 invoice scans + 50 recipe imports + 25 spec scans + 50 emails
+// Plus a small overhead allowance for Supabase storage/bandwidth that scales
+// with account size. Revise once real Haiku-era actuals from the
+// anthropic_usage table give us per-tier numbers to anchor against.
 const TIER_COST_PER_USER: Record<'free' | 'pro' | 'kitchen' | 'group', number> = {
-  free: 0.01,
-  pro: 0.06,
-  kitchen: 0.15,
-  group: 0.30,
+  free: 0.05,
+  pro: 2.50,
+  kitchen: 8.00,
+  group: 25.00,
 };
 const TIER_PRICE: Record<'pro' | 'kitchen' | 'group', number> = {
   pro: 25,
@@ -1387,7 +1389,7 @@ function Revenue({ users }: { users: any[] }) {
             </tbody>
           </table>
           <p style={{ fontSize: 10, color: C.faint, marginTop: 10, fontStyle: 'italic' }}>
-            Fixed infra cost £{FIXED_INFRA_COST.toFixed(2)}/mo (M365 only — Vercel, Supabase and Cloudflare are free tier). Variable cost per user as shown — calibrated against the Infrastructure dashboard&apos;s £0.06/paid-user Anthropic estimate on Haiku 4.5. Margin % shown as &mdash; when MRR is zero (ratio undefined).
+            Fixed infra cost £{FIXED_INFRA_COST.toFixed(2)}/mo (M365 only — Vercel, Supabase and Cloudflare are free tier). Variable cost per user is the heavy-usage baseline on Haiku 4.5 (worst case — average accounts will spend less). Margin % shown as &mdash; when MRR is zero (ratio undefined).
           </p>
         </Card>
 
@@ -1457,30 +1459,35 @@ function Revenue({ users }: { users: any[] }) {
               </tbody>
             </table>
 
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6 }}>Cost of serve · per user / mo</p>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: C.faint, marginBottom: 6 }}>Cost of serve · heavy-user baseline · per account / mo</p>
+            <p style={{ fontSize: 11, color: C.faint, marginBottom: 8, fontStyle: 'italic' }}>
+              Conservative ceiling — assumes power users at the top end of expected activity. Average accounts will cost less. Numbers feed the per-tier margin table above.
+            </p>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 16 }}>
               <thead>
                 <tr style={{ color: C.faint, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
                   <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Tier</th>
                   <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Sell £</th>
                   <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Cost £</th>
-                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Margin / user</th>
-                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Assumption</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Margin</th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', fontWeight: 700 }}>Margin %</th>
+                  <th style={{ textAlign: 'left',  padding: '6px 8px', fontWeight: 700 }}>Heavy-user assumption</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { tier: 'Free',       sell: '£0',     cost: '£0.01', margin: '−£0.01', assume: 'Storage only — AI is gated to Pro+' },
-                  { tier: 'Pro',        sell: '£25',    cost: '£0.06', margin: '£24.94', assume: '~1 invoice scan/mo + light recipe import' },
-                  { tier: 'Kitchen',    sell: '£59',    cost: '£0.15', margin: '£58.85', assume: '5 users, more invoices, shared notebook' },
-                  { tier: 'Group',      sell: '£129',   cost: '£0.30', margin: '£128.70', assume: 'Multi-outlet, ~5 invoices/mo, group reporting load' },
-                  { tier: 'Enterprise', sell: 'Custom', cost: 'Custom', margin: 'Custom',  assume: 'ACV negotiated per deal — see quote calculator' },
+                  { tier: 'Free',       sell: 0,    cost: 0.05, sellLabel: '£0',     costLabel: '£0.05',  marginLabel: '−£0.05',  pctLabel: 'n/a',     assume: 'No AI access (Pro+ gate). Storage + auth only.' },
+                  { tier: 'Pro',        sell: 25,   cost: 2.50, sellLabel: '£25',    costLabel: '£2.50',  marginLabel: '£22.50',  pctLabel: '90.0%',   assume: '25 invoice scans + 10 recipe imports + 3 spec scans + 5 email scans /mo' },
+                  { tier: 'Kitchen',    sell: 59,   cost: 8.00, sellLabel: '£59',    costLabel: '£8.00',  marginLabel: '£51.00',  pctLabel: '86.4%',   assume: '5 users · 80 invoices + 20 imports + 10 specs + 15 emails /mo' },
+                  { tier: 'Group',      sell: 129,  cost: 25.00, sellLabel: '£129',   costLabel: '£25.00', marginLabel: '£104.00', pctLabel: '80.6%',   assume: 'Multi-outlet · 250 invoices + 50 imports + 25 specs + 50 emails /mo' },
+                  { tier: 'Enterprise', sell: null, cost: null,  sellLabel: 'Custom', costLabel: 'Custom', marginLabel: 'Custom',  pctLabel: 'Custom',  assume: 'ACV negotiated per deal — see Enterprise quote calculator below' },
                 ].map(r => (
                   <tr key={r.tier} style={{ borderTop: `1px solid ${C.border}` }}>
                     <td style={{ padding: '8px', color: C.text, fontWeight: 500 }}>{r.tier}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.sell}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>{r.cost}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: r.margin.startsWith('−') ? C.red : C.green, fontWeight: 600 }}>{r.margin}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.dim }}>{r.sellLabel}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>{r.costLabel}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: r.marginLabel.startsWith('−') ? C.red : r.marginLabel === 'Custom' ? C.faint : C.green, fontWeight: 600 }}>{r.marginLabel}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: r.pctLabel === 'n/a' || r.pctLabel === 'Custom' ? C.faint : C.green, fontWeight: 600 }}>{r.pctLabel}</td>
                     <td style={{ padding: '8px', color: C.faint, fontSize: 11 }}>{r.assume}</td>
                   </tr>
                 ))}
