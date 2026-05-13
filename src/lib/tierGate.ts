@@ -1,4 +1,5 @@
-export type Tier = 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise'
+import type { Tier } from '@/types/tiers'
+export type { Tier }
 
 const TIER_ORDER: Tier[] = ['free', 'pro', 'kitchen', 'group', 'enterprise']
 

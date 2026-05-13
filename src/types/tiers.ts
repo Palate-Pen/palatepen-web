@@ -1,5 +1,9 @@
 export type Tier = 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise'
-export type Role = 'owner' | 'admin' | 'editor' | 'viewer'
+// Roles match what's stored in account_members.role (migration 007) and
+// what AuthContext + the team UI already understand. Owner billing + admin;
+// Manager edits everything + invites; Chef edits content (recipes/notes/
+// waste/stock counts) but not menus or pricing; Viewer is read-only.
+export type Role = 'owner' | 'manager' | 'chef' | 'viewer'
 export type OutletType = 'restaurant' | 'pub' | 'cafe' | 'bar' | 'hotel' | 'central_kitchen' | 'other'
 
 export interface Account {

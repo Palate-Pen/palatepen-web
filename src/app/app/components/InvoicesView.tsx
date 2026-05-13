@@ -7,7 +7,8 @@ import{dark,light}from'@/lib/theme';
 import{supabase}from'@/lib/supabase';
 import{CATEGORIES,guessCategory}from'@/lib/categorize';
 import{useIsMobile}from'@/lib/useIsMobile';
-import{useFeatureFlag}from'@/lib/usePlatformConfig';
+import{useTierAndFlag}from'@/lib/usePlatformConfig';
+import{canAccess}from'@/lib/tierGate';
 import{buildSupplierReliability,reliabilityByName,recentDiscrepancySummary,type SupplierReliability}from'@/lib/supplierReliability';
 
 // Amber is a distinct token from brand gold in the redesign spec — gold is
@@ -28,9 +29,10 @@ export default function InvoicesView(){
   const{tier}=useAuth();
   const{settings}=useSettings();
   const C=settings.resolved==='light'?light:dark;
-  const isPaid=['pro','kitchen','group'].includes(tier);
+  // canAccess routes through the tier-gate map so Enterprise inherits.
+  const isPaid=canAccess(tier,'invoices_view');
   const isMobile=useIsMobile();
-  const flagAiInvoiceScan=useFeatureFlag('aiInvoiceScan',(appState.profile as any)?.featureOverrides);
+  const flagAiInvoiceScan=useTierAndFlag('invoices_ai_scan','aiInvoiceScan',(appState.profile as any)?.featureOverrides);
   const sym=(appState.profile||{}).currencySymbol||'£';
   const bank=appState.ingredientsBank||[];
   const alerts=appState.priceAlerts||[];

@@ -7,7 +7,8 @@ import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
 import NotificationsTab from './NotificationsTab';
 import { Icon } from './icons/PalatableIcons';
-import { useFeatureFlag } from '@/lib/usePlatformConfig';
+import { useTierAndFlag } from '@/lib/usePlatformConfig';
+import { canAccess } from '@/lib/tierGate';
 
 // Map a sidebar nav id to the custom-icon name. Most align 1:1 — the
 // exception is `bank`, which renders the `ingredients` icon since the
@@ -35,7 +36,6 @@ const NAV: NavItem[] = [
   { id: 'settings',  label: 'Settings',  icon: '⚙' },
 ];
 
-const PAID_TIERS = ['pro', 'kitchen', 'group'];
 const PRO_GATED = ['invoices', 'stock'];
 
 export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapsed }: {
@@ -49,14 +49,15 @@ export default function Sidebar({ tab, setTab, onUpgrade, collapsed, setCollapse
   const { state } = useApp();
   const canBill = currentRole === 'owner';
   const flagOverrides = (state.profile as any)?.featureOverrides;
-  const flagWasteTracking = useFeatureFlag('wasteTracking', flagOverrides);
-  const flagMenuBuilder = useFeatureFlag('menuBuilder', flagOverrides);
+  const flagWasteTracking = useTierAndFlag('stock_waste_tracking', 'wasteTracking', flagOverrides);
+  const flagMenuBuilder = useTierAndFlag('menus_builder', 'menuBuilder', flagOverrides);
   const isMobile = useIsMobile();
   const { settings } = useSettings();
   const C = settings.resolved === 'light' ? light : dark;
   const businessName = (state.profile?.businessName || '').trim();
   const logoUrl = state.profile?.logoUrl as string | undefined;
-  const isPaid = PAID_TIERS.includes(tier);
+  // canAccess routes through the tier-gate map and includes Enterprise.
+  const isPaid = canAccess(tier, 'invoices_view');
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
   const width = collapsed ? 64 : 224;
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);

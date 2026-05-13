@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { useIsMobile } from '@/lib/useIsMobile';
+import { canAccess } from '@/lib/tierGate';
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -54,7 +55,7 @@ export default function DashboardView({ setTab }: { setTab: (t: string) => void 
   const businessName = (profile.businessName || '').trim();
   const logoUrl = profile.logoUrl as string | undefined;
   const tierLabel = tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free';
-  const isPaid = ['pro', 'kitchen', 'group'].includes(tier);
+  const isPaid = canAccess(tier, 'invoices_view');
 
   const stats = useMemo(() => {
     const recipes = state.recipes || [];

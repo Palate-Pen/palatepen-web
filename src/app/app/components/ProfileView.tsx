@@ -4,6 +4,7 @@ import{useAuth}from'@/context/AuthContext';
 import{useApp}from'@/context/AppContext';
 import{useSettings}from'@/context/SettingsContext';
 import{dark,light}from'@/lib/theme';
+import{canAccess}from'@/lib/tierGate';
 export default function ProfileView(){
   const{user,tier}=useAuth();
   const{state,actions}=useApp();
@@ -16,7 +17,7 @@ export default function ProfileView(){
   return(
     <div style={{padding:'32px',maxWidth:'720px',fontFamily:'system-ui,sans-serif',color:C.text}}>
       <h1 style={{fontFamily:'Georgia,serif',fontWeight:300,fontSize:'28px',color:C.text,marginBottom:'24px'}}>Profile</h1>
-      {!['pro','kitchen','group'].includes(tier)&&(
+      {!canAccess(tier,'invoices_view')&&(
         <div style={{background:C.gold,padding:'16px 20px',marginBottom:'16px',display:'flex',justifyContent:'space-between',alignItems:'center',borderRadius:'4px'}}>
           <div><p style={{fontSize:'11px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',color:C.bg,marginBottom:'2px'}}>Upgrade to a paid plan</p><p style={{fontSize:'13px',color:C.bg+'99'}}>From £25/month — invoices, stock and price alerts on Pro; Kitchen + Group add team seats.</p></div>
           <button style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.bg,color:C.gold,padding:'10px 18px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade</button>
@@ -29,7 +30,7 @@ export default function ProfileView(){
         <div>
           <p style={{fontSize:'18px',color:C.text,fontWeight:500,marginBottom:'4px'}}>{profile.name||'Your Name'}</p>
           <p style={{fontSize:'13px',color:C.faint,marginBottom:'6px'}}>{user?.email}</p>
-          {(()=>{const isPaid=['pro','kitchen','group'].includes(tier);const label=tier?tier.charAt(0).toUpperCase()+tier.slice(1):'Free';return(<span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:isPaid?C.gold:C.faint,background:(isPaid?C.gold:C.faint)+'18',border:'0.5px solid '+(isPaid?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{label}</span>);})()}
+          {(()=>{const isPaid=canAccess(tier,'invoices_view');const label=tier?tier.charAt(0).toUpperCase()+tier.slice(1):'Free';return(<span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:isPaid?C.gold:C.faint,background:(isPaid?C.gold:C.faint)+'18',border:'0.5px solid '+(isPaid?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{label}</span>);})()}
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'8px',marginBottom:'16px'}}>

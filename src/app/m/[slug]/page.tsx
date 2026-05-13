@@ -2,16 +2,18 @@ import { notFound } from 'next/navigation';
 import { svc } from '@/lib/admin';
 import { MenuBackgroundLayer, menuFontFor, type MenuBackground, type MenuFontFamily, type MenuDishStyle } from '@/lib/menuBackgrounds';
 import { getGlobalFeatureFlags, isFeatureEnabled } from '@/lib/featureFlags';
+import { canAccess } from '@/lib/tierGate';
 import type { Metadata } from 'next';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Public read of a menu by its slug. Bypasses RLS via the service-role
-// supabase client, and explicitly tier-gates: only menus belonging to an
-// account on the `kitchen` or `group` tier are surfaced. If the owner
-// downgrades, their published menus go dark — same behaviour as if they had
-// unpublished manually.
+// supabase client, and explicitly tier-gates via canAccess: only menus
+// belonging to an account that meets the `menus_live_digital` minimum
+// (Group per the tier schema) are surfaced. If the owner downgrades, their
+// published menus go dark — same behaviour as if they had unpublished
+// manually.
 async function loadMenu(slug: string) {
   // Platform-wide feature flag: when publicMenus is off, every existing
   // public URL goes dark (loadMenu returns null → caller calls notFound()).
@@ -42,7 +44,7 @@ async function loadMenu(slug: string) {
     .select('tier')
     .eq('id', row.account_id)
     .single();
-  if (!account || !['kitchen', 'group'].includes(account.tier)) return null;
+  if (!account || !canAccess(account.tier, 'menus_live_digital')) return null;
 
   const menu = (row.menus || []).find((m: any) => m.publicSlug === slug && m.published);
   if (!menu) return null;

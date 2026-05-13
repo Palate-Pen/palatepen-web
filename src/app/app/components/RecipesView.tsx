@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
-import { useFeatureFlag } from '@/lib/usePlatformConfig';
+import { useTierAndFlag } from '@/lib/usePlatformConfig';
 
 const CATS = ['Starter','Main','Dessert','Sauce','Bread','Pastry','Stock','Snack','Other'];
 
@@ -136,8 +136,8 @@ export default function RecipesView() {
   const sym = (state.profile||{}).currencySymbol || '£';
   const gpTarget = (state.profile||{}).gpTarget || 72;
   const userOverrides = (state.profile as any)?.featureOverrides;
-  const flagAiRecipeImport = useFeatureFlag('aiRecipeImport', userOverrides);
-  const flagAiSpecSheet = useFeatureFlag('aiSpecSheet', userOverrides);
+  const flagAiRecipeImport = useTierAndFlag('recipes_url_import', 'aiRecipeImport', userOverrides);
+  const flagAiSpecSheet = useTierAndFlag('recipes_spec_sheet', 'aiSpecSheet', userOverrides);
 
   const [search, setSearch] = useState('');
   const [sel, setSel] = useState<any>(null);

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { svc } from './admin';
 import { getGlobalFeatureFlags, isFeatureEnabled } from './featureFlags';
+import { canAccess, requiresTier } from './tierGate';
 
 // Authenticates an incoming public-API request using its Bearer key.
 // - Looks the key up on `user_data.profile.apiKey` via service-role Supabase
 //   (bypasses RLS since we authorise via the key, not a Supabase session).
-// - Tier-gates: only Kitchen and Group tiers can use the API. If the user
-//   downgrades, their key stops working until they upgrade again.
+// - Tier-gates via canAccess(tier, 'integrations_api') — Group-only per the
+//   tier schema. If the user downgrades, their key stops working until they
+//   upgrade again.
 // Returns `{ data, account }` on success or `{ error }` (a NextResponse) on
 // failure — callers do `if ('error' in r) return r.error;` to short-circuit.
 
@@ -64,8 +66,8 @@ export async function authenticateApi(req: NextRequest): Promise<ApiAuthResult> 
     .select('id, tier, name')
     .eq('id', row.account_id)
     .single();
-  if (!account || !['kitchen', 'group'].includes(account.tier)) {
-    return { error: NextResponse.json({ error: 'API access requires Kitchen or Group tier' }, { status: 403 }) };
+  if (!account || !canAccess(account.tier, 'integrations_api')) {
+    return { error: NextResponse.json({ error: `API access requires ${requiresTier('integrations_api')} tier or higher.` }, { status: 403 }) };
   }
   return { data: row as ApiUserData, account: account as ApiAccountSummary };
 }

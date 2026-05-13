@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { denyIfFlagOff } from '@/lib/featureFlags';
+import { denyIfBlocked } from '@/lib/featureFlags';
 import { ANTHROPIC_MODEL, recordAnthropicCall } from '@/lib/anthropic';
 
 export const runtime = 'nodejs';
@@ -77,12 +77,8 @@ If the source has no recipe, return exactly: {"error":"No recipe found in this s
 
 export async function POST(req: NextRequest) {
   try {
-    const flagDeny = await denyIfFlagOff('aiRecipeImport');
-    if (flagDeny) return flagDeny;
-
     const { url, userToken, base64, mediaType, text: pastedText } = await req.json();
 
-    // Verify user is on a paid tier (pro/kitchen/group)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -91,9 +87,9 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     const tier = user.user_metadata?.tier || 'free';
-    if (!['pro','kitchen','group'].includes(tier)) {
-      return NextResponse.json({ error: 'Recipe import requires a paid subscription' }, { status: 403 });
-    }
+
+    const denial = await denyIfBlocked(tier, 'recipes_url_import', 'aiRecipeImport');
+    if (denial) return denial;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return NextResponse.json({ error: 'API not configured' }, { status: 500 });

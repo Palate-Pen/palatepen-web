@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { svc } from './admin';
+import { canAccess, requiresTier } from './tierGate';
 
 // Single source of truth for feature flag keys. Mirrors FEATURE_FLAGS_DEF in
 // the admin Platform section (src/app/admin/page.tsx). Default for every flag
@@ -64,4 +65,24 @@ export async function denyIfFlagOff(
     { error: 'This feature is currently disabled by the platform admin.' },
     { status: 403 },
   );
+}
+
+// Combined gate — tier first, then flag. Use this in any server route that
+// previously did `if (!['pro','kitchen','group'].includes(tier))` + a flag
+// check, so both gates run through the same code path and any future tier
+// change to FEATURE_MIN_TIER propagates everywhere. Returns null when both
+// gates pass (caller proceeds); otherwise a 403 NextResponse.
+export async function denyIfBlocked(
+  tier: string,
+  featureKey: string,
+  flagKey: FeatureFlagKey,
+  userOverrides?: Record<string, unknown> | null,
+): Promise<NextResponse | null> {
+  if (!canAccess(tier, featureKey)) {
+    return NextResponse.json(
+      { error: `This feature requires ${requiresTier(featureKey)} tier or higher.` },
+      { status: 403 },
+    );
+  }
+  return denyIfFlagOff(flagKey, userOverrides);
 }

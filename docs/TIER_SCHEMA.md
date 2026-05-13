@@ -72,7 +72,11 @@ there, not at the call site.
 
 ```ts
 export type Tier = 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise'
-export type Role = 'owner' | 'admin' | 'editor' | 'viewer'
+// Roles match what account_members.role stores (migration 007). Owner =
+// billing + admin; Manager edits everything + invites; Chef edits content
+// (recipes/notes/waste/stock counts) but not menus or pricing; Viewer is
+// read-only. Reconciled with the live schema 2026-05-13.
+export type Role = 'owner' | 'manager' | 'chef' | 'viewer'
 export type OutletType = 'restaurant' | 'pub' | 'cafe' | 'bar' | 'hotel' | 'central_kitchen' | 'other'
 
 export interface Account {
@@ -113,7 +117,8 @@ export interface Membership {
 ## Tier gate — `src/lib/tierGate.ts`
 
 ```ts
-export type Tier = 'free' | 'pro' | 'kitchen' | 'group' | 'enterprise'
+import type { Tier } from '@/types/tiers'
+export type { Tier }
 
 const TIER_ORDER: Tier[] = ['free', 'pro', 'kitchen', 'group', 'enterprise']
 

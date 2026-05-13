@@ -28,7 +28,7 @@ import UpgradeModal from './components/UpgradeModal';
 import QuickStartGuide from './components/QuickStartGuide';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import MaintenanceGate from './components/MaintenanceGate';
-import { useFeatureFlag } from '@/lib/usePlatformConfig';
+import { useTierAndFlag } from '@/lib/usePlatformConfig';
 
 export default function App() {
   const { user, loading, currentAccount, currentRole } = useAuth();
@@ -119,8 +119,8 @@ export default function App() {
   // were previously below the early-return guards and triggered React #310
   // (rendered more hooks than during the previous render) every time the app
   // transitioned from loading → loaded.
-  const flagWasteTracking = useFeatureFlag('wasteTracking', (state.profile as any)?.featureOverrides);
-  const flagMenuBuilder = useFeatureFlag('menuBuilder', (state.profile as any)?.featureOverrides);
+  const flagWasteTracking = useTierAndFlag('stock_waste_tracking', 'wasteTracking', (state.profile as any)?.featureOverrides);
+  const flagMenuBuilder = useTierAndFlag('menus_builder', 'menuBuilder', (state.profile as any)?.featureOverrides);
 
   if (loading) return loader;
   if (!user) return <AuthPage />;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { svc } from '@/lib/admin';
 import { extractInboxToken } from '@/lib/inboundToken';
 import { getGlobalFeatureFlags, isFeatureEnabled } from '@/lib/featureFlags';
+import { canAccess } from '@/lib/tierGate';
 import { ANTHROPIC_MODEL, recordAnthropicCall } from '@/lib/anthropic';
 
 export const runtime = 'nodejs';
@@ -168,7 +169,7 @@ export async function POST(req: NextRequest) {
     .select('id, tier, owner_user_id')
     .eq('id', row.account_id)
     .single();
-  if (!account || !['pro', 'kitchen', 'group'].includes(account.tier)) {
+  if (!account || !canAccess(account.tier, 'invoices_email_forwarding')) {
     console.warn('[inbound-email] tier ineligible', { token, tier: account?.tier });
     return NextResponse.json({ ok: true, skipped: 'tier-ineligible' });
   }

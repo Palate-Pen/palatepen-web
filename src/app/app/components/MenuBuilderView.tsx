@@ -4,7 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { usePerms } from '@/lib/perms';
-import { useFeatureFlag } from '@/lib/usePlatformConfig';
+import { useTierAndFlag } from '@/lib/usePlatformConfig';
 import { dark, light } from '@/lib/theme';
 import MenuDesigner from './MenuDesigner';
 
@@ -28,8 +28,11 @@ export default function MenuBuilderView() {
   const { tier } = useAuth();
   const { settings } = useSettings();
   const perms = usePerms();
-  const flagPublicMenus = useFeatureFlag('publicMenus', (state.profile as any)?.featureOverrides);
-  const publishingAllowed = (tier === 'kitchen' || tier === 'group') && flagPublicMenus;
+  // Tier check is now baked into useTierAndFlag — menus_live_digital is
+  // Group-only per the tier schema, so this single flag becomes the
+  // authoritative gate for the Publish card.
+  const flagPublicMenus = useTierAndFlag('menus_live_digital', 'publicMenus', (state.profile as any)?.featureOverrides);
+  const publishingAllowed = flagPublicMenus;
   const [copyConfirm, setCopyConfirm] = useState(false);
 
   function publishMenu(m: any) {

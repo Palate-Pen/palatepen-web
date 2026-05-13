@@ -10,7 +10,8 @@ import{exportRecipesCsv,exportCostingsCsv,exportStockCsv,downloadRecipesTemplate
 import{supabase}from'@/lib/supabase';
 import{generateApiKey,maskApiKey}from'@/lib/apiKey';
 import{generateInboxToken}from'@/lib/inboundToken';
-import{useFeatureFlag}from'@/lib/usePlatformConfig';
+import{useTierAndFlag}from'@/lib/usePlatformConfig';
+import{canAccess}from'@/lib/tierGate';
 
 export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>void;onShowGuide?:()=>void}={}){
   const{settings,update}=useSettings();
@@ -21,10 +22,10 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
   const C=settings.resolved==='light'?light:dark;
   const profile=state.profile||{};
   const flagOverrides=(profile as any)?.featureOverrides;
-  const flagEmailForwarding=useFeatureFlag('emailForwarding',flagOverrides);
-  const flagApiAccess=useFeatureFlag('apiAccess',flagOverrides);
-  const flagCsvExport=useFeatureFlag('csvExport',flagOverrides);
-  const flagCsvImport=useFeatureFlag('csvImport',flagOverrides);
+  const flagEmailForwarding=useTierAndFlag('invoices_email_forwarding','emailForwarding',flagOverrides);
+  const flagApiAccess=useTierAndFlag('integrations_api','apiAccess',flagOverrides);
+  const flagCsvExport=useTierAndFlag('integrations_csv_export','csvExport',flagOverrides);
+  const flagCsvImport=useTierAndFlag('integrations_csv_import','csvImport',flagOverrides);
   const[saved,setSaved]=useState(false);
   const[businessName,setBusinessName]=useState(profile.businessName||'');
   const[name,setName]=useState(profile.name||'');
@@ -346,12 +347,12 @@ export default function SettingsView({onUpgrade,onShowGuide}:{onUpgrade?:()=>voi
           <div>
             <p style={{fontSize:'13px',color:C.text,marginBottom:'4px'}}>{user?.email}</p>
             {(()=>{
-              const isPaid=['pro','kitchen','group'].includes(tier);
+              const isPaid=canAccess(tier,'invoices_view');
               const label=tier?tier.charAt(0).toUpperCase()+tier.slice(1):'Free';
               return <span style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',color:isPaid?C.gold:C.faint,background:(isPaid?C.gold:C.faint)+'18',border:'0.5px solid '+(isPaid?C.gold:C.faint)+'40',padding:'2px 8px',borderRadius:'2px'}}>{label}</span>;
             })()}
           </div>
-          {!['pro','kitchen','group'].includes(tier)&&perms.canManageBilling&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>}
+          {!canAccess(tier,'invoices_view')&&perms.canManageBilling&&<button onClick={onUpgrade} style={{fontSize:'11px',fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',background:C.gold,color:C.bg,padding:'8px 16px',border:'none',cursor:'pointer',borderRadius:'2px'}}>Upgrade — from £25/mo</button>}
         </div>
       </div>
 
