@@ -302,6 +302,10 @@ The old `INV.suppliers.*` keys are deprecated. Their bullets are intentionally r
 - [ ] Inter-site stock transfer
 - [ ] Group outlets in dashboard to show summary information per outlet including GP, stock value and alerts
 - [ ] Allow Group tier users to create and manage multiple restaurants, pubs and outlets under one account
+- [ ] Outlet creation UI — add/name/type outlets from Settings
+- [ ] Data scoping per outlet — recipes, stock, invoices, waste all filter by active outlet
+- [ ] Group dashboard — Overview, Outlets, Alerts, Cross-outlet stock, Purchase orders, Reports tabs
+- [ ] Backfill migration — run in Supabase SQL editor to create default accounts for existing users
 
 ### Phase 4 — Digital and Integration
 
@@ -378,6 +382,8 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
 
 ### 2026-05-13
+
+- **Phase 3 multi-outlet schema laid down.** New migration `supabase/migrations/20260513_phase3_multi_outlet.sql` creates the foundational tables: `accounts`, `outlets`, `memberships`, `purchase_orders`, `purchase_order_items`. RLS policies applied for all 5 tables (owner-all + member-read patterns). New `src/types/outlets.ts` defines the full TypeScript surface — `Account`, `Outlet`, `Membership`, `PurchaseOrder`, `PurchaseOrderItem`, plus `OutletSummary` and `GroupSummary` shapes for the upcoming Group dashboard rollup. New `src/lib/outlets.ts` exposes helpers — `getOrCreateAccount`, `getOutlets`, `createOutlet` (enforces 5-outlet Group limit with Enterprise-upgrade messaging), `getMemberships`, `canAddUser` (enforces 25-user + 5-per-outlet Group limits), `getPurchaseOrders`, `createPurchaseOrder`. Group tier caps hardcoded as exported constants: `GROUP_MAX_OUTLETS=5`, `GROUP_MAX_USERS=25`, `GROUP_USERS_PER_OUTLET=5`. Backfill SQL included as a comment in the migration — must be run manually in the Supabase SQL editor to create default accounts for existing paid users. **Conflict to resolve before applying**: the existing migration 007 already created `accounts` (with `owner_user_id` not `owner_id`) and `account_members` (the new file uses `memberships` as a parallel table). The role values also differ (live code uses `manager`/`chef`; the new spec uses `admin`/`editor`). The new migration will fail at the RLS-policy step because `owner_id` doesn't exist on the existing `accounts` table. Outlet creation UI, data scoping per outlet, and the Group dashboard still to build.
 
 - **Group tier capped at 5 outlets + 25 users (Enterprise differentiation).** Group was previously unlimited on both axes, which collapsed the Enterprise upsell ladder. New structure: Free/Pro 1 user · 1 outlet, Kitchen 5 users · 1 outlet, **Group 25 users (5 per outlet × 5 outlets) · 500 invoice scans/mo**, Enterprise unlimited everything. `TIER_LIMITS` in `src/lib/tierGate.ts` gains a `maxScans` field per tier. `SEAT_LIMITS` in `src/lib/team.ts` recalibrated to match (Kitchen 5, Group 25, Enterprise unlimited — was Kitchen 10, Group unlimited). The team-invite endpoint at `/api/accounts/[id]/invites/route.ts` now returns a tier-aware upgrade hint in the seat-limit error (Kitchen→Group→Enterprise), and `MyTeamView`'s seat-limit-reached banner points at the right next tier instead of always saying "upgrade to Group for unlimited members" (which is now false). UpgradeModal tier cards reworded — Pro/Kitchen/Group/Enterprise each surface the user · outlet · scans triple as the first feature line so the differentiation is glanceable. TIER_SCHEMA.md and CLAUDE.md updated with the new caps. Behavioural change worth flagging: existing Kitchen accounts with > 5 members (created when the cap was 10) will fail seat checks on the next invite; pre-launch this affects only seeded demo accounts.
 
