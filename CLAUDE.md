@@ -141,8 +141,8 @@ Surfaced during the system-wide audit at end of day. Tackle top-down.
 - [x] **Anthropic model into a constant** (`src/lib/anthropic.ts` exports `ANTHROPIC_MODEL`)
 - [x] **Inbound-email row guard** (collision detection + account_id-keyed write)
 
-**Config gaps (no code change required)**
-- [ ] **`INBOUND_EMAIL_SECRET` not set on Vercel production** — surfaced by smoke test 2026-05-13. `POST /api/inbound-email` walks past the secret check (`if (secret) { … }` is skipped when the env var is unset) and returns 200 to anonymous callers. Not exploitable in any meaningful way (an attacker would need to guess a 10-char `+token@` value, ~10^15 keyspace, and the new collision + account_id + tier guards hold regardless), but the shared-secret is intended as defense-in-depth. Set it on Vercel when the inbound provider is finally wired up: `vercel env add INBOUND_EMAIL_SECRET production`, then mirror the same value into the provider's webhook config.
+**Config gaps (no code change required)** — all closed.
+- [x] **`INBOUND_EMAIL_SECRET`** set on Vercel production 2026-05-13. Unauthenticated POSTs to `/api/inbound-email` now return 401. Value lives only in the Vercel env store and the (eventually-configured) inbound provider's webhook config — mirror them together when wiring up Resend / Postmark / Mailgun.
 
 **Long-tail (no action needed yet, log for memory)**
 - API-key lookup via JSONB containment is fine at current scale; revisit if user count > 10k.
