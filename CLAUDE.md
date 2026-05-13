@@ -30,6 +30,151 @@ GitHub Issues at https://github.com/Palate-Pen/palatepen-web/issues are reserved
 
 The forward-looking work list lives in the Roadmap section of this file — not in Issues. Tick the box and add a Progress Log entry when something ships.
 
+## Editing key — shared vocabulary
+
+Use these dotted keys when pointing at a specific surface so we both know exactly which view, tab, or component is meant. Add new keys at the bottom of the relevant section as new features land.
+
+**Top-level (sidebar nav)**
+- `DASH` — Dashboard
+- `REC` — Recipes
+- `NOTE` — Notebook
+- `COST` — Costing
+- `MENU` — Menus
+- `INV` — Invoices
+- `STK` — Stock
+- `BANK` — Bank
+- `WASTE` — Waste
+- `REP` — Reports
+- `TEAM` — My Team
+- `SET` — Settings
+- `ADMIN` — /admin panel
+
+**Invoices (`INV`)**
+- `INV.topbar` — title row with Forward email + Scan invoice buttons
+- `INV.nav` — pill strip (Ingredients bank / History / Suppliers / Reports)
+- `INV.tiles` — 4-tile summary row above the body
+- `INV.bank` — Ingredients bank tab body (default)
+- `INV.bank.scan` — big dashed scan/upload card
+- `INV.bank.search` — search input + bank list
+- `INV.banner` — amber 30-day discrepancy banner (shown on bank + history)
+- `INV.history` — History tab body
+- `INV.history.row` — single invoice card in the history list
+- `INV.detail` — drill-in detail page from a history row
+- `INV.detail.priceChanges` — red-tinted price-change table on the detail page
+- `INV.detail.items` — all-items grid on the detail page
+- `INV.detail.discrepancies` — flagged-discrepancies card on the detail page
+- `INV.review` — review screen shown after a scan (select items + name supplier)
+- `INV.delivery` — delivery-check inline panel (replaces body after confirm)
+- `INV.delivery.check` — initial Yes / Flag / Skip step
+- `INV.delivery.flag` — per-line flag editor
+- `INV.suppliers` — Suppliers tab body
+- `INV.suppliers.tiles` — 4 stat tiles at the top
+- `INV.suppliers.help` — gold-bordered help card
+- `INV.suppliers.row` — collapsed supplier card
+- `INV.suppliers.expand` — expanded supplier panel
+- `INV.suppliers.expand.stats` — 4 stat tiles inside the expanded panel
+- `INV.suppliers.expand.issue` — most-common-issue callout
+- `INV.suppliers.expand.priceHistory` — price-change history list
+- `INV.suppliers.expand.items` — items-supplied chips
+- `INV.suppliers.expand.contact` — editable rep / phone / email / notes form
+- `INV.suppliers.expand.actions` — action buttons row (PO / Call / Email / Full history)
+- `INV.reports` — Reports tab body (period nav + spend by supplier/category)
+
+**Stock (`STK`)**
+- `STK.topbar` — title + From bank / Add item / Start count buttons
+- `STK.info` — "Next stock take" + "Total value" strip
+- `STK.list` — main list view (default)
+- `STK.list.filterTiles` — 4 status tiles (Total / Good / Low / Critical)
+- `STK.list.search` — search + category dropdown + auto-categorise row
+- `STK.list.alerts` — red critical-items banner
+- `STK.list.row` — single stock item card
+- `STK.list.edit` — inline edit panel on a stock row (gold border)
+- `STK.add` — Add Stock Item modal
+- `STK.bankPicker` — From Bank modal
+- `STK.count` — count view (data entry)
+- `STK.report` — report view after a count
+- `STK.report.tiles` — 4 summary tiles
+- `STK.report.byCat` — by-category table
+- `STK.report.variances` — variances & flags section
+- `STK.report.lineDetail` — collapsible full line detail
+
+**Recipes (`REC`)**
+- `REC.library` — recipe library grid/list (default)
+- `REC.library.topbar` — title + Print Book / Scan Spec Sheet / Add Recipe buttons
+- `REC.add` — Add Recipe modal (with import-with-AI section)
+- `REC.scanSpec` — Scan Spec Sheet modal
+- `REC.detail` — recipe detail page
+- `REC.detail.edit` — edit-recipe mode within detail
+- `REC.detail.cost` — linked costing panel
+- `REC.detail.allergens` — allergen grid + sub-type pills
+- `REC.detail.nutrition` — nutrition table + FOP traffic lights
+- `REC.detail.compliance` — compliance check modal
+- `REC.detail.spec` — printable spec sheet overlay
+- `REC.detail.simulator` — cost simulator modal
+- `REC.detail.lock` — lock/unlock controls
+- `REC.detail.photo` — photo dropzone / replace controls
+- `REC.detail.usedIn` — "Used in" sub-recipe consumer list
+
+**Menus (`MENU`)**
+- `MENU.list` — all-menus list (default)
+- `MENU.detail` — single-menu detail
+- `MENU.detail.dishes` — dish list with GP summary
+- `MENU.detail.publish` — publish card (live URL + QR)
+- `MENU.detail.engineering` — engineering section (table + 2×2 quadrants)
+- `MENU.designer` — Menu Designer overlay
+
+**Costing (`COST`)**
+- `COST.builder` — main builder (default)
+- `COST.history` — saved costings list
+
+**Reports (`REP`)**
+- `REP.gp` — GP performance section
+- `REP.waste` — Waste cost section
+- `REP.stock` — Stock value by category
+- `REP.menus` — Menu engineering rollup
+- `REP.benchmark` — Ingredient price benchmarking
+- `REP.suppliers` — Supplier performance (Reports-side, separate from `INV.suppliers`)
+- `REP.prices` — Price changes table
+
+**Settings (`SET`)**
+- `SET.profile` — Profile section
+- `SET.preferences` — Preferences section
+- `SET.data` — Data export + import
+- `SET.integrations` — Integrations section
+- `SET.email` — Invoice email forwarding card
+- `SET.api` — API access card
+- `SET.help` — Help / Quick start guide
+- `SET.account` — Account actions (upgrade, delete)
+
+**Team (`TEAM`)**
+- `TEAM.list` — member tile grid
+- `TEAM.member` — member detail modal
+- `TEAM.invite` — invite member modal
+
+**Notebook (`NOTE`) / Bank (`BANK`) / Waste (`WASTE`) / Dashboard (`DASH`)**
+- `NOTE.list` — notes feed
+- `BANK.list` — bank ingredient list (note: `BANK` here is the sidebar tab; `INV.bank` is the bank-view inside Invoices, which renders the same data — they're the same surface)
+- `WASTE.log` — waste log list
+- `WASTE.add` — log waste form
+- `DASH.tiles` — top stat tiles
+- `DASH.alerts` — alerts section
+- `DASH.recent` — recent activity
+
+**Admin (`ADMIN`)**
+- `ADMIN.overview` — Overview tab
+- `ADMIN.users` — Users tab
+- `ADMIN.user` — user detail slideout
+- `ADMIN.user.demoTools` — Demo tools section (Seed showcase button)
+- `ADMIN.user.danger` — Danger zone
+- `ADMIN.audit` — Audit tab
+- `ADMIN.platform` — Platform settings (flags, maintenance, announcement)
+- `ADMIN.orphans` — orphan auth-users list at the top of Overview
+
+**Conventions**
+- Suffixes: `.modal` for overlays, `.row` for repeating items, `.actions` for button clusters.
+- For specific buttons or fields, drill further: e.g. `INV.suppliers.expand.contact.phone`.
+- When pointing at a feature that's pre-launch or only seeded, that's fine — the key just describes the spot.
+
 ## Roadmap
 
 ### Phase 1 — Foundation (In Progress)
