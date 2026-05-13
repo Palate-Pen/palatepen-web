@@ -65,8 +65,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, stage: 'unexpected', error: e?.message || String(e) }, { status: 500 });
   } finally {
     if (userId) {
+      // FK-safe cleanup order — see /api/admin/auth-users/[userId] for the full
+      // reasoning. accounts.owner_user_id is ON DELETE RESTRICT, so we must
+      // wipe the owned account explicitly before calling deleteUser, or
+      // Postgres refuses and the test user gets orphaned forever.
       await supabase.from('user_data').delete().eq('user_id', userId);
-      await supabase.auth.admin.deleteUser(userId).catch(() => {});
+      await supabase.from('account_members').delete().eq('user_id', userId);
+      await supabase.from('accounts').delete().eq('owner_user_id', userId);
+      const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
+      if (delErr) {
+        // Surface failures in the server log rather than swallow them — a
+        // failed cleanup means a stuck orphan in the admin UI next refresh.
+        console.error('[admin/diagnostics/test-signup] cleanup failed', { userId, message: delErr.message });
+      }
     }
   }
 }
