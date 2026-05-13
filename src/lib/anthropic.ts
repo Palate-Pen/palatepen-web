@@ -3,22 +3,24 @@
 // Swap once here when moving between Sonnet / Haiku / Opus tiers — there are
 // no per-route overrides today.
 //
-// Pricing context (2026-05): Sonnet 4.6 is roughly $0.005 / call for the
-// document-and-vision payloads we send. Haiku is ~4× cheaper but loses
-// reliability on multi-page invoice scans; Opus is ~5× more expensive with
-// a worthwhile accuracy bump only for messy handwritten spec sheets.
+// Pricing context (2026-05): switched from Sonnet 4.6 to Haiku 4.5 for a
+// ~13× cost reduction on the document-and-vision payloads we send. Haiku
+// handles single-page invoice / spec-sheet scans and clean recipe pages
+// reliably; if accuracy degrades on messy handwritten spec sheets we can
+// route that one endpoint to a different constant.
 
-export const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
+export const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 
 // Per-call cost estimate in pence. Keyed by the `kind` string we pass into
-// recordAnthropicCall below. These are estimates pegged against our own
-// observed Sonnet 4.6 spend — revise once a real invoice from Anthropic
-// is in. Stored as integer pence so the metering table stays float-free.
+// recordAnthropicCall below. Calibrated against Haiku 4.5 pricing — roughly
+// 13× cheaper than the previous Sonnet 4.6 estimates (80p/40p/20p/80p).
+// Stored as integer pence so the metering table stays float-free. Revise
+// once a real Haiku-era invoice from Anthropic is in.
 export const ANTHROPIC_COST_PENCE: Record<string, number> = {
-  'scan-invoice':    80,  // ~£0.80 per multi-page document scan
-  'scan-spec-sheet': 40,  // ~£0.40 per recipe spec
-  'import-recipe':   20,  // ~£0.20 per URL/file recipe extraction
-  'inbound-email':   80,  // an inbound email runs a scan-invoice pass
+  'scan-invoice':    6,  // ~£0.06 per multi-page document scan
+  'scan-spec-sheet': 3,  // ~£0.03 per recipe spec
+  'import-recipe':   2,  // ~£0.02 per URL/file recipe extraction
+  'inbound-email':   6,  // an inbound email runs a scan-invoice pass
 };
 
 // recordAnthropicCall logs one call to the metering table. Best-effort:
