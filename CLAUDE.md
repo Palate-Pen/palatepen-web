@@ -107,7 +107,7 @@ The forward-looking work list lives in the Roadmap section of this file — not 
 - [x] Waste cost dashboard *(Reports → Waste, daily average + projected month + 4-week trend bars)*
 - [x] Smart reorder alerts *(already shipped — `stock-critical` and `stock-low` notifications surface in the bell whenever currentQty ≤ minLevel or < parLevel)*
 - [x] Recipe cost simulator *(recipe detail → 🧪 Simulator button; per-ingredient % adjuster with live GP recompute, never writes the saved costing)*
-- [ ] Supplier performance tracking
+- [x] Supplier performance tracking *(Reports → new section; per-supplier invoices/spend/avg/Δ-prices/last seen, sortable, expand-to-top-ingredients, CSV + print)*
 
 ### Mobile — Responsive Web Polish
 

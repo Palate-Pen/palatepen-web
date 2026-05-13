@@ -5,8 +5,9 @@ import { useSettings } from '@/context/SettingsContext';
 import { dark, light } from '@/lib/theme';
 import { toCsv, downloadCsv, dateStamp } from '@/lib/csv';
 import { buildHistory, statsFor, WINDOW_MS, type IngredientHistory, type BenchmarkStats } from '@/lib/priceBenchmark';
+import { buildSupplierStats, SUPPLIER_WINDOW_MS, type SupplierStats } from '@/lib/supplierPerformance';
 
-type SectionKey = 'gp' | 'waste' | 'stock' | 'menus' | 'prices' | 'benchmark';
+type SectionKey = 'gp' | 'waste' | 'stock' | 'menus' | 'prices' | 'benchmark' | 'supplier';
 type Range = '7d' | '30d' | '90d' | 'all';
 
 const RANGE_OPTIONS: { value: Range; label: string }[] = [
@@ -53,16 +54,17 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
 
   // Section expansion + per-section date range + which one is currently printing
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
-    gp: true, waste: true, stock: true, menus: true, prices: true, benchmark: true,
+    gp: true, waste: true, stock: true, menus: true, prices: true, benchmark: true, supplier: true,
   });
-  const [ranges, setRanges] = useState<Record<'gp' | 'waste' | 'prices' | 'benchmark', Range>>({
-    gp: 'all', waste: '30d', prices: '30d', benchmark: '30d',
+  const [ranges, setRanges] = useState<Record<'gp' | 'waste' | 'prices' | 'benchmark' | 'supplier', Range>>({
+    gp: 'all', waste: '30d', prices: '30d', benchmark: '30d', supplier: '30d',
   });
   const [printingKey, setPrintingKey] = useState<SectionKey | null>(null);
   const [expandedIngredient, setExpandedIngredient] = useState<string | null>(null);
+  const [expandedSupplier, setExpandedSupplier] = useState<string | null>(null);
 
   function toggle(k: SectionKey) { setExpanded(prev => ({ ...prev, [k]: !prev[k] })); }
-  function setRange(k: 'gp' | 'waste' | 'prices' | 'benchmark', r: Range) { setRanges(prev => ({ ...prev, [k]: r })); }
+  function setRange(k: 'gp' | 'waste' | 'prices' | 'benchmark' | 'supplier', r: Range) { setRanges(prev => ({ ...prev, [k]: r })); }
 
   // ── GP performance ────────────────────────────────────────
   const gp = useMemo(() => {
@@ -267,6 +269,15 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
     return { rows, totalIngredients: history.size };
   }, [state.invoices, state.ingredientsBank, ranges.benchmark]);
 
+  // ── Supplier performance ─────────────────────────
+  const supplier = useMemo(() => {
+    const windowMs = SUPPLIER_WINDOW_MS[ranges.supplier];
+    const rows = buildSupplierStats(state.invoices || [], windowMs);
+    const totalSpend = rows.reduce((sum, r) => sum + r.totalSpend, 0);
+    const totalInvoices = rows.reduce((sum, r) => sum + r.invoiceCount, 0);
+    return { rows, totalSpend, totalInvoices };
+  }, [state.invoices, ranges.supplier]);
+
   // ── Per-section CSV exports ────────────────────────────
   function exportSection(k: SectionKey) {
     const stamp = dateStamp();
@@ -310,6 +321,20 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
           stats.volatilityPct.toFixed(1),
           stats.count,
           stats.lastTs ? new Date(stats.lastTs).toISOString() : '',
+        ])
+      ));
+    } else if (k === 'supplier') {
+      downloadCsv(`supplier-performance-${stamp}.csv`, toCsv(
+        ['Supplier', 'Invoices', 'Total Spend', 'Avg Invoice', 'Price Changes', 'Unique Ingredients', 'Last Invoice', 'Top Ingredients'],
+        supplier.rows.map(s => [
+          s.name,
+          s.invoiceCount,
+          s.totalSpend.toFixed(2),
+          s.avgInvoice.toFixed(2),
+          s.priceChangeCount,
+          s.uniqueIngredientCount,
+          s.lastInvoiceTs ? new Date(s.lastInvoiceTs).toISOString() : '',
+          s.topIngredients.map(t => `${t.name} (${sym}${t.spend.toFixed(2)})`).join(' | '),
         ])
       ));
     }
@@ -556,6 +581,77 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
         )}
       </Section>
 
+      {/* Supplier performance — per-supplier spend / invoice cadence /
+          price-change frequency / top-spend ingredients. Sorted by spend desc. */}
+      <Section C={C} sectionKey="supplier" title="Supplier performance"
+        subtitle={supplier.rows.length > 0
+          ? `${supplier.rows.length} supplier${supplier.rows.length === 1 ? '' : 's'} · ${supplier.totalInvoices} invoice${supplier.totalInvoices === 1 ? '' : 's'} · ${sym}${supplier.totalSpend.toFixed(0)} total in ${rangeLabel(ranges.supplier)}`
+          : `No invoices in ${rangeLabel(ranges.supplier)}`}
+        expanded={expanded.supplier} onToggle={() => toggle('supplier')}
+        range={ranges.supplier} onRangeChange={(r) => setRange('supplier', r as Range)}
+        onPrint={() => setPrintingKey('supplier')} onExport={() => exportSection('supplier')}>
+        {supplier.rows.length === 0 ? (
+          <Empty C={C} text={(state.invoices || []).length === 0
+            ? 'No invoices scanned yet — supplier performance builds as invoices come in.'
+            : 'No invoices in this window. Try widening to 90d or All.'} />
+        ) : (
+          <div style={{ background: C.surface2, border: '0.5px solid ' + C.border, borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 60px 100px 90px 70px 90px', gap: '6px', padding: '8px 12px', background: C.surface, fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint }}>
+              <span>Supplier</span>
+              <span style={{ textAlign: 'right' }}>Invoices</span>
+              <span style={{ textAlign: 'right' }}>Spend</span>
+              <span style={{ textAlign: 'right' }}>Avg</span>
+              <span style={{ textAlign: 'right' }}>Δ Prices</span>
+              <span style={{ textAlign: 'right' }}>Last</span>
+            </div>
+            {supplier.rows.map((s) => {
+              const isExpanded = expandedSupplier === s.nameKey;
+              const spendShare = supplier.totalSpend > 0 ? s.totalSpend / supplier.totalSpend : 0;
+              return (
+                <div key={s.nameKey} style={{ borderTop: '0.5px solid ' + C.border }}>
+                  <button type="button"
+                    onClick={() => setExpandedSupplier(isExpanded ? null : s.nameKey)}
+                    style={{ display: 'grid', gridTemplateColumns: '2fr 60px 100px 90px 70px 90px', gap: '6px', padding: '8px 12px', alignItems: 'center', width: '100%', background: isExpanded ? C.surface : 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <span style={{ fontSize: '13px', color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                      <span style={{ fontSize: '10px', color: C.faint, width: '10px' }}>{isExpanded ? '▾' : '▸'}</span>
+                      <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
+                      {spendShare >= 0.2 && (
+                        <span style={{ fontSize: '9px', fontWeight: 700, color: C.gold, background: C.gold + '14', border: '0.5px solid ' + C.gold + '40', padding: '1px 5px', borderRadius: '2px', flexShrink: 0 }}>
+                          {(spendShare * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: '12px', color: C.dim, textAlign: 'right' }}>{s.invoiceCount}</span>
+                    <span style={{ fontSize: '12px', color: C.text, fontWeight: 600, textAlign: 'right' }}>{sym}{s.totalSpend.toFixed(0)}</span>
+                    <span style={{ fontSize: '12px', color: C.dim, textAlign: 'right' }}>{sym}{s.avgInvoice.toFixed(0)}</span>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: s.priceChangeCount === 0 ? C.faint : s.priceChangeCount >= 5 ? C.red : C.gold, textAlign: 'right' }}>
+                      {s.priceChangeCount === 0 ? '—' : s.priceChangeCount}
+                    </span>
+                    <span style={{ fontSize: '10px', color: C.faint, textAlign: 'right' }}>
+                      {s.lastInvoiceTs ? fmtRel(s.lastInvoiceTs) : '—'}
+                    </span>
+                  </button>
+                  {isExpanded && s.topIngredients.length > 0 && (
+                    <div style={{ padding: '10px 16px 14px 28px', background: C.surface2, borderTop: '0.5px solid ' + C.border }}>
+                      <p style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: C.faint, marginBottom: '6px' }}>
+                        Top ingredients · {s.uniqueIngredientCount} unique
+                      </p>
+                      <RankList C={C} items={s.topIngredients.map(t => ({
+                        key: t.name,
+                        label: `${t.name} · ${t.count}×`,
+                        right: `${sym}${t.spend.toFixed(2)}`,
+                        color: C.gold,
+                        bar: s.totalSpend > 0 ? t.spend / s.totalSpend : 0,
+                      }))} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Section>
+
       {/* Price changes table */}
       <Section C={C} sectionKey="prices" title="Price changes" subtitle={`${priceAlerts.length} change${priceAlerts.length === 1 ? '' : 's'} in ${rangeLabel(ranges.prices)}`}
         expanded={expanded.prices} onToggle={() => toggle('prices')}
@@ -609,11 +705,12 @@ export default function ReportsView({ setTab }: { setTab?: (t: string) => void }
             : printingKey === 'waste' ? rangeLabel(ranges.waste)
             : printingKey === 'prices' ? rangeLabel(ranges.prices)
             : printingKey === 'benchmark' ? rangeLabel(ranges.benchmark)
+            : printingKey === 'supplier' ? rangeLabel(ranges.supplier)
             : ''
           }
           sym={sym}
           gpTarget={gpTarget}
-          gp={gp} waste={waste} stock={stock} menus={menus} priceAlerts={priceAlerts} benchmark={benchmark}
+          gp={gp} waste={waste} stock={stock} menus={menus} priceAlerts={priceAlerts} benchmark={benchmark} supplier={supplier}
         />
       )}
     </div>
@@ -695,7 +792,7 @@ function Section({ C, sectionKey, title, subtitle, expanded, onToggle, range, on
 // Per-section print modal — opens a clean light-themed A4 preview with just one
 // section's data. Uses the same @media print pattern as the recipe prints
 // (visibility: hidden on the body, visible on the print container).
-function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, gpTarget, gp, waste, stock, menus, priceAlerts, benchmark }: {
+function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, gpTarget, gp, waste, stock, menus, priceAlerts, benchmark, supplier }: {
   C: any;
   sectionKey: SectionKey;
   onClose: () => void;
@@ -704,7 +801,7 @@ function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, g
   range: string;
   sym: string;
   gpTarget: number;
-  gp: any; waste: any; stock: any; menus: any; priceAlerts: any[]; benchmark: any;
+  gp: any; waste: any; stock: any; menus: any; priceAlerts: any[]; benchmark: any; supplier: any;
 }) {
   const titleMap: Record<SectionKey, string> = {
     gp: 'GP Performance',
@@ -713,6 +810,7 @@ function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, g
     menus: 'Menu Engineering',
     prices: 'Price Changes',
     benchmark: 'Ingredient Price Benchmark',
+    supplier: 'Supplier Performance',
   };
   return (
     <>
@@ -764,6 +862,7 @@ function PrintModal({ C, sectionKey, onClose, businessName, today, range, sym, g
             {sectionKey === 'menus' && <MenusPrint menus={menus} />}
             {sectionKey === 'prices' && <PricesPrint sym={sym} priceAlerts={priceAlerts} />}
             {sectionKey === 'benchmark' && <BenchmarkPrint sym={sym} benchmark={benchmark} />}
+            {sectionKey === 'supplier' && <SupplierPrint sym={sym} supplier={supplier} />}
 
             <div style={{ borderTop: '1px solid #DDD', paddingTop: '12px', marginTop: '24px', fontSize: '10px', color: '#888', display: 'flex', justifyContent: 'space-between' }}>
               <span>{businessName || 'Palatable'} · Generated {today}</span>
@@ -882,6 +981,34 @@ function MenusPrint({ menus }: { menus: any }) {
       <PrintTable
         headers={['Menu', 'Dishes', 'Covers', '★', 'Plough', 'Puzzle', 'Dog']}
         rows={menus.perMenu.map((m: any) => [m.name, String(m.dishes), String(m.totalCovers || 0), String(m.stars || 0), String(m.ploughs || 0), String(m.puzzles || 0), String(m.dogs || 0)])}
+      />
+    </>
+  );
+}
+
+function SupplierPrint({ sym, supplier }: { sym: string; supplier: any }) {
+  if (!supplier || supplier.rows.length === 0) return <p style={{ fontSize: '12px', color: '#888', fontStyle: 'italic' }}>No invoices in this range.</p>;
+  return (
+    <>
+      <PrintTable
+        headers={['Metric', 'Value']}
+        rows={[
+          ['Total spend', sym + supplier.totalSpend.toFixed(2)],
+          ['Total invoices', String(supplier.totalInvoices)],
+          ['Suppliers', String(supplier.rows.length)],
+        ]}
+      />
+      <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#555', marginBottom: '6px', marginTop: '14px' }}>By supplier</h2>
+      <PrintTable
+        headers={['Supplier', 'Invoices', 'Spend', 'Avg', 'Δ Prices', 'Top ingredient']}
+        rows={supplier.rows.map((s: SupplierStats) => [
+          s.name,
+          String(s.invoiceCount),
+          sym + s.totalSpend.toFixed(2),
+          sym + s.avgInvoice.toFixed(2),
+          String(s.priceChangeCount),
+          s.topIngredients[0] ? `${s.topIngredients[0].name} (${sym}${s.topIngredients[0].spend.toFixed(2)})` : '—',
+        ])}
       />
     </>
   );
