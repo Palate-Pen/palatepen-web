@@ -1193,6 +1193,10 @@ function Revenue({ users }: { users: any[] }) {
   const grossMargin = mrr - totalCost;
   const marginPct = mrr > 0 ? (grossMargin / mrr) * 100 : 0;
 
+  // Per-tier table filter — defaults to All. Changing this scopes which
+  // rows the table shows; the bottom total row stays as the overall total.
+  const [revenueFilter, setRevenueFilter] = useState<'all' | 'free' | 'pro' | 'kitchen' | 'group' | 'admin'>('all');
+
   // ── Enterprise quote calculator ──
   const [outlets, setOutlets] = useState(10);
   const [usersPerOutlet, setUsersPerOutlet] = useState(5);
@@ -1279,6 +1283,25 @@ function Revenue({ users }: { users: any[] }) {
           />
         </div>
 
+        <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
+          {([
+            { id: 'all',     label: 'All' },
+            { id: 'free',    label: 'Free' },
+            { id: 'pro',     label: 'Pro' },
+            { id: 'kitchen', label: 'Kitchen' },
+            { id: 'group',   label: 'Group' },
+            { id: 'admin',   label: 'Admin' },
+          ] as const).map(f => {
+            const active = revenueFilter === f.id;
+            return (
+              <button key={f.id} onClick={() => setRevenueFilter(f.id)}
+                style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', padding: '7px 11px', border: `1px solid ${active ? C.gold + '60' : C.border}`, background: active ? C.goldSoft : C.panel, color: active ? C.gold : C.dim, cursor: 'pointer', borderRadius: 3 }}>
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+
         <Card title="Per-tier cost & margin">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
@@ -1293,7 +1316,7 @@ function Revenue({ users }: { users: any[] }) {
               </tr>
             </thead>
             <tbody>
-              {tierRows.map(r => {
+              {tierRows.filter(r => revenueFilter === 'all' || r.key === revenueFilter).map(r => {
                 const rev = r.count * r.unitPrice;
                 const cost = r.count * r.unitCost;
                 const margin = rev - cost;
