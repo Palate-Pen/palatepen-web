@@ -1167,36 +1167,48 @@ function BulkEmail({ users, onClose }: { users: any[]; onClose: () => void }) {
 // Revenue
 // ──────────────────────────────────────────────────────────
 // Per-tier cost-of-serve assumptions used by the unit economics table + the
-// MRR cost subtraction. Numbers are rough estimates of database/storage/AI
-// per active user per month — easy to revise once we have real Vercel +
-// Supabase + Anthropic invoices to look at.
+// MRR cost subtraction. Calibrated against the Infrastructure dashboard's
+// £0.74/paid-user/mo Anthropic estimate (from the £74/100 paid users scale
+// row). Free users incur ~no variable cost since AI is gated to Pro+; the
+// step-up at Kitchen/Group reflects more scans per user as team activity
+// rises. Revise once real Anthropic-usage actuals from the metering table
+// give us per-tier numbers to anchor against.
 const TIER_COST_PER_USER: Record<'free' | 'pro' | 'kitchen' | 'group', number> = {
-  free: 0.08,
-  pro: 1.20,
-  kitchen: 3.50,
-  group: 8.00,
+  free: 0.05,
+  pro: 0.74,
+  kitchen: 1.50,
+  group: 3.50,
 };
 const TIER_PRICE: Record<'pro' | 'kitchen' | 'group', number> = {
   pro: 25,
   kitchen: 59,
   group: 129,
 };
-const FIXED_INFRA_COST = 83; // £/mo: Vercel + Supabase + domain + base Anthropic
+// Real fixed cost today is M365 Business Basic at £5.75/mo. Vercel, Supabase
+// and Cloudflare are on free tier. Bumps to £25.75 after the Vercel Pro
+// upgrade in July 2026, and again when Supabase Pro kicks in around 500
+// paid users. See the Infrastructure dashboard for the full breakdown.
+const FIXED_INFRA_COST = 5.75;
 
 function Revenue({ users }: { users: any[] }) {
   const { mrr, counts } = useMemo(() => computeMrr(users), [users]);
   const arr = mrr * 12;
-  const paid = counts.pro + counts.kitchen + counts.group;
+  const paid = counts.pro + counts.kitchen + counts.group + counts.enterprise;
 
-  // Variable per-user infra. Free users still cost a little (auth + storage),
-  // paid users cost more (AI scans + larger user_data rows).
+  // Variable per-user infra. Free users incur ~no variable cost (AI gated
+  // to Pro+); paid users contribute Anthropic spend scaled per tier.
+  // Enterprise is custom-priced and tracked outside this estimator, so
+  // contributes £0 to the cost side here — match it manually against the
+  // ACV stored per deal.
   const variableCost = counts.free * TIER_COST_PER_USER.free
                      + counts.pro * TIER_COST_PER_USER.pro
                      + counts.kitchen * TIER_COST_PER_USER.kitchen
                      + counts.group * TIER_COST_PER_USER.group;
   const totalCost = FIXED_INFRA_COST + variableCost;
   const grossMargin = mrr - totalCost;
-  const marginPct = mrr > 0 ? (grossMargin / mrr) * 100 : 0;
+  // Margin % is undefined when there's no revenue — keep it null and the
+  // tile renders an em-dash rather than a misleading 0.0%.
+  const marginPct: number | null = mrr > 0 ? (grossMargin / mrr) * 100 : null;
 
   // Per-tier table filter — defaults to All. Changing this scopes which
   // rows the table shows; the bottom total row stays as the overall total.
@@ -1293,7 +1305,7 @@ function Revenue({ users }: { users: any[] }) {
           <StatTile
             label="Gross margin (est.)"
             value={`£${Math.round(grossMargin).toLocaleString()}`}
-            sub={`${marginPct.toFixed(1)}% · MRR less ~£${Math.round(totalCost)} infra`}
+            sub={`${marginPct == null ? '—' : marginPct.toFixed(1) + '%'} · MRR less ~£${totalCost.toFixed(2)} infra`}
             accent={grossMargin >= 0 ? C.green : C.red}
           />
         </div>
@@ -1367,14 +1379,16 @@ function Revenue({ users }: { users: any[] }) {
                 <td style={{ padding: '8px', textAlign: 'right', color: C.text, fontWeight: 700 }}>{users.length}</td>
                 <td style={{ padding: '8px', textAlign: 'right', color: C.gold, fontWeight: 700 }}>£{mrr.toLocaleString()}</td>
                 <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>—</td>
-                <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>£{totalCost.toFixed(0)}</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: C.faint }}>£{totalCost.toFixed(2)}</td>
                 <td style={{ padding: '8px', textAlign: 'right', color: grossMargin >= 0 ? C.green : C.red, fontWeight: 700 }}>£{Math.round(grossMargin).toLocaleString()}</td>
-                <td style={{ padding: '8px', textAlign: 'right', color: marginPct >= 70 ? C.green : marginPct >= 0 ? C.amber : C.red, fontWeight: 700 }}>{marginPct.toFixed(1)}%</td>
+                <td style={{ padding: '8px', textAlign: 'right', color: marginPct == null ? C.faint : marginPct >= 70 ? C.green : marginPct >= 0 ? C.amber : C.red, fontWeight: 700 }}>
+                  {marginPct == null ? '—' : `${marginPct.toFixed(1)}%`}
+                </td>
               </tr>
             </tbody>
           </table>
           <p style={{ fontSize: 10, color: C.faint, marginTop: 10, fontStyle: 'italic' }}>
-            Fixed infra cost £{FIXED_INFRA_COST}/mo (Vercel + Supabase base + domain + base Anthropic). Variable cost per user as shown — revise constants in <code>page.tsx</code> when real data is in.
+            Fixed infra cost £{FIXED_INFRA_COST.toFixed(2)}/mo (M365 only — Vercel, Supabase and Cloudflare are free tier). Variable cost per user as shown — calibrated against the Infrastructure dashboard&apos;s £0.74/paid-user Anthropic estimate. Margin % shown as &mdash; when MRR is zero (ratio undefined).
           </p>
         </Card>
       </div>
