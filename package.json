@@ -17,7 +17,6 @@
     "@supabase/ssr": "^0.5.0"
   },
   "devDependencies": {
-    "@vercel/config": "^1.0.0",
     "typescript": "^5.6.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
