@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
+import { KpiCard } from '@/components/shell/KpiCard';
+import { SectionHead } from '@/components/shell/SectionHead';
 
 export const metadata = { title: 'Home — Palatable' };
 
@@ -54,10 +56,10 @@ export default async function HomePage() {
       <section className="mb-12">
         <SectionHead title="Kitchen at a Glance" meta="live" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule">
-          <Kpi label="Menu GP" value="—" sub="no costings yet" />
-          <Kpi label="Stock Value" value="—" sub="stock not counted yet" />
-          <Kpi label="Deliveries Due" value="0" sub="today" />
-          <Kpi label="Waste This Week" value="£0" sub="no waste logged yet" />
+          <KpiCard size="hero" label="Menu GP" value="—" sub="no costings yet" />
+          <KpiCard size="hero" label="Stock Value" value="—" sub="stock not counted yet" />
+          <KpiCard size="hero" label="Deliveries Due" value="0" sub="today" />
+          <KpiCard size="hero" label="Waste This Week" value="£0" sub="no waste logged yet" />
         </div>
       </section>
 
@@ -112,17 +114,6 @@ export default async function HomePage() {
   );
 }
 
-function SectionHead({ title, meta }: { title: string; meta: string }) {
-  return (
-    <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-      <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold">
-        {title}
-      </div>
-      <div className="font-serif italic text-sm text-muted">{meta}</div>
-    </div>
-  );
-}
-
 function Panel({
   title,
   count,
@@ -149,30 +140,6 @@ function Empty({ children }: { children: React.ReactNode }) {
   return (
     <div className="font-serif italic text-sm text-muted leading-relaxed">
       {children}
-    </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-}) {
-  return (
-    <div className="bg-card px-7 py-6">
-      <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-muted mb-3">
-        {label}
-      </div>
-      <div className="font-serif text-3xl font-medium leading-none text-ink">
-        {value}
-      </div>
-      <div className="font-serif italic text-sm text-muted mt-1.5">
-        {sub}
-      </div>
     </div>
   );
 }

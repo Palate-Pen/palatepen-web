@@ -1,5 +1,7 @@
 import { getShellContext } from '@/lib/shell/context';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { KpiCard } from '@/components/shell/KpiCard';
+import { SectionHead } from '@/components/shell/SectionHead';
 
 export const metadata = { title: 'Stock & Suppliers — Palatable' };
 
@@ -159,21 +161,23 @@ export default async function StockSuppliersPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <Kpi label="Today's Deliveries" value="3" sub="Aubrey · Reza · Mediterranean" />
-        <Kpi label="Suppliers Active" value="8" sub="all up to date" />
-        <Kpi label="Invoices Pending" value="2" sub="one discrepancy flagged" tone="attention" />
-        <Kpi label="Waste This Week" value="£148" sub="up 12% — mostly herbs" tone="attention" />
+        <KpiCard label="Today's Deliveries" value="3" sub="Aubrey · Reza · Mediterranean" />
+        <KpiCard label="Suppliers Active" value="8" sub="all up to date" />
+        <KpiCard label="Invoices Pending" value="2" sub="one discrepancy flagged" tone="attention" />
+        <KpiCard label="Waste This Week" value="£148" sub="up 12% — mostly herbs" tone="attention" />
       </div>
 
-      <Section title="Across The Supply Graph" meta="two to action · one to celebrate">
+      <section className="mt-12">
+          <SectionHead title="Across The Supply Graph" meta="two to action · one to celebrate" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {attentions.map((a) => (
             <AttentionCard key={a.sectionLabel} attention={a} />
           ))}
         </div>
-      </Section>
+      </section>
 
-      <Section title="Open A Workspace" meta="five places to go, each with their job">
+      <section className="mt-12">
+          <SectionHead title="Open A Workspace" meta="five places to go, each with their job" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <DestinationCard
             featured
@@ -332,64 +336,9 @@ export default async function StockSuppliersPage() {
             <StateRow label="Last logged" value="Yesterday 22:14" />
           </DestinationCard>
         </div>
-      </Section>
+      </section>
 
       <LookingAhead siteId={ctx.siteId} surface="stock-suppliers" />
-    </div>
-  );
-}
-
-function Section({
-  title,
-  meta,
-  children,
-}: {
-  title: string;
-  meta: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-12">
-      <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
-          {title}
-        </div>
-        <div className="font-serif italic text-sm text-muted">{meta}</div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  tone?: 'attention' | 'healthy';
-}) {
-  return (
-    <div className="bg-card px-7 py-6">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
-        {label}
-      </div>
-      <div
-        className={
-          'font-serif font-medium text-2xl leading-none ' +
-          (tone === 'attention'
-            ? 'text-attention'
-            : tone === 'healthy'
-              ? 'text-healthy'
-              : 'text-ink')
-        }
-      >
-        {value}
-      </div>
-      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
     </div>
   );
 }

@@ -1,3 +1,6 @@
+import { KpiCard } from '@/components/shell/KpiCard';
+import { SectionHead } from '@/components/shell/SectionHead';
+
 export const metadata = { title: 'Margins — Palatable' };
 
 type DishTone = 'healthy' | 'attention' | 'urgent';
@@ -167,13 +170,14 @@ export default function MarginsPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <Kpi label="Menu GP" value="68%" trend="↓ 1.2pt" tone="healthy" sub="target 65% · still healthy" />
-        <Kpi label="Dishes Healthy" value="15" trend="/ 17" sub="88% of menu on target" />
-        <Kpi label="Needs Attention" value="2" sub="both in mains" tone="attention" />
-        <Kpi label="Worst Drift" value="−4pt" sub="lamb shawarma" tone="attention" />
+        <KpiCard label="Menu GP" value="68%" trend="↓ 1.2pt" tone="healthy" sub="target 65% · still healthy" />
+        <KpiCard label="Dishes Healthy" value="15" trend="/ 17" sub="88% of menu on target" />
+        <KpiCard label="Needs Attention" value="2" sub="both in mains" tone="attention" />
+        <KpiCard label="Worst Drift" value="−4pt" sub="lamb shawarma" tone="attention" />
       </div>
 
-      <Section title="Needs Your Attention" meta="Two dishes flagged · sorted by severity">
+      <section className="mt-12">
+          <SectionHead title="Needs Your Attention" meta="Two dishes flagged · sorted by severity" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <AttentionCard
             severity="urgent"
@@ -218,83 +222,23 @@ export default function MarginsPage() {
             actionContext="last costed 9 weeks ago"
           />
         </div>
-      </Section>
+      </section>
 
-      <Section title="Menu Section Performance" meta="in menu order · click to jump to detail">
+      <section className="mt-12">
+          <SectionHead title="Menu Section Performance" meta="in menu order · click to jump to detail" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {sectionSummary.map((s) => (
             <SectionSummaryCard key={s.name} {...s} />
           ))}
         </div>
-      </Section>
+      </section>
 
-      <Section title="All Dishes" meta="in menu order · click any dish to drill into its costing">
+      <section className="mt-12">
+          <SectionHead title="All Dishes" meta="in menu order · click any dish to drill into its costing" />
         {allDishes.map((s) => (
           <MenuDetailBlock key={s.title} section={s} />
         ))}
-      </Section>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  meta,
-  children,
-}: {
-  title: string;
-  meta: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-12">
-      <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
-          {title}
-        </div>
-        <div className="font-serif italic text-sm text-muted">{meta}</div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  trend,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  trend?: string;
-  sub: string;
-  tone?: 'healthy' | 'attention';
-}) {
-  return (
-    <div className="bg-card px-7 py-6">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
-        {label}
-      </div>
-      <div
-        className={
-          'font-serif font-medium text-2xl leading-none ' +
-          (tone === 'healthy'
-            ? 'text-healthy'
-            : tone === 'attention'
-              ? 'text-attention'
-              : 'text-ink')
-        }
-      >
-        {value}
-        {trend && (
-          <span className="font-serif italic text-sm text-muted ml-2">
-            {trend}
-          </span>
-        )}
-      </div>
-      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
+      </section>
     </div>
   );
 }

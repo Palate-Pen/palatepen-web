@@ -8,6 +8,7 @@ import {
   type BankRow,
 } from '@/lib/bank';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { KpiCard } from '@/components/shell/KpiCard';
 
 export const metadata = { title: 'The Bank — Palatable' };
 
@@ -72,23 +73,23 @@ export default async function TheBankPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <Kpi
+        <KpiCard
           label="Ingredients On File"
           value={String(summary.ingredients_on_file)}
           sub={`across ${summary.suppliers_active} suppliers`}
         />
-        <Kpi
+        <KpiCard
           label="Prices On The Move"
           value={String(summary.prices_on_the_move)}
           sub={`this week · ${summary.movement_up} up · ${summary.movement_down} down`}
           tone={summary.prices_on_the_move > 0 ? 'attention' : undefined}
         />
-        <Kpi
+        <KpiCard
           label="Auto-Updated This Week"
           value={String(summary.auto_updated_this_week)}
           sub="from scanned invoices"
         />
-        <Kpi
+        <KpiCard
           label="Multi-Sourced"
           value={String(summary.multi_sourced)}
           sub="ingredients you buy from 2+"
@@ -143,34 +144,6 @@ function topMoversCopy(rows: BankRow[]): string {
   return `${movers[0]} and ${movers[1]} leading the charge.`;
 }
 
-function Kpi({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  tone?: 'attention';
-}) {
-  return (
-    <div className="bg-card px-7 py-6">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
-        {label}
-      </div>
-      <div
-        className={
-          'font-serif font-medium text-2xl leading-none ' +
-          (tone === 'attention' ? 'text-attention' : 'text-ink')
-        }
-      >
-        {value}
-      </div>
-      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
-    </div>
-  );
-}
 
 function casualSupplier(name: string | null): string {
   if (!name) return '—';

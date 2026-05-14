@@ -6,6 +6,7 @@ import {
   type PrepStatus,
 } from '@/lib/prep';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { KpiCard } from '@/components/shell/KpiCard';
 
 export const metadata = { title: 'Prep — Palatable' };
 
@@ -279,38 +280,6 @@ function DayNav({ direction }: { direction: 'prev' | 'next' }) {
   );
 }
 
-function KpiCard({
-  label,
-  value,
-  sub,
-  tone,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  tone?: 'healthy' | 'attention';
-}) {
-  return (
-    <div className="bg-card px-7 py-6">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
-        {label}
-      </div>
-      <div
-        className={
-          'font-serif font-medium text-2xl leading-none ' +
-          (tone === 'healthy'
-            ? 'text-healthy'
-            : tone === 'attention'
-              ? 'text-attention'
-              : 'text-ink')
-        }
-      >
-        {value}
-      </div>
-      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
-    </div>
-  );
-}
 
 function StationBlock({ station }: { station: PrepStation }) {
   const allDone = station.in_progress === 0 && station.not_started === 0 && station.done > 0;
