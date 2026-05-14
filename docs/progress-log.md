@@ -4,6 +4,42 @@ Detailed log of what shipped and when. Reference material — loaded on demand. 
 
 When completing any roadmap item, add an entry here with the date, what was done, and any important technical notes.
 
+### 2026-05-15
+
+- **Write-paths sweep + legacy feature merges + responsive overhaul + full demo re-seed.** Single-session arc covering ~20 commits between `7ae69fb` (Manager Menu Builder) and `8474da4` (responsive overhaul). Everything pushed to main; jack@'s founder account is now a fully-running 3-month demo.
+
+  - **Write paths landed across every read-only surface.** Recipe CRUD (`/recipes/new` + `/recipes/[id]/edit` + archive) with shared `RecipeForm` and Bank-link typeahead via HTML datalist (commit `ef330af`). Bank ingredient CRUD + manual price update at `/stock-suppliers/the-bank/new` and `[id]` (commit `cf0ef49`) — `PriceUpdateForm` writes to `ingredient_price_history` source=manual + updates `current_price` + revalidates every surface that reads cost. Margins what-if slider gained a Save action that re-anchors `cost_baseline` + stamps `costed_at` (commit `57f5f6c`). Prep status-cycle button + inline notes editor + Add Prep Item dialog (commit earlier). Suppliers/Deliveries/Waste add dialogs (commit `79cddd0`). Inbox signal dismiss + acted-on with optional reason notes (commit `257cfe6`).
+
+  - **Founder demo account contract.** Added `is_founder boolean` column on v2.accounts (migration `20260514_v2_accounts_is_founder.sql`). Set jack@'s account `is_founder=true, tier='enterprise'` (commit `00bc1bf`). Memory file `palatable-demo-account.md` updated to encode the founder-poses-as-owner convention. Future billing code must short-circuit on is_founder before charging or limiting.
+
+  - **Manager Home + Owner shell scaffolded.** Manager Home replaced the stub tab-grid with real data from the locked v1 mockup — KPI strip (food cost / outstanding / waste / covers placeholder), Prep Status by station, 2x2 reporting grid (supplier spend / waste category / top margins / staffing pending), commit `2f1c7c5`. Owner shell scaffolded with 8 tabs at `/owner/*`: Home + Sites live, Revenue / Margins / Suppliers / Cash / Reports / Settings as "OwnerComingSoon" placeholders explaining what each surface will read once schemas land (commit `8901d9b`).
+
+  - **Legacy feature merges in three batches.** Batch 1 (`9e8f3f4` + `fad2458`): UK FIR 14 allergens + nut/cereal sub-types on `v2.recipes` and `v2.ingredients` (`AllergenPanel`/`AllergenChips` reused everywhere); recipe lock state + photo_url column; public menu reader at `/m/[slug]` with OG meta; inbox email token in Settings; AI recipe import from URL via `/api/palatable/import-recipe` (port of legacy Haiku 4.5 + JSON-LD sniff); fixed dead Add Dish button. Batch 1.5 (`ce8c4f1`): per-100g nutrition lib + `NutritionPanel` editor + `NutritionDisplay` recipe-detail section with UK DH 2013 FoP traffic-light thresholds + recipe `method` jsonb column with numbered-step editor + Topbar back-link derived from pathname. Batch 2 (`59b1485`): per-line invoice discrepancy flagging that auto-flips invoice.status; account-level preferences (currency/GP target/kitchen size+location/stock day) via `v2.accounts.preferences` JSONB; UK FIR Compliance Check modal on `/recipes/[id]`; per-dish V/VG/GF/DF/NF dietary chips derived from allergen state on `/menus` + supplier detail invoices. Batch 3 (`e3d328e`): per-supplier detail view at `/stock-suppliers/suppliers/[id]` with reliability score + ingredients sourced + recent invoices; email source badge; notebook tag filter (top-16 by frequency).
+
+  - **Topbar tier + view buttons + view dropdown.** Topbar now accepts `tier`, `view`, `isFounder`, `role`, `email` from each layout. Tier chip is a Link to `/settings#tier` for non-founder; founder shows a static "Founder" gold chip. View chip is a dropdown listing every accessible surface — Chef + Manager (role ≥ manager) + Owner (role = owner) + Founder admin (email match). Date label hides below `lg`.
+
+  - **Responsive overhaul + unified shell pattern.** Commit `8474da4`. Sidebar gained mobile drawer mode: hidden by default below `lg`, slides in as overlay when mobileOpen via the hamburger button in the topbar. Backdrop tap-to-close. Body scroll locks while open. Auto-closes on navigation. Generalised Sidebar component (`brand`, `surfaceTag?`, `homeHref?`, `sections`, `accountItems` props) used by chef + manager + owner shells. nav-config.ts holds CHEF/MANAGER/OWNER section configurations; pending nav items render muted with "soon" tag. Manager + Owner layouts dropped their eyebrow strips in favour of the full sidebar+topbar treatment matching the chef shell. 11 new NavIcon paths for manager/owner tabs (team, pl, service-notes, compliance, reports, deliveries, suppliers, sites, revenue, cash, menu-builder). Page padding swept across 38 page wrappers from `px-14 pt-12 pb-20` to `px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20` so mobile gets 16px sides + 24px vertical, tablet 32px, desktop 56px. All pages also gained `mx-auto` so content centres on wide screens.
+
+  - **Public menu reader stub.** `/m/[slug]` server-rendered with OG meta for share; demo content at `/m/berber-and-q` so the Manager Menu Builder "palateandpen.co.uk/m/berber-and-q" link lands live. Middleware now treats `/m/*` as public (no Supabase session required).
+
+  - **Full 3-month demo re-seed on jack@'s account.** Server-side data only (no commit — applied via MCP). Final counts after the seed:
+    - Suppliers: 5
+    - Bank ingredients: 32 (all with UK FIR allergens + per-100g nutrition)
+    - Recipes: 6 (all with allergens, 5-7 method steps, cost_baseline, chef notes)
+    - Recipe ingredients: 34
+    - Prep items: 12 (today's board)
+    - Deliveries: 64 (57 arrived · 4 expected · 3 missed across 90 days + 7 days ahead)
+    - Invoices: 57 (52 confirmed · 4 flagged · 1 scanned)
+    - Invoice lines: 228
+    - Waste entries: 228 over 90 days, total £3,009.87
+    - Notebook entries: 8 (from earlier seed)
+    - Forward signals: 16 across all 8 surfaces (2 urgent, 7 attention, 1 healthy, 6 info)
+    - Price history: 1,828 rows across 90 days
+    - Account preferences: GBP, 72% GP target, medium kitchen, Shoreditch London, Sunday stock day
+    - User preferences: auto-bank off, notifications on, team-view-notebook on
+    - Inbox token: `BERBER72QSHOREDITCH`
+  - Forward-signal coverage by surface — Home (covers spike, GP health, stock count due), Prep (over-prep pattern, unassigned Pastry), Recipes (Beef Short Rib drift, Hummus pricing opportunity), Menus (Knafeh slow mover, wild garlic season), Margins (Lamb Shawarma 4.1pt slip — urgent), Stock & Suppliers (tahini +12% market move — urgent, Aubrey Allen reliability drop, today's deliveries), Notebook (sumac thread, asparagus ending), Inbox (bank holiday Monday supply disruption).
+
 ### 2026-05-14
 
 - **Palate & Pen consulting site + admin redirect to app subdomain.** Commit `01fb5ca`. Domain architecture clarified — `palateandpen.co.uk` is the hospitality-consulting business (separate brand from Palatable the app at `app.palateandpen.co.uk`). Built `/coming-soon` route — Cinzel "P[dot]alate & Pen" wordmark, "A new site is in the kitchen" headline, gold CTAs (mailto + link to Palatable). Middleware host check at the top of `src/middleware.ts`: consulting hosts (`palateandpen.co.uk` + `www`) route `/admin/*` → 308 redirect to `app.palateandpen.co.uk/admin/*` preserving path + search; everything else rewrites to `/coming-soon` (URL stays as user typed). App host + preview deploys + localhost fall through to existing app behaviour, untouched. Production-verified end-to-end: `palateandpen.co.uk/admin` → 3-hop chain (apex → Cloudflare-redirects-to-www → Vercel-redirects-to-app → app's auth gate redirects to `/signin?next=/admin`) lands correctly. Coming-soon page renders on the apex with the right brand wordmark. One open optimisation: the apex → www hop is a Cloudflare rule; middleware already handles both hosts natively, so removing the Cloudflare redirect would drop one hop, ~50ms.

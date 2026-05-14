@@ -107,19 +107,26 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 ## Recent activity
 
 **Last shipped:**
-- Invoice loop UI complete (scan / list / review / confirm pages on /stock-suppliers/invoices/*) + site-wide swap to Haiku 4.5 — central helper at `src/lib/anthropic.ts` is the single switching point. Working end-to-end in production: chef uploads invoice → Haiku extracts lines → review with Bank-match dots → confirm flips ingredient prices + marks delivery arrived, revalidates Hub and Bank. ~13× cost reduction on AI calls vs Sonnet 4.6.
-- Menu Builder v2 + Custom Template formatting guide locked (mockups in `docs/strategy/mockups/`). Manager Menu Builder v2 (Layout controls / Engineering Overlays / Custom Template Upload PDF·AI·Figma·PSD) is the second locked top-level Manager tab after Manager Home. Formatting guide is the bring-your-own-brand bridge — semantic layer naming convention (menu-title, section-header-N, dish-row-N-M, dish-name, dish-desc, dish-price, dish-image-N-M, logo, hero-image) means a designer's existing layout becomes a Palatable template. Wedge: nobody else ties menu design to live costing because nobody else has The Bank upstream.
-- First vertical feature loop — The Bank end-to-end with the forward-intelligence engine live in production. Three cron detectors (market-moves / recipe-staleness / cost-spikes) emit structured signals consumed by LookingAhead components on every surface. Full detail in docs/progress-log.md.
-- All 9 remaining chef-shell tab routes ported from locked mockups as static visual scaffolding. Visual coverage across the whole 10-tab surface.
-- Strategic direction, design system v8, surface notes, and all chef-shell mockups locked. Manager Home + Menu Builder locked; remaining 8 Manager tabs pending detail design. Founder Admin locked at `/admin`.
+- Write-paths across every surface — Recipe CRUD with allergens + method + lock; Bank ingredient CRUD + manual price updates; Margins what-if slider saves new prices with cost-baseline re-anchor; Prep status cycle + inline notes + Add Prep Item dialog; Suppliers/Deliveries/Waste add dialogs; Inbox signal dismiss + acted-on.
+- Manager Home (real data over locked v1 mockup — KPIs, prep status, reporting grid) + Owner shell scaffold (8 tabs at `/owner/*`, Home + Sites live, 6 pending with OwnerComingSoon placeholders).
+- Legacy compliance + ops features merged: UK FIR 14-allergen tri-state on Recipes + Bank with nut/cereal sub-types; per-100g nutrition + UK DH 2013 FoP traffic lights; recipe method[] with numbered-step editor; public menu reader at `/m/[slug]`; inbox email token in Settings; AI recipe import from URL; per-line invoice discrepancy flagging; account-level preferences (currency/GP target/kitchen size+location/stock day); UK FIR Compliance Check modal; V/VG/GF/DF/NF dietary chips derived from allergen state; per-supplier detail view with reliability score; email source badge; notebook tag filter.
+- Topbar tier + view buttons — tier chip is a Link to /settings#tier; founder shows static gold chip. View chip is a dropdown listing every accessible surface (Chef + Manager + Owner + Founder) gated on role + email.
+- Responsive overhaul (`8474da4`) — Sidebar gained mobile drawer mode + hamburger trigger; generalised Sidebar component reused across chef/manager/owner; manager + owner shells now match the chef pattern (Sidebar + Topbar + scrollable main, eyebrow strips dropped); page padding responsive across 38 wrappers (`px-4 sm:px-8 lg:px-14`); content centred via `mx-auto`.
+- jack@'s founder account re-seeded as a full 3-month operating demo: 32 ingredients with allergens + nutrition, 6 recipes with method + cost baselines, 1,828 price history points across 90 days, 64 deliveries, 57 invoices + 228 lines, 228 waste entries, 16 forward signals across all 8 surfaces, account + user preferences set, inbox token live. Margins drift banner, Bank sparklines, Looking Ahead cards, supplier reliability — all rendering off real seeded state.
 
 **In flight:**
-- Browser smoke-test of the invoice scan loop in production after the next deploy.
+- Smoke-test the post-`8474da4` deploy in production at mobile + tablet + desktop widths.
+- The eight pending Manager tabs (Team, P&L, Deliveries, Suppliers, Service Notes, Compliance, Reports, Settings) and six pending Owner tabs (Revenue, Margins, Suppliers, Cash, Reports) remain mockup-pending; sidebar already shows them as "soon".
 
 **Next:**
-- Chef Menus edit-light view + the published web menu output (public reader at `/m/{slug}`) as the next pair to design. These pair with the Manager Menu Builder so the chef can preview-and-tweak a manager-published menu without breaking the lock, and so the public URL renders the live-costed menu cleanly.
-- Manager shell scaffold for the 8 remaining tabs once their mockups land.
-- Owner shell design — analytics-led, whole-business cross-site rollups (distinct from Manager's single-site exception management).
+- Credit notes workflow — the second half of v1 wedge piece #3. Schema `v2.credit_notes` + draft/send UI when a flagged invoice has discrepancies.
+- Photo upload + Supabase Storage bucket (recipes + branding).
+- Cost simulator modal on recipes (drag-adjust % per ingredient).
+- Spec sheet OCR port from legacy.
+- Single-recipe print + recipe book PDF.
+- API key management in Settings (Kitchen+ tier feature).
+- Notebook captures pt 2 (voice/photo/sketch via Storage — task #50).
+- Manager and Owner pending tabs need mockups locked before scaffolding the rest.
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.
 
