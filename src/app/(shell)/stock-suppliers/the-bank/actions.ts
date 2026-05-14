@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { AllergenState } from '@/lib/allergens';
+import type { NutritionState } from '@/lib/nutrition';
 
 export type IngredientFormInput = {
   name: string;
@@ -13,6 +14,7 @@ export type IngredientFormInput = {
   category: string | null;
   current_price: number | null;
   allergens: AllergenState;
+  nutrition: NutritionState;
 };
 
 export type PriceUpdateInput = {
@@ -78,6 +80,7 @@ export async function createIngredient(
       current_price: input.current_price,
       last_seen_at: input.current_price != null ? now : null,
       allergens: input.allergens as unknown as object,
+      nutrition: input.nutrition as unknown as object,
     })
     .select('id')
     .single();
@@ -126,6 +129,7 @@ export async function updateIngredient(
       unit: input.unit?.trim() || null,
       category: input.category?.trim() || null,
       allergens: input.allergens as unknown as object,
+      nutrition: input.nutrition as unknown as object,
     })
     .eq('id', ingredientId);
   if (error) return { ok: false, error: error.message };

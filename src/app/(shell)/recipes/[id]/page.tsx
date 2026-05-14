@@ -4,6 +4,8 @@ import { getRecipe, type RecipeIngredient } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { ALLERGENS } from '@/lib/allergens';
+import { aggregateRecipeNutrition } from '@/lib/nutrition';
+import { NutritionDisplay } from '@/components/nutrition/NutritionDisplay';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -44,6 +46,15 @@ export default async function RecipeDetailPage({
     recipe.matched_ingredient_count === recipe.ingredients.length;
   const partial = !matched && recipe.matched_ingredient_count > 0;
   const unmatched = recipe.ingredients.length - recipe.matched_ingredient_count;
+  const nutritionSummary = aggregateRecipeNutrition(
+    recipe.ingredients.map((i) => ({
+      qty: i.qty,
+      unit: i.unit,
+      nutrition: i.nutrition,
+    })),
+    recipe.serves,
+    recipe.portion_per_cover,
+  );
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1200px]">
@@ -254,6 +265,55 @@ export default async function RecipeDetailPage({
             </div>
           </div>
         )}
+      </section>
+
+      <section className="mt-10">
+        <SectionHead
+          title="Method"
+          meta={
+            recipe.method.length === 0
+              ? 'no method captured yet'
+              : `${recipe.method.length} ${recipe.method.length === 1 ? 'step' : 'steps'}`
+          }
+        />
+        {recipe.method.length === 0 ? (
+          <div className="bg-card border border-rule px-10 py-10 text-center">
+            <p className="font-serif italic text-muted">
+              No method yet. Edit the recipe to add numbered steps.
+            </p>
+          </div>
+        ) : (
+          <ol className="bg-card border border-rule">
+            {recipe.method.map((step, i) => (
+              <li
+                key={i}
+                className={
+                  'grid grid-cols-[60px_1fr] gap-4 px-7 py-4 items-start ' +
+                  (i === recipe.method.length - 1 ? '' : 'border-b border-rule-soft')
+                }
+              >
+                <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
+                  Step {i + 1}
+                </div>
+                <p className="font-serif text-base text-ink-soft leading-relaxed">
+                  {step}
+                </p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <SectionHead
+          title="Nutrition"
+          meta={
+            nutritionSummary.hasData
+              ? `per portion + per 100g · ${nutritionSummary.coveragePct.toFixed(0)}% coverage`
+              : 'no nutrition data yet'
+          }
+        />
+        <NutritionDisplay summary={nutritionSummary} />
       </section>
 
       {recipe.notes && (

@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { parseAllergens, type AllergenState } from '@/lib/allergens';
+import { parseNutrition, type NutritionState } from '@/lib/nutrition';
 
 export type RecipeIngredient = {
   id: string;
@@ -11,6 +12,8 @@ export type RecipeIngredient = {
   current_price: number | null;
   /** qty × current_price for FK-linked ingredients, null when free-text. */
   line_cost: number | null;
+  /** Nutrition per 100g/ml, only populated when linked to The Bank. */
+  nutrition: NutritionState | null;
 };
 
 export type Recipe = {
@@ -28,6 +31,7 @@ export type Recipe = {
   allergens: AllergenState;
   locked: boolean;
   photo_url: string | null;
+  method: string[];
   ingredients: RecipeIngredient[];
   /** Sum of line_cost where present; free-text ingredients contribute 0. */
   total_cost: number;
@@ -37,15 +41,23 @@ export type Recipe = {
   matched_ingredient_count: number;
 };
 
+const RECIPE_COLUMNS =
+  'id, site_id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url, method';
+const RECIPE_LIST_COLUMNS =
+  'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url, method';
+
+function parseMethod(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((s): s is string => typeof s === 'string');
+}
+
 export async function getRecipe(
   recipeId: string,
 ): Promise<Recipe | null> {
   const supabase = await createSupabaseServerClient();
   const { data: r } = await supabase
     .from('recipes')
-    .select(
-      'id, site_id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url',
-    )
+    .select(RECIPE_COLUMNS)
     .eq('id', recipeId)
     .is('archived_at', null)
     .single();
@@ -66,13 +78,16 @@ export async function getRecipe(
   );
   const { data: bankRows } = await supabase
     .from('ingredients')
-    .select('id, current_price')
+    .select('id, current_price, nutrition')
     .in('id', bankIds.length ? bankIds : ['00000000-0000-0000-0000-000000000000']);
   const priceById = new Map(
     (bankRows ?? []).map((b) => [
       b.id as string,
       b.current_price == null ? null : Number(b.current_price),
     ]),
+  );
+  const nutritionById = new Map<string, NutritionState>(
+    (bankRows ?? []).map((b) => [b.id as string, parseNutrition(b.nutrition)]),
   );
 
   const rIngs: RecipeIngredient[] = (ingredients ?? []).map((i) => {
@@ -88,6 +103,7 @@ export async function getRecipe(
       position: i.position as number,
       current_price: price,
       line_cost: price != null ? price * qty : null,
+      nutrition: ingId ? nutritionById.get(ingId) ?? null : null,
     };
   });
 
@@ -112,6 +128,7 @@ export async function getRecipe(
     allergens: parseAllergens(r.allergens),
     locked: Boolean(r.locked),
     photo_url: (r.photo_url as string | null) ?? null,
+    method: parseMethod(r.method),
     ingredients: rIngs,
     total_cost: totalCost,
     cost_per_cover: costPerCover,
@@ -124,9 +141,7 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
 
   const { data: recipes, error: recipesErr } = await supabase
     .from('recipes')
-    .select(
-      'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url',
-    )
+    .select(RECIPE_LIST_COLUMNS)
     .eq('site_id', siteId)
     .is('archived_at', null)
     .order('name', { ascending: true });
@@ -152,7 +167,7 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
 
   const { data: bankRows, error: bankErr } = await supabase
     .from('ingredients')
-    .select('id, current_price')
+    .select('id, current_price, nutrition')
     .in('id', bankIds.length ? bankIds : ['00000000-0000-0000-0000-000000000000']);
   if (bankErr) throw new Error(`recipes.getRecipes bank: ${bankErr.message}`);
   const priceById = new Map(
@@ -160,6 +175,9 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
       b.id as string,
       b.current_price == null ? null : Number(b.current_price),
     ]),
+  );
+  const nutritionById = new Map<string, NutritionState>(
+    (bankRows ?? []).map((b) => [b.id as string, parseNutrition(b.nutrition)]),
   );
 
   return recipes.map((r): Recipe => {
@@ -179,6 +197,7 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
           position: i.position as number,
           current_price: price,
           line_cost: lineCost,
+          nutrition: ingId ? nutritionById.get(ingId) ?? null : null,
         };
       });
 
@@ -202,12 +221,12 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
       portion_per_cover: portion,
       sell_price: r.sell_price == null ? null : Number(r.sell_price),
       notes: (r.notes as string | null) ?? null,
-      cost_baseline:
-        r.cost_baseline == null ? null : Number(r.cost_baseline),
+      cost_baseline: r.cost_baseline == null ? null : Number(r.cost_baseline),
       costed_at: (r.costed_at as string | null) ?? null,
       allergens: parseAllergens(r.allergens),
       locked: Boolean(r.locked),
       photo_url: (r.photo_url as string | null) ?? null,
+      method: parseMethod(r.method),
       ingredients: rIngs,
       total_cost: totalCost,
       cost_per_cover: costPerCover,

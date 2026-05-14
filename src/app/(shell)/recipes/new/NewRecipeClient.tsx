@@ -56,6 +56,7 @@ function buildInitial(
   notes: string | null;
   allergens: AllergenState;
   locked: boolean;
+  method: string[];
   ingredients: Array<{
     name: string;
     qty: number;
@@ -76,6 +77,7 @@ function buildInitial(
     notes: composeNotes(extracted),
     allergens: { ...EMPTY_ALLERGENS },
     locked: false,
+    method: (extracted.method ?? []).map((s) => s.trim()).filter(Boolean),
     ingredients: (extracted.ingredients ?? [])
       .filter((i) => i.name && i.name.trim() !== '')
       .map((i) => {

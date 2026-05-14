@@ -7,6 +7,7 @@ import { SectionHead } from '@/components/shell/SectionHead';
 import { IngredientForm, type SupplierOption } from '../IngredientForm';
 import { PriceUpdateForm } from '../PriceUpdateForm';
 import { parseAllergens } from '@/lib/allergens';
+import { parseNutrition } from '@/lib/nutrition';
 
 export const metadata = { title: 'Bank ingredient — Palatable' };
 
@@ -41,7 +42,7 @@ export default async function BankIngredientDetailPage({
     supabase
       .from('ingredients')
       .select(
-        'id, site_id, supplier_id, name, spec, unit, category, current_price, last_seen_at, allergens, suppliers:supplier_id (name)',
+        'id, site_id, supplier_id, name, spec, unit, category, current_price, last_seen_at, allergens, nutrition, suppliers:supplier_id (name)',
       )
       .eq('id', id)
       .single(),
@@ -74,9 +75,11 @@ export default async function BankIngredientDetailPage({
     current_price: number | null;
     last_seen_at: string | null;
     allergens: unknown;
+    nutrition: unknown;
     suppliers: { name: string } | null;
   };
   const allergens = parseAllergens(ing.allergens);
+  const nutrition = parseNutrition(ing.nutrition);
 
   if (ing.site_id !== ctx.siteId) notFound();
 
@@ -280,6 +283,7 @@ export default async function BankIngredientDetailPage({
             category: ing.category,
             current_price: ing.current_price,
             allergens,
+            nutrition,
           }}
           suppliers={supplierOptions}
         />

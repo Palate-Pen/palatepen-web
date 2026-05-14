@@ -31,6 +31,7 @@ export type RecipeFormInput = {
   notes: string | null;
   allergens: AllergenState;
   locked: boolean;
+  method: string[];
   ingredients: Array<{
     name: string;
     qty: number;
@@ -118,6 +119,9 @@ export async function createRecipe(
       notes: input.notes?.trim() || null,
       allergens: input.allergens as unknown as object,
       locked: input.locked,
+      method: input.method
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0) as unknown as object,
     })
     .select('id')
     .single();
@@ -181,6 +185,9 @@ export async function updateRecipe(
       notes: input.notes?.trim() || null,
       allergens: input.allergens as unknown as object,
       locked: input.locked,
+      method: input.method
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0) as unknown as object,
     })
     .eq('id', recipeId);
   if (updErr) return { ok: false, error: updErr.message };

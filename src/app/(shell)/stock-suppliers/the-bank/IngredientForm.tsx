@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { createIngredient, updateIngredient } from './actions';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
 import { AllergenPanel } from '@/components/allergens/AllergenPanel';
+import { type NutritionState } from '@/lib/nutrition';
+import { NutritionPanel } from '@/components/nutrition/NutritionPanel';
 
 export type SupplierOption = {
   id: string;
@@ -51,6 +53,7 @@ export function IngredientForm({
     category: string | null;
     current_price: number | null;
     allergens: AllergenState;
+    nutrition: NutritionState;
   };
   suppliers: SupplierOption[];
 }) {
@@ -67,6 +70,9 @@ export function IngredientForm({
   );
   const [allergens, setAllergens] = useState<AllergenState>(
     initial?.allergens ?? { ...EMPTY_ALLERGENS },
+  );
+  const [nutrition, setNutrition] = useState<NutritionState>(
+    initial?.nutrition ?? {},
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -99,6 +105,7 @@ export function IngredientForm({
               category: category.trim() || null,
               current_price: priceNum,
               allergens,
+              nutrition,
             })
           : await updateIngredient(ingredientId!, {
               name: trimmedName,
@@ -107,6 +114,7 @@ export function IngredientForm({
               unit: unit.trim() || null,
               category: category.trim() || null,
               allergens,
+              nutrition,
             });
       if (!res.ok) {
         setError(humaniseError(res.error));
@@ -215,6 +223,13 @@ export function IngredientForm({
           Set the FIR allergens at the Bank level. Every recipe that links to this ingredient inherits them automatically.
         </p>
         <AllergenPanel value={allergens} onChange={setAllergens} />
+      </div>
+
+      <div className="pt-2 border-t border-rule-soft">
+        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+          Nutrition (per 100g / 100ml)
+        </div>
+        <NutritionPanel value={nutrition} onChange={setNutrition} />
       </div>
 
       {error && (

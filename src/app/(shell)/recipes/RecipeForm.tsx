@@ -75,6 +75,7 @@ export function RecipeForm({
     notes: string | null;
     allergens: AllergenState;
     locked: boolean;
+    method: string[];
     ingredients: Array<{
       name: string;
       qty: number;
@@ -105,6 +106,9 @@ export function RecipeForm({
     initial?.allergens ?? { ...EMPTY_ALLERGENS },
   );
   const [locked, setLocked] = useState<boolean>(initial?.locked ?? false);
+  const [method, setMethod] = useState<string[]>(
+    initial?.method && initial.method.length > 0 ? initial.method : [''],
+  );
   const [rows, setRows] = useState<IngredientRow[]>(
     initial && initial.ingredients.length > 0
       ? initial.ingredients.map((i) => ({
@@ -194,6 +198,7 @@ export function RecipeForm({
       notes: notes.trim() || null,
       allergens,
       locked,
+      method: method.map((s) => s.trim()).filter((s) => s.length > 0),
       ingredients,
     };
   }
@@ -325,6 +330,69 @@ export function RecipeForm({
             maxLength={4000}
           />
         </Field>
+      </Section>
+
+      <Section
+        title="Method"
+        sub="Numbered steps. One step per row — add as many as the recipe needs. Steps render as a numbered list on the detail page and on print-outs."
+      >
+        <div className="flex flex-col gap-2">
+          {method.map((step, idx) => (
+            <div
+              key={idx}
+              className="grid grid-cols-[28px_1fr_28px] gap-2 items-start"
+            >
+              <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold pt-2">
+                {idx + 1}.
+              </div>
+              <textarea
+                value={step}
+                onChange={(e) => {
+                  const next = [...method];
+                  next[idx] = e.target.value;
+                  setMethod(next);
+                }}
+                rows={2}
+                placeholder={`Step ${idx + 1}…`}
+                disabled={locked}
+                className="w-full px-3 py-2 border border-rule bg-card font-serif italic text-sm text-ink-soft resize-y min-h-[44px] focus:outline-none focus:border-gold disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (method.length === 1) {
+                    setMethod(['']);
+                  } else {
+                    setMethod(method.filter((_, i) => i !== idx));
+                  }
+                }}
+                disabled={locked}
+                title="Remove this step"
+                aria-label="Remove step"
+                className="self-start mt-2 w-7 h-7 flex items-center justify-center text-muted-soft hover:text-urgent transition-colors disabled:opacity-30"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setMethod([...method, ''])}
+          disabled={locked}
+          className="self-start mt-3 font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-30"
+        >
+          + Add step
+        </button>
       </Section>
 
       <Section
