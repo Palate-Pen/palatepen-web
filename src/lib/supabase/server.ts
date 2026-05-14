@@ -27,7 +27,7 @@ export async function createSupabaseServerClient() {
       },
       db: { schema: 'v2' },
       global: {
-        fetch: (url, options) =>
+        fetch: (url: RequestInfo | URL, options?: RequestInit) =>
           fetch(url, { ...options, cache: 'no-store' }),
       },
     },
