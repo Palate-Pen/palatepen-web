@@ -1,115 +1,196 @@
+import { getShellContext } from '@/lib/shell/context';
+import { getInboxSignals, type InboxSignal } from '@/lib/inbox';
+
 export const metadata = { title: 'Inbox — Palatable' };
 
-type Severity = 'unread' | 'urgent' | 'healthy' | 'normal';
-
-type Message = {
-  icon: string;
-  headline: string;
-  meta: string;
-  preview: string;
-  timestamp: string;
-  severity: Severity;
+const surfaceLabel: Record<string, string> = {
+  home: 'Home',
+  prep: 'Prep',
+  recipes: 'Recipes',
+  menus: 'Menus',
+  margins: 'Margins',
+  'stock-suppliers': 'Stock & Suppliers',
+  notebook: 'Notebook',
+  inbox: 'Inbox',
 };
 
-const messages: Message[] = [
-  {
-    icon: '✓',
-    headline: 'Mediterranean — invoice confirmation',
-    meta: 'Auto-banked · 22 lines · £340',
-    preview:
-      "System auto-banked ingredient prices from today's delivery. Confirm or adjust in The Bank.",
-    timestamp: '2 mins',
-    severity: 'unread',
-  },
-  {
-    icon: '!',
-    headline: 'Aubrey — lamb shoulder short 4.2kg',
-    meta: 'Discrepancy flagged',
-    preview:
-      'Delivery arrived short. Est. £60 impact on costing. Click to draft credit note.',
-    timestamp: '1 hour',
-    severity: 'urgent',
-  },
-  {
-    icon: '📦',
-    headline: 'Deliveries — Reza order cutoff 16:00 today',
-    meta: 'Order reminder',
-    preview:
-      'Your Tuesday standing order. 19 items, £180 est. Order now or skip.',
-    timestamp: '3 hours',
-    severity: 'unread',
-  },
-  {
-    icon: '✓',
-    headline: 'Waste — Sunday pattern improving',
-    meta: 'Positive signal',
-    preview:
-      "Aubergine waste down 50% vs last month. Tom's plating technique working.",
-    timestamp: '1 day',
-    severity: 'healthy',
-  },
-  {
-    icon: '📋',
-    headline: 'Prep — Friday 15 May confirmed',
-    meta: 'Prep schedule locked',
-    preview:
-      '168 covers forecast. Hummus + shawarma + tahini scaled. 3 items unassigned.',
-    timestamp: '2 days',
-    severity: 'normal',
-  },
-];
+const tagLabel: Record<InboxSignal['tag'], string> = {
+  plan_for_it: 'Plan For It',
+  get_ready: 'Get Ready',
+  worth_knowing: 'Worth Knowing',
+  market_move: 'Market Move',
+};
 
-const stripeFor: Record<Severity, string> = {
-  unread: 'before:bg-gold',
+const severityStripe: Record<InboxSignal['severity'], string> = {
   urgent: 'before:bg-urgent',
+  attention: 'before:bg-attention',
   healthy: 'before:bg-healthy',
-  normal: 'before:bg-transparent',
+  info: 'before:bg-gold',
 };
 
-const iconBgFor: Record<Severity, string> = {
-  unread: 'bg-gold',
+const severityIconBg: Record<InboxSignal['severity'], string> = {
   urgent: 'bg-urgent',
+  attention: 'bg-attention',
   healthy: 'bg-healthy',
-  normal: 'bg-gold',
+  info: 'bg-gold',
 };
 
-export default function InboxPage() {
+const severityIconGlyph: Record<InboxSignal['severity'], string> = {
+  urgent: '!',
+  attention: '·',
+  healthy: '✓',
+  info: '↑',
+};
+
+function relativeTime(iso: string, now: Date): string {
+  const t = new Date(iso);
+  const diffMs = now.getTime() - t.getTime();
+  const diffH = diffMs / (1000 * 60 * 60);
+  if (diffH < 1) {
+    const m = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    return `${m} ${m === 1 ? 'min' : 'mins'}`;
+  }
+  if (diffH < 24) {
+    const h = Math.floor(diffH);
+    return `${h} ${h === 1 ? 'hour' : 'hours'}`;
+  }
+  const d = Math.floor(diffH / 24);
+  if (d < 14) return `${d} ${d === 1 ? 'day' : 'days'}`;
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  }).format(t);
+}
+
+function escapeAndBold(md: string): string {
+  const escaped = md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped.replace(
+    /\*\*(.+?)\*\*/g,
+    '<strong class="not-italic font-semibold text-ink">$1</strong>',
+  );
+}
+
+export default async function InboxPage() {
+  const ctx = await getShellContext();
+  const signals = await getInboxSignals(ctx.siteId);
+  const now = new Date();
+  const active = signals.filter((s) => !s.dismissed_at);
+
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1200px]">
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">Inbox</h1>
+      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+        Inbox
+      </h1>
+      <p className="font-serif italic text-lg text-muted mb-8">
+        {signals.length === 0
+          ? 'Nothing yet — signals will land here as the system spots patterns.'
+          : `${active.length} ${active.length === 1 ? 'signal' : 'signals'} across every surface. Newest first.`}
+      </p>
 
-      <div className="bg-card border border-rule">
-        {messages.map((m, i) => (
-          <div
-            key={m.headline}
-            className={
-              'relative px-7 py-5 flex gap-4 items-start cursor-pointer transition-colors hover:bg-card-warm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
-              stripeFor[m.severity] +
-              (i < messages.length - 1 ? ' border-b border-rule' : '')
-            }
-          >
-            <div
-              className={
-                'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-semibold text-sm text-paper ' +
-                iconBgFor[m.severity]
-              }
-            >
-              {m.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-serif font-semibold text-base text-ink">
-                {m.headline}
-              </div>
-              <div className="text-xs text-muted mt-1">{m.meta}</div>
-              <div className="font-serif italic text-sm text-muted mt-1.5 leading-relaxed">
-                {m.preview}
-              </div>
-            </div>
-            <div className="text-xs text-muted-soft whitespace-nowrap">
-              {m.timestamp}
-            </div>
+      {signals.length === 0 ? (
+        <div className="bg-card border border-rule px-10 py-16 text-center">
+          <p className="font-serif italic text-muted">
+            The forward-intelligence detectors run daily. Once they've seen enough activity (a few weeks of invoices / prep / recipe changes) the patterns start arriving here.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-card border border-rule">
+          {signals.map((s, i) => (
+            <SignalRow
+              key={s.id}
+              signal={s}
+              now={now}
+              last={i === signals.length - 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignalRow({
+  signal,
+  now,
+  last,
+}: {
+  signal: InboxSignal;
+  now: Date;
+  last: boolean;
+}) {
+  const dismissed = !!signal.dismissed_at;
+  return (
+    <div
+      className={
+        'relative px-7 py-5 flex gap-4 items-start cursor-pointer transition-colors hover:bg-card-warm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
+        severityStripe[signal.severity] +
+        (last ? '' : ' border-b border-rule') +
+        (dismissed ? ' opacity-60' : '')
+      }
+    >
+      <div
+        className={
+          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-semibold text-sm text-paper ' +
+          severityIconBg[signal.severity]
+        }
+        aria-hidden="true"
+      >
+        {severityIconGlyph[signal.severity]}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-3 flex-wrap mb-1">
+          <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
+            {surfaceLabel[signal.target_surface] ?? signal.target_surface}
           </div>
-        ))}
+          <div className="font-display font-semibold text-xs tracking-[0.08em] uppercase text-muted px-2 py-0.5 border border-rule">
+            {tagLabel[signal.tag]}
+          </div>
+          <div className="font-sans text-xs text-muted-soft ml-auto whitespace-nowrap">
+            {relativeTime(signal.emitted_at, now)}
+          </div>
+        </div>
+
+        <div className="font-serif font-semibold text-base text-ink leading-snug mb-1">
+          {signal.headline_pre}
+          {signal.headline_em && (
+            <em className="text-gold not-italic font-medium italic">
+              {signal.headline_em}
+            </em>
+          )}
+          {signal.headline_post}
+        </div>
+
+        <div
+          className="font-serif italic text-sm text-muted leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: escapeAndBold(signal.body_md) }}
+        />
+
+        {(signal.action_label || signal.action_context) && (
+          <div className="flex items-center gap-4 mt-3">
+            {signal.action_label && (
+              <a
+                href={signal.action_target ?? '#'}
+                className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold"
+              >
+                {signal.action_label}
+              </a>
+            )}
+            {signal.action_context && (
+              <span className="font-serif italic text-xs text-muted">
+                {signal.action_context}
+              </span>
+            )}
+            {dismissed && (
+              <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted-soft ml-auto">
+                Dismissed
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

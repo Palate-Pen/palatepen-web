@@ -2,121 +2,46 @@ import { getShellContext } from '@/lib/shell/context';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import {
+  getHubSummary,
+  type DeliveryPreview,
+  type HubSupplyGraphSignal,
+} from '@/lib/hub';
+import { getBankSummary } from '@/lib/bank';
 
 export const metadata = { title: 'Stock & Suppliers — Palatable' };
 
-type AttentionSeverity = 'urgent' | 'attention' | 'info';
-type DeliveryTone = 'healthy' | 'attention' | 'normal';
+const gbp = new Intl.NumberFormat('en-GB', {
+  style: 'currency',
+  currency: 'GBP',
+  minimumFractionDigits: 0,
+});
 
-type Attention = {
-  severity: AttentionSeverity;
-  sectionLabel: string;
-  severityLabel: string;
-  headlinePre: string;
-  headlineEm: string;
-  headlinePost: string;
-  body: React.ReactNode;
-  actionLabel: string;
-  actionContext: string;
-};
-
-const attentions: Attention[] = [
-  {
-    severity: 'urgent',
-    sectionLabel: 'Price Spike',
-    severityLabel: 'Urgent',
-    headlinePre: 'Lamb shoulder up',
-    headlineEm: '12%',
-    headlinePost: ' at Aubrey.',
-    body: (
-      <>
-        <strong className="not-italic font-semibold text-ink">
-          Tuesday's delivery hit £14.20/kg, up from £12.70.
-        </strong>{' '}
-        Your shawarma was costed at £11.50, so the dish is bleeding £1.85 a plate. Margins flagged it this morning too.
-      </>
-    ),
-    actionLabel: 'Open the invoice →',
-    actionContext: 'Tue 13 May, 07:14',
-  },
-  {
-    severity: 'attention',
-    sectionLabel: 'Waste Pattern',
-    severityLabel: 'Watch',
-    headlinePre: 'Herbs are walking out the bin this week.',
-    headlineEm: '',
-    headlinePost: '',
-    body: (
-      <>
-        <strong className="not-italic font-semibold text-ink">
-          £62 of herbs binned in four days
-        </strong>{' '}
-        — twice last week. Mostly parsley and coriander. Worth a look at prep quantities versus how busy you've actually been.
-      </>
-    ),
-    actionLabel: 'Open the waste log →',
-    actionContext: '7-day rolling total',
-  },
-  {
-    severity: 'info',
-    sectionLabel: 'The Bank',
-    severityLabel: 'Working',
-    headlinePre: "Bank's been busy keeping itself tidy.",
-    headlineEm: '',
-    headlinePost: '',
-    body: (
-      <>
-        <strong className="not-italic font-semibold text-ink">
-          11 prices updated automatically this week
-        </strong>{' '}
-        from the invoices you scanned. Three new ingredients added — saffron threads, sumac, Aleppo pepper. No duplicates, all matched to existing suppliers.
-      </>
-    ),
-    actionLabel: 'Open the Bank →',
-    actionContext: 'last update 07:14 today',
-  },
-];
-
-const deliveries = [
-  {
-    day: 'Thu',
-    supplier: 'Aubrey Allen',
-    sub: 'Lamb shoulder, beef mince, short rib · 8 lines · auto-banked',
-    status: 'Arrived',
-    tone: 'healthy' as DeliveryTone,
-  },
-  {
-    day: 'Thu',
-    supplier: 'Reza Foods',
-    sub: 'Tahini, spices, dry goods · 12 lines',
-    status: 'Due soon',
-    tone: 'attention' as DeliveryTone,
-  },
-  {
-    day: 'Thu',
-    supplier: 'Mediterranean Direct',
-    sub: 'Veg, herbs, fresh produce · 22 lines',
-    status: 'Expected',
-    tone: 'normal' as DeliveryTone,
-  },
-  {
-    day: 'Fri',
-    supplier: 'Wright Brothers',
-    sub: 'Sea bream, mackerel, oysters · 6 lines',
-    status: 'Tomorrow',
-    tone: 'normal' as DeliveryTone,
-  },
-  {
-    day: 'Sat',
-    supplier: 'Aubrey Allen',
-    sub: 'Weekend top-up',
-    status: 'Saturday',
-    tone: 'normal' as DeliveryTone,
-  },
-];
+const dateFmt = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+});
 
 export default async function StockSuppliersPage() {
   const ctx = await getShellContext();
+  const [summary, bank] = await Promise.all([
+    getHubSummary(ctx.siteId),
+    getBankSummary(ctx.siteId),
+  ]);
+
+  const todaysSub =
+    summary.todays_delivery_suppliers.length > 0
+      ? summary.todays_delivery_suppliers.slice(0, 3).join(' · ')
+      : summary.todays_deliveries === 0
+        ? 'nothing expected today'
+        : 'today';
+
+  const wasteTrendSub =
+    summary.waste_change_pct == null
+      ? summary.waste_this_week_value > 0
+        ? 'first week of logging'
+        : 'no waste logged'
+      : `${summary.waste_change_pct >= 0 ? 'up' : 'down'} ${Math.abs(summary.waste_change_pct).toFixed(0)}% vs last week`;
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
@@ -131,7 +56,7 @@ export default async function StockSuppliersPage() {
             </em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">
-            Three deliveries today. One price spike to deal with. The rest is moving as it should.
+            {summarySentence(summary)}
           </p>
         </div>
 
@@ -161,23 +86,74 @@ export default async function StockSuppliersPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <KpiCard label="Today's Deliveries" value="3" sub="Aubrey · Reza · Mediterranean" />
-        <KpiCard label="Suppliers Active" value="8" sub="all up to date" />
-        <KpiCard label="Invoices Pending" value="2" sub="one discrepancy flagged" tone="attention" />
-        <KpiCard label="Waste This Week" value="£148" sub="up 12% — mostly herbs" tone="attention" />
+        <KpiCard
+          label="Today's Deliveries"
+          value={String(summary.todays_deliveries)}
+          sub={todaysSub}
+          tone={summary.todays_deliveries > 0 ? 'healthy' : undefined}
+        />
+        <KpiCard
+          label="Suppliers Active"
+          value={String(summary.suppliers_active)}
+          sub={
+            summary.suppliers_with_recent_updates > 0
+              ? `${summary.suppliers_with_recent_updates} updated this week`
+              : 'on the books'
+          }
+        />
+        <KpiCard
+          label="Invoices Pending"
+          value={String(summary.invoices_pending)}
+          sub={
+            summary.invoices_with_discrepancy > 0
+              ? `${summary.invoices_with_discrepancy} discrepancy flagged`
+              : summary.invoices_pending === 0
+                ? 'nothing pending'
+                : 'awaiting confirmation'
+          }
+          tone={summary.invoices_with_discrepancy > 0 ? 'attention' : undefined}
+        />
+        <KpiCard
+          label="Waste This Week"
+          value={
+            summary.waste_this_week_value > 0
+              ? gbp.format(summary.waste_this_week_value)
+              : '£0'
+          }
+          sub={wasteTrendSub}
+          tone={
+            summary.waste_change_pct != null && summary.waste_change_pct > 10
+              ? 'attention'
+              : undefined
+          }
+        />
       </div>
 
       <section className="mt-12">
-          <SectionHead title="Across The Supply Graph" meta="two to action · one to celebrate" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {attentions.map((a) => (
-            <AttentionCard key={a.sectionLabel} attention={a} />
-          ))}
-        </div>
+        <SectionHead
+          title="Across The Supply Graph"
+          meta={supplyGraphMeta(summary.supply_graph_signals)}
+        />
+        {summary.supply_graph_signals.length === 0 ? (
+          <div className="bg-card border border-rule px-10 py-12 text-center">
+            <p className="font-serif italic text-muted">
+              No current issues across the supply graph. Detectors run daily and will surface anything worth your eye.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {summary.supply_graph_signals.map((s) => (
+              <SupplyGraphCard key={s.id} signal={s} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="mt-12">
-          <SectionHead title="Open A Workspace" meta="five places to go, each with their job" />
+        <SectionHead
+          title="Open A Workspace"
+          meta="five places to go, each with their job"
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <DestinationCard
             featured
@@ -192,43 +168,27 @@ export default async function StockSuppliersPage() {
               </>
             }
             linkLabel="Open Deliveries →"
-            linkMeta="5 in next 7 days"
+            linkMeta={
+              summary.upcoming_deliveries.length === 0
+                ? 'none in next 7 days'
+                : `${summary.upcoming_deliveries.length} in next 7 days`
+            }
           >
-            <div className="flex flex-col">
-              {deliveries.map((d, i) => (
-                <div
-                  key={i}
-                  className={
-                    'flex items-center gap-4 py-3' +
-                    (i < deliveries.length - 1 ? ' border-b border-rule-soft' : '')
-                  }
-                >
-                  <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted w-8">
-                    {d.day}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-serif font-semibold text-sm text-ink">
-                      {d.supplier}
-                    </div>
-                    <div className="font-serif italic text-xs text-muted">
-                      {d.sub}
-                    </div>
-                  </div>
-                  <div
-                    className={
-                      'font-sans font-semibold text-xs tracking-[0.08em] uppercase whitespace-nowrap ' +
-                      (d.tone === 'healthy'
-                        ? 'text-healthy'
-                        : d.tone === 'attention'
-                          ? 'text-attention'
-                          : 'text-muted')
-                    }
-                  >
-                    {d.status}
-                  </div>
-                </div>
-              ))}
-            </div>
+            {summary.upcoming_deliveries.length === 0 ? (
+              <div className="font-serif italic text-sm text-muted py-2">
+                Nothing on the books for the next week. Add an expected delivery from the Deliveries tab.
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {summary.upcoming_deliveries.slice(0, 5).map((d, i) => (
+                  <DeliveryRow
+                    key={d.id}
+                    delivery={d}
+                    last={i === Math.min(4, summary.upcoming_deliveries.length - 1)}
+                  />
+                ))}
+              </div>
+            )}
           </DestinationCard>
 
           <DestinationCard
@@ -242,11 +202,22 @@ export default async function StockSuppliersPage() {
               </>
             }
             linkLabel="Open Invoices →"
-            linkMeta="last received 07:14"
+            linkMeta={
+              summary.invoices_pending > 0
+                ? `${summary.invoices_pending} pending`
+                : 'all caught up'
+            }
           >
-            <StateRow label="In the inbox" value="14" />
-            <StateRow label="Discrepancies flagged" value="1" tone="attention" />
-            <StateRow label="Credit notes in flight" value="2" />
+            <StateRow
+              label="In the inbox"
+              value={String(summary.invoices_pending)}
+            />
+            <StateRow
+              label="Discrepancies flagged"
+              value={String(summary.invoices_with_discrepancy)}
+              tone={summary.invoices_with_discrepancy > 0 ? 'attention' : undefined}
+            />
+            <StateRow label="Credit notes in flight" value="—" />
           </DestinationCard>
 
           <DestinationCard
@@ -260,11 +231,28 @@ export default async function StockSuppliersPage() {
               </>
             }
             linkLabel="Open Suppliers →"
-            linkMeta="+ add new"
+            linkMeta={
+              summary.suppliers_active > 0
+                ? `${summary.suppliers_active} on the books`
+                : '+ add new'
+            }
           >
-            <StateRow label="On the books" value="8" />
-            <StateRow label="Ordering today" value="Reza by 16:00" />
-            <StateRow label="Price lists current" value="7 of 8" />
+            <StateRow
+              label="On the books"
+              value={String(summary.suppliers_active)}
+            />
+            <StateRow
+              label="With recent updates"
+              value={`${summary.suppliers_with_recent_updates} this week`}
+            />
+            <StateRow
+              label="Ordering today"
+              value={
+                summary.todays_delivery_suppliers.length > 0
+                  ? summary.todays_delivery_suppliers[0]
+                  : '—'
+              }
+            />
           </DestinationCard>
 
           <DestinationCard
@@ -279,7 +267,11 @@ export default async function StockSuppliersPage() {
               </>
             }
             linkLabel="Open The Bank →"
-            linkMeta="last update 07:14"
+            linkMeta={
+              bank.last_update_at
+                ? `last update ${dateFmt.format(new Date(bank.last_update_at))}`
+                : 'no updates yet'
+            }
           >
             <StateRow
               label="Updating in real time"
@@ -291,18 +283,25 @@ export default async function StockSuppliersPage() {
               }
               tone="healthy"
             />
-            <StateRow label="Ingredients on file" value="147" />
+            <StateRow
+              label="Ingredients on file"
+              value={String(bank.ingredients_on_file)}
+            />
             <StateRow
               label="Prices on the move"
               value={
-                <>
-                  11{' '}
-                  <em className="not-italic italic font-serif text-xs text-muted ml-1">
-                    this week
-                  </em>
-                </>
+                bank.prices_on_the_move > 0 ? (
+                  <>
+                    {bank.prices_on_the_move}{' '}
+                    <em className="not-italic italic font-serif text-xs text-muted ml-1">
+                      this week
+                    </em>
+                  </>
+                ) : (
+                  'steady'
+                )
               }
-              tone="attention"
+              tone={bank.prices_on_the_move > 0 ? 'attention' : undefined}
             />
           </DestinationCard>
 
@@ -318,22 +317,37 @@ export default async function StockSuppliersPage() {
               </>
             }
             linkLabel="Open Waste →"
-            linkMeta="+ log new"
+            linkMeta={
+              summary.waste_this_week_value > 0
+                ? gbp.format(summary.waste_this_week_value)
+                : '+ log new'
+            }
           >
             <StateRow
               label="This week"
               value={
-                <>
-                  £148{' '}
-                  <em className="not-italic italic font-serif text-xs text-muted ml-1">
-                    up 12%
-                  </em>
-                </>
+                summary.waste_this_week_value > 0 ? (
+                  <>
+                    {gbp.format(summary.waste_this_week_value)}
+                    {summary.waste_change_pct != null && (
+                      <em className="not-italic italic font-serif text-xs text-muted ml-1">
+                        {summary.waste_change_pct >= 0 ? '↑' : '↓'}{' '}
+                        {Math.abs(summary.waste_change_pct).toFixed(0)}%
+                      </em>
+                    )}
+                  </>
+                ) : (
+                  '£0'
+                )
               }
-              tone="attention"
+              tone={
+                summary.waste_change_pct != null && summary.waste_change_pct > 10
+                  ? 'attention'
+                  : undefined
+              }
             />
-            <StateRow label="Top category" value="Herbs" />
-            <StateRow label="Last logged" value="Yesterday 22:14" />
+            <StateRow label="Top category" value="—" />
+            <StateRow label="Last logged" value="—" />
           </DestinationCard>
         </div>
       </section>
@@ -343,59 +357,168 @@ export default async function StockSuppliersPage() {
   );
 }
 
-const attentionBorder: Record<AttentionSeverity, string> = {
+function summarySentence(summary: Awaited<ReturnType<typeof getHubSummary>>): string {
+  const parts: string[] = [];
+  if (summary.todays_deliveries === 0) {
+    parts.push('No deliveries today.');
+  } else {
+    parts.push(
+      `${summary.todays_deliveries} ${summary.todays_deliveries === 1 ? 'delivery' : 'deliveries'} today.`,
+    );
+  }
+
+  const urgentSignals = summary.supply_graph_signals.filter(
+    (s) => s.severity === 'urgent',
+  );
+  if (urgentSignals.length > 0) {
+    parts.push(
+      `${urgentSignals.length} ${urgentSignals.length === 1 ? 'thing' : 'things'} to deal with.`,
+    );
+  } else if (summary.supply_graph_signals.length > 0) {
+    parts.push('A couple of patterns worth your eye.');
+  } else {
+    parts.push('Everything moving as it should.');
+  }
+  return parts.join(' ');
+}
+
+function supplyGraphMeta(signals: HubSupplyGraphSignal[]): string {
+  if (signals.length === 0) return 'all clear';
+  const urgent = signals.filter((s) => s.severity === 'urgent').length;
+  const attention = signals.filter((s) => s.severity === 'attention').length;
+  const healthy = signals.filter((s) => s.severity === 'healthy').length;
+  const parts: string[] = [];
+  if (urgent > 0) parts.push(`${urgent} urgent`);
+  if (attention > 0) parts.push(`${attention} watch`);
+  if (healthy > 0) parts.push(`${healthy} working`);
+  return parts.join(' · ');
+}
+
+const attentionBorder: Record<HubSupplyGraphSignal['severity'], string> = {
   urgent: 'border-l-4 border-l-urgent',
   attention: 'border-l-4 border-l-attention',
+  healthy: 'border-l-4 border-l-healthy',
   info: 'border-l-4 border-l-gold',
 };
 
-const attentionLabelColor: Record<AttentionSeverity, string> = {
+const attentionLabelColor: Record<HubSupplyGraphSignal['severity'], string> = {
   urgent: 'text-urgent',
   attention: 'text-attention',
+  healthy: 'text-healthy',
   info: 'text-gold',
 };
 
-function AttentionCard({ attention: a }: { attention: Attention }) {
+function escapeAndBold(md: string): string {
+  const escaped = md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped.replace(
+    /\*\*(.+?)\*\*/g,
+    '<strong class="not-italic font-semibold text-ink">$1</strong>',
+  );
+}
+
+function SupplyGraphCard({ signal }: { signal: HubSupplyGraphSignal }) {
   return (
-    <div className={'bg-card border border-rule px-7 py-7 ' + attentionBorder[a.severity]}>
+    <div
+      className={
+        'bg-card border border-rule px-7 py-7 ' + attentionBorder[signal.severity]
+      }
+    >
       <div className="flex items-baseline justify-between mb-4">
         <div
           className={
             'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
-            attentionLabelColor[a.severity]
+            attentionLabelColor[signal.severity]
           }
         >
-          {a.sectionLabel}
+          {signal.section_label}
         </div>
         <div
           className={
             'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
-            attentionLabelColor[a.severity]
+            attentionLabelColor[signal.severity]
           }
         >
-          {a.severityLabel}
+          {signal.severity === 'urgent'
+            ? 'Urgent'
+            : signal.severity === 'attention'
+              ? 'Watch'
+              : signal.severity === 'healthy'
+                ? 'Working'
+                : 'Info'}
         </div>
       </div>
       <div className="font-serif text-xl text-ink mb-3 leading-snug">
-        {a.headlinePre}
-        {a.headlineEm && (
-          <>
-            {' '}
-            <em className="text-gold not-italic font-medium italic">{a.headlineEm}</em>
-          </>
+        {signal.headline_pre}
+        {signal.headline_em && (
+          <em className="text-gold not-italic font-medium italic">
+            {signal.headline_em}
+          </em>
         )}
-        {a.headlinePost}
+        {signal.headline_post}
       </div>
-      <div className="font-serif italic text-sm text-muted leading-relaxed mb-4">
-        {a.body}
-      </div>
-      <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
-          {a.actionLabel}
-        </a>
-        <div className="font-serif italic text-xs text-muted">
-          {a.actionContext}
+      <div
+        className="font-serif italic text-sm text-muted leading-relaxed mb-4"
+        dangerouslySetInnerHTML={{ __html: escapeAndBold(signal.body_md) }}
+      />
+      {signal.action_label && (
+        <div className="flex items-center justify-between pt-3 border-t border-rule">
+          <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
+            {signal.action_label}
+          </a>
+          {signal.action_context && (
+            <div className="font-serif italic text-xs text-muted">
+              {signal.action_context}
+            </div>
+          )}
         </div>
+      )}
+    </div>
+  );
+}
+
+function DeliveryRow({
+  delivery,
+  last,
+}: {
+  delivery: DeliveryPreview;
+  last: boolean;
+}) {
+  const statusLabel =
+    delivery.status === 'arrived'
+      ? 'Arrived'
+      : delivery.tone === 'attention'
+        ? 'Today'
+        : delivery.day_label;
+  return (
+    <div
+      className={
+        'flex items-center gap-4 py-3' +
+        (last ? '' : ' border-b border-rule-soft')
+      }
+    >
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted w-8">
+        {delivery.day_label}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-serif font-semibold text-sm text-ink">
+          {delivery.supplier_name}
+        </div>
+        <div className="font-serif italic text-xs text-muted">{delivery.sub}</div>
+      </div>
+      <div
+        className={
+          'font-sans font-semibold text-xs tracking-[0.08em] uppercase whitespace-nowrap ' +
+          (delivery.tone === 'healthy'
+            ? 'text-healthy'
+            : delivery.tone === 'attention'
+              ? 'text-attention'
+              : 'text-muted')
+        }
+      >
+        {statusLabel}
       </div>
     </div>
   );
@@ -475,12 +598,7 @@ function StateRow({
   return (
     <div
       className={
-        'flex items-baseline justify-between py-2.5 border-b border-rule-soft last:border-b-0 ' +
-        (tone === 'attention'
-          ? 'text-attention'
-          : tone === 'healthy'
-            ? 'text-healthy'
-            : '')
+        'flex items-baseline justify-between py-2.5 border-b border-rule-soft last:border-b-0'
       }
     >
       <span className="font-serif text-sm text-muted">{label}</span>
@@ -499,4 +617,3 @@ function StateRow({
     </div>
   );
 }
-

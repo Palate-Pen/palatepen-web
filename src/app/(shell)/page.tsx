@@ -1,9 +1,17 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
+import { getHomeRollup } from '@/lib/home';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { LookingAhead } from '@/components/shell/LookingAhead';
 
 export const metadata = { title: 'Home — Palatable' };
+
+const gbp = new Intl.NumberFormat('en-GB', {
+  style: 'currency',
+  currency: 'GBP',
+  minimumFractionDigits: 0,
+});
 
 function timeOfDay(now: Date): { eyebrow: string; greeting: string } {
   const h = now.getHours();
@@ -14,11 +22,11 @@ function timeOfDay(now: Date): { eyebrow: string; greeting: string } {
 
 export default async function HomePage() {
   const ctx = await getShellContext();
+  const rollup = await getHomeRollup(ctx.siteId);
   const tod = timeOfDay(new Date());
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1200px]">
-      {/* Greeting */}
       <div className="mb-12">
         <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
           {tod.eyebrow}
@@ -29,42 +37,106 @@ export default async function HomePage() {
           .
         </h1>
         <p className="font-serif italic text-lg text-muted mt-3.5 tracking-[0.01em]">
-          A quiet one — no deliveries scheduled and no orders pending.
+          {summarySentence(rollup)}
         </p>
       </div>
 
-      {/* Today & The Week Ahead */}
       <section className="mb-12">
-        <SectionHead title="Today & The Week Ahead" meta="empty for now" />
+        <SectionHead title="Today & The Week Ahead" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Panel title="Today's Deliveries" count="none expected">
-            <Empty>
-              No deliveries logged yet. Your first scan or supplier link will
-              start populating this.
-            </Empty>
+          <Panel
+            title="Today's Deliveries"
+            count={
+              rollup.todays_deliveries_due === 0
+                ? 'none expected'
+                : `${rollup.todays_deliveries_due} ${rollup.todays_deliveries_due === 1 ? 'expected' : 'expected'}`
+            }
+          >
+            {rollup.todays_delivery_suppliers.length === 0 ? (
+              <Empty>
+                No deliveries on the books for today. Add one from Stock & Suppliers when a supplier ETA lands.
+              </Empty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                {rollup.todays_delivery_suppliers.slice(0, 4).join(' · ')}
+                {rollup.todays_delivery_suppliers.length > 4 && (
+                  <span className="text-muted">
+                    {' '}+ {rollup.todays_delivery_suppliers.length - 4} more
+                  </span>
+                )}
+              </div>
+            )}
           </Panel>
-          <Panel title="This Week's Menu" count="no changes planned">
-            <Empty>
-              No menu changes planned. New dishes and removals will show here
-              once Menus is wired up.
-            </Empty>
+
+          <Panel
+            title="Today's Prep"
+            count={
+              rollup.prep_total_today === 0
+                ? 'nothing scheduled'
+                : `${rollup.prep_done_today} of ${rollup.prep_total_today} done`
+            }
+          >
+            {rollup.prep_total_today === 0 ? (
+              <Empty>
+                No prep board set for today. Open Prep to start one or carry yesterday's forward.
+              </Empty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                {rollup.prep_in_progress_today > 0 && (
+                  <>
+                    <strong className="not-italic font-semibold text-ink">
+                      {rollup.prep_in_progress_today} in progress
+                    </strong>
+                    {' · '}
+                  </>
+                )}
+                {rollup.prep_total_today -
+                  rollup.prep_done_today -
+                  rollup.prep_in_progress_today}{' '}
+                still to start.
+              </div>
+            )}
           </Panel>
         </div>
       </section>
 
-      {/* Kitchen at a Glance */}
       <section className="mb-12">
         <SectionHead title="Kitchen at a Glance" meta="live" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule">
-          <KpiCard size="hero" label="Menu GP" value="—" sub="no costings yet" />
-          <KpiCard size="hero" label="Stock Value" value="—" sub="stock not counted yet" />
-          <KpiCard size="hero" label="Deliveries Due" value="0" sub="today" />
-          <KpiCard size="hero" label="Waste This Week" value="£0" sub="no waste logged yet" />
+          <KpiCard
+            size="hero"
+            label="Recipes"
+            value={String(rollup.recipes_count)}
+            sub={rollup.recipes_count === 0 ? 'add your first dish' : 'on the menu'}
+          />
+          <KpiCard
+            size="hero"
+            label="Stock Value"
+            value={rollup.stock_value == null ? '—' : gbp.format(rollup.stock_value)}
+            sub="stock counting not wired"
+          />
+          <KpiCard
+            size="hero"
+            label="Deliveries Due"
+            value={String(rollup.todays_deliveries_due)}
+            sub="today"
+          />
+          <KpiCard
+            size="hero"
+            label="Waste This Week"
+            value={
+              rollup.waste_this_week > 0
+                ? gbp.format(rollup.waste_this_week)
+                : '£0'
+            }
+            sub={rollup.waste_this_week === 0 ? 'nothing logged yet' : 'last 7 days'}
+          />
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section>
+      <LookingAhead siteId={ctx.siteId} surface="home" />
+
+      <section className="mt-12">
         <SectionHead title="Quick Actions" meta="tap to start" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <QuickAction
@@ -79,13 +151,17 @@ export default async function HomePage() {
             }
           />
           <QuickAction
-            href="/stock-suppliers"
-            label="Count stock"
-            sub="Quick or full count"
+            href="/prep"
+            label="Open today's prep"
+            sub={
+              rollup.prep_total_today === 0
+                ? 'set the board'
+                : `${rollup.prep_done_today} done`
+            }
             icon={
               <>
-                <path d="M3 7l9-4 9 4-9 4-9-4z" />
-                <path d="M3 7v10l9 4 9-4V7" />
+                <rect x="4" y="3" width="16" height="18" rx="1" />
+                <path d="M8 7h8M8 11h8M8 15h5" />
               </>
             }
           />
@@ -112,6 +188,27 @@ export default async function HomePage() {
       </section>
     </div>
   );
+}
+
+function summarySentence(rollup: Awaited<ReturnType<typeof getHomeRollup>>): string {
+  const parts: string[] = [];
+  if (rollup.todays_deliveries_due === 0) {
+    parts.push('A quiet one — no deliveries scheduled.');
+  } else {
+    parts.push(
+      `${rollup.todays_deliveries_due} ${rollup.todays_deliveries_due === 1 ? 'delivery' : 'deliveries'} expected today.`,
+    );
+  }
+  if (rollup.prep_total_today > 0) {
+    const remaining =
+      rollup.prep_total_today - rollup.prep_done_today;
+    if (remaining > 0) {
+      parts.push(`${remaining} prep ${remaining === 1 ? 'item' : 'items'} to clear.`);
+    } else {
+      parts.push("Prep board's done.");
+    }
+  }
+  return parts.join(' ');
 }
 
 function Panel({
