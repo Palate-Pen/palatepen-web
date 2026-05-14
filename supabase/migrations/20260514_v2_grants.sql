@@ -1,5 +1,6 @@
 -- v2 migration: grant Supabase roles access to the v2 schema
 -- Date: 2026-05-14
+-- Applied: 2026-05-14 (manual run via Supabase SQL editor; file committed after; MCP-verified that schema USAGE, table CRUD, default privileges, enum USAGE on shell_role, and function EXECUTE on user_site_ids/user_account_ids are all present for anon/authenticated/service_role as declared)
 --
 -- The foundation migration created the schema, tables, and RLS policies
 -- but didn't grant USAGE on the schema or table privileges to the
