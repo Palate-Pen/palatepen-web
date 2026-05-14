@@ -1,5 +1,6 @@
 -- v2 migration: The Bank — ingredients + suppliers + price history
 -- Date: 2026-05-14
+-- Applied: 2026-05-14 (manual run via Supabase SQL editor; file committed after; verified via MCP that DB state matches this file exactly — columns, enum, indexes, RLS, policies, triggers)
 --
 -- Lands the foundational data model for the chef-shell Stock & Suppliers
 -- hub. Three tables, all site-scoped, RLS via the user_site_ids() helper
