@@ -152,11 +152,10 @@ create policy memberships_delete on v2.memberships
 --    NOTE on the legacy trigger collision: the legacy schema has a
 --    public.handle_new_user trigger that fires on the same event. On
 --    a fresh signup against this DB, BOTH triggers will run — legacy
---    will create rows in public.profiles + public.accounts, v2 will
---    create rows in v2.accounts + v2.sites + v2.memberships. The two
---    don't conflict but the legacy rows are dead weight. Cleanup
---    (drop the public trigger) handled in a separate migration once
---    v2 signup is wired and tested.
+--    will create rows in public.accounts + public.account_members +
+--    public.user_data; v2 will create rows in v2.accounts + v2.sites
+--    + v2.memberships. The two don't conflict but the legacy rows
+--    are dead weight. Cleanup landed in 20260514_drop_legacy_signup_trigger.sql.
 -- ---------------------------------------------------------------------
 create or replace function v2.handle_new_user()
 returns trigger
