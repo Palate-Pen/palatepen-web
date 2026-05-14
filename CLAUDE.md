@@ -111,6 +111,7 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 - Strategic direction locked — three role-aware surfaces, four sous chef tabs (Recipes/Costing/Margins/Reports), see Palatable — Strategic Direction section below
 - CLAUDE.md cleanup commits 1 and 2 — reference material extracted, Progress Log moved to docs/progress-log.md
 - 2026-05-14 PM: Locked final strategy spec across customer + admin + build sequence; captured design system v6 with chef-home and chef-margins mockups as visual canon for any UI work going forward. See docs/strategy/working-notes/design-system-v6.md and docs/strategy/mockups/.
+- 2026-05-14 PM (late): Locked Stock & Suppliers hub design at v3, captured design system v7 with Looking Ahead pattern and Working severity, expanded master views with self-serve integration architecture (user-credential-based, no B2B partnerships needed) and forward-intelligence engine as foundation subsystem. Honest revised build sequence at 6-9 months solo-build to v1 launch. See docs/strategy/working-notes/design-system-v7.md.
 
 **In flight:**
 - PR 1 — mechanical/additive Margins tab work (sidebar, MarginsView stub, MARGIN.* editing keys)
