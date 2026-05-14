@@ -163,6 +163,7 @@ export default async function StockSuppliersPage() {
             featured
             name="Deliveries"
             tagline="what's arriving today and this week"
+            href="/stock-suppliers/deliveries"
             iconPath={
               <>
                 <path d="M3 7h13l3 4h2v6h-2" />
@@ -228,6 +229,7 @@ export default async function StockSuppliersPage() {
           <DestinationCard
             name="Suppliers"
             tagline="who you buy from, when, for how much"
+            href="/stock-suppliers/suppliers"
             iconPath={
               <>
                 <path d="M3 21V8l9-5 9 5v13" />
@@ -313,6 +315,7 @@ export default async function StockSuppliersPage() {
           <DestinationCard
             name="Waste"
             tagline="what got binned and why"
+            href="/stock-suppliers/waste"
             iconPath={
               <>
                 <path d="M4 7h16" />

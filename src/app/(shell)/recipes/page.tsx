@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getRecipes, type Recipe } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
@@ -127,7 +128,10 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
     recipe.matched_ingredient_count < recipe.ingredients.length;
 
   return (
-    <div className="bg-card border border-rule cursor-pointer transition-all hover:border-gold hover:shadow-[0_4px_16px_rgba(26,22,18,0.08)] flex flex-col">
+    <Link
+      href={`/recipes/${recipe.id}`}
+      className="bg-card border border-rule cursor-pointer transition-all hover:border-gold hover:shadow-[0_4px_16px_rgba(26,22,18,0.08)] flex flex-col"
+    >
       <div className="px-6 py-6 border-b border-rule">
         <div className="font-serif font-semibold text-2xl text-ink leading-tight">
           {recipe.name}
@@ -210,19 +214,14 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         )}
       </div>
 
-      <div className="px-6 py-4 border-t border-rule bg-paper flex gap-2">
-        <RecipeButton>Edit</RecipeButton>
-        <RecipeButton>Scale</RecipeButton>
-        <RecipeButton>Print</RecipeButton>
+      <div className="px-6 py-4 border-t border-rule bg-paper flex justify-between items-center">
+        <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
+          Open recipe →
+        </span>
+        <span className="font-serif italic text-xs text-muted">
+          {recipe.matched_ingredient_count}/{recipe.ingredients.length} linked
+        </span>
       </div>
-    </div>
-  );
-}
-
-function RecipeButton({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="flex-1 py-2 font-sans font-semibold text-xs tracking-[0.08em] uppercase bg-transparent border border-rule text-muted transition-colors hover:border-gold hover:text-gold">
-      {children}
-    </button>
+    </Link>
   );
 }
