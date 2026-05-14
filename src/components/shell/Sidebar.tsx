@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NavIcon, type NavIconName } from './NavIcons';
+import { useSidebarState } from './SidebarState';
 
 type NavItem = { href: string; label: string; icon: NavIconName };
 
@@ -24,53 +25,85 @@ const ACCOUNT: NavItem[] = [
 ];
 
 export function Sidebar({ kitchenName }: { kitchenName: string }) {
+  const { collapsed } = useSidebarState();
+
   return (
-    <aside className="w-[252px] bg-paper-warm border-r border-rule h-screen sticky top-0 flex flex-col overflow-hidden flex-shrink-0">
-      <div className="h-[76px] px-6 border-b border-rule flex items-center flex-shrink-0">
+    <aside
+      className={`${
+        collapsed ? 'w-[72px]' : 'w-[252px]'
+      } bg-paper-warm border-r border-rule h-screen sticky top-0 flex flex-col overflow-hidden flex-shrink-0 transition-[width] duration-200`}
+    >
+      <div
+        className={`h-[76px] border-b border-rule flex items-center flex-shrink-0 ${
+          collapsed ? 'px-0 justify-center' : 'px-6'
+        }`}
+      >
         <Link
           href="/"
           className="font-display text-xl font-semibold tracking-[0.16em] uppercase text-ink"
+          aria-label="Palatable"
         >
           <span>P</span>
-          <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
-          <span>alatable</span>
+          <span
+            className={`inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px] ${
+              collapsed ? '' : ''
+            }`}
+          />
+          {!collapsed && <span>alatable</span>}
         </Link>
       </div>
 
-      <div className="px-6 pt-3 pb-1">
-        <div className="font-display text-xs font-medium tracking-[0.32em] uppercase text-muted truncate">
-          {kitchenName}
+      {!collapsed && (
+        <div className="px-6 pt-3 pb-1">
+          <div className="font-display text-xs font-medium tracking-[0.32em] uppercase text-muted truncate">
+            {kitchenName}
+          </div>
         </div>
-      </div>
+      )}
 
       <nav className="flex-1 overflow-y-auto py-2">
-        <Section label="Kitchen" items={KITCHEN} />
-        <Section label="Intelligence" items={INTELLIGENCE} />
+        <Section label="Kitchen" items={KITCHEN} collapsed={collapsed} />
+        <Section label="Intelligence" items={INTELLIGENCE} collapsed={collapsed} />
       </nav>
 
       <div className="border-t border-rule py-2">
         {ACCOUNT.map((item) => (
-          <NavLink key={item.href} {...item} />
+          <NavLink key={item.href} {...item} collapsed={collapsed} />
         ))}
       </div>
     </aside>
   );
 }
 
-function Section({ label, items }: { label: string; items: NavItem[] }) {
+function Section({
+  label,
+  items,
+  collapsed,
+}: {
+  label: string;
+  items: NavItem[];
+  collapsed: boolean;
+}) {
   return (
     <div>
-      <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-muted-soft pt-3.5 pb-1.5 px-6">
-        {label}
-      </div>
+      {!collapsed && (
+        <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-muted-soft pt-3.5 pb-1.5 px-6">
+          {label}
+        </div>
+      )}
       {items.map((item) => (
-        <NavLink key={item.href} {...item} />
+        <NavLink key={item.href} {...item} collapsed={collapsed} />
       ))}
     </div>
   );
 }
 
-function NavLink({ href, label, icon }: NavItem) {
+function NavLink({
+  href,
+  label,
+  icon,
+  collapsed,
+}: NavItem & { collapsed: boolean }) {
   const pathname = usePathname();
   const isActive =
     href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -78,7 +111,10 @@ function NavLink({ href, label, icon }: NavItem) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 px-6 py-2.5 border-l-2 transition-colors font-display text-xs font-semibold tracking-[0.18em] uppercase ${
+      title={collapsed ? label : undefined}
+      className={`flex items-center transition-colors font-display text-xs font-semibold tracking-[0.18em] uppercase border-l-2 group relative ${
+        collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-6 py-2.5'
+      } ${
         isActive
           ? 'border-l-gold bg-gold-bg text-ink'
           : 'border-l-transparent text-ink-soft hover:border-l-gold/40 hover:bg-gold-bg hover:text-ink'
@@ -90,7 +126,7 @@ function NavLink({ href, label, icon }: NavItem) {
           isActive ? 'text-gold' : 'text-muted'
         }`}
       />
-      <span className="leading-tight">{label}</span>
+      {!collapsed && <span className="leading-tight">{label}</span>}
     </Link>
   );
 }

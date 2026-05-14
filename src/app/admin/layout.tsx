@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminTopbar } from '@/components/admin/AdminTopbar';
+import { SidebarStateProvider } from '@/components/shell/SidebarState';
 import { ADMIN_EMAIL } from '@/lib/admin';
 
 /**
@@ -35,13 +36,15 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-paper">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminTopbar email={user.email ?? ''} />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+    <SidebarStateProvider>
+      <div className="min-h-screen flex bg-paper">
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminTopbar email={user.email ?? ''} />
+          <main className="flex-1 overflow-y-auto">{children}</main>
+        </div>
       </div>
-    </div>
+    </SidebarStateProvider>
   );
 }
 

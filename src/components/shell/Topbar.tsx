@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { CollapseToggle } from './CollapseToggle';
 
 const BREADCRUMBS: Record<string, string> = {
   '/': 'Home',
@@ -44,9 +45,12 @@ export function Topbar() {
   }, []);
 
   return (
-    <header className="h-[76px] bg-paper border-b border-rule flex items-center justify-between px-14 sticky top-0 z-10 flex-shrink-0">
-      <div className="font-serif text-lg font-medium tracking-[0.04em] text-ink">
-        {breadcrumb}
+    <header className="h-[76px] bg-paper border-b border-rule flex items-center justify-between px-6 md:px-10 sticky top-0 z-10 flex-shrink-0">
+      <div className="flex items-center gap-4">
+        <CollapseToggle />
+        <div className="font-serif text-lg font-medium tracking-[0.04em] text-ink">
+          {breadcrumb}
+        </div>
       </div>
       <div className="flex items-center gap-7">
         <div className="flex items-center gap-2 font-display text-xs font-semibold tracking-[0.3em] uppercase text-healthy">
