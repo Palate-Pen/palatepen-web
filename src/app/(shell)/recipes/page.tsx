@@ -47,21 +47,31 @@ export default async function RecipesPage() {
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Your Recipe Book
+      <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Your Recipe Book
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            <em className="text-gold font-semibold not-italic">Recipes</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            {recipes.length > 0 ? (
+              <>
+                {recipes.length} {recipes.length === 1 ? 'dish' : 'dishes'}. Costing pulled live from The Bank — click a dish to drill in.
+              </>
+            ) : (
+              <>No recipes yet. Costing will be live the moment you add one.</>
+            )}
+          </p>
+        </div>
+        <Link
+          href="/recipes/new"
+          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+        >
+          + Add recipe
+        </Link>
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">Recipes</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        {recipes.length > 0 ? (
-          <>
-            {recipes.length} {recipes.length === 1 ? 'dish' : 'dishes'}. Costing pulled live from The Bank. Edit · scale · print.
-          </>
-        ) : (
-          <>No recipes yet. Costing will be live the moment you add one.</>
-        )}
-      </p>
 
       {recipes.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">

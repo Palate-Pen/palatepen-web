@@ -1,0 +1,70 @@
+import { notFound } from 'next/navigation';
+import { getShellContext } from '@/lib/shell/context';
+import { getRecipe } from '@/lib/recipes';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { RecipeForm, type BankIngredientOption } from '../../RecipeForm';
+import type { MenuSection } from '../../actions';
+
+export const metadata = { title: 'Edit recipe — Palatable' };
+
+export default async function EditRecipePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const ctx = await getShellContext();
+  const recipe = await getRecipe(id);
+  if (!recipe) notFound();
+
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('ingredients')
+    .select('id, name, unit, current_price')
+    .eq('site_id', ctx.siteId)
+    .order('name', { ascending: true });
+
+  const bankIngredients: BankIngredientOption[] = (data ?? []).map((row) => ({
+    id: row.id as string,
+    name: row.name as string,
+    unit: (row.unit as string | null) ?? null,
+    current_price:
+      row.current_price == null ? null : Number(row.current_price),
+  }));
+
+  const initial = {
+    name: recipe.name,
+    menu_section: recipe.menu_section as MenuSection | null,
+    serves: recipe.serves,
+    portion_per_cover: recipe.portion_per_cover,
+    sell_price: recipe.sell_price,
+    notes: recipe.notes,
+    ingredients: recipe.ingredients.map((i) => ({
+      name: i.name,
+      qty: i.qty,
+      unit: i.unit,
+      ingredient_id: i.ingredient_id,
+    })),
+  };
+
+  return (
+    <div className="px-14 pt-12 pb-20 max-w-[900px]">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+        Recipes · Edit
+      </div>
+      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+        Edit <em className="text-gold font-semibold not-italic">{recipe.name}</em>
+      </h1>
+      <p className="font-serif italic text-lg text-muted mt-3 mb-8">
+        Tweak the dish, its ingredients, or its sell price. Saved changes flow into Margins, The Bank, and the menu builder immediately.
+      </p>
+
+      <RecipeForm
+        mode="edit"
+        recipeId={recipe.id}
+        initial={initial}
+        bankIngredients={bankIngredients}
+      />
+    </div>
+  );
+}

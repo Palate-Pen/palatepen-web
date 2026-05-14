@@ -221,18 +221,26 @@ export default async function MarginDetailPage({
         )}
       </section>
 
-      <div className="mt-10 flex items-center gap-3">
+      <div className="mt-10 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/margins"
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
+          >
+            ← Back to Margins
+          </Link>
+          <Link
+            href={`/recipes/${recipe.id}`}
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
+          >
+            Open in Recipes →
+          </Link>
+        </div>
         <Link
-          href="/margins"
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
+          href={`/recipes/${recipe.id}/edit`}
+          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
         >
-          ← Back to Margins
-        </Link>
-        <Link
-          href={`/recipes/${recipe.id}`}
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
-        >
-          Open in Recipes →
+          Edit recipe →
         </Link>
       </div>
     </div>
