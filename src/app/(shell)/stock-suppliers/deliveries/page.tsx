@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getDeliveries, type DeliveryRow } from '@/lib/deliveries';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import {
+  ScheduleDeliveryDialog,
+  type SupplierOption,
+} from './ScheduleDeliveryDialog';
 
 export const metadata = { title: 'Deliveries — Palatable' };
 
@@ -19,19 +24,36 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 
 export default async function DeliveriesPage() {
   const ctx = await getShellContext();
-  const data = await getDeliveries(ctx.siteId);
+  const supabase = await createSupabaseServerClient();
+  const [data, suppliersResp] = await Promise.all([
+    getDeliveries(ctx.siteId),
+    supabase
+      .from('suppliers')
+      .select('id, name')
+      .eq('site_id', ctx.siteId)
+      .order('name', { ascending: true }),
+  ]);
+  const suppliers: SupplierOption[] = (suppliersResp.data ?? []).map((s) => ({
+    id: s.id as string,
+    name: s.name as string,
+  }));
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Stock & Suppliers · Deliveries
+      <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Stock & Suppliers · Deliveries
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+            <em className="text-gold font-semibold not-italic">Deliveries</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted mt-3">
+            {subtitle(data)}
+          </p>
+        </div>
+        <ScheduleDeliveryDialog suppliers={suppliers} />
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-        <em className="text-gold font-semibold not-italic">Deliveries</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mt-3 mb-8">
-        {subtitle(data)}
-      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard

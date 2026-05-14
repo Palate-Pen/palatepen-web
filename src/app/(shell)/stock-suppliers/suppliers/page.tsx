@@ -2,6 +2,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getSuppliers, type SupplierRow } from '@/lib/suppliers';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { AddSupplierDialog } from './AddSupplierDialog';
 
 export const metadata = { title: 'Suppliers — Palatable' };
 
@@ -24,15 +25,20 @@ export default async function SuppliersPage() {
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Stock & Suppliers · Suppliers
+      <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Stock & Suppliers · Suppliers
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+            <em className="text-gold font-semibold not-italic">Suppliers</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted mt-3">
+            {subtitle(data, lowReliability)}
+          </p>
+        </div>
+        <AddSupplierDialog />
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-        <em className="text-gold font-semibold not-italic">Suppliers</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mt-3 mb-8">
-        {subtitle(data, lowReliability)}
-      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard

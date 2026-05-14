@@ -1,7 +1,12 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getWaste, wasteCategoryLabel, type WasteRow } from '@/lib/waste';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import {
+  LogWasteDialog,
+  type BankIngredientOption,
+} from './LogWasteDialog';
 
 export const metadata = { title: 'Waste — Palatable' };
 
@@ -25,19 +30,41 @@ const dateTimeFmt = new Intl.DateTimeFormat('en-GB', {
 
 export default async function WastePage() {
   const ctx = await getShellContext();
-  const data = await getWaste(ctx.siteId);
+  const supabase = await createSupabaseServerClient();
+  const [data, ingredientsResp] = await Promise.all([
+    getWaste(ctx.siteId),
+    supabase
+      .from('ingredients')
+      .select('id, name, unit, current_price')
+      .eq('site_id', ctx.siteId)
+      .order('name', { ascending: true }),
+  ]);
+  const bankIngredients: BankIngredientOption[] = (
+    ingredientsResp.data ?? []
+  ).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    unit: (r.unit as string | null) ?? null,
+    current_price:
+      r.current_price == null ? null : Number(r.current_price),
+  }));
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Stock & Suppliers · Waste
+      <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Stock & Suppliers · Waste
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+            <em className="text-gold font-semibold not-italic">Waste</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted mt-3">
+            {subtitle(data)}
+          </p>
+        </div>
+        <LogWasteDialog bankIngredients={bankIngredients} />
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-        <em className="text-gold font-semibold not-italic">Waste</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mt-3 mb-8">
-        {subtitle(data)}
-      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard
