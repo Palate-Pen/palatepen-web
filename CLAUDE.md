@@ -106,24 +106,19 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 
 ## Recent activity
 
-**Last shipped (foundation week 1):**
-- Backfill migration applied (defensive no-op, schema invariants verified intact)
-- MCP tooling added — GitHub MCP and Supabase MCP (now read-write against prod; see MCP Tooling section for discipline), both proven functional
-- Strategic direction locked — three role-aware surfaces, four sous chef tabs (Recipes/Costing/Margins/Reports), see Palatable — Strategic Direction section below
-- CLAUDE.md cleanup commits 1 and 2 — reference material extracted, Progress Log moved to docs/progress-log.md
-- 2026-05-14 PM: Locked final strategy spec across customer + admin + build sequence; captured design system v6 with chef-home and chef-margins mockups as visual canon for any UI work going forward. See docs/strategy/working-notes/design-system-v6.md and docs/strategy/mockups/.
-- 2026-05-14 PM (late): Locked Stock & Suppliers hub design at v3, captured design system v7 with Looking Ahead pattern and Working severity, expanded master views with self-serve integration architecture (user-credential-based, no B2B partnerships needed) and forward-intelligence engine as foundation subsystem. Honest revised build sequence at 6-9 months solo-build to v1 launch. See docs/strategy/working-notes/design-system-v7.md.
-- 2026-05-14 PM (evening lock): Stock & Suppliers complete — hub + 7 sub-pages locked (Notebook, Seasonal, Suppliers, The Bank, Invoices, Deliveries, Waste). Added Prep tab (chef shell then 9 tabs — Prep at position 2, after Home) and Order Drafter modal (launched from Deliveries + Suppliers, 4-channel). Design system v8 captures 15 new patterns + write-and-workflow surface type. See docs/strategy/working-notes/design-system-v8.md and surface-notes-2026-05-14-evening.md; mockups under docs/strategy/mockups/.
-- 2026-05-14 PM (final lock): Chef shell complete — 10 tabs locked (Home / Prep / Recipes / Menus / Margins / Stock & Suppliers / Notebook / Inbox / Settings / Connections). Costing folded into Margins; Reports dropped; Notebook promoted from Stock & Suppliers sub-page; Settings + Connections promoted from cross-shell to chef-shell. Manager Home locked (manager shell 10 tabs, others pending detail design). Onboarding flow locked. Path B greenfield rewrite decision made — legacy app frozen in `legacy/` as a read-only reference snapshot (not built, not deployed, not imported from `src/`); v2 builds at standard `src/` root against the new `v2` Supabase schema. See docs/strategy/mockups/.
+**Last shipped:**
+- First vertical feature loop — The Bank end-to-end with the forward-intelligence engine live in production. Three new migrations (recipes / prep_items / forward_signals), 12-ingredient seed against the demo site, async server-rendered Bank page with live KPIs + per-row 30-day sparklines + casual-name supplier rendering, reusable LookingAhead server component reading v2.forward_signals, market-move detector cron at /api/cron/detect-market-moves authenticated via CRON_SECRET, daily 08:00 UTC schedule wired in vercel.json. Production-verified with a 200 + the expected JSON response; CRON_SECRET rotated to a transcript-free value. Closes the "first feature loop" item from the build-approach memory. Full detail in docs/progress-log.md.
+- All 9 remaining chef-shell tab routes ported from locked mockups as static visual scaffolding (Connections, Menus, Recipes, Settings, Inbox, Prep, Margins, Stock & Suppliers hub, Notebook). Visual coverage across the whole 10-tab surface. 2842 lines of TSX. Note: the Bank loop replaced the hub's hardcoded Looking Ahead with the real component; the other tabs still render constants until their loops run.
+- Strategic direction, design system v8, surface notes, and all chef-shell mockups locked. Manager Home locked; manager-shell tabs 2-10 pending detail design.
 
 **In flight:**
-- Manager shell detail design (9 tabs remaining after Home)
-- v2 app build-out: auth + onboarding wired; chef shell scaffolded with placeholders; Home tab ported from mockup v5. Remaining: 9 chef-shell tab implementations + manager/owner shells.
+- Phase A close-out: rotate-CRON_SECRET ✓, progress-log entry ✓, CLAUDE.md Recent activity (this) ✓, browser smoke-test of The Bank pending.
+- Next feature loop: Prep + Recipes (v2.prep_items and v2.recipes schemas already landed; seed + wire pages + add a recipe-staleness detector as the second cron).
 
 **Next:**
-- Owner shell with Sites + group rollups
-- Open question: Cash Flow / Payments surface has no single home yet
-- Build phase: Foundation + chef shell scaffolding — see docs/strategy/pre-launch-build-sequence.md (honest 6-9 month plan)
+- Shared shell component extraction (Section / KpiCard / AttentionCard) from inlined ports into src/components/shell/ once Prep loop wraps.
+- Schema for the remaining v1 surfaces: v2.invoices (unlocks invoice scanning → auto Bank update — the operational moat), v2.deliveries, v2.waste_entries. Each then unlocks the next feature loop (Margins / Deliveries / Waste end-to-end).
+- Open question: Cash Flow / Payments surface still has no single home — TBD with owner-shell design.
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.
 
