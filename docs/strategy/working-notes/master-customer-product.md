@@ -1,300 +1,241 @@
-# Master view — Palatable customer product
+# Master view — customer product
 
-*The strategic shape of the customer product. Final form after all decisions locked 2026-05-14.*
+*Locked 2026-05-14 evening. Supersedes the morning lock. Adds self-serve integration architecture, Stock & Suppliers expansion, forward-looking intelligence as architectural requirement.*
 
----
-
-## The product, restated
-
-Palatable is one product, three role-aware shells. Same underlying data, three different ways into it, each calibrated to who's looking and what they need. The chef opens a calm, low-density kitchen tool. The manager opens an operational site view. The owner opens a strategic business view. Visual language is shared. Information density is role-aware.
-
-The shape below was worked out from a 14-tab capability set down to a clean, purposeful navigation per role. *Tidy station = tidy mind = clean good food.*
+This is the canonical reference for what the Palatable customer product **is**, **does**, and **looks like** at v1 launch.
 
 ---
 
-## Chef shell — *the sous chef*
+## The product in one paragraph
 
-The chef opens Palatable in the morning, gets a coffee, and wants to know what they need to know fast, without navigating anywhere. Then through the day they reach for specific tools as the work demands.
-
-### Top-level navigation
-
-1. **Home** — morning brief and quick actions. *Default surface; opens when the chef launches the app.*
-2. **Recipes** — *what do we make?* Library, authoring, inline costing happens here, simulator runs from inside a recipe.
-3. **Costing** — *what does it cost us?* The cost book. Library overview of every costing in the kitchen with grid view, GP %, sale price, last-costed date, drift flags, click-through to recipe.
-4. **Margins** — *how is my menu performing?* The chef's menu performance dashboard. Every dish on the menu, GP trends, drift flags, which dishes are exposed to which supplier price moves, which are slipping.
-5. **Stock & Suppliers** — what's in the kitchen, who supplies it, what it costs, what's been wasted. Four current tabs (Bank, Invoices, Suppliers, Waste) folded into one consolidated surface.
-6. **Notebook** — the digital kitchen notebook. Private by default, optional sharing. Treated as a key product feature, not a freeform notes page (see below).
-7. **Inbox** — persistent intelligence feed. Alerts, briefs, actionable items.
-
-Plus *Profile* and *Settings* as bottom-of-nav utilities.
-
-Seven destinations. Down from fourteen. Each answers a specific chef question.
-
-### The chef home surface
-
-**Morning brief** at the top, curated by the Inbox dispatcher:
-- Heads-up alerts (margin slips, price spikes, supplier issues, credit notes pending)
-- Today's deliveries due and anything flagged
-- Stock alerts (running low against par, expiring)
-- One-line orientation: *"Three things to look at, two deliveries due, all margins healthy."*
-
-**Quick actions** below:
-- Scan an invoice
-- Count stock
-- Open a recipe
-- Log waste
-
-Replaces the current Dashboard tab entirely for chef users.
-
-### Costing vs Margins — different jobs
-
-Both stay as top-level tabs because they answer different questions:
-
-- **Costing** = *edit and maintain the cost book.* Library of every costing, drift detection, authoring inline from recipes. The cost book itself.
-- **Margins** = *how is the cost book performing over time?* Performance dashboard. Trends, slipping dishes, supplier exposure, what to investigate.
-
-The flow between them matters: from a slipping dish in Margins, one click should drop you into that dish's Costing entry to investigate or fix.
-
-### Margins — chef version specifically
-
-Margins follows the same role-scoped pattern as Home: same surface, different default scope per role.
-
-- **Chef Margins** — *my menu's performance.* Every dish on the chef's menu, GP %, trend arrows, drift flags, supplier exposure. The chef's daily/weekly view of how their menu is doing.
-- **Manager Margins** — *this site's performance plus operational drill-down.* Which supplier is the issue, which PO to renegotiate, which dish to remove.
-- **Owner Margins** — *group rollup, supplier benchmarking across all sites, inflation tracking across the basket.*
-
-Same data, role-scoped default scope. Same pattern as Home.
-
-### Stock & Suppliers consolidation
-
-Four current tabs fold into one surface for chef and manager:
-
-- **Bank** (ingredient catalogue with prices, sparkline trends, allergen data)
-- **Invoices** (AI-scanned invoices feeding Bank prices)
-- **Suppliers** (directory, reliability scores, credit notes)
-- **Waste** (waste log feeding cost intelligence and stock reconciliation)
-
-These are four views of the same data graph: *ingredients ← invoices ← suppliers ← prices, with waste closing the loop.* Forcing context-switch between them is friction. One consolidated tab with sections inside is cleaner.
-
-The "Invoice scan" quick action stays prominent on the home screen — it's frequent and time-sensitive — but the inventory of past invoices, the supplier directory, the ingredient bank, and the waste log all live in one consolidated tab.
-
-Naming TBD. "Stock & Suppliers" is descriptive. Could also be "Larder" or "Kitchen" or similar — open question for naming.
-
-### Notebook — promoted to key feature
-
-Notebook is not a freeform notes page that exists because some products have one. It's a deliberate product feature: **the digital kitchen notebook that replaces the oil-stained paper one in every chef's apron.**
-
-What it does:
-- **Persistence** — never ruined by oil, water, fire, or the dishwasher
-- **Search** — find that thing you wrote three months ago in 2 seconds
-- **Linkability** — notes attach to dishes, recipes, suppliers, ingredients
-- **Shareability** — private by default, optional sharing into the account so other chefs see what the author chooses to share
-- **Syncability** — phone, tablet, desktop, across sites
-- **Multi-format** — handwritten notes (touchscreen / stylus), voice memos, photos paired with notes, sketches of plating, ingredient experiments with taggable outcomes
-- **Mobile-first** — chefs are on their feet, not at a desk
-
-Privacy model: chef-private by default. The chef chooses what to share into the account. Menu development, prep technique notes, supplier feedback — that's IP the chef may or may not want shared upward to managers or owners.
-
-This is the only feature in Palatable that no competitor has. Operational moat. Worth building properly.
-
-### What's hidden from chef shell entirely
-
-- Reports (operational reporting belongs to manager/owner shells)
-- Menus (menu building and publishing is usually GM/owner work — chef can access when working on a new launch, not daily)
-- My Team (team management is manager/owner work)
-- Financial reports, multi-site comparisons, P&L analytics, accounting integrations
-- Account billing, plan management, Admin
-- Dashboard (replaced by chef home morning brief)
-
-### Design intent — chef shell
-
-Calm, low-density, mobile-first. The chef shouldn't have to think about where to look. Most days the morning brief is "all clear" and the chef closes the app and goes cooking. Some days it surfaces something to act on, and the action is one tap away.
+Palatable is an intelligent sous chef in software form. It takes the operational reality of a kitchen — the recipes, the costings, the supplier deliveries, the daily prep — and surfaces what matters: what's slipping, what's exposed, what to plan for. It speaks the language of chefs (not accountants), shows its work without showing off, and grows in intelligence as the user connects the tools they already have (POS, bookings, supplier portals). For users without these tools, the product still works — on what it has — and grows as they add connections.
 
 ---
 
-## Manager shell — *site operational status*
+## Three role-aware shells
 
-The GM or kitchen manager opens Palatable mid-morning or between services. They want to know how the site is running.
+The customer product renders three different shells based on the user's primary role at their outlet:
 
-### Top-level navigation
+- **Chef shell** — operational, kitchen-floor focus
+- **Manager shell** — operational + commercial, site-level focus
+- **Owner shell** — strategic, business + multi-site focus (Group/Enterprise tier only)
 
-1. **Home** — site status. Today's prep, alerts requiring action, this week's waste vs last, margin movements worth knowing about
-2. **Recipes** — same library as chef sees, manager often looking up rather than authoring
-3. **Costing** — same library overview as chef, often investigating drift or running scenarios
-4. **Margins** — this site's performance plus operational drill-down (which supplier is the issue, which PO to renegotiate)
-5. **Stock & Suppliers** — full operational tools. POs to approve, credit notes in progress, par level management
-6. **Menus** — menu publishing and digital menu management
-7. **Reports** — site-specific operational reporting
-8. **My Team** — team management for this site
-9. **Notebook** — same as chef sees, with visibility into what's been shared into the account
-10. **Inbox** — manager-routed intelligence feed
+A user with multiple roles (e.g. an owner-operator who's also their own chef) sees a surface switcher in the sidebar foot and can flip between shells. Each shell remembers its own state and preferences.
 
-Roughly ten destinations. Higher density than chef, which is acceptable — managers are at desks, not on the pass.
+The shells share data — same underlying recipes, costings, suppliers, etc. — but show **role-calibrated views**. A chef opens Margins to see "how is my menu performing today"; an owner opens the equivalent to see "how is the business performing this quarter."
 
-### Design intent — manager shell
+### Why role-aware rather than permission-filtered
 
-Operational density is fine here. Information-rich but task-organised. The manager's job is to make sure the site runs, so the surface is built around exception management: *what needs my attention today.*
+Permission-filtered means one shell with disabled buttons. Role-aware means three calibrated experiences. Same data, different mental models. This is the architectural call we made in the morning's master view and it stands.
 
 ---
 
-## Owner shell — *the business view*
+## Chef shell — eight tabs
 
-Owner or operations director opens Palatable on a Sunday evening, or when they want to check on the business. They're not in the kitchen. Strategic, analytical, calm.
+1. **Home** — morning brief, today's overview, sous chef intelligence
+2. **Recipes** — recipe library + authoring, with seasonal triggers in Looking Ahead
+3. **Costing** — recipe-driven costing, ingredient drift detection
+4. **Margins** — menu performance, attention cards on slipping dishes, dish trajectory
+5. **Menus** — menu authoring + service-day mapping
+6. **Stock & Suppliers** — *hub surface* with five sub-pages: Deliveries, Invoices, Suppliers, The Bank, Waste *(see expansion below)*
+7. **Notebook** — voice memos, photos, sketches, experiment tracking
+8. **Inbox** — push-driven notification stream, action items, follow-ups
 
-### Top-level navigation
-
-1. **Home** — business pulse. Group GP this week/month/vs last period. Margin alerts across sites. Cost of goods trend. Supplier spend by site. Top-line operational alerts.
-2. **Margins** — multi-site analytical surface. Cross-site comparisons, supplier benchmarking, menu engineering across all sites, inflation tracking.
-3. **Reports** — financial reports, exports for accounting, period summaries
-4. **Sites** — *new surface, group-level sites overview.* Five sites at a glance, performance comparison, drill-into-any-one. (Detail below.)
-5. **Suppliers** — group-level supplier intelligence. Where am I overpaying, where contracts could renegotiate, supplier reliability across the group.
-6. **Team & Outlets** — administer team, manage outlets, role assignment
-7. **Inbox** — owner-routed strategic feed. Weekly digest, significant margin movements, exceptional supplier behaviour
-8. **Settings & Billing** — plan, billing, account management
-
-Eight destinations. Strategic-not-operational.
-
-### The Sites overview surface
-
-New build. Currently the multi-outlet feature exists at a data level (outlets are scoped, switcher exists per outlet) but there isn't a group-level sites overview where owners see "here are my five sites at a glance, here's how each is performing, drill into any one."
-
-This is a meaningful build. Jack has existing pre-reframing thinking to reference; this becomes a real v1 build with the role-aware-shell context applied.
-
-### Owner shell tier scoping
-
-Owner shell only renders for users with owner role at **Group or Enterprise tier**. Below that, single-site Pro/Kitchen owner-operators see the chef or manager shell (they typically *are* the chef/manager of their own single-site business). Owner shell is fundamentally a multi-site experience.
-
-### Design intent — owner shell
-
-Strategic, analytical, calm. The owner is making decisions about money and direction. Surface answers, not raw data. Trend lines, not numbers. Exceptions worth knowing about, not everything that happened. This is the surface that justifies the contract value at Group/Enterprise tier.
+Settings lives at the bottom of the sidebar, separate from the eight tabs.
 
 ---
 
-## Cross-shell mechanics
+## Stock & Suppliers — expanded structure
 
-### Role detection and shell rendering
+*Major change from morning lock.* What was a single tab consolidating four previously-separate surfaces becomes a **hub with five sub-pages**:
 
-Every user has a primary role per outlet (chef / manager / owner). At session start:
+### Stock & Suppliers Hub (entry point)
+Four-layer pattern: page header + KPIs, attention cards (forensic), destination cards (the five sub-pages), Looking Ahead (forward intelligence).
 
-1. Detect the user's primary role
-2. Detect their active outlet (or for owner at Group+ tier, default to group view across all outlets)
-3. Render the corresponding shell
-4. Surface switcher in the header allows flip between shells the user is entitled to
+### Sub-page 1: Deliveries
+What's arriving today, this week, and next. The daily-use sub-page. Inline delivery list with day-not-time scheduling, status pills (Arrived / Due soon / Expected / Tomorrow). Receives invoice scan triggers.
 
-Permission gating stays separate from shell rendering. An owner can flip to chef shell to author a recipe (they have permission). A chef cannot flip to owner shell (they don't).
+### Sub-page 2: Invoices
+The paperwork inbox. **Includes first-class credit note workflow** — chef raises credit notes for discrepancies (short deliveries, wrong products, quality issues, price disagreements), system drafts and tracks, reconciles when issued. Discrepancy detection feeds in from PO-vs-invoice comparison.
 
-### Surface switcher behaviour — per role
+### Sub-page 3: Suppliers
+The supplier directory **and authoring surface**. Contact info, casual names, ordering schedules, current price lists, notes. Chef adds new suppliers here. Each supplier record is a real editable thing, not just a read-only list entry.
 
-Each role has its own preferred surface preference. When you switch role, you land in that role's default view, not the surface you last used.
+### Sub-page 4: The Bank
+The ingredient catalogue with **live price-movement view**. Every ingredient, current price, supplier, last-updated, price trend. Auto-populated from scanned invoices with fuzzy ingredient matching (chef confirms on first encounter, system learns thereafter). No duplicates.
 
-*Example:* Jack is the owner of his business but also writes recipes. He spends most of his time in owner shell. When he switches to chef shell (to write a new recipe), he lands in his chef preferences — chef home, with the morning brief he's configured. He doesn't carry his owner-shell state into chef-shell. Each role has its own context.
-
-### The Inbox surface — shared mechanic
-
-Every shell has an Inbox. Same underlying notification engine routes items to the right recipients based on role + outlet + account. Detailed design lives in the shared infrastructure document.
-
-### The visual register across shells
-
-All three shells share the Palate & Pen visual language: Cormorant Garamond + Cinzel + clean sans, deep ink black backgrounds, warm cream text, gold accents, editorial whitespace, restrained motion. Density and information hierarchy vary by shell; the aesthetic is consistent.
-
-This is what makes it one product, not three. The chef and the owner of the same business should feel they're using the same tool, just in different modes.
+### Sub-page 5: Waste
+Waste log entry + waste pattern analysis. End-of-service-and-week use.
 
 ---
 
-## What's built vs what's missing
+## Looking Ahead — required pattern on every surface
 
-### Built and reusable across shells
-Recipes (full), Costing (workbench — to become library overview), Stock counting, Waste log, Invoices with AI scanning, Bank ingredient catalogue, Suppliers directory, Menus, Team management, Multi-outlet scoping, Tier gating, Permissions, Stripe billing, Notebook (basic).
+**Architectural requirement.** Every customer-facing surface has a Looking Ahead section delivering forward-looking intelligence specific to that surface.
 
-### Built but needs restructuring
-- Dashboard → becomes role-aware home (chef / manager / owner home surfaces)
-- Costing tab → reframes from authoring workbench to library overview (authoring lives inline in Recipes, where it partially already does)
-- Reports → shrinks to operational reporting; analytical content moves to Margins
-- Bank + Invoices + Suppliers + Waste → consolidated into Stock & Suppliers for chef/manager shells
-- Notebook → expanded from basic notes into the full digital kitchen notebook described above
+This is the third job alongside *see your data* and *see your insights*: **plan accordingly**.
 
-### Not built — required for v1
-- **Role-aware shell rendering** — currently one shell, perms-filtered. Needs to become three shells with surface switcher.
-- **Inbox surface** — persistent intelligence feed, role-routed. Currently no equivalent.
-- **Chef home morning brief** — curated daily orientation
-- **Manager home site status** — site-level operational summary
-- **Owner home business pulse** — strategic group-level view
-- **Margins tab** — analytical surface across all three shells, role-scoped
-- **Margin leakage detection** — proactive alerts when GP slips with root cause attribution. The headline v1 intelligence feature.
-- **Credit note workflow** — automated supplier chase. Discrepancy detection exists; automated chase doesn't.
-- **Sites overview (owner shell)** — group-level site-comparison surface
-- **Notebook expansion** — voice memos, photos, sketches, sharing model, search, linkability
+Examples:
+- **Chef home**: tonight's covers vs prep state
+- **Margins**: dish trajectory forecasts ("if this holds, shawarma drops below 60% in 2 weeks")
+- **Stock & Suppliers**: market moves, delivery week ahead
+- **Recipes**: costing staleness, seasonal triggers
+- **Inbox**: anticipated next-day workload
+- **Notebook**: experiment revisit triggers (sumac season, anniversary reminders)
+- **Costing**: prices that haven't been refreshed, costings nearing staleness threshold
+
+Looking Ahead is **section-absent when empty**. It reappears when the system has something worth surfacing.
+
+See `design-system-v7.md` §5 for the canonical pattern.
 
 ---
 
-## What this document is and isn't
+## Self-serve integration architecture
 
-**Is:** the final strategic shape of the customer product. What each shell contains. What's consolidated. What's new. What's hidden.
+*Major addition to v1 scope, made possible by the architectural decision that integrations are user-credential-based.*
 
-**Isn't:** the implementation order (see `pre-launch-build-sequence.md` — rewritten to match this shape), the visual design of any surface (your visual work), or the inventory of features (lives in `feature-inventory-2026-05-14.md`).
+### The model
 
-This is the spec. Build to it.
+Palatable does **not** depend on B2B partnerships with POS or booking system vendors. The user brings their own credentials. Where the third-party tool exposes a public API, OAuth flow, or developer integration key, Palatable connects via those mechanisms.
+
+### What this means practically
+
+- **No partnership applications.** No Resy enterprise contract, no Square partner programme.
+- **No integration revenue share.** No per-customer fees passed through.
+- **User owns their credentials.** Stored encrypted at rest in their tenant, never shared cross-tenant.
+- **Graceful degradation.** Users without integrations get the product working on what it has. Users with integrations connected get the product fully expressed.
+
+### Supported integration categories at v1
+
+Three categories, each with its own UI in a *Connect your tools* surface (lives in Settings, sub-page of Stock & Suppliers, or a dedicated Connections page — TBD in Settings design):
+
+**1. POS systems**
+- Square (primary — clean OAuth)
+- Lightspeed
+- Toast
+- Epos Now
+- TouchBistro
+- Generic CSV import as fallback
+
+**2. Booking systems**
+- Resy (where the user has API access via their account)
+- OpenTable (where exposed)
+- SevenRooms (enterprise tier, where exposed)
+- DesignMyNight
+- Manual covers entry as fallback
+
+**3. Supplier ordering systems**
+Most suppliers don't expose APIs. Pattern is *ordering record* rather than API integration: chef logs their order (via WhatsApp, phone, email) into Palatable, and Palatable uses that for delivery forecasting. Some larger suppliers (Brakes, Bidfood, Reynolds, certain meat suppliers) do have portal exports — we accept those where they exist.
+
+### What integrations enable
+
+Forward-looking intelligence depends on data the system needs:
+
+- **POS data** → dish popularity, sales trends, menu engineering, prep forecasting
+- **Booking data** → tonight's covers, weekly cover forecast, busy-day planning
+- **Supplier ordering data** → delivery week aggregation, supplier exposure forecasting
+
+Without these, the system still works on:
+- Scanned invoices (always available)
+- Manual cover entry
+- PO data (where present)
+- Recipe + costing data (user-authored)
+- Waste records (user-authored)
+
+The user always gets value. More connections = more intelligence.
+
+### Per-integration health
+
+Each connected integration shows status in the user's Connections page: Connected / Disconnected / Needs reauth / Failing. Admin sees aggregated integration health across all customers (see `master-admin-product.md`).
 
 ---
 
-## Appendix — Rationale behind the customer product shape
+## Bank auto-population intelligence
 
-*Added after the master view landed, to preserve the reasoning behind structural decisions.*
+The Bank (ingredient catalogue) is **automatically maintained from scanned invoices**:
 
-### Why three role-aware shells rather than one shell with permissions
+- Invoice scanned (photo from phone or PDF upload) → OCR extracts line items
+- Each line item → ingredient name + quantity + unit + price + supplier
+- Fuzzy match against existing Bank entries by supplier + ingredient name
+- First encounter of new supplier-name-for-ingredient: chef confirms ("Is this the same as Lamb shoulder?"); system learns
+- Subsequent encounters: auto-match silently
+- Price updates flow to Bank, price history preserved
+- New ingredients added with first-encounter metadata
 
-The current product has one shell with 14 sidebar items. Permissions filter behaviour — a chef sees disabled buttons where they don't have access. A chef and an owner see the same shell with different things enabled.
+Result: the Bank is **always current** without manual data entry. No duplicates. Real-time price movement visible in The Bank sub-page.
 
-This sounds efficient but creates two real problems:
-1. **Navigation density.** 14 items is too many for a chef on a phone. Too few for an owner who needs cross-site analytics. One nav can't serve both.
-2. **Mental model mismatch.** A chef thinks about their kitchen; an owner thinks about their business. Showing both the same shell forces both to translate.
+This is one of the largest engineering builds in v1 (OCR pipeline + fuzzy matching + learning catalogue). It's also the feature that most makes the product feel intelligent rather than data-entry.
 
-Three role-aware shells (chef / manager / owner) give each role a calibrated experience. Same underlying data, three different ways into it. Permission gating stays separate — an owner *can* flip to chef shell to author a recipe (they have permission), they just don't *default* there. The shell is the *experience*; permissions are the *access control*. Different concerns.
+---
 
-### Why Margins as chef-primary tab (and the original push-back was wrong)
+## Manager shell (overview)
 
-Earlier in the strategic session, the read was "Margins is owner/manager-primary, chef gets alerts via Inbox." That was wrong, and Jack corrected it on first sight of the shape.
+Same eight tabs as chef but role-calibrated. Differences:
 
-The chef question Margins answers is *"how is my menu performing dish by dish, right now?"* That's a daily operational question, not an accounting one. Chefs care deeply about which dishes are healthy, which are slipping, which are exposed to which suppliers. They make decisions about menu changes, supplier negotiations, and what to push on service based on this read.
+- **Home** = site status (operational across all stations, not just kitchen)
+- **Margins** = site-level performance + operational drill-down (chef sees menu performance; manager sees site profitability)
+- **Stock & Suppliers** = adds procurement timing intelligence, multi-supplier comparisons
+- **Reports** appears as a 9th tab — operational reports for upward reporting
 
-What's different between roles is the *default scope*:
-- Chef Margins → my menu's performance
-- Manager Margins → this site's performance + operational drill-down
-- Owner Margins → group rollup, supplier benchmarking across sites
+Manager-specific Looking Ahead: cover forecasts vs staffing, supplier negotiation triggers, period-close prep.
 
-Same surface, three role-scoped defaults. Same pattern as Home (chef morning brief / manager site status / owner business pulse).
+---
 
-### Why Bank + Invoices + Suppliers + Waste consolidate
+## Owner shell (overview — Group/Enterprise only)
 
-Four tabs, but they're four views of the same data graph: *ingredients ← invoices ← suppliers ← prices, with waste closing the loop on consumption.* They were built as separate tabs because they were built separately. Conceptually, they're one mental surface: *managing what you buy and what it costs.*
+Smaller surface count, strategic focus. Sites overview as the primary surface, then group rollups of Margins, Suppliers (with cross-site benchmarking), and a business pulse home. **Owner shell does not render at single-site Pro or Kitchen tier** — single-site operators see chef or manager shell based on their primary role.
 
-Forcing the chef to context-switch between four tabs to do what's really one job is friction. Consolidating into a single "Stock & Suppliers" tab with sections inside is cleaner. *Tidy station = tidy mind = clean good food.*
+---
 
-The "Invoice scan" quick action stays prominent on chef home (it's frequent and time-sensitive), but the inventory of past invoices, the supplier directory, the Bank ingredient catalogue, and the waste log all live in one consolidated tab.
+## What's not in v1 customer product
 
-### Why Notebook is a key feature, not just a tab
+- **Multi-tenant supplier benchmarking** (cross-customer price comparison) — privacy concerns and trust-building required before this
+- **Predictive cover modelling** (machine-learning forecast) — too early; v1 uses simpler forecasting based on observed patterns
+- **Mobile-native apps** — v1 is mobile-responsive web only; native apps post-launch
+- **Multi-currency / multi-region tax handling** — UK-focused v1
+- **Inventory levels** (current stock-on-hand counts) — v1 tracks flow, not stock. Stock-on-hand tracking is v2 territory.
+- **POS sales-driven menu engineering** — requires POS at sufficient scale per customer; v1 supports it where POS is connected, no claim made where it isn't
+
+---
+
+## What v1 launch must include
+
+- Three role-aware shells with role detection
+- Foundation infrastructure (notification engine, activity stream, daily GP snapshots)
+- All eight chef tabs functioning
+- Stock & Suppliers hub + five sub-pages
+- Looking Ahead pattern on every surface (with surface-specific intelligence)
+- Self-serve integration architecture with Square POS and Resy bookings as anchor integrations
+- Bank auto-population from invoice scans (fuzzy matching + learning catalogue)
+- Credit note workflow (in Invoices sub-page)
+- Casual supplier names schema
+- Notification preferences system
+
+---
+
+## Open questions for future iteration
+
+- Notebook scope — voice memos, photos, sketches, search, sharing. Highest-novelty surface. Design pass needed before scope locks.
+- Manager and owner shells need their own design passes — same patterns, different content priorities
+- Settings architecture — preferences system is referenced by every other surface; needs dedicated design
+- Connections page UI — where in the IA does "Connect your tools" live? Settings sub-page? Stock & Suppliers sub-page? Dedicated top-level?
+- Onboarding flow — first-run experience for a brand new user. Probably tour-based per chef-home v5 pattern but extended for tool connection setup.
+
+---
+
+## Rationale appendix
+
+### Why self-serve integration over partnerships
 
 Three reasons:
-1. **No competitor has it.** Every other kitchen software treats notes as an afterthought. Operational moat.
-2. **Real pain point.** Paper notebooks get ruined by oil, water, fire, the dishwasher. Every chef has lost notes this way. A genuine digital kitchen notebook is something chefs would actually want, not something they'll tolerate.
-3. **Chef-authentic.** Built by someone who actually used paper notebooks in kitchens. Voice memos, photos, sketches, taggable experiments — these are what chefs actually want, not what product managers think they want.
+1. **No budget.** Partnerships require business development time, lawyer fees, often revenue share. Self-funded build means none of that is available.
+2. **User already pays.** A restaurant on Square is already paying Square. A restaurant on Resy is already paying Resy. Palatable doesn't need to insert itself into that commercial relationship — it just needs to be a good citizen of whichever ecosystem the user is on.
+3. **Faster to launch and scale.** A partnership integration takes 3-6 months of business development. A self-serve OAuth integration takes 1-2 weeks of engineering. The product can support any tool with an API, not just the partners we've negotiated with.
 
-This is the only chef-specific feature in Palatable that no other product has. Worth treating as a real product feature, not "freeform notes that link to recipes."
+### Why expand Stock & Suppliers from one tab to a hub with five sub-pages
 
-### Why owner shell only at Group+ tier
+Earlier consolidation pressure (the four-tabs-into-one decision from the morning) was the right *visual* call but didn't reflect the *depth* each area actually needs. Suppliers is a full authoring surface (contact info, casual names, ordering schedules, price lists). Invoices is a full workflow surface (credit notes, discrepancy resolution, supplier-to-account forwarding). The Bank is a live price-movement view. Each deserves to be a real sub-page with real depth, surfaced through a hub that intelligently surfaces what matters across all five.
 
-Single-site Pro/Kitchen owner-operators are *typically the chef* of their own business. Showing them an owner shell with one site in it makes them feel like they're using an enterprise tool designed for someone else. They want the chef shell — they want to be in the kitchen, not above it.
+### Why Looking Ahead is required on every surface
 
-Owner shell is fundamentally a multi-site experience. The Sites overview, cross-site Margins comparisons, group-level supplier benchmarking — none of these make sense for a single site. So owner shell renders only at Group/Enterprise tier. Below that, the user sees chef or manager shell based on their primary role.
-
-### Why surface switcher is per-role rather than per-session
-
-A user who's both an owner *and* an active chef (Jack himself, for instance) has different default preferences in each role. Their "owner me" wants the business pulse home. Their "chef me" wants the morning brief with prep alerts. When they switch role, they should land in *that role's preferred view*, not carry their previous state over.
-
-Per-session would mean: I last looked at Margins, so when I switch to chef shell I land in Margins. That's noise — I switched role for a reason, the system should respect the role.
-
-Per-role means: each role context is independent. My chef context has its own preferences and last-state; my owner context has its own. Cleaner mental model.
-
-### What this appendix doesn't capture
-
-The specific consolidation naming ("Stock & Suppliers" vs alternatives like "Larder" or "Kitchen"). The exact tab order in chef shell. The specific seven-tab count. These are *iterable* — the structural decisions above are the architecture; the naming and ordering will likely refine as the surfaces get built.
+Most kitchen software is reactive: chef enters data, software displays it. The "intelligent sous chef" positioning requires the system to *anticipate*, not just report. A sous chef doesn't only tell you what happened yesterday — they tell you what to prep for tomorrow. Forward-looking intelligence on every surface is what delivers on that positioning. Without it, we're a costing tool with nice typography.

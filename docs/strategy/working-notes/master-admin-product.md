@@ -205,3 +205,64 @@ Build the *plumbing* in v1 (event logging via the activity stream) so the data a
 ### What this appendix doesn't capture
 
 The exact set of pattern detection rules for the Customer Activity Log (those are tactical and will grow over time). The specific scoring formula for Customer Health (extensible architecture; specific weights TBD). The pricing on potential admin tier upgrades.
+
+---
+
+# Master view — admin product
+
+*Locked 2026-05-14 evening. Small addition from morning lock: admin visibility into customer integration health.*
+
+The admin product is the operator tool Jack uses to run Palatable as a business. Separate from the customer product, shares infrastructure, lives in its own design register (operator-grade density rather than calm-chef-low-density).
+
+---
+
+## Existing structure (unchanged from morning lock)
+
+- Comprehensive read+write impersonation with T&Cs cover
+- Merged Activity surface (audit + customer events + system in one filterable view)
+- TOTP 2FA at launch
+- Desktop-only (no mobile admin)
+- Control Desk removed
+- Customer health monitoring as v1.1 (needs data accumulation)
+
+See morning lock for full structure. This document captures only the additions from the evening session.
+
+---
+
+## [NEW] Integration health visibility
+
+With the customer product now including self-serve integration architecture (POS, bookings, supplier portals — see `master-customer-product.md`), admin gains visibility into integration health across the customer base.
+
+### Where it lives
+
+A new section in the admin Activity surface filterable by source = "integration." Plus a dedicated **Integration Health** panel on the admin Home surface showing aggregated metrics:
+
+- Connections by provider (e.g. "12 customers connected to Square, 3 to Resy")
+- Failing integrations across customers (auth expired, repeated sync failures)
+- Customer-specific drill-down to see which customers have which integrations and their health
+
+### Why admin needs this visibility
+
+When a customer reports "the system isn't showing tonight's covers," the first diagnostic is "is your Resy connection working?" Admin needs to see this without impersonating into the customer's session.
+
+Similarly, when a new POS provider integration ships, admin sees adoption metrics ("how many customers have connected Toast since we launched the integration?").
+
+### Implementation
+
+Reads from `integration_connections` table (per `master-shared-infrastructure.md` §5). Aggregates by provider, status, last-sync-age. Surfaces failures into admin's "Needs Attention" feed via the notification engine.
+
+---
+
+## Open questions
+
+Unchanged from morning lock. The integration health addition is a clean extension rather than a structural change.
+
+---
+
+## Rationale
+
+### Why this is admin visibility, not customer-facing
+
+The customer sees *their own* integration health on their Connections page (per `master-customer-product.md`). Admin needs the *aggregated* view — which customers across the platform have which integrations connected, where things are failing in patterns, when a particular provider's API has had widespread issues.
+
+Different concerns, different surfaces. Customer sees their own. Admin sees the fleet.
