@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Home — v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+
+    /* Header heights — both brand-row and topbar match this so dividers align */
+    --header-row-height: 76px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .mockup-banner {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+  }
+
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--paper);
+    opacity: 0.7;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px);
+    transition: grid-template-columns 0.25s ease;
+  }
+
+  .app.collapsed {
+    grid-template-columns: var(--sidebar-collapsed) 1fr;
+  }
+
+  /* ═════════ SIDEBAR ═════════ */
+  .sidebar {
+    background: var(--paper-warm);
+    border-right: 1px solid var(--rule);
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 44px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* no overhanging children now */
+  }
+
+  /* Brand row — fixed height, matches topbar */
+  .sidebar-brand {
+    height: var(--header-row-height);
+    padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-shrink: 0;
+    transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+
+  .app.collapsed .sidebar-brand {
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* Expanded brand wordmark */
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: 0.16em;
+    color: var(--ink);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity 0.2s, width 0.25s;
+    display: flex;
+    align-items: center;
+  }
+
+  .brand-mark .brand-dot-inline {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    margin: 0 4px;
+    vertical-align: middle;
+    position: relative;
+    top: -4px;
+  }
+
+  .app.collapsed .brand-mark {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  /* Collapsed brand "P•" */
+  .brand-mark-collapsed {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    margin-left: 4px;
+    position: relative;
+    top: -7px;
+  }
+
+  .app.collapsed .brand-mark-collapsed {
+    display: inline-flex;
+  }
+
+  /* Outlet sub-label below the brand row */
+  .brand-sub-row {
+    padding: 12px 24px 0;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+
+  .brand-sub {
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-size: 8px;
+    letter-spacing: 0.4em;
+    color: var(--muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .app.collapsed .brand-sub-row {
+    opacity: 0;
+    height: 0;
+    padding: 0;
+    pointer-events: none;
+  }
+
+  /* Nav */
+  .sidebar-nav {
+    padding: 18px 0 8px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .nav-section-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.4em;
+    color: var(--muted-soft);
+    text-transform: uppercase;
+    padding: 14px 24px 6px;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .app.collapsed .nav-section-label {
+    opacity: 0;
+    pointer-events: none;
+    padding: 6px 0;
+    height: 0;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 24px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .nav-item:hover {
+    background: var(--gold-bg);
+    color: var(--ink);
+  }
+
+  .nav-item.active {
+    color: var(--ink);
+    border-left-color: var(--gold);
+    background: var(--gold-bg);
+  }
+
+  .app.collapsed .nav-item {
+    padding: 12px 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .nav-icon {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+
+  .nav-item.active .nav-icon,
+  .nav-item:hover .nav-icon {
+    color: var(--gold);
+  }
+
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    flex: 1;
+    transition: opacity 0.2s;
+  }
+
+  .app.collapsed .nav-label {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  .nav-badge {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    color: var(--paper);
+    background: var(--gold);
+    padding: 2px 7px;
+    min-width: 20px;
+    text-align: center;
+    border-radius: 1px;
+  }
+
+  .nav-badge.subtle {
+    background: transparent;
+    color: var(--muted-soft);
+    border: 1px solid var(--rule);
+  }
+
+  .app.collapsed .nav-badge {
+    position: absolute;
+    top: 6px;
+    right: 14px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0;
+    font-size: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app.collapsed .nav-badge.subtle { display: none; }
+
+  /* Tooltips on collapsed hover */
+  .nav-tooltip {
+    display: none;
+    position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    white-space: nowrap;
+    z-index: 30;
+    pointer-events: none;
+  }
+
+  .nav-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 4px 4px 4px 0;
+    border-color: transparent var(--ink) transparent transparent;
+  }
+
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip {
+    display: block;
+  }
+
+  /* Sidebar foot */
+  .sidebar-foot {
+    border-top: 1px solid var(--rule);
+    padding: 14px 0 0;
+  }
+
+  .surface-row {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--rule);
+    transition: padding 0.2s;
+  }
+
+  .app.collapsed .surface-row {
+    padding: 14px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    transition: margin 0.2s;
+  }
+
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--paper);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .user-meta {
+    flex: 1;
+    min-width: 0;
+    transition: opacity 0.2s;
+  }
+
+  .app.collapsed .user-meta { display: none; }
+
+  .user-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .user-role {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .surface-switcher {
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.15s;
+  }
+
+  .surface-switcher:hover {
+    border-color: var(--gold);
+    color: var(--ink);
+  }
+
+  .app.collapsed .surface-switcher {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+
+  .settings-row {
+    padding: 8px 0;
+    transition: padding 0.2s;
+  }
+
+  .settings-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 24px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none;
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .settings-item:hover {
+    background: var(--gold-bg);
+    color: var(--ink);
+  }
+
+  .settings-item:hover .nav-icon { color: var(--gold); }
+
+  .app.collapsed .settings-item {
+    padding: 12px 0;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.03em;
+    transition: opacity 0.2s;
+  }
+
+  .app.collapsed .settings-label {
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  /* ═════════ MAIN ═════════ */
+  .main {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  /* Topbar — same fixed height as sidebar-brand so dividers align */
+  .topbar {
+    height: var(--header-row-height);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 56px 0 16px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Sidebar collapse toggle — now lives in the top bar */
+  .collapse-toggle {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .collapse-toggle:hover {
+    background: var(--gold-bg);
+    color: var(--gold);
+  }
+
+  .collapse-toggle svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.25s ease;
+  }
+
+  .app.collapsed .collapse-toggle svg {
+    transform: rotate(180deg);
+  }
+
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 19px;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    padding-left: 12px;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    color: var(--healthy);
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--healthy);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .date-display {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .page {
+    padding: 48px 56px 80px;
+    max-width: 1200px;
+  }
+
+  .greeting-block { margin-bottom: 48px; }
+
+  .greeting-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .greeting {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 52px;
+    line-height: 1.05;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+  }
+
+  .greeting em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  .greeting-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--muted);
+    margin-top: 14px;
+    letter-spacing: 0.01em;
+  }
+
+  .section { margin-bottom: 48px; }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .day-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .day-panel {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 28px 32px;
+    position: relative;
+  }
+
+  .day-panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.45em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .panel-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .delivery-item {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: center;
+  }
+
+  .delivery-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .delivery-time {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 19px;
+    color: var(--ink);
+    letter-spacing: 0.03em;
+    line-height: 1;
+  }
+
+  .delivery-time-period {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.25em;
+    color: var(--muted-soft);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .delivery-supplier {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .delivery-lines {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.01em;
+  }
+
+  .delivery-status {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .delivery-status.confirmed { color: var(--healthy); }
+  .delivery-status.pending { color: var(--attention); }
+
+  .week-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 16px;
+    align-items: baseline;
+  }
+
+  .week-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .week-day {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .week-body {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .week-body em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  .week-note {
+    display: block;
+    font-family: 'Jost', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.01em;
+  }
+
+  .health-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .health-card {
+    background: var(--card);
+    padding: 24px 28px;
+  }
+
+  .health-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.4em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .health-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: 34px;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.015em;
+  }
+
+  .health-value.gold { color: var(--gold-dark); }
+  .health-value.healthy { color: var(--healthy); }
+
+  .health-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .quick-action {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 22px 24px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .quick-action:hover {
+    border-color: var(--gold);
+    background: var(--card-warm);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(26,22,18,0.04);
+  }
+
+  .quick-icon-box {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .quick-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+
+  .quick-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.02em;
+  }
+
+  .mockup-footnote {
+    margin: 0 56px;
+    padding: 32px 32px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    margin-bottom: 60px;
+  }
+
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    max-width: 760px;
+  }
+
+  .footnote-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v5 · Chef Home · Toggle in Top Bar · Dividers Aligned</div>
+  <div class="mockup-banner-meta">Toggle is now top-left of the main area — no more clipping</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+
+    <!-- Brand row — fixed height to align divider with top bar -->
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+
+    <div class="brand-sub-row">
+      <div class="brand-sub">Berber &amp; Q · London</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/>
+          <path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span>
+        <span class="nav-tooltip">Home</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/>
+          <path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span>
+        <span class="nav-badge subtle">17</span>
+        <span class="nav-tooltip">Recipes</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/>
+          <circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span>
+        <span class="nav-tooltip">Costing</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/>
+          <rect x="5" y="13" width="3" height="7"/>
+          <rect x="11" y="8" width="3" height="12"/>
+          <rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span>
+        <span class="nav-badge">2</span>
+        <span class="nav-tooltip">Margins</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/>
+          <path d="M16 3v4h4"/>
+          <path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span>
+        <span class="nav-tooltip">Menus</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/>
+          <path d="M3 7v10l9 4 9-4V7"/>
+          <path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span>
+        <span class="nav-badge">3</span>
+        <span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/>
+          <path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span>
+        <span class="nav-tooltip">Notebook</span>
+      </a>
+
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/>
+          <rect x="3" y="6" width="18" height="13"/>
+          <path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span>
+        <span class="nav-badge">4</span>
+        <span class="nav-tooltip">Inbox</span>
+      </a>
+
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 5l3 3 3-3"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span>
+          <span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <!-- Top bar with collapse toggle on the left -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/>
+            <path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">Home</div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          <span>Live</span>
+        </div>
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <div class="greeting-block">
+        <div class="greeting-eyebrow">Good Morning</div>
+        <div class="greeting">Morning, <em>Jack</em>.</div>
+        <div class="greeting-sub">Two deliveries due, all margins healthy — a quiet one.</div>
+      </div>
+
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Today &amp; The Week Ahead</div>
+          <div class="section-meta">Thursday 14 May — Wednesday 20 May</div>
+        </div>
+
+        <div class="day-grid">
+
+          <div class="day-panel">
+            <div class="day-panel-head">
+              <div class="panel-title">Today's Deliveries</div>
+              <div class="panel-count">2 expected</div>
+            </div>
+
+            <div class="delivery-item">
+              <div>
+                <div class="delivery-time">10:30</div>
+                <div class="delivery-time-period">AM</div>
+              </div>
+              <div>
+                <div class="delivery-supplier">Reza Foods</div>
+                <div class="delivery-lines">12 line items · £384 · weekly dry goods</div>
+              </div>
+              <div class="delivery-status pending">Expected</div>
+            </div>
+
+            <div class="delivery-item">
+              <div>
+                <div class="delivery-time">14:00</div>
+                <div class="delivery-time-period">PM</div>
+              </div>
+              <div>
+                <div class="delivery-supplier">Aubrey Allen</div>
+                <div class="delivery-lines">8 line items · £612 · lamb &amp; beef</div>
+              </div>
+              <div class="delivery-status pending">Expected</div>
+            </div>
+          </div>
+
+          <div class="day-panel">
+            <div class="day-panel-head">
+              <div class="panel-title">This Week's Menu</div>
+              <div class="panel-count">2 changes planned</div>
+            </div>
+
+            <div class="week-item">
+              <div class="week-day">Today</div>
+              <div class="week-body">
+                Service as normal — current spring menu live
+                <span class="week-note">17 dishes active · last menu refresh 11 days ago</span>
+              </div>
+            </div>
+
+            <div class="week-item">
+              <div class="week-day">Sat 16</div>
+              <div class="week-body">
+                <em>New dish</em> — Saffron-cured trout
+                <span class="week-note">Costing approved · 71% GP · spec sheet ready</span>
+              </div>
+            </div>
+
+            <div class="week-item">
+              <div class="week-day">Mon 18</div>
+              <div class="week-body">
+                <em>Removing</em> — Pomegranate-glazed quail
+                <span class="week-note">Discontinued — supplier issue with quail availability</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Kitchen at a Glance</div>
+          <div class="section-meta">live</div>
+        </div>
+
+        <div class="health-grid">
+          <div class="health-card">
+            <div class="health-label">Menu GP</div>
+            <div class="health-value healthy">71%</div>
+            <div class="health-sub">target 65% · healthy</div>
+          </div>
+          <div class="health-card">
+            <div class="health-label">Stock Value</div>
+            <div class="health-value">£4,287</div>
+            <div class="health-sub">last counted 2 days ago</div>
+          </div>
+          <div class="health-card">
+            <div class="health-label">Deliveries Due</div>
+            <div class="health-value">2</div>
+            <div class="health-sub">today · 3 more this week</div>
+          </div>
+          <div class="health-card">
+            <div class="health-label">Waste This Week</div>
+            <div class="health-value">£62</div>
+            <div class="health-sub">−47% vs last week</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Quick Actions</div>
+          <div class="section-meta">tap to start</div>
+        </div>
+
+        <div class="quick-grid">
+          <button class="quick-action">
+            <div class="quick-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="3" width="16" height="18"/>
+                <path d="M8 8h8M8 12h8M8 16h5"/>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-label">Scan an invoice</div>
+              <div class="quick-sub">AI extract &amp; reconcile</div>
+            </div>
+          </button>
+
+          <button class="quick-action">
+            <div class="quick-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7l9-4 9 4-9 4-9-4z"/>
+                <path d="M3 7v10l9 4 9-4V7"/>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-label">Count stock</div>
+              <div class="quick-sub">Quick or full count</div>
+            </div>
+          </button>
+
+          <button class="quick-action">
+            <div class="quick-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-label">New recipe</div>
+              <div class="quick-sub">Or open a draft</div>
+            </div>
+          </button>
+
+          <button class="quick-action">
+            <div class="quick-icon-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M9 9l6 6M15 9l-6 6"/>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-label">Log waste</div>
+              <div class="quick-sub">With photo evidence</div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">v5 Fixes</div>
+      <div class="footnote-body">
+        <strong>1. Collapse toggle moved to top bar:</strong> sits at the top-left of the main area as a clean menu-icon button. Standard pattern. No clipping risk. Always in the same place regardless of sidebar state. Hover lights up gold.<br><br>
+        <strong>2. Dividers aligned:</strong> the sidebar brand row and the top bar are now the same fixed height (76px), so the horizontal rule under "P•alatable" sits on the same baseline as the rule under "Home". Reads as a single unbroken horizontal line across the screen.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>

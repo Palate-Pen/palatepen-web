@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Margins — v3 mode-shifted voice</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink); color: var(--paper); padding: 12px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--paper); opacity: 0.7;
+  }
+  .app {
+    display: grid; grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease;
+  }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar {
+    background: var(--paper-warm); border-right: 1px solid var(--rule);
+    position: sticky; top: 0; height: calc(100vh - 44px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-brand {
+    height: var(--header-row-height); padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    flex-shrink: 0; transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase;
+    display: flex; align-items: center; transition: opacity 0.2s, width 0.25s;
+  }
+  .brand-mark .brand-dot-inline {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px; vertical-align: middle;
+    position: relative; top: -4px;
+  }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; pointer-events: none; position: absolute; }
+  .brand-mark-collapsed {
+    display: none; align-items: center;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px;
+    letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+  }
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); margin-left: 4px; position: relative; top: -7px;
+  }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row {
+    padding: 12px 24px 0; transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase;
+    padding: 14px 24px 6px; white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+  }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer; border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); transition: color 0.15s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500;
+    letter-spacing: 0.03em; flex: 1; transition: opacity 0.2s;
+  }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.05em; color: var(--paper); background: var(--gold);
+    padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px;
+  }
+  .nav-badge.subtle {
+    background: transparent; color: var(--muted-soft); border: 1px solid var(--rule);
+  }
+  .app.collapsed .nav-badge {
+    position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px;
+    padding: 0; font-size: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip {
+    display: none; position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 7px 14px; white-space: nowrap; z-index: 30; pointer-events: none;
+  }
+  .nav-tooltip::before {
+    content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-style: solid;
+    border-width: 4px 4px 4px 0; border-color: transparent var(--ink) transparent transparent;
+  }
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row {
+    padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .user-role {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px;
+  }
+  .surface-switcher {
+    width: 100%; padding: 8px 12px; background: transparent;
+    border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher {
+    width: 36px; height: 36px; padding: 0; justify-content: center;
+  }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar {
+    height: var(--header-row-height);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule);
+    background: var(--paper); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle {
+    width: 36px; height: 36px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; transition: transform 0.25s ease; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px;
+    color: var(--ink); letter-spacing: 0.04em; padding-left: 12px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .live-indicator {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--healthy); text-transform: uppercase;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--healthy);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .date-display {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .page { padding: 48px 56px 80px; max-width: 1280px; }
+  .page-header {
+    margin-bottom: 40px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 32px; flex-wrap: wrap;
+  }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px;
+    line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
+  }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px;
+    color: var(--muted); margin-top: 12px; letter-spacing: 0.01em;
+  }
+  .time-window-card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 18px 22px; min-width: 320px;
+  }
+  .time-window-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .time-window-pills { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
+  .time-pill {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 6px 12px; background: transparent; border: 1px solid var(--rule);
+    color: var(--ink-soft); cursor: pointer; transition: all 0.15s;
+  }
+  .time-pill:hover { border-color: var(--gold); color: var(--ink); }
+  .time-pill.active { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .time-window-detail {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); padding-top: 8px; border-top: 1px solid var(--rule-soft);
+  }
+  .time-window-detail strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .menu-overview {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); margin-bottom: 48px;
+  }
+  .menu-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .overview-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .overview-value.healthy { color: var(--healthy); }
+  .overview-value.attention { color: var(--attention); }
+  .overview-value.gold { color: var(--gold-dark); }
+  .overview-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 8px;
+  }
+  .trend-arrow {
+    display: inline-block; margin-left: 6px; font-family: 'Jost', sans-serif;
+    font-weight: 500; font-size: 13px; vertical-align: middle;
+  }
+  .trend-arrow.up { color: var(--healthy); }
+  .trend-arrow.down { color: var(--attention); }
+  .trend-arrow.flat { color: var(--muted-soft); }
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+  .attention-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .attention-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 28px 32px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+  }
+  .attention-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--attention);
+  }
+  .attention-card.urgent::before { background: var(--urgent); }
+  .attention-card.attention::before { background: var(--attention); }
+  .attention-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .attention-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .attention-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .attention-severity {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--attention);
+  }
+  .attention-card.urgent .attention-severity { color: var(--urgent); }
+  .attention-dish {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 26px;
+    color: var(--ink); line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.005em;
+  }
+  .attention-dish em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .attention-numbers {
+    display: flex; align-items: baseline; gap: 24px; margin-bottom: 16px; padding: 12px 0;
+    border-top: 1px solid var(--rule-soft); border-bottom: 1px solid var(--rule-soft);
+  }
+  .attention-gp {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 38px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.02em;
+  }
+  .attention-card.urgent .attention-gp { color: var(--urgent); }
+  .attention-card.attention .attention-gp { color: var(--attention); }
+  .attention-movement { display: flex; flex-direction: column; }
+  .attention-movement-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 7px;
+    letter-spacing: 0.3em; color: var(--muted-soft); text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .attention-movement-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 18px;
+    color: var(--attention);
+  }
+  .attention-card.urgent .attention-movement-value { color: var(--urgent); }
+  .attention-cause {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.55;
+  }
+  .attention-cause strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .attention-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .attention-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .attention-card:hover .attention-action-link { color: var(--gold-dark); }
+  .attention-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+  .section-summary-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule);
+  }
+  .section-summary-card {
+    background: var(--card); padding: 20px 22px; cursor: pointer;
+    transition: background 0.15s; position: relative;
+  }
+  .section-summary-card:hover { background: var(--card-warm); }
+  .section-summary-card.active { background: var(--gold-bg); }
+  .section-summary-name {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .section-summary-gp {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 26px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .section-summary-gp.healthy { color: var(--healthy); }
+  .section-summary-gp.attention { color: var(--attention); }
+  .section-summary-gp.urgent { color: var(--urgent); }
+  .section-summary-detail {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted); margin-top: 6px;
+  }
+  .section-summary-flags {
+    margin-top: 8px; display: flex; align-items: center; gap: 6px;
+    font-family: 'Jost', sans-serif; font-weight: 500; font-size: 10px;
+    color: var(--muted);
+  }
+  .flag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--healthy); }
+  .flag-dot.attention { background: var(--attention); }
+  .flag-dot.urgent { background: var(--urgent); }
+  .menu-detail-section { margin-bottom: 32px; }
+  .menu-detail-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+  }
+  .menu-section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .menu-section-summary {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+  .menu-section-summary strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .dish-list { background: var(--card); border: 1px solid var(--rule); }
+  .dish-row {
+    display: grid; grid-template-columns: 1fr 90px 90px 100px 1fr 50px;
+    gap: 20px; padding: 18px 24px; border-bottom: 1px solid var(--rule-soft);
+    align-items: center; cursor: pointer; transition: background 0.15s;
+  }
+  .dish-row:last-child { border-bottom: none; }
+  .dish-row:hover { background: var(--card-warm); }
+  .dish-name {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 17px;
+    color: var(--ink); letter-spacing: 0.005em;
+  }
+  .dish-gp {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 20px;
+    color: var(--ink); line-height: 1; text-align: right;
+  }
+  .dish-gp.healthy { color: var(--healthy); }
+  .dish-gp.attention { color: var(--attention); }
+  .dish-gp.urgent { color: var(--urgent); }
+  .dish-trend {
+    display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 14px;
+  }
+  .dish-trend.up { color: var(--healthy); }
+  .dish-trend.down { color: var(--attention); }
+  .dish-trend.urgent-down { color: var(--urgent); }
+  .dish-trend.flat { color: var(--muted-soft); }
+  .dish-price {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 15px;
+    color: var(--ink-soft); text-align: right;
+  }
+  .dish-exposure {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 12px;
+    color: var(--muted); line-height: 1.4;
+  }
+  .dish-exposure strong { color: var(--ink); font-weight: 500; }
+  .dish-chevron { color: var(--muted-soft); display: flex; justify-content: flex-end; }
+  .dish-row:hover .dish-chevron { color: var(--gold); }
+  .dish-header {
+    display: grid; grid-template-columns: 1fr 90px 90px 100px 1fr 50px;
+    gap: 20px; padding: 12px 24px; background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase;
+  }
+  .dish-header > div:nth-child(2),
+  .dish-header > div:nth-child(3),
+  .dish-header > div:nth-child(4) { text-align: right; }
+  .mockup-footnote {
+    margin: 0 56px 60px; padding: 32px 32px;
+    background: var(--paper-warm); border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px;
+    color: var(--ink-soft); line-height: 1.7; max-width: 800px;
+  }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v3 · Chef Margins · Mode-Shifted Voice</div>
+  <div class="mockup-banner-meta">Serious when something's wrong · dry warmth where things are holding</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/><path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span><span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">Margins</div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-indicator">
+          <span class="live-dot"></span><span>Live</span>
+        </div>
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">Menu Performance</div>
+          <div class="page-title"><em>Margins</em> — how your menu is doing</div>
+          <!-- Subtitle: neutral-warm because there's flagged content -->
+          <div class="page-sub">Two dishes need sorting. Everything else is in good shape.</div>
+        </div>
+
+        <div class="time-window-card">
+          <div class="time-window-label">Comparing</div>
+          <div class="time-window-pills">
+            <button class="time-pill">7 D</button>
+            <button class="time-pill active">7 D vs 7 D</button>
+            <button class="time-pill">Month vs Last</button>
+            <button class="time-pill">Quarter</button>
+            <button class="time-pill">YTD</button>
+          </div>
+          <div class="time-window-detail">
+            <strong>8 May – 14 May</strong> vs <strong>1 May – 7 May</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-overview">
+        <div class="menu-overview-card">
+          <div class="overview-label">Menu GP</div>
+          <div class="overview-value healthy">68%<span class="trend-arrow down">↓ 1.2pt</span></div>
+          <div class="overview-sub">target 65% · still healthy</div>
+        </div>
+        <div class="menu-overview-card">
+          <div class="overview-label">Dishes Healthy</div>
+          <div class="overview-value">15<span class="trend-arrow flat">/ 17</span></div>
+          <div class="overview-sub">88% of menu on target</div>
+        </div>
+        <div class="menu-overview-card">
+          <div class="overview-label">Needs Attention</div>
+          <div class="overview-value attention">2</div>
+          <div class="overview-sub">both in mains</div>
+        </div>
+        <div class="menu-overview-card">
+          <div class="overview-label">Worst Drift</div>
+          <div class="overview-value attention">−4pt</div>
+          <div class="overview-sub">lamb shawarma</div>
+        </div>
+      </div>
+
+      <!-- ═════════ ATTENTION CARDS — SERIOUS VOICE ═════════ -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Needs Your Attention</div>
+          <div class="section-meta">Two dishes flagged · sorted by severity</div>
+        </div>
+
+        <div class="attention-grid">
+
+          <!-- URGENT: serious, direct, no levity -->
+          <div class="attention-card urgent">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Mains</div>
+              <div class="attention-severity">Urgent</div>
+            </div>
+
+            <div class="attention-dish">Your <em>lamb shawarma</em>'s hurting you.</div>
+
+            <div class="attention-numbers">
+              <div class="attention-gp">61%</div>
+              <div class="attention-movement">
+                <div class="attention-movement-label">Down This Week</div>
+                <div class="attention-movement-value">−4 points</div>
+              </div>
+            </div>
+
+            <div class="attention-cause">
+              <strong>Aubrey hit you with £14.20/kg on lamb shoulder Tuesday</strong> — up from £12.70. You costed it at £11.50. Every plate's down £1.85.
+            </div>
+
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Sort the dish →</a>
+              <div class="attention-action-context">last costed 6 weeks ago</div>
+            </div>
+          </div>
+
+          <!-- WATCH: serious but quieter -->
+          <div class="attention-card attention">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Mains</div>
+              <div class="attention-severity">Watch</div>
+            </div>
+
+            <div class="attention-dish">The <em>burger</em>'s drifting on you.</div>
+
+            <div class="attention-numbers">
+              <div class="attention-gp">64%</div>
+              <div class="attention-movement">
+                <div class="attention-movement-label">Down This Week</div>
+                <div class="attention-movement-value">−2 points</div>
+              </div>
+            </div>
+
+            <div class="attention-cause">
+              <strong>Beef mince up 6% at Aubrey, brioche up 8% at Reza.</strong> Each one's small but it's been three weeks of soft drift — not a one-off.
+            </div>
+
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Sort the dish →</a>
+              <div class="attention-action-context">last costed 9 weeks ago</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═════════ MENU SECTION SUMMARY — dry warmth for healthy sections ═════════ -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Menu Section Performance</div>
+          <div class="section-meta">in menu order · click to jump to detail</div>
+        </div>
+
+        <div class="section-summary-grid">
+          <div class="section-summary-card">
+            <div class="section-summary-name">Starters</div>
+            <div class="section-summary-gp healthy">72%</div>
+            <div class="section-summary-detail">4 dishes</div>
+            <div class="section-summary-flags">
+              <span class="flag-dot"></span><span>all behaving</span>
+            </div>
+          </div>
+          <div class="section-summary-card active">
+            <div class="section-summary-name">Mains</div>
+            <div class="section-summary-gp attention">63%</div>
+            <div class="section-summary-detail">5 dishes</div>
+            <div class="section-summary-flags">
+              <span class="flag-dot urgent"></span><span>2 flagged</span>
+            </div>
+          </div>
+          <div class="section-summary-card">
+            <div class="section-summary-name">Grill</div>
+            <div class="section-summary-gp healthy">69%</div>
+            <div class="section-summary-detail">4 dishes</div>
+            <div class="section-summary-flags">
+              <span class="flag-dot"></span><span>steady as ever</span>
+            </div>
+          </div>
+          <div class="section-summary-card">
+            <div class="section-summary-name">Sides</div>
+            <div class="section-summary-gp healthy">76%</div>
+            <div class="section-summary-detail">6 dishes</div>
+            <div class="section-summary-flags">
+              <span class="flag-dot"></span><span>pulling weight</span>
+            </div>
+          </div>
+          <div class="section-summary-card">
+            <div class="section-summary-name">Desserts</div>
+            <div class="section-summary-gp healthy">70%</div>
+            <div class="section-summary-detail">3 dishes</div>
+            <div class="section-summary-flags">
+              <span class="flag-dot"></span><span>all good</span>
+            </div>
+          </div>
+          <div class="section-summary-card">
+            <div class="section-summary-name">Drinks</div>
+            <div class="section-summary-gp healthy">78%</div>
+            <div class="section-summary-detail">— / list only</div>
+            <div class="section-summary-flags">
+              <span class="flag-dot"></span><span>not tracked</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ ALL DISHES ═════════ -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">All Dishes</div>
+          <div class="section-meta">in menu order · click any dish to drill into its costing</div>
+        </div>
+
+        <!-- 1. STARTERS - mostly healthy, has 2 soft drifts -->
+        <div class="menu-detail-section">
+          <div class="menu-detail-head">
+            <div class="menu-section-title">Starters</div>
+            <!-- Section subtitle: dry-warm but factual -->
+            <div class="menu-section-summary"><strong>4 dishes</strong> · avg GP <strong>72%</strong> · two soft drifts on tahini, rest behaving</div>
+          </div>
+
+          <div class="dish-list">
+            <div class="dish-header">
+              <div>Dish</div><div>GP %</div><div>vs 7D</div><div>Plate Price</div><div>Exposed To</div><div></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Hummus &amp; Flatbread</div>
+              <div class="dish-gp attention">69%</div>
+              <div class="dish-trend down">↓ 3.0</div>
+              <div class="dish-price">£8.50</div>
+              <div class="dish-exposure"><strong>Tahini</strong> · Reza Foods</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Baba Ghanoush</div>
+              <div class="dish-gp attention">70%</div>
+              <div class="dish-trend down">↓ 2.5</div>
+              <div class="dish-price">£8.00</div>
+              <div class="dish-exposure"><strong>Tahini</strong> · same story as the hummus</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Falafel</div>
+              <div class="dish-gp healthy">74%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£9.00</div>
+              <div class="dish-exposure">Chickpeas, herbs · holding</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Cured Mackerel</div>
+              <div class="dish-gp healthy">75%</div>
+              <div class="dish-trend up">↑ 1.5</div>
+              <div class="dish-price">£11.00</div>
+              <div class="dish-exposure">Mackerel cheaper than usual</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. MAINS - the problem section, kept factual -->
+        <div class="menu-detail-section">
+          <div class="menu-detail-head">
+            <div class="menu-section-title">Mains</div>
+            <div class="menu-section-summary"><strong>5 dishes</strong> · avg GP <strong>63%</strong> · 2 flagged · 3 holding</div>
+          </div>
+
+          <div class="dish-list">
+            <div class="dish-header">
+              <div>Dish</div><div>GP %</div><div>vs 7D</div><div>Plate Price</div><div>Exposed To</div><div></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Lamb Shawarma</div>
+              <div class="dish-gp urgent">61%</div>
+              <div class="dish-trend urgent-down">↓ 4.0</div>
+              <div class="dish-price">£18.50</div>
+              <div class="dish-exposure"><strong>Lamb shoulder</strong> · Aubrey hiked the price</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Chargrilled Burger</div>
+              <div class="dish-gp attention">64%</div>
+              <div class="dish-trend down">↓ 2.0</div>
+              <div class="dish-price">£16.00</div>
+              <div class="dish-exposure"><strong>Beef mince + brioche</strong> · both up a bit</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Chicken Shish</div>
+              <div class="dish-gp healthy">68%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£17.00</div>
+              <div class="dish-exposure">Chicken doing what chicken does</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Adana Kebab</div>
+              <div class="dish-gp healthy">66%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£17.50</div>
+              <div class="dish-exposure">Lamb mince · holding steady</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Aubergine Şakşuka</div>
+              <div class="dish-gp healthy">71%</div>
+              <div class="dish-trend up">↑ 1.0</div>
+              <div class="dish-price">£14.00</div>
+              <div class="dish-exposure">Veg in season, costing less</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. GRILL - all healthy, dry warmth -->
+        <div class="menu-detail-section">
+          <div class="menu-detail-head">
+            <div class="menu-section-title">Grill</div>
+            <div class="menu-section-summary"><strong>4 dishes</strong> · avg GP <strong>69%</strong> · everyone behaving</div>
+          </div>
+
+          <div class="dish-list">
+            <div class="dish-header">
+              <div>Dish</div><div>GP %</div><div>vs 7D</div><div>Plate Price</div><div>Exposed To</div><div></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Beef Short Rib</div>
+              <div class="dish-gp healthy">67%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£24.00</div>
+              <div class="dish-exposure">Short rib · doing its job</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Whole Bream</div>
+              <div class="dish-gp healthy">71%</div>
+              <div class="dish-trend up">↑ 0.5</div>
+              <div class="dish-price">£22.00</div>
+              <div class="dish-exposure">Bream cheaper than usual</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Lamb Cutlets</div>
+              <div class="dish-gp healthy">68%</div>
+              <div class="dish-trend down">↓ 1.0</div>
+              <div class="dish-price">£26.00</div>
+              <div class="dish-exposure"><strong>Cutlets</strong> · soft drift, watching it</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Halloumi Skewers</div>
+              <div class="dish-gp healthy">70%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£14.00</div>
+              <div class="dish-exposure">Halloumi · same price as ever</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. SIDES - solidly healthy -->
+        <div class="menu-detail-section">
+          <div class="menu-detail-head">
+            <div class="menu-section-title">Sides</div>
+            <div class="menu-section-summary"><strong>6 dishes</strong> · avg GP <strong>76%</strong> · making good money, all six</div>
+          </div>
+
+          <div class="dish-list">
+            <div class="dish-header">
+              <div>Dish</div><div>GP %</div><div>vs 7D</div><div>Plate Price</div><div>Exposed To</div><div></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Hand-Cut Chips</div>
+              <div class="dish-gp healthy">78%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£5.50</div>
+              <div class="dish-exposure">Potatoes · steady</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Tabbouleh</div>
+              <div class="dish-gp healthy">79%</div>
+              <div class="dish-trend up">↑ 0.5</div>
+              <div class="dish-price">£6.00</div>
+              <div class="dish-exposure">Herbs, bulgur · fine</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Charred Broccoli</div>
+              <div class="dish-gp healthy">73%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£6.50</div>
+              <div class="dish-exposure">Broccoli · stable</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Pickled Vegetables</div>
+              <div class="dish-gp healthy">82%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£4.50</div>
+              <div class="dish-exposure">Best margin on the menu</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Flatbread</div>
+              <div class="dish-gp healthy">74%</div>
+              <div class="dish-trend down">↓ 0.5</div>
+              <div class="dish-price">£4.00</div>
+              <div class="dish-exposure">Flour up slightly · not a problem</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Yoghurt &amp; Herbs</div>
+              <div class="dish-gp healthy">75%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£4.00</div>
+              <div class="dish-exposure">Yoghurt · stable</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. DESSERTS - healthy -->
+        <div class="menu-detail-section">
+          <div class="menu-detail-head">
+            <div class="menu-section-title">Desserts</div>
+            <div class="menu-section-summary"><strong>3 dishes</strong> · avg GP <strong>70%</strong> · sweet end to the menu</div>
+          </div>
+
+          <div class="dish-list">
+            <div class="dish-header">
+              <div>Dish</div><div>GP %</div><div>vs 7D</div><div>Plate Price</div><div>Exposed To</div><div></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Baklava</div>
+              <div class="dish-gp healthy">71%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£8.00</div>
+              <div class="dish-exposure">Pistachio · stable</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Halva &amp; Stone Fruit</div>
+              <div class="dish-gp healthy">69%</div>
+              <div class="dish-trend up">↑ 0.5</div>
+              <div class="dish-price">£7.50</div>
+              <div class="dish-exposure">Stone fruit in season</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-name">Cardamom Ice Cream</div>
+              <div class="dish-gp healthy">70%</div>
+              <div class="dish-trend flat">— 0.0</div>
+              <div class="dish-price">£6.00</div>
+              <div class="dish-exposure">Dairy · steady</div>
+              <div class="dish-chevron"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3l4 4-4 4"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">Margins v3 — Mode-Shifted Voice</div>
+      <div class="footnote-body">
+        <strong>Serious where it matters:</strong> the two flagged attention cards (Urgent + Watch) stay in direct, kitchen-floor problem-solving voice. <em>"Your lamb shawarma's hurting you. Aubrey hit you with £14.20/kg on lamb shoulder Tuesday."</em> No softening, no jokes.<br><br>
+        <strong>Dry warmth where things are holding:</strong> healthy section summaries get personality. <em>"all behaving"</em>, <em>"steady as ever"</em>, <em>"pulling weight"</em>, <em>"sweet end to the menu"</em>. The Grill section subtitle: <em>"everyone behaving"</em>. The Sides: <em>"making good money, all six"</em>.<br><br>
+        <strong>Funny lives in the safe places:</strong> exposure column on holding dishes — "Chicken doing what chicken does", "Best margin on the menu" on pickled vegetables, "same story as the hummus" on the baba ghanoush soft drift. Banter exists, but never above an Urgent card or in a Watch state.<br><br>
+        <strong>Rule for the design system:</strong> voice tracks severity of the content beneath it. Urgent/Watch = serious chef voice. Healthy/steady = dry warmth allowed. The page's most severe content sets the dominant register; warmth lives in unflagged details, never above flagged ones.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>
