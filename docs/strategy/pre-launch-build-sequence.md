@@ -1,151 +1,280 @@
-# Pre-Launch Build Sequence
+# Pre-launch build sequence
 
-*Working back from the v1 we'd be proud to launch.*
+*The order things get built to ship v1, given everything decided 2026-05-14.*
 
-The constraint: Palatable hasn't launched. The goal isn't to ship the next thing — it's to launch with something category-defining that justifies the positioning as the digital sous chef.
+Working back from a v1 that ships the role-aware customer product (chef / manager / owner shells, seven chef tabs, the new Notebook, the chef Margins dashboard, the Sites overview for owner) plus the admin v1 surfaces (Activity merged surface, Customer Activity, Support with impersonation, 2FA, etc.).
 
-Estimated 10–12 weeks of focused work.
-
----
-
-## Foundation work (weeks 1–2)
-
-Decisions and small jobs that unblock everything else. Do these first.
-
-### Strategic decisions
-- **Four-tab chef surface decided.** The chef surface is now four tabs — Recipes, Costing, Margins, Reports — each answering a distinct sous chef question (see `palatable-way.md` and `role-aware-surfaces.md`). Costing changes role: it stops being an authoring workbench and becomes a **library overview surface** — a grid of every dish costed, with GP %, sale price, last-costed date, and drift flags, with click-through to the recipe. The current `CostingView` authoring workbench migrates inline into Recipes (where part of it already lives at `RecipesView.tsx:1379-1542`). PR 1 (foundation week): wire the four tabs in the sidebar; stub `MarginsView` and the new library-overview `CostingView`; update editing-key vocab. PR 2 (inside the margin-leakage build window): migrate authoring inline into Recipes, build the new Costing library grid, and move analytical sections (GP trends, benchmarking, supplier performance) from `ReportsView` into `MarginsView`. Reports shrinks to operational reporting only.
-- **Finalise role-aware surface design.** Sketch the three home screens properly (see `role-aware-surfaces.md`). This is the spec for everything that follows.
-- **Run the backfill migration in Supabase** to default-account existing users. Ten-minute job that closes a real risk before launch.
-
-### Architectural decisions
-- Confirm role detection logic and how it drives surface rendering. Phase 3 team perms work is the foundation — this extends it into experience design.
-- Decide notification architecture. Where do alerts live, how does the chef get the morning brief, how do role-aware notifications get routed?
+Substantially rewritten from the May 13 version. The previous sequence assumed adding features to an existing shape. This sequence builds the shape itself.
 
 ---
 
-## The headline build (weeks 2–7) — Margin Leakage Detection
+## The reframed plan, at a glance
 
-The category-defining feature. Transforms Palatable from "good operational tooling" to "intelligent sous chef." Entirely buildable from data we already have.
+Roughly 12–14 weeks of focused work to ship. Three phases:
 
-### What it needs
-- Daily/weekly margin calculation per dish, tracked over time
-- Detection logic — what counts as a meaningful margin slip (not noise)
-- Root cause attribution — link the margin change to specific ingredient price movements
-- Surface design — appears in chef morning brief, manager site status, owner business pulse, all three with role-appropriate framing
-- Notification design — when to alert, how to alert, who to alert
-- "What you could do about it" — surfacing supplier alternatives, recipe swaps, price negotiation prompts
-
-### Why 4–6 weeks
-The data is all there. The work is the analytics layer (margin time series), the attribution logic (what changed and why), the surface design (this is the new flagship UX), and the notification infrastructure (which is reusable for other intelligence features later).
-
-### Demo moment this unlocks
-> *"Nory tells you what your sales might be tomorrow. Palatable tells you why your burger margin dropped 4% this month, and which supplier is responsible. We catch the money that's already leaving."*
+1. **Foundation infrastructure** (weeks 1–3) — the plumbing that everything else depends on
+2. **Role-aware surfaces and core features** (weeks 4–10) — the surfaces customers actually use
+3. **Polish, security, launch** (weeks 11–14) — making it ready for paying customers
 
 ---
 
-## The chef-love build (weeks 4–8, parallel) — Credit Note Workflow
+## Phase 1 — Foundation infrastructure (weeks 1–3)
 
-Runs in parallel with margin work because they touch different parts of the codebase.
+### Why this comes first
 
-### What it needs
-- Automatic discrepancy detection (already built) → automatic credit note request drafting
-- Email template generation per supplier with line-item detail
-- Send and track workflow — supplier responds, credit applied, status updated
-- Manager view — outstanding credit notes by supplier and value
-- Chef view — "handled" reassurance, just see that it's in progress
-- Reporting impact — credit notes recovered as a real business outcome
+Everything else depends on three pieces of plumbing: the notification engine (Inbox), the role-aware shell rendering, and the activity/event stream. None of the flagship surfaces (chef morning brief, owner business pulse, admin Needs Attention) work without these. They share a codebase across customer and admin products — built once, used everywhere.
 
-### Why this matters
-Pure admin removal. Every kitchen loses thousands a year to uncollected credit notes. Recovering that money is a tangible ROI story for owners and a tangible "thank god something handles this" story for chefs.
+### Week 1 — Foundation decisions and database
 
-### Size
-3–4 weeks because the discrepancy logic exists. The new work is the supplier communication and tracking workflow.
+**Activity / event stream schema and dispatcher** (2 days)
+- Schema: `activity_events` table per the shared infrastructure doc
+- Dispatcher service taking events from any source, routing to the right recipients
+- RLS policies
+
+**Inbox schema and dispatcher routing** (2 days)
+- Schema: `inbox_items` table per the shared infrastructure doc
+- Routing rules: chef / manager / owner / operator
+- RLS policies
+
+**Role-aware shell rendering — schema** (1 day)
+- `user_preferences` table with active_outlet, active_shell, notification_prefs
+- Confirmed the existing `account_members` schema covers role-per-outlet
+
+### Week 2 — Shell architecture and base Inbox UI
+
+**Role detection hook and surface switcher** (3 days)
+- `useActiveSurface()` hook
+- `<SurfaceProvider>` wrapping the app
+- Header surface switcher component
+- Route gating logic
+- Per-role surface preference persistence
+
+**Base Inbox UI** (2 days)
+- List view with grouping and severity
+- Item detail view (markdown body + optional action buttons)
+- Mark read / dismiss / action workflow
+- Unread badge in nav
+- Empty state
+
+### Week 3 — Push/email infrastructure and design system extraction
+
+**Notification delivery channels** (3 days)
+- Push notification infrastructure (Expo is partially set up — wire it through)
+- Email digest scheduler
+- Optional SMS routing (paid tier)
+- Per-user notification preferences
+
+**Visual design system extraction** (2 days, Jack-led)
+- Token extraction from admin and the P&P proposal: colour palette, typography scale, spacing scale, component primitives, motion primitives
+- Light-mode variants where admin currently lacks them
+- This is Jack's work; engineering integrates the tokens into the codebase
+
+### Foundation phase exit criteria
+
+- All three shell types can be rendered (even with placeholder content)
+- The surface switcher works
+- The Inbox can receive an event and display it in the right user's surface
+- Activity stream captures events
+- Push and email channels work end-to-end with a test event
+- Design tokens are in code
 
 ---
 
-## The owner surface build (weeks 6–9) — Group Dashboard, Intelligence-First
+## Phase 2 — Role-aware surfaces and core features (weeks 4–10)
 
-The dashboard from the existing roadmap, but designed as the owner surface from the principles, not as a static reporting tab.
+### The order matters
 
-### What it needs
-- Business pulse top section — group GP, margin alerts, COGS trend
-- Multi-site comparison views — GP by site, waste by site, menu performance by site, supplier spend by site
-- Owner-level alerts feed — the strategic version of the chef's morning brief
-- Drill-down into any site
-- Foundation for benchmarking (even if data isn't rich enough at launch, build the surface)
+Build chef shell first (most-used surface, highest-impact differentiator). Then owner shell (the Group/Enterprise demo surface). Then manager shell (smallest user group at launch). Within each shell, build the home surface first, then the substantive tabs.
 
-### Why now
-Reuses the role-aware architecture. Provides the demo surface for Group/Enterprise sales. Showcases the margin leakage feature at portfolio level (not just per dish, but across the whole group).
+### Week 4 — Chef home morning brief
+
+The first real flagship surface.
+
+- Chef home page with morning brief at the top, quick actions below
+- First few inbox item types: margin_slip, price_change, stock_low, credit_note_pending, delivery_due
+- Empty-state design ("you're all caught up")
+- Mobile-first responsive layout
+
+### Weeks 5–6 — Chef Margins dashboard
+
+The chef's menu performance dashboard. Higher priority than I had it in the earlier sequence — this is chef-primary, not owner-only.
+
+- Margins tab in chef nav
+- Per-dish GP %, trend arrows, drift flags
+- Supplier exposure per dish (which suppliers drive which dish costs)
+- Click-through from dish to its Costing entry
+- Time-series storage so trends actually mean something (daily GP snapshot per dish)
+
+### Weeks 6–7 — Stock & Suppliers consolidation
+
+Folding four current tabs into one consolidated chef/manager surface.
+
+- New "Stock & Suppliers" route and component
+- Sections for ingredient catalogue, supplier directory, invoices, waste log
+- "Invoice scan" stays as a prominent quick action on home, but the invoice inventory moves here
+- Removes Bank, Invoices, Suppliers, Waste from chef nav
+
+### Weeks 7–8 — Costing as library overview
+
+Refactor Costing tab from authoring workbench to library overview.
+
+- New library grid: all costings, sortable by GP, filterable by menu section
+- Click-through from grid into individual costing detail (which can still edit)
+- Authoring flow lives inline in Recipes (already partially exists at `RecipesView.tsx:1379-1542`)
+- The standalone `CostingView` workbench either retires or shrinks to a "scratch pad" for ad-hoc costings not yet tied to a recipe — *decision needed during this build*
+
+### Weeks 8–10 — Margin leakage detection
+
+The headline v1 intelligence feature. Transforms Palatable from operational tooling to operational intelligence.
+
+- Time-series storage of dish margins (already started in Margins dashboard build)
+- Detection logic: what counts as a meaningful margin slip (not noise)
+- Root cause attribution: link the margin change to specific ingredient price movements
+- Dispatcher integration: surfaces alerts in chef Inbox + manager Inbox + owner Inbox at appropriate frame
+- "What to do about it" — suggestions for supplier alternatives, recipe swaps, price negotiation prompts
+
+### Weeks 9–10 (parallel) — Owner shell and Sites overview
+
+Runs in parallel with margin leakage because they touch different parts of the codebase.
+
+- Owner home: business pulse top section, multi-site comparison panels
+- Sites overview surface: group-level view of all sites at a glance, performance comparison, drill-into-any-one
+- Drill-down into any site shows that site's manager-shell view
+- Reuses Jack's pre-reframing Sites work where applicable
+
+### Weeks 10 (parallel) — Manager home
+
+Smaller scope than chef or owner home; manager is smallest user group at launch.
+
+- Site status surface
+- Routes manager-relevant inbox items to manager home
+- PO approval workflow surfaced here
+
+### Weeks 9–10 (parallel) — Credit note workflow
+
+Pure chef-love feature. Builds on existing discrepancy detection.
+
+- Automatic credit note request drafting from flagged discrepancies
+- Email template per supplier with line-item detail
+- Send + track workflow with status updates
+- Manager view: outstanding credit notes by supplier and value
+- Chef view: handled reassurance in Inbox
 
 ---
 
-## The polish and launch sweep (weeks 8–11)
+## Phase 3 — Notebook expansion, admin v1, polish, launch (weeks 11–14)
 
-### Design consistency pass
-- Font colours and contrast in light/dark mode
-- Four-grid line spacing fix (Star/Plough/Dog/Puzzle)
-- Styling standardisation across tabs
-- Allergen and dietary tag work (universal allergens, V/Vg/GF)
-- Dashboard friendliness audit — but now checking that the role-aware design actually works, not just generic polish
+### Weeks 11–12 — Notebook expansion
 
-### Seeded accounts
-- Add kcals to seed data
-- Replace hello@ with demo@
-- Tiered seeding (Free / Pro / Group / Enterprise demo accounts so each role view can be demonstrated)
+Promoted from "tab that exists" to "key product feature." Significant build.
 
-### Security and legal — non-negotiable for launch
-- Full T&Cs and privacy policy (UK GDPR-compliant)
-- Data Processing Agreement template for B2B customers
-- Security posture document (Supabase RLS, encryption at rest/in transit, backup posture)
+- Mobile-first redesign for chef-on-feet use
+- Voice memos with transcription
+- Photo capture and attachment
+- Stylus / handwritten notes (where device supports)
+- Sketches and drawings
+- Sharing model: private by default, optional share-into-account
+- Search across notebook content
+- Linkability to dishes, recipes, suppliers, ingredients
+- Cross-device sync
+- Taggable outcomes for experiments
+
+This is its own meaningful build. Could compress to one week or extend to three depending on how deep the v1 notebook goes. The principle: ship enough to genuinely replace a paper notebook for the chefs who would use one.
+
+### Weeks 12–13 — Admin v1 completions
+
+The admin v1 surfaces that aren't already there:
+
+- Merge Audit Log + Customer events + System events into the single "Activity" surface with filters
+- Customer Activity surface — pattern detection rules (start with 10–15)
+- Support surface — full read+write impersonation, per-account diagnostic, quick-actions
+- TOTP 2FA on admin authentication
+- Remove the Control Desk button
+- Drill-in on Users tab
+- Wire Needs Attention feed to real signals
+
+### Week 13 — Security, legal, T&Cs
+
+Non-negotiable for launch.
+
+- Full T&Cs covering impersonation rights, customer activity logging, data retention
+- Privacy policy and DPA (UK GDPR-compliant)
 - Cookie/consent compliance
-- Decide and document IP protection approach (trademark Palatable, copyright the codebase, accept the rest)
+- Security posture document (Supabase RLS, encryption at rest/in transit, backup posture)
+- Subprocessor list
+- IP protection decisions (trademark Palatable, copyright the codebase)
 
-### Website redesign
-- Palate & Pen consultancy first impression
-- Heavy Palatable focus with the three-surface story
-- Chef-voice hero, role-by-role sections
-- Pricing page — Free / Pro / Group / Enterprise tiers articulated
-- Demo booking flow
+### Week 14 — Friendly beta and launch prep
 
----
-
-## Beta and launch prep (weeks 11–12)
-
-### Friendly beta
-- 3–5 operators across single-site and multi-site
-- Cover all three roles — at least one beta site with active chef, manager, and owner users
+- 3–5 friendly operators, ideally including at least one multi-site customer
+- Cover all three customer roles in the beta — at least one site with active chef, manager, and owner users
 - Two-week structured feedback period with specific questions per role
-- Iterate on what breaks, what confuses, what nobody uses
-
-### Launch readiness
-- Stress test (the version that matters — not "break the system" but "what happens at 50 concurrent users and 1000 invoices a day")
-- Support process and documentation
 - Onboarding flow tested with non-Jack users
-- Pricing live, billing tested
-- POS integration scaffold started (post-launch v1.1 priority — Square first for simplest auth)
+- Pricing live, billing tested with real charge → refund cycle
+- Public website finalised (Palate & Pen consultancy first impression, heavy Palatable focus, role-aware product story, pricing tiers)
 
 ---
 
 ## What's deliberately not in v1
 
-- **POS integration** — post-launch, v1.1
-- **Forecasting engine** — requires POS data first
-- **Central kitchen management** — Phase 7+, niche segment, not the wedge
-- **Supplier intelligence benchmarking** — requires customer invoice volume; build the data pipeline now, surface the feature 6–12 months post-launch
-- **Native mobile** — web responsive surface is enough for v1
+- **POS integration** — post-launch v1.1, Square first for simplest auth
+- **Forecasting engine** — requires POS sales data first; v1.1+
+- **Central kitchen management** — Phase 7+ scope, niche segment
+- **Supplier intelligence benchmarking across customers** — requires customer invoice volume to be meaningful; build the data pipeline now (it's part of Bank + invoices), surface the cross-customer feature 6–12 months post-launch
+- **Native mobile apps** — web-responsive is enough for v1; Expo mobile app at `/app` stays parked until post-launch
 - **Autonomous ordering** — trust isn't earned yet; v3 territory
 - **Xero integration** — post-launch, valuable but not differentiating
+- **Customer Health monitoring** — admin v1.1
+- **Billing operations** — admin v1.1, Stripe dashboard is fine for current scale
+- **Marketing operations** — admin v1.2+, when Jack's brother joins go-to-market
+- **Multi-admin permissions** — premature until there's a team
 
 ---
 
-## What this sequence achieves
+## What v1 actually ships
 
-A v1 that launches with three things no competitor has:
+Working backward from this sequence, v1 launches with:
 
-1. **Costing that maintains itself forever**, without chef effort
-2. **Margin leakage detection** — the headline intelligence feature, role-aware surfaced
-3. **Credit note automation** — pure chef-love, real ROI
+**For chefs:**
+- A digital sous chef that handles the admin so they can cook
+- The chef's menu performance dashboard (Margins)
+- A genuine digital kitchen notebook that replaces paper
+- Auto-maintained costing that updates itself as supplier prices change
+- One consolidated Stock & Suppliers surface instead of four tabs
+- Morning brief that tells them what they need to know before they ask
 
-Plus a role-aware architecture that justifies the positioning across chef, manager, and owner, and a Group dashboard that makes the Group/Enterprise tier credible from day one.
+**For managers:**
+- Site operational status at a glance
+- All chef tools available, plus site-level reporting and PO management
+- Margins for the site with operational drill-down
 
-The supplier intelligence moat starts accumulating data from day one of customer acquisition, ready to become the flagship v2 feature when there's enough volume.
+**For owners (Group/Enterprise):**
+- Business pulse showing group performance
+- Sites overview comparing all sites at a glance
+- Multi-site Margins with supplier benchmarking
+- Strategic reporting and accounting exports
+
+**For the operator (Jack):**
+- A founder-grade cockpit running the business
+- Pattern-detection intelligence on customer behaviour
+- Full support tooling (impersonation, diagnostic)
+- Secure admin behind 2FA
+
+**The intelligence layer:**
+- Margin leakage detection — proactive alerts on slipping GP with root cause attribution
+- Credit note workflow — automated supplier chase
+
+**The shared foundation:**
+- Notification engine routing intelligence to the right people in the right surface
+- Role-aware shells calibrated to chef, manager, owner respectively
+- Activity stream capturing what happens for support and intelligence
+
+This is meaningfully more product than "another stock/recipe/costing tool." It's the digital sous chef the strategy docs have been describing, plus the operator cockpit, plus the foundation infrastructure that makes both possible.
+
+---
+
+## What this document is and isn't
+
+**Is:** the build order for v1, in weeks, working back from a coherent launch. Replaces the May 13 build sequence which assumed a different product shape.
+
+**Isn't:** detailed engineering specs (those come per-feature), the visual design (Jack's work), or a guarantee that 14 weeks is exact — real estimates always slip; this is the *order*, not a contract.
