@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Stock &amp; Suppliers — Hub v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink); color: var(--paper); padding: 12px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--paper); opacity: 0.7;
+  }
+  .app {
+    display: grid; grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease;
+  }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar {
+    background: var(--paper-warm); border-right: 1px solid var(--rule);
+    position: sticky; top: 0; height: calc(100vh - 44px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-brand {
+    height: var(--header-row-height); padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    flex-shrink: 0; transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase;
+    display: flex; align-items: center; transition: opacity 0.2s, width 0.25s;
+  }
+  .brand-mark .brand-dot-inline {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px; vertical-align: middle;
+    position: relative; top: -4px;
+  }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; pointer-events: none; position: absolute; }
+  .brand-mark-collapsed {
+    display: none; align-items: center;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px;
+    letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+  }
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); margin-left: 4px; position: relative; top: -7px;
+  }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row {
+    padding: 12px 24px 0; transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase;
+    padding: 14px 24px 6px; white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+  }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer; border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); transition: color 0.15s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500;
+    letter-spacing: 0.03em; flex: 1; transition: opacity 0.2s;
+  }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.05em; color: var(--paper); background: var(--gold);
+    padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px;
+  }
+  .nav-badge.subtle {
+    background: transparent; color: var(--muted-soft); border: 1px solid var(--rule);
+  }
+  .app.collapsed .nav-badge {
+    position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px;
+    padding: 0; font-size: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip {
+    display: none; position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 7px 14px; white-space: nowrap; z-index: 30; pointer-events: none;
+  }
+  .nav-tooltip::before {
+    content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-style: solid;
+    border-width: 4px 4px 4px 0; border-color: transparent var(--ink) transparent transparent;
+  }
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row {
+    padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .user-role {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px;
+  }
+  .surface-switcher {
+    width: 100%; padding: 8px 12px; background: transparent;
+    border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher {
+    width: 36px; height: 36px; padding: 0; justify-content: center;
+  }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar {
+    height: var(--header-row-height);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule);
+    background: var(--paper); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle {
+    width: 36px; height: 36px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; transition: transform 0.25s ease; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px;
+    color: var(--ink); letter-spacing: 0.04em; padding-left: 12px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .live-indicator {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--healthy); text-transform: uppercase;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--healthy);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .date-display {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .page { padding: 48px 56px 80px; max-width: 1280px; }
+
+  .page-header {
+    margin-bottom: 40px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 32px; flex-wrap: wrap;
+  }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px;
+    line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
+  }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px;
+    color: var(--muted); margin-top: 12px; letter-spacing: 0.01em;
+  }
+  .quick-action-card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 20px 24px; min-width: 300px;
+    display: flex; align-items: center; gap: 18px; cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .quick-action-card:hover {
+    border-color: var(--rule-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .quick-action-icon {
+    width: 48px; height: 48px;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); flex-shrink: 0;
+    background: var(--gold-bg);
+  }
+  .quick-action-icon svg { width: 26px; height: 26px; }
+  .quick-action-text { flex: 1; }
+  .quick-action-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 18px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 4px;
+  }
+  .quick-action-sub {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .device-hint {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-radius: 1px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase;
+  }
+  .device-hint svg { width: 10px; height: 10px; }
+
+  .flow-overview {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); margin-bottom: 48px;
+  }
+  .flow-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .overview-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .overview-value.healthy { color: var(--healthy); }
+  .overview-value.attention { color: var(--attention); }
+  .overview-value.gold { color: var(--gold-dark); }
+  .overview-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 8px;
+  }
+
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+
+  .attention-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .attention-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 26px 28px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .attention-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--attention);
+  }
+  .attention-card.urgent::before { background: var(--urgent); }
+  .attention-card.attention::before { background: var(--attention); }
+  .attention-card.info::before { background: var(--info); }
+  .attention-card.healthy::before { background: var(--healthy); }
+  .attention-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .attention-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .attention-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .attention-severity {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--attention);
+  }
+  .attention-card.urgent .attention-severity { color: var(--urgent); }
+  .attention-card.info .attention-severity { color: var(--info); }
+  .attention-card.healthy .attention-severity { color: var(--healthy); }
+  .attention-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .attention-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .attention-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .attention-body strong {
+    font-style: normal; color: var(--ink); font-weight: 600;
+  }
+  .attention-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .attention-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .attention-card:hover .attention-action-link { color: var(--gold-dark); }
+  .attention-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  .destination-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+  }
+  .destination-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 24px 28px;
+    cursor: pointer; transition: all 0.15s; position: relative;
+    display: flex; flex-direction: column;
+  }
+  .destination-card:hover {
+    border-color: var(--rule-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .destination-card.featured {
+    grid-column: 1 / span 1; grid-row: 1 / span 2;
+    background: var(--card);
+  }
+  .destination-head {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+  }
+  .destination-icon {
+    width: 40px; height: 40px;
+    border: 1px solid var(--gold); border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); flex-shrink: 0;
+  }
+  .destination-icon svg { width: 20px; height: 20px; }
+  .destination-name {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px;
+    letter-spacing: 0.4em; color: var(--gold); text-transform: uppercase;
+  }
+  .destination-tagline {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 4px; letter-spacing: 0.01em;
+  }
+  .destination-state {
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 14px; margin-top: auto;
+    flex: 1; display: flex; flex-direction: column;
+  }
+  .destination-state-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 6px 0;
+    font-family: 'Cormorant Garamond', serif; font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .destination-state-row + .destination-state-row {
+    border-top: 1px solid var(--rule-soft);
+  }
+  .destination-state-row strong {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    color: var(--ink);
+  }
+  .destination-state-row em {
+    font-style: italic; color: var(--muted); font-size: 12px;
+  }
+  .destination-state-row.attention strong { color: var(--attention); }
+  .destination-state-row.urgent strong { color: var(--urgent); }
+  .destination-state-row.healthy strong { color: var(--healthy); }
+  .destination-state-row.live strong {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .destination-state-row.live .mini-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--healthy);
+    animation: pulse 2.5s ease-in-out infinite;
+    display: inline-block;
+  }
+  .destination-foot {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .destination-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .destination-card:hover .destination-link { color: var(--gold-dark); }
+  .destination-foot-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 11px;
+    color: var(--muted-soft);
+  }
+
+  .delivery-list {
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 14px;
+    margin-top: auto;
+  }
+  .delivery-row {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 14px;
+    padding: 10px 0;
+    align-items: center;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .delivery-row:last-child { border-bottom: none; }
+  .delivery-day {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px;
+    letter-spacing: 0.2em; color: var(--ink); text-transform: uppercase;
+  }
+  .delivery-supplier {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 15px;
+    color: var(--ink);
+  }
+  .delivery-supplier-sub {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); margin-top: 2px;
+  }
+  .delivery-status {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .delivery-status.attention { color: var(--attention); }
+  .delivery-status.urgent { color: var(--urgent); }
+  .delivery-status.healthy { color: var(--healthy); }
+
+  /* ═════════ v3: Looking Ahead section ═════════ */
+  .looking-ahead-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .ahead-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 28px 32px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .ahead-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--info);
+  }
+  .ahead-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .ahead-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .ahead-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .ahead-tag {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--info);
+  }
+  .ahead-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 24px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .ahead-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .ahead-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .ahead-body strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .ahead-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ahead-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .ahead-card:hover .ahead-action-link { color: var(--gold-dark); }
+  .ahead-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Footnote */
+  .mockup-footnote {
+    margin: 0 56px 60px; padding: 32px 32px;
+    background: var(--paper-warm); border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px;
+    color: var(--ink-soft); line-height: 1.7; max-width: 800px;
+  }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v3 · Chef Stock &amp; Suppliers · Hub Page</div>
+  <div class="mockup-banner-meta">Day-not-time deliveries · Looking Ahead section · forward-looking intelligence</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/><path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span><span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">Stock &amp; Suppliers</div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-indicator">
+          <span class="live-dot"></span><span>Live</span>
+        </div>
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">The Flow Of Stuff</div>
+          <div class="page-title"><em>Stock &amp; Suppliers</em></div>
+          <div class="page-sub">Three deliveries today. One price spike to deal with. The rest is moving as it should.</div>
+        </div>
+
+        <div class="quick-action-card">
+          <div class="quick-action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h3l1.5-2h7L17 7h3v12H4V7z"/>
+              <circle cx="12" cy="13" r="3.5"/>
+            </svg>
+          </div>
+          <div class="quick-action-text">
+            <div class="quick-action-label">Scan an invoice</div>
+            <div class="quick-action-sub">
+              <span class="device-hint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="2" width="12" height="20" rx="2"/>
+                  <path d="M12 18h.01"/>
+                </svg>
+                Use Phone
+              </span>
+              <span>or upload PDF</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FLOW KPIs -->
+      <div class="flow-overview">
+        <div class="flow-overview-card">
+          <div class="overview-label">Today's Deliveries</div>
+          <div class="overview-value">3</div>
+          <div class="overview-sub">Aubrey · Reza · Mediterranean</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Suppliers Active</div>
+          <div class="overview-value">8</div>
+          <div class="overview-sub">all up to date</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Invoices Pending</div>
+          <div class="overview-value attention">2</div>
+          <div class="overview-sub">one discrepancy flagged</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Waste This Week</div>
+          <div class="overview-value attention">£148</div>
+          <div class="overview-sub">up 12% — mostly herbs</div>
+        </div>
+      </div>
+
+      <!-- ATTENTION CARDS — three across -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Across The Supply Graph</div>
+          <div class="section-meta">two to action · one to celebrate</div>
+        </div>
+
+        <div class="attention-grid">
+
+          <div class="attention-card urgent">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Price Spike</div>
+              <div class="attention-severity">Urgent</div>
+            </div>
+            <div class="attention-headline">Lamb shoulder up <em>12%</em> at Aubrey.</div>
+            <div class="attention-body">
+              <strong>Tuesday's delivery hit £14.20/kg, up from £12.70.</strong> Your shawarma was costed at £11.50, so the dish is bleeding £1.85 a plate. Margins flagged it this morning too.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open the invoice →</a>
+              <div class="attention-action-context">Tue 13 May, 07:14</div>
+            </div>
+          </div>
+
+          <div class="attention-card attention">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Waste Pattern</div>
+              <div class="attention-severity">Watch</div>
+            </div>
+            <div class="attention-headline">Herbs are walking out the bin this week.</div>
+            <div class="attention-body">
+              <strong>£62 of herbs binned in four days</strong> — twice last week. Mostly parsley and coriander. Worth a look at prep quantities versus how busy you've actually been.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open the waste log →</a>
+              <div class="attention-action-context">7-day rolling total</div>
+            </div>
+          </div>
+
+          <div class="attention-card info">
+            <div class="attention-card-head">
+              <div class="attention-section-label">The Bank</div>
+              <div class="attention-severity">Working</div>
+            </div>
+            <div class="attention-headline">Bank's been busy keeping itself tidy.</div>
+            <div class="attention-body">
+              <strong>11 prices updated automatically this week</strong> from the invoices you scanned. Three new ingredients added — saffron threads, sumac, Aleppo pepper. No duplicates, all matched to existing suppliers.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open the Bank →</a>
+              <div class="attention-action-context">last update 07:14 today</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- DESTINATIONS — deliveries now show day not time -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Open A Workspace</div>
+          <div class="section-meta">five places to go, each with their job</div>
+        </div>
+
+        <div class="destination-grid">
+
+          <div class="destination-card featured">
+            <div class="destination-head">
+              <div class="destination-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7h13l3 4h2v6h-2"/>
+                  <path d="M3 7v10h13V7"/>
+                  <circle cx="7" cy="18" r="1.5"/>
+                  <circle cx="17" cy="18" r="1.5"/>
+                </svg>
+              </div>
+              <div>
+                <div class="destination-name">Deliveries</div>
+                <div class="destination-tagline">what's arriving today and this week</div>
+              </div>
+            </div>
+
+            <div class="delivery-list">
+              <div class="delivery-row">
+                <div class="delivery-day">Thu</div>
+                <div>
+                  <div class="delivery-supplier">Aubrey Allen</div>
+                  <div class="delivery-supplier-sub">Lamb shoulder, beef mince, short rib · 8 lines · auto-banked</div>
+                </div>
+                <div class="delivery-status healthy">Arrived</div>
+              </div>
+              <div class="delivery-row">
+                <div class="delivery-day">Thu</div>
+                <div>
+                  <div class="delivery-supplier">Reza Foods</div>
+                  <div class="delivery-supplier-sub">Tahini, spices, dry goods · 12 lines</div>
+                </div>
+                <div class="delivery-status attention">Due soon</div>
+              </div>
+              <div class="delivery-row">
+                <div class="delivery-day">Thu</div>
+                <div>
+                  <div class="delivery-supplier">Mediterranean Direct</div>
+                  <div class="delivery-supplier-sub">Veg, herbs, fresh produce · 22 lines</div>
+                </div>
+                <div class="delivery-status">Expected</div>
+              </div>
+              <div class="delivery-row">
+                <div class="delivery-day">Fri</div>
+                <div>
+                  <div class="delivery-supplier">Wright Brothers</div>
+                  <div class="delivery-supplier-sub">Sea bream, mackerel, oysters · 6 lines</div>
+                </div>
+                <div class="delivery-status">Tomorrow</div>
+              </div>
+              <div class="delivery-row">
+                <div class="delivery-day">Sat</div>
+                <div>
+                  <div class="delivery-supplier">Aubrey Allen</div>
+                  <div class="delivery-supplier-sub">Weekend top-up</div>
+                </div>
+                <div class="delivery-status">Saturday</div>
+              </div>
+            </div>
+
+            <div class="destination-foot">
+              <a class="destination-link" href="#">Open Deliveries →</a>
+              <div class="destination-foot-meta">5 in next 7 days</div>
+            </div>
+          </div>
+
+          <div class="destination-card">
+            <div class="destination-head">
+              <div class="destination-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 3h10l4 4v14H6V3z"/>
+                  <path d="M16 3v4h4"/>
+                  <path d="M9 11h7M9 14h7M9 17h5"/>
+                </svg>
+              </div>
+              <div>
+                <div class="destination-name">Invoices</div>
+                <div class="destination-tagline">paperwork, discrepancies, credit notes</div>
+              </div>
+            </div>
+
+            <div class="destination-state">
+              <div class="destination-state-row">
+                <span>In the inbox</span>
+                <strong>14</strong>
+              </div>
+              <div class="destination-state-row attention">
+                <span>Discrepancies flagged</span>
+                <strong>1</strong>
+              </div>
+              <div class="destination-state-row">
+                <span>Credit notes in flight</span>
+                <strong>2</strong>
+              </div>
+            </div>
+
+            <div class="destination-foot">
+              <a class="destination-link" href="#">Open Invoices →</a>
+              <div class="destination-foot-meta">last received 07:14</div>
+            </div>
+          </div>
+
+          <div class="destination-card">
+            <div class="destination-head">
+              <div class="destination-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 21V8l9-5 9 5v13"/>
+                  <path d="M9 21V12h6v9"/>
+                  <circle cx="12" cy="9" r="1.2"/>
+                </svg>
+              </div>
+              <div>
+                <div class="destination-name">Suppliers</div>
+                <div class="destination-tagline">who you buy from, when, for how much</div>
+              </div>
+            </div>
+
+            <div class="destination-state">
+              <div class="destination-state-row">
+                <span>On the books</span>
+                <strong>8</strong>
+              </div>
+              <div class="destination-state-row">
+                <span>Ordering today</span>
+                <strong>Reza by 16:00</strong>
+              </div>
+              <div class="destination-state-row">
+                <span>Price lists current</span>
+                <strong>7 of 8</strong>
+              </div>
+            </div>
+
+            <div class="destination-foot">
+              <a class="destination-link" href="#">Open Suppliers →</a>
+              <div class="destination-foot-meta">+ add new</div>
+            </div>
+          </div>
+
+          <div class="destination-card">
+            <div class="destination-head">
+              <div class="destination-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="6" rx="9" ry="3"/>
+                  <path d="M3 6v12c0 1.7 4 3 9 3s9-1.3 9-3V6"/>
+                  <path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>
+                </svg>
+              </div>
+              <div>
+                <div class="destination-name">The Bank</div>
+                <div class="destination-tagline">every ingredient, every price, live</div>
+              </div>
+            </div>
+
+            <div class="destination-state">
+              <div class="destination-state-row live healthy">
+                <span>Updating in real time</span>
+                <strong><span class="mini-dot"></span>Live</strong>
+              </div>
+              <div class="destination-state-row">
+                <span>Ingredients on file</span>
+                <strong>147</strong>
+              </div>
+              <div class="destination-state-row attention">
+                <span>Prices on the move</span>
+                <strong>11</strong>
+                <em>this week</em>
+              </div>
+            </div>
+
+            <div class="destination-foot">
+              <a class="destination-link" href="#">Open The Bank →</a>
+              <div class="destination-foot-meta">last update 07:14</div>
+            </div>
+          </div>
+
+          <div class="destination-card">
+            <div class="destination-head">
+              <div class="destination-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 7h16"/>
+                  <path d="M6 7v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7"/>
+                  <path d="M9 7V4h6v3"/>
+                  <path d="M10 11v6M14 11v6"/>
+                </svg>
+              </div>
+              <div>
+                <div class="destination-name">Waste</div>
+                <div class="destination-tagline">what got binned and why</div>
+              </div>
+            </div>
+
+            <div class="destination-state">
+              <div class="destination-state-row attention">
+                <span>This week</span>
+                <strong>£148</strong>
+                <em>up 12%</em>
+              </div>
+              <div class="destination-state-row">
+                <span>Top category</span>
+                <strong>Herbs</strong>
+              </div>
+              <div class="destination-state-row">
+                <span>Last logged</span>
+                <strong>Yesterday 22:14</strong>
+              </div>
+            </div>
+
+            <div class="destination-foot">
+              <a class="destination-link" href="#">Open Waste →</a>
+              <div class="destination-foot-meta">+ log new</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ═════════ v3: LOOKING AHEAD — forward-looking intelligence ═════════ -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Looking Ahead</div>
+          <div class="section-meta">two patterns the system spotted · worth getting ahead of</div>
+        </div>
+
+        <div class="looking-ahead-grid">
+
+          <!-- Card 1: Tahini market move -->
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Market Move</div>
+              <div class="ahead-tag">Plan For It</div>
+            </div>
+            <div class="ahead-headline"><em>Tahini</em> is drifting up across the market.</div>
+            <div class="ahead-body">
+              <strong>Reza put it up 8% this week, Mediterranean up 6%</strong> — both moving the same direction tells you this isn't a supplier issue, it's the market. Likely to tick again in 2–3 weeks. Worth stocking what you'll need before then. Your hummus and baba ghanoush will both feel it.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">See affected dishes →</a>
+              <div class="ahead-action-context">2 suppliers moving in step</div>
+            </div>
+          </div>
+
+          <!-- Card 2: Heavy delivery week ahead -->
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Next Week</div>
+              <div class="ahead-tag">Get Ready</div>
+            </div>
+            <div class="ahead-headline">Next week is a <em>heavy</em> one.</div>
+            <div class="ahead-body">
+              <strong>Six deliveries booked, £840 across them.</strong> Aubrey's running big Monday and Saturday — about £390 of meat between them. Worth clearing walk-in space before the weekend and making sure someone's on the pass for both deliveries.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">See the week ahead →</a>
+              <div class="ahead-action-context">Mon 18 May – Sun 24 May</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">Stock &amp; Suppliers Hub v3 — Looking Ahead Locked</div>
+      <div class="footnote-body">
+        <strong>The page now does three jobs, not two.</strong> See your data (KPIs at the top), see your insights (attention cards in the middle, what needs sorting today), plan accordingly (Looking Ahead at the bottom, what's coming you should get ahead of). This is the architectural directive — every surface in the product needs the third job to feel sous-chef-like rather than analyst-like.<br><br>
+        <strong>Looking Ahead is two cards in v1 of this surface.</strong> Market move (tahini drifting up across both suppliers — likely market, not supplier-specific) and next-week-heavy (six deliveries, planning advice). Same card structure as attention cards but tagged with "PLAN FOR IT" / "GET READY" rather than severity labels. Info severity (gold bar) keeps them visually distinct from forensic intelligence above.<br><br>
+        <strong>Delivery rows now show day, not time.</strong> Thu / Fri / Sat — chefs know roughly when their suppliers come, the system isn't pretending to have minute-precision it doesn't have. Status pills carry the urgency where it matters ("Due soon", "Arrived", "Saturday").<br><br>
+        <strong>This pattern repeats across every surface.</strong> Chef home gets a Looking Ahead. Margins gets a Looking Ahead. Recipes gets it. Inbox gets it. Notebook gets it. Each one with surface-specific forward intelligence: tonight's covers vs prep, dish drift trajectory, recipe staleness, delivery week prep, seasonal trigger reminders.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>
