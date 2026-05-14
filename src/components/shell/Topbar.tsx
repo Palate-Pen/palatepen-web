@@ -45,17 +45,17 @@ export function Topbar() {
 
   return (
     <header className="h-[76px] bg-paper border-b border-rule flex items-center justify-between px-14 sticky top-0 z-10 flex-shrink-0">
-      <div className="font-serif text-[19px] font-medium tracking-[0.04em] text-ink">
+      <div className="font-serif text-lg font-medium tracking-[0.04em] text-ink">
         {breadcrumb}
       </div>
       <div className="flex items-center gap-7">
-        <div className="flex items-center gap-2 font-display text-[8px] font-semibold tracking-[0.3em] uppercase text-healthy">
+        <div className="flex items-center gap-2 font-display text-xs font-semibold tracking-[0.3em] uppercase text-healthy">
           <span className="w-1.5 h-1.5 rounded-full bg-healthy animate-pulse" />
           Live
         </div>
         <div
           suppressHydrationWarning
-          className="font-serif italic text-sm text-muted tracking-[0.04em]"
+          className="font-sans text-sm font-normal text-muted tracking-[0.02em]"
         >
           {dateLabel}
         </div>

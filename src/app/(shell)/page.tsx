@@ -18,10 +18,10 @@ export default async function HomePage() {
     <div className="px-14 pt-12 pb-20 max-w-[1200px]">
       {/* Greeting */}
       <div className="mb-12">
-        <div className="font-display text-[9px] font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
+        <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
           {tod.eyebrow}
         </div>
-        <h1 className="font-serif text-5xl md:text-[52px] leading-[1.05] tracking-[-0.015em] text-ink">
+        <h1 className="font-serif text-4xl md:text-4xl leading-[1.05] tracking-[-0.015em] text-ink">
           {tod.greeting},{' '}
           <em className="text-gold font-medium">{ctx.firstName}</em>
           .
@@ -115,10 +115,10 @@ export default async function HomePage() {
 function SectionHead({ title, meta }: { title: string; meta: string }) {
   return (
     <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-      <div className="font-display text-[10px] font-semibold tracking-[0.5em] uppercase text-gold">
+      <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold">
         {title}
       </div>
-      <div className="font-serif italic text-[13px] text-muted">{meta}</div>
+      <div className="font-serif italic text-sm text-muted">{meta}</div>
     </div>
   );
 }
@@ -135,7 +135,7 @@ function Panel({
   return (
     <div className="bg-card border border-rule px-8 py-7">
       <div className="flex items-baseline justify-between mb-5">
-        <div className="font-display text-[10px] font-semibold tracking-[0.45em] uppercase text-gold">
+        <div className="font-display text-xs font-semibold tracking-[0.45em] uppercase text-gold">
           {title}
         </div>
         <div className="font-serif italic text-sm text-muted">{count}</div>
@@ -147,7 +147,7 @@ function Panel({
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-serif italic text-[15px] text-muted leading-relaxed">
+    <div className="font-serif italic text-sm text-muted leading-relaxed">
       {children}
     </div>
   );
@@ -164,13 +164,13 @@ function Kpi({
 }) {
   return (
     <div className="bg-card px-7 py-6">
-      <div className="font-display text-[8px] font-semibold tracking-[0.4em] uppercase text-muted mb-3">
+      <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-muted mb-3">
         {label}
       </div>
-      <div className="font-serif text-[34px] font-medium leading-none tracking-[-0.015em] text-ink">
+      <div className="font-serif text-3xl font-medium leading-none tracking-[-0.015em] text-ink">
         {value}
       </div>
-      <div className="font-serif italic text-[13px] text-muted mt-1.5">
+      <div className="font-serif italic text-sm text-muted mt-1.5">
         {sub}
       </div>
     </div>
@@ -208,10 +208,10 @@ function QuickAction({
         </svg>
       </div>
       <div>
-        <div className="font-serif font-semibold text-[17px] tracking-[0.02em] text-ink">
+        <div className="font-serif font-semibold text-lg tracking-[0.02em] text-ink">
           {label}
         </div>
-        <div className="text-[11px] text-muted tracking-[0.02em] mt-0.5">
+        <div className="text-xs text-muted tracking-[0.02em] mt-0.5">
           {sub}
         </div>
       </div>

@@ -28,7 +28,7 @@ export function Sidebar({ kitchenName }: { kitchenName: string }) {
       <div className="h-[76px] px-6 border-b border-rule flex items-center flex-shrink-0">
         <Link
           href="/"
-          className="font-serif text-[22px] font-medium tracking-[0.16em] uppercase text-ink"
+          className="font-serif text-xl font-medium tracking-[0.16em] uppercase text-ink"
         >
           <span>P</span>
           <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
@@ -37,7 +37,7 @@ export function Sidebar({ kitchenName }: { kitchenName: string }) {
       </div>
 
       <div className="px-6 pt-3 pb-1">
-        <div className="font-display text-[8px] font-medium tracking-[0.4em] uppercase text-muted truncate">
+        <div className="font-display text-xs font-medium tracking-[0.4em] uppercase text-muted truncate">
           {kitchenName}
         </div>
       </div>
@@ -59,7 +59,7 @@ export function Sidebar({ kitchenName }: { kitchenName: string }) {
 function Section({ label, items }: { label: string; items: NavItem[] }) {
   return (
     <div>
-      <div className="font-display text-[8px] font-semibold tracking-[0.4em] uppercase text-muted-soft pt-3.5 pb-1.5 px-6">
+      <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-muted-soft pt-3.5 pb-1.5 px-6">
         {label}
       </div>
       {items.map((item) => (
@@ -77,7 +77,7 @@ function NavLink({ href, label }: NavItem) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3.5 px-6 py-2.5 border-l-2 transition-colors font-serif text-[17px] font-medium tracking-[0.03em] ${
+      className={`flex items-center gap-3.5 px-6 py-2.5 border-l-2 transition-colors font-serif text-base font-medium tracking-[0.03em] ${
         isActive
           ? 'border-l-gold bg-gold-bg text-ink'
           : 'border-l-transparent text-ink-soft hover:border-l-gold/40 hover:bg-gold-bg hover:text-ink'

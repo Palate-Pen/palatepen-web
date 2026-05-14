@@ -68,10 +68,11 @@
   }
 
   html {
-    /* Bumped from browser default 16px to 18px so default body text
-       reads larger; chefs scan this in motion. Scale multiplier above
-       lets the user push to sm/md/lg. */
-    font-size: calc(18px * var(--font-scale));
+    /* 16px base — the standard for screen UI and what the rem-based
+       type scale in tailwind.config.ts is calibrated against. The
+       font-scale multiplier (sm 0.94 / md 1 / lg 1.12) scales every
+       text in the app proportionally. */
+    font-size: calc(16px * var(--font-scale));
   }
 
   html,

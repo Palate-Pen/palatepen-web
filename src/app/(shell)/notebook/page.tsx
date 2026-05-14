@@ -237,14 +237,14 @@ export default function NotebookPage() {
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
-          <div className="font-display font-semibold text-[9px] tracking-[0.5em] uppercase text-gold mb-3.5">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             Where The Thinking Lives
           </div>
-          <h1 className="font-serif text-5xl text-ink leading-[1.05] tracking-[-0.015em]">
+          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
             Your{' '}
             <em className="text-gold not-italic font-medium italic">Notebook</em>
           </h1>
-          <p className="font-serif italic text-[17px] text-muted mt-3">
+          <p className="font-serif italic text-lg text-muted mt-3">
             Forty-seven entries this year. Three with seasonal ingredients on the move.
           </p>
         </div>
@@ -274,10 +274,10 @@ export default function NotebookPage() {
 
       <section className="mt-2 mb-10">
         <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-          <div className="font-display font-semibold text-[10px] tracking-[0.5em] uppercase text-gold">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
             Coming Into Season
           </div>
-          <div className="font-serif italic text-[13px] text-muted">
+          <div className="font-serif italic text-sm text-muted">
             three from your notebook · timed to the calendar
           </div>
         </div>
@@ -295,7 +295,7 @@ export default function NotebookPage() {
             {f.divider && <span className="text-muted-soft">·</span>}
             <button
               className={
-                'font-display font-semibold text-[9px] tracking-[0.3em] uppercase px-3 py-2 border ' +
+                'font-sans font-semibold text-xs tracking-[0.08em] uppercase px-3 py-2 border ' +
                 (f.active
                   ? 'bg-ink border-ink text-paper'
                   : 'bg-transparent border-rule text-ink-soft hover:border-gold hover:text-ink')
@@ -337,7 +337,7 @@ function CaptureButton({
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         {children}
       </svg>
-      <span className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase">
+      <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase">
         {label}
       </span>
     </button>
@@ -349,10 +349,10 @@ function SeasonCard({ card }: { card: typeof seasonCards[number] }) {
   return (
     <div className={'bg-card border border-rule border-l-4 px-7 py-7 ' + stripe}>
       <div className="flex items-baseline justify-between mb-4">
-        <div className="font-display font-semibold text-[9px] tracking-[0.4em] uppercase text-gold">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           {card.label}
         </div>
-        <div className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase text-muted px-2 py-1 border border-rule">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted px-2 py-1 border border-rule">
           {card.tag}
         </div>
       </div>
@@ -363,24 +363,24 @@ function SeasonCard({ card }: { card: typeof seasonCards[number] }) {
         </em>
         {card.headlinePost}
       </div>
-      <div className="font-serif italic text-[15px] text-muted leading-relaxed mb-4">
+      <div className="font-serif italic text-sm text-muted leading-relaxed mb-4">
         {card.body}
       </div>
       <div className="flex flex-wrap gap-2 mb-4">
         {card.related.map((r) => (
           <span
             key={r}
-            className="font-serif italic text-[11px] text-ink-soft px-2.5 py-1 bg-paper-warm border border-rule"
+            className="font-serif italic text-xs text-ink-soft px-2.5 py-1 bg-paper-warm border border-rule"
           >
             {r}
           </span>
         ))}
       </div>
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold cursor-pointer">
+        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
           {card.actionLabel}
         </a>
-        <div className="font-serif italic text-[11px] text-muted">
+        <div className="font-serif italic text-xs text-muted">
           {card.actionContext}
         </div>
       </div>
@@ -401,7 +401,7 @@ function EntryCard({ entry }: { entry: Entry }) {
       {entry.season && (
         <span
           className={
-            'absolute top-3 right-3 font-display font-semibold text-[8px] tracking-[0.25em] uppercase px-2 py-1 ' +
+            'absolute top-3 right-3 font-sans font-semibold text-xs tracking-[0.08em] uppercase px-2 py-1 ' +
             ribbonClass[entry.season.tone]
           }
         >
@@ -420,7 +420,7 @@ function EntryCard({ entry }: { entry: Entry }) {
               />
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-[10px]">
+          <div className="flex justify-between mt-2 text-xs">
             <span className="text-muted">Press to play</span>
             <span className="text-ink-soft font-mono">{entry.voiceDuration}</span>
           </div>
@@ -444,10 +444,10 @@ function EntryCard({ entry }: { entry: Entry }) {
       )}
 
       <div className="flex items-center justify-between mb-2">
-        <div className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase text-muted">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
           {typeLabel[entry.type]}
         </div>
-        <div className="font-serif italic text-[11px] text-muted">{entry.date}</div>
+        <div className="font-serif italic text-xs text-muted">{entry.date}</div>
       </div>
 
       <div className="font-serif font-semibold text-lg text-ink mb-2 leading-snug">
@@ -456,7 +456,7 @@ function EntryCard({ entry }: { entry: Entry }) {
 
       <div
         className={
-          'font-serif text-[14px] text-ink-soft leading-relaxed mb-4 flex-1 ' +
+          'font-serif text-sm text-ink-soft leading-relaxed mb-4 flex-1 ' +
           (entry.italic ? 'italic' : '')
         }
       >
@@ -468,7 +468,7 @@ function EntryCard({ entry }: { entry: Entry }) {
           <span
             key={i}
             className={
-              'inline-flex items-center font-display font-semibold text-[8px] tracking-[0.2em] uppercase px-2 py-1 border ' +
+              'inline-flex items-center font-sans font-semibold text-xs tracking-[0.08em] uppercase px-2 py-1 border ' +
               tagClass[t.kind]
             }
           >
@@ -476,7 +476,7 @@ function EntryCard({ entry }: { entry: Entry }) {
           </span>
         ))}
         {entry.shared && (
-          <span className="inline-flex items-center gap-1 font-display font-semibold text-[8px] tracking-[0.2em] uppercase text-muted ml-auto">
+          <span className="inline-flex items-center gap-1 font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted ml-auto">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="6" cy="12" r="2" />
               <circle cx="18" cy="6" r="2" />

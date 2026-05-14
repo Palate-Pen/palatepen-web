@@ -59,7 +59,7 @@ export default async function OnboardingPage({
         <div>
           <label
             htmlFor="kitchen_name"
-            className="block font-display text-[9px] tracking-[0.3em] uppercase mb-2 text-ink"
+            className="block font-sans font-semibold text-xs tracking-[0.08em] uppercase mb-2 text-ink"
           >
             Kitchen Name
           </label>
@@ -76,13 +76,13 @@ export default async function OnboardingPage({
         <div className="flex gap-3 pt-4">
           <Link
             href="/"
-            className="border border-rule text-muted font-display text-[8px] tracking-[0.3em] uppercase py-3 px-6 hover:bg-card hover:text-ink transition-colors"
+            className="border border-rule text-muted font-sans font-semibold text-xs tracking-[0.08em] uppercase py-3 px-6 hover:bg-card hover:text-ink transition-colors"
           >
             Skip
           </Link>
           <button
             type="submit"
-            className="flex-1 bg-gold text-card font-display text-[8px] tracking-[0.3em] uppercase py-3 px-6 hover:opacity-90 transition-opacity"
+            className="flex-1 bg-gold text-card font-sans font-semibold text-xs tracking-[0.08em] uppercase py-3 px-6 hover:opacity-90 transition-opacity"
           >
             Next →
           </button>

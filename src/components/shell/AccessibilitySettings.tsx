@@ -93,12 +93,12 @@ export function AccessibilitySettings() {
 
   return (
     <div className="bg-card border border-rule mb-6">
-      <div className="px-7 py-5 border-b border-rule font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-ink">
+      <div className="px-7 py-5 border-b border-rule font-display font-semibold text-xs tracking-[0.3em] uppercase text-ink">
         Accessibility
       </div>
 
       <div className="px-7 py-5 border-b border-rule">
-        <div className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-muted mb-3">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
           Theme
         </div>
         <div className="flex gap-2">
@@ -108,7 +108,7 @@ export function AccessibilitySettings() {
               onClick={() => chooseTheme(t.id)}
               disabled={!ready}
               className={
-                'flex-1 py-3 font-display font-semibold text-[10px] tracking-[0.25em] uppercase border transition-colors ' +
+                'flex-1 py-3 font-sans font-semibold text-xs tracking-[0.08em] uppercase border transition-colors ' +
                 (theme === t.id
                   ? 'bg-gold/15 border-gold text-gold'
                   : 'bg-transparent border-rule text-ink-soft hover:border-gold hover:text-ink')
@@ -118,7 +118,7 @@ export function AccessibilitySettings() {
             </button>
           ))}
         </div>
-        <p className="font-serif italic text-[12px] text-muted mt-3">
+        <p className="font-serif italic text-xs text-muted mt-3">
           {theme === 'system'
             ? "Tracks your device's preference. Switches automatically when you change OS settings."
             : `Locked to ${theme}.`}
@@ -126,7 +126,7 @@ export function AccessibilitySettings() {
       </div>
 
       <div className="px-7 py-5">
-        <div className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-muted mb-3">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
           Text Size
         </div>
         <div className="flex gap-2">
@@ -155,13 +155,13 @@ export function AccessibilitySettings() {
               >
                 Aa
               </span>
-              <span className="font-display font-semibold text-[8px] tracking-[0.25em] uppercase">
+              <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase">
                 {s.label}
               </span>
             </button>
           ))}
         </div>
-        <p className="font-serif italic text-[12px] text-muted mt-3">
+        <p className="font-serif italic text-xs text-muted mt-3">
           Scales every text on every surface. Useful for service-floor reading at arm's length.
         </p>
       </div>

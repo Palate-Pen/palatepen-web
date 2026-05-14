@@ -120,15 +120,15 @@ export default async function StockSuppliersPage() {
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
-          <div className="font-display font-semibold text-[9px] tracking-[0.5em] uppercase text-gold mb-3.5">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             The Flow Of Stuff
           </div>
-          <h1 className="font-serif text-5xl text-ink leading-[1.05] tracking-[-0.015em]">
+          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
             <em className="text-gold not-italic font-medium italic">
               Stock & Suppliers
             </em>
           </h1>
-          <p className="font-serif italic text-[17px] text-muted mt-3">
+          <p className="font-serif italic text-lg text-muted mt-3">
             Three deliveries today. One price spike to deal with. The rest is moving as it should.
           </p>
         </div>
@@ -199,20 +199,20 @@ export default async function StockSuppliersPage() {
                     (i < deliveries.length - 1 ? ' border-b border-rule-soft' : '')
                   }
                 >
-                  <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted w-8">
+                  <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted w-8">
                     {d.day}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-serif font-semibold text-[15px] text-ink">
+                    <div className="font-serif font-semibold text-sm text-ink">
                       {d.supplier}
                     </div>
-                    <div className="font-serif italic text-[12px] text-muted">
+                    <div className="font-serif italic text-xs text-muted">
                       {d.sub}
                     </div>
                   </div>
                   <div
                     className={
-                      'font-display font-semibold text-[9px] tracking-[0.3em] uppercase whitespace-nowrap ' +
+                      'font-sans font-semibold text-xs tracking-[0.08em] uppercase whitespace-nowrap ' +
                       (d.tone === 'healthy'
                         ? 'text-healthy'
                         : d.tone === 'attention'
@@ -293,7 +293,7 @@ export default async function StockSuppliersPage() {
               value={
                 <>
                   11{' '}
-                  <em className="not-italic italic font-serif text-[11px] text-muted ml-1">
+                  <em className="not-italic italic font-serif text-xs text-muted ml-1">
                     this week
                   </em>
                 </>
@@ -321,7 +321,7 @@ export default async function StockSuppliersPage() {
               value={
                 <>
                   £148{' '}
-                  <em className="not-italic italic font-serif text-[11px] text-muted ml-1">
+                  <em className="not-italic italic font-serif text-xs text-muted ml-1">
                     up 12%
                   </em>
                 </>
@@ -351,10 +351,10 @@ function Section({
   return (
     <section className="mt-12">
       <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-        <div className="font-display font-semibold text-[10px] tracking-[0.5em] uppercase text-gold">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           {title}
         </div>
-        <div className="font-serif italic text-[13px] text-muted">{meta}</div>
+        <div className="font-serif italic text-sm text-muted">{meta}</div>
       </div>
       {children}
     </section>
@@ -374,12 +374,12 @@ function Kpi({
 }) {
   return (
     <div className="bg-card px-7 py-6">
-      <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted mb-3">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
         {label}
       </div>
       <div
         className={
-          'font-serif font-medium text-[36px] leading-none tracking-[-0.015em] ' +
+          'font-serif font-medium text-2xl leading-none tracking-[-0.015em] ' +
           (tone === 'attention'
             ? 'text-attention'
             : tone === 'healthy'
@@ -389,7 +389,7 @@ function Kpi({
       >
         {value}
       </div>
-      <div className="font-serif italic text-[13px] text-muted mt-2">{sub}</div>
+      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
     </div>
   );
 }
@@ -412,7 +412,7 @@ function AttentionCard({ attention: a }: { attention: Attention }) {
       <div className="flex items-baseline justify-between mb-4">
         <div
           className={
-            'font-display font-semibold text-[9px] tracking-[0.4em] uppercase ' +
+            'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
             attentionLabelColor[a.severity]
           }
         >
@@ -420,7 +420,7 @@ function AttentionCard({ attention: a }: { attention: Attention }) {
         </div>
         <div
           className={
-            'font-display font-semibold text-[8px] tracking-[0.3em] uppercase ' +
+            'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
             attentionLabelColor[a.severity]
           }
         >
@@ -437,14 +437,14 @@ function AttentionCard({ attention: a }: { attention: Attention }) {
         )}
         {a.headlinePost}
       </div>
-      <div className="font-serif italic text-[15px] text-muted leading-relaxed mb-4">
+      <div className="font-serif italic text-sm text-muted leading-relaxed mb-4">
         {a.body}
       </div>
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold cursor-pointer">
+        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
           {a.actionLabel}
         </a>
-        <div className="font-serif italic text-[11px] text-muted">
+        <div className="font-serif italic text-xs text-muted">
           {a.actionContext}
         </div>
       </div>
@@ -483,7 +483,7 @@ function DestinationCard({
           <div className="font-serif font-semibold text-xl text-ink leading-tight">
             {name}
           </div>
-          <div className="font-serif italic text-[13px] text-muted mt-0.5">
+          <div className="font-serif italic text-sm text-muted mt-0.5">
             {tagline}
           </div>
         </div>
@@ -492,10 +492,10 @@ function DestinationCard({
       <div className="flex-1 mb-4">{children}</div>
 
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <span className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold">
+        <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           {linkLabel}
         </span>
-        <div className="font-serif italic text-[11px] text-muted">{linkMeta}</div>
+        <div className="font-serif italic text-xs text-muted">{linkMeta}</div>
       </div>
     </>
   );
@@ -534,10 +534,10 @@ function StateRow({
             : '')
       }
     >
-      <span className="font-serif text-[14px] text-muted">{label}</span>
+      <span className="font-serif text-sm text-muted">{label}</span>
       <strong
         className={
-          'font-serif font-semibold text-[15px] ' +
+          'font-serif font-semibold text-sm ' +
           (tone === 'attention'
             ? 'text-attention'
             : tone === 'healthy'

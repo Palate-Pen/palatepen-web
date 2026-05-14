@@ -127,20 +127,20 @@ export default function MarginsPage() {
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
-          <div className="font-display font-semibold text-[9px] tracking-[0.5em] uppercase text-gold mb-3.5">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             Menu Performance
           </div>
-          <h1 className="font-serif text-5xl text-ink leading-[1.05] tracking-[-0.015em]">
+          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
             <em className="text-gold not-italic font-medium italic">Margins</em>
             {' '}— how your menu is doing
           </h1>
-          <p className="font-serif italic text-[17px] text-muted mt-3">
+          <p className="font-serif italic text-lg text-muted mt-3">
             Two dishes need sorting. Everything else is in good shape.
           </p>
         </div>
 
         <div className="bg-card border border-rule px-5 py-4 min-w-[300px]">
-          <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted mb-3">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
             Comparing
           </div>
           <div className="flex gap-1.5 flex-wrap mb-3">
@@ -148,7 +148,7 @@ export default function MarginsPage() {
               <button
                 key={p}
                 className={
-                  'font-display font-semibold text-[8px] tracking-[0.3em] uppercase px-3 py-2 border ' +
+                  'font-sans font-semibold text-xs tracking-[0.08em] uppercase px-3 py-2 border ' +
                   (p === '7 D vs 7 D'
                     ? 'bg-ink border-ink text-paper'
                     : 'bg-transparent border-rule text-ink-soft hover:border-gold hover:text-ink')
@@ -249,10 +249,10 @@ function Section({
   return (
     <section className="mt-12">
       <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-        <div className="font-display font-semibold text-[10px] tracking-[0.5em] uppercase text-gold">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           {title}
         </div>
-        <div className="font-serif italic text-[13px] text-muted">{meta}</div>
+        <div className="font-serif italic text-sm text-muted">{meta}</div>
       </div>
       {children}
     </section>
@@ -274,12 +274,12 @@ function Kpi({
 }) {
   return (
     <div className="bg-card px-7 py-6">
-      <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted mb-3">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
         {label}
       </div>
       <div
         className={
-          'font-serif font-medium text-[36px] leading-none tracking-[-0.015em] ' +
+          'font-serif font-medium text-2xl leading-none tracking-[-0.015em] ' +
           (tone === 'healthy'
             ? 'text-healthy'
             : tone === 'attention'
@@ -294,7 +294,7 @@ function Kpi({
           </span>
         )}
       </div>
-      <div className="font-serif italic text-[13px] text-muted mt-2">{sub}</div>
+      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
     </div>
   );
 }
@@ -332,10 +332,10 @@ function AttentionCard({
   return (
     <div className={'bg-card border border-rule border-l-4 px-7 py-7 ' + border}>
       <div className="flex items-baseline justify-between mb-4">
-        <div className={'font-display font-semibold text-[9px] tracking-[0.4em] uppercase ' + sevColor}>
+        <div className={'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' + sevColor}>
           {section}
         </div>
-        <div className={'font-display font-semibold text-[8px] tracking-[0.3em] uppercase ' + sevColor}>
+        <div className={'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' + sevColor}>
           {severityLabel}
         </div>
       </div>
@@ -347,11 +347,11 @@ function AttentionCard({
       </div>
 
       <div className="flex items-end gap-8 mb-5">
-        <div className={'font-serif font-medium text-[40px] leading-none ' + sevColor}>
+        <div className={'font-serif font-medium text-3xl leading-none ' + sevColor}>
           {gp}
         </div>
         <div>
-          <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
             {movementLabel}
           </div>
           <div className={'font-serif font-medium text-lg mt-1 ' + sevColor}>
@@ -360,15 +360,15 @@ function AttentionCard({
         </div>
       </div>
 
-      <div className="font-serif italic text-[15px] text-muted leading-relaxed mb-4">
+      <div className="font-serif italic text-sm text-muted leading-relaxed mb-4">
         {cause}
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold cursor-pointer">
+        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
           {actionLabel}
         </a>
-        <div className="font-serif italic text-[11px] text-muted">{actionContext}</div>
+        <div className="font-serif italic text-xs text-muted">{actionContext}</div>
       </div>
     </div>
   );
@@ -398,14 +398,14 @@ function SectionSummaryCard({
         (active ? 'border-gold' : 'border-rule hover:border-rule-gold')
       }
     >
-      <div className="font-display font-semibold text-[9px] tracking-[0.35em] uppercase text-muted mb-3">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
         {name}
       </div>
-      <div className={'font-serif font-medium text-[28px] leading-none ' + toneText[tone]}>
+      <div className={'font-serif font-medium text-2xl leading-none ' + toneText[tone]}>
         {gp}
       </div>
-      <div className="font-serif italic text-[12px] text-muted mt-2">{detail}</div>
-      <div className="flex items-center gap-1.5 mt-2 font-serif italic text-[12px] text-muted">
+      <div className="font-serif italic text-xs text-muted mt-2">{detail}</div>
+      <div className="flex items-center gap-1.5 mt-2 font-serif italic text-xs text-muted">
         <span
           className={
             'w-1.5 h-1.5 rounded-full ' +
@@ -426,16 +426,16 @@ function MenuDetailBlock({ section }: { section: MenuDetailSection }) {
   return (
     <div className="mb-8">
       <div className="bg-paper-warm border border-rule px-6 py-4 mb-0">
-        <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-1.5">
+        <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold mb-1.5">
           {section.title}
         </div>
-        <div className="font-serif italic text-[13px] text-muted">{section.summary}</div>
+        <div className="font-serif italic text-sm text-muted">{section.summary}</div>
       </div>
 
       <div className="bg-card border border-rule border-t-0">
         <div className="hidden md:grid grid-cols-[2fr_70px_70px_90px_2fr_30px] gap-4 px-6 py-3 border-b border-rule bg-paper-warm/40">
           {['Dish', 'GP %', 'vs 7D', 'Plate Price', 'Exposed To', ''].map((h, i) => (
-            <div key={i} className="font-display font-semibold text-[8px] tracking-[0.35em] uppercase text-muted">
+            <div key={i} className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
               {h}
             </div>
           ))}
@@ -459,7 +459,7 @@ function MenuDetailBlock({ section }: { section: MenuDetailSection }) {
               {d.trendValue}
             </div>
             <div className="font-serif text-sm text-ink">{d.price}</div>
-            <div className="font-serif italic text-[13px] text-muted">
+            <div className="font-serif italic text-sm text-muted">
               {d.exposureBold && (
                 <strong className="not-italic font-semibold text-ink">
                   {d.exposureBold}

@@ -10,7 +10,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[800px]">
-      <h1 className="font-serif text-5xl text-ink mb-8">Settings</h1>
+      <h1 className="font-serif text-4xl text-ink mb-8">Settings</h1>
 
       <AccessibilitySettings />
 
@@ -31,8 +31,8 @@ export default async function SettingsPage() {
           href="/connections"
           className="px-7 py-4 flex justify-between items-center hover:text-gold transition-colors"
         >
-          <span className="font-serif text-[15px] text-ink">Integrations</span>
-          <span className="text-[11px] text-muted">
+          <span className="font-serif text-sm text-ink">Integrations</span>
+          <span className="text-xs text-muted">
             Manage in Connections tab →
           </span>
         </Link>
@@ -44,7 +44,7 @@ export default async function SettingsPage() {
       </Section>
 
       <div className="bg-card border border-rule px-8 py-7">
-        <div className="font-display font-semibold text-[10px] tracking-[0.45em] uppercase text-gold mb-4">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-4">
           Session
         </div>
         <SignOutForm />
@@ -62,7 +62,7 @@ function Section({
 }) {
   return (
     <div className="bg-card border border-rule mb-6">
-      <div className="px-7 py-5 border-b border-rule font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-ink">
+      <div className="px-7 py-5 border-b border-rule font-display font-semibold text-xs tracking-[0.3em] uppercase text-ink">
         {title}
       </div>
       <div className="divide-y divide-rule">{children}</div>
@@ -83,10 +83,10 @@ function Row({
 }) {
   return (
     <div className="px-7 py-4 flex justify-between items-center">
-      <div className="font-serif text-[15px] text-ink">{label}</div>
+      <div className="font-serif text-sm text-ink">{label}</div>
       <div
         className={
-          'text-[11px] ' +
+          'text-xs ' +
           (muted ? 'italic text-muted-soft' : 'text-muted') +
           (capitalize ? ' capitalize' : '')
         }
@@ -100,7 +100,7 @@ function Row({
 function ToggleRow({ label, on }: { label: string; on: boolean }) {
   return (
     <div className="px-7 py-4 flex justify-between items-center">
-      <div className="font-serif text-[15px] text-ink">{label}</div>
+      <div className="font-serif text-sm text-ink">{label}</div>
       <div
         className={
           'w-10 h-6 rounded-full relative transition-colors ' +

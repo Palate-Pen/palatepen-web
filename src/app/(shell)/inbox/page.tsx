@@ -76,7 +76,7 @@ const iconBgFor: Record<Severity, string> = {
 export default function InboxPage() {
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1200px]">
-      <h1 className="font-serif text-5xl text-ink mb-8">Inbox</h1>
+      <h1 className="font-serif text-4xl text-ink mb-8">Inbox</h1>
 
       <div className="bg-card border border-rule">
         {messages.map((m, i) => (
@@ -100,12 +100,12 @@ export default function InboxPage() {
               <div className="font-serif font-semibold text-base text-ink">
                 {m.headline}
               </div>
-              <div className="text-[11px] text-muted mt-1">{m.meta}</div>
-              <div className="font-serif italic text-[13px] text-muted mt-1.5 leading-relaxed">
+              <div className="text-xs text-muted mt-1">{m.meta}</div>
+              <div className="font-serif italic text-sm text-muted mt-1.5 leading-relaxed">
                 {m.preview}
               </div>
             </div>
-            <div className="text-[11px] text-muted-soft whitespace-nowrap">
+            <div className="text-xs text-muted-soft whitespace-nowrap">
               {m.timestamp}
             </div>
           </div>

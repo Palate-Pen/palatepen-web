@@ -42,7 +42,7 @@ export default async function SignInPage({
 
         <button
           type="submit"
-          className="w-full mt-4 bg-gold text-card font-display text-[8px] tracking-[0.3em] uppercase py-3 px-6 hover:opacity-90 transition-opacity"
+          className="w-full mt-4 bg-gold text-card font-sans font-semibold text-xs tracking-[0.08em] uppercase py-3 px-6 hover:opacity-90 transition-opacity"
         >
           Sign in
         </button>
@@ -50,7 +50,7 @@ export default async function SignInPage({
 
       <div className="flex items-center gap-4 my-8">
         <div className="flex-1 h-px bg-rule" />
-        <span className="font-display text-[8px] tracking-[0.3em] uppercase text-muted-soft">
+        <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted-soft">
           or
         </span>
         <div className="flex-1 h-px bg-rule" />
@@ -65,7 +65,7 @@ export default async function SignInPage({
         />
         <button
           type="submit"
-          className="w-full border border-rule text-muted font-display text-[8px] tracking-[0.3em] uppercase py-3 px-6 hover:bg-card hover:text-ink transition-colors"
+          className="w-full border border-rule text-muted font-sans font-semibold text-xs tracking-[0.08em] uppercase py-3 px-6 hover:bg-card hover:text-ink transition-colors"
         >
           Send a magic link
         </button>
@@ -96,7 +96,7 @@ function Field({
     <div>
       <label
         htmlFor={name}
-        className="block font-display text-[9px] tracking-[0.3em] uppercase mb-2 text-ink"
+        className="block font-sans font-semibold text-xs tracking-[0.08em] uppercase mb-2 text-ink"
       >
         {label}
       </label>

@@ -229,13 +229,13 @@ export default function PrepPage() {
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
-          <div className="font-display font-semibold text-[9px] tracking-[0.5em] uppercase text-gold mb-3.5">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             What's Getting Made Today
           </div>
-          <h1 className="font-serif text-5xl text-ink leading-[1.05] tracking-[-0.015em]">
+          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
             Today's <em className="text-gold not-italic font-medium italic">prep</em>
           </h1>
-          <p className="font-serif italic text-[17px] text-muted mt-3">
+          <p className="font-serif italic text-lg text-muted mt-3">
             Twelve items across four stations. Four done, three in progress, five to go.
           </p>
         </div>
@@ -274,19 +274,19 @@ export default function PrepPage() {
 
       <div className="bg-card border border-rule px-7 py-5 mb-10 flex gap-8 items-center flex-wrap">
         <div>
-          <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
             Tonight's covers
           </div>
-          <div className="font-serif font-semibold text-[22px] text-ink mt-0.5">
+          <div className="font-serif font-semibold text-xl text-ink mt-0.5">
             142 <em className="text-gold not-italic font-medium italic">booked</em>
           </div>
         </div>
         <div className="w-px self-stretch bg-rule" />
         <div>
-          <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
             Forecast
           </div>
-          <div className="font-serif font-semibold text-[22px] text-ink mt-0.5">
+          <div className="font-serif font-semibold text-xl text-ink mt-0.5">
             156–168
           </div>
         </div>
@@ -305,10 +305,10 @@ export default function PrepPage() {
 
       <section className="mt-12">
         <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-          <div className="font-display font-semibold text-[10px] tracking-[0.5em] uppercase text-gold">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
             Looking Ahead
           </div>
-          <div className="font-serif italic text-[13px] text-muted">
+          <div className="font-serif italic text-sm text-muted">
             two patterns shaping tomorrow's prep
           </div>
         </div>
@@ -364,7 +364,7 @@ function DayTab({
   return (
     <button
       className={
-        'font-display font-semibold text-[9px] tracking-[0.25em] uppercase px-4 py-2.5 border flex flex-col items-center gap-0.5 transition-colors ' +
+        'font-sans font-semibold text-xs tracking-[0.08em] uppercase px-4 py-2.5 border flex flex-col items-center gap-0.5 transition-colors ' +
         (active
           ? 'bg-ink border-ink text-paper'
           : 'bg-transparent border-rule text-ink-soft hover:border-gold hover:text-ink')
@@ -406,12 +406,12 @@ function KpiCard({
 }) {
   return (
     <div className="bg-card px-7 py-6">
-      <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted mb-3">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
         {label}
       </div>
       <div
         className={
-          'font-serif font-medium text-[36px] leading-none tracking-[-0.015em] ' +
+          'font-serif font-medium text-2xl leading-none tracking-[-0.015em] ' +
           (tone === 'healthy'
             ? 'text-healthy'
             : tone === 'attention'
@@ -421,7 +421,7 @@ function KpiCard({
       >
         {value}
       </div>
-      <div className="font-serif italic text-[13px] text-muted mt-2">{sub}</div>
+      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
     </div>
   );
 }
@@ -437,14 +437,14 @@ function StationBlock({ station }: { station: Station }) {
   return (
     <section className="mb-10">
       <div className="flex items-baseline justify-between mb-0 px-6 py-3.5 bg-paper-warm border border-rule border-b-2 border-b-gold">
-        <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold flex items-center gap-3">
+        <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold flex items-center gap-3">
           <span>{station.name}</span>
-          <span className="text-muted text-[9px]">·</span>
+          <span className="text-muted text-xs">·</span>
           <span className="font-serif font-normal italic text-sm tracking-normal normal-case text-ink">
             {station.chef}
           </span>
         </div>
-        <div className="font-serif italic text-[13px] text-muted">
+        <div className="font-serif italic text-sm text-muted">
           <strong className={'not-italic font-semibold ' + progressTone}>
             {station.progress.done} of {station.progress.total} done
           </strong>{' '}
@@ -457,7 +457,7 @@ function StationBlock({ station }: { station: Station }) {
           {['Item', 'Quantity', 'Assigned', 'Status', 'Notes', ''].map((h, i) => (
             <div
               key={i}
-              className="font-display font-semibold text-[8px] tracking-[0.35em] uppercase text-muted"
+              className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted"
             >
               {h}
             </div>
@@ -495,7 +495,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
           {item.emphasis && ' '}
           {item.name}
         </div>
-        <div className="text-[11px] text-muted mt-1 flex items-center gap-2 tracking-[0.02em]">
+        <div className="text-xs text-muted mt-1 flex items-center gap-2 tracking-[0.02em]">
           {item.recipe && (
             <span className="text-gold">
               <span className="mr-0.5">↗</span>
@@ -521,7 +521,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
         </div>
         <div
           className={
-            'font-serif italic text-[11px] ' +
+            'font-serif italic text-xs ' +
             (item.suggestedFlag ? 'text-attention' : 'text-muted')
           }
         >
@@ -532,7 +532,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
       <div className="flex items-center gap-2">
         <div
           className={
-            'w-7 h-7 rounded-full flex items-center justify-center font-display font-semibold text-[9px] tracking-[0.05em] text-paper flex-shrink-0 ' +
+            'w-7 h-7 rounded-full flex items-center justify-center font-display font-semibold text-xs tracking-[0.05em] text-paper flex-shrink-0 ' +
             avatarBg[item.assignee]
           }
         >
@@ -540,7 +540,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
         </div>
         <div
           className={
-            'font-serif text-[13px] ' +
+            'font-serif text-sm ' +
             (item.assignee === 'unassigned'
               ? 'text-muted-soft italic'
               : 'text-ink')
@@ -552,7 +552,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
 
       <div
         className={
-          'inline-flex items-center gap-1.5 font-display font-semibold text-[9px] tracking-[0.25em] uppercase ' +
+          'inline-flex items-center gap-1.5 font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
           statusPillColor[item.status]
         }
       >
@@ -568,7 +568,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
 
       <div
         className={
-          'font-serif italic text-[12px] leading-snug ' +
+          'font-serif italic text-xs leading-snug ' +
           (item.notes ? 'text-ink-soft' : 'text-muted-soft')
         }
       >
@@ -613,10 +613,10 @@ function AheadCard({
   return (
     <div className="bg-card border border-rule px-7 py-7">
       <div className="flex items-baseline justify-between mb-4">
-        <div className="font-display font-semibold text-[9px] tracking-[0.4em] uppercase text-gold">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           {sectionLabel}
         </div>
-        <div className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase text-muted px-2 py-1 border border-rule">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted px-2 py-1 border border-rule">
           {tag}
         </div>
       </div>
@@ -624,14 +624,14 @@ function AheadCard({
         {headlinePre}{' '}
         <em className="text-gold not-italic font-medium italic">{headlineEm}</em>.
       </div>
-      <div className="font-serif italic text-[15px] text-muted leading-relaxed mb-4">
+      <div className="font-serif italic text-sm text-muted leading-relaxed mb-4">
         {body}
       </div>
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold cursor-pointer">
+        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
           {actionLabel}
         </a>
-        <div className="font-serif italic text-[11px] text-muted">
+        <div className="font-serif italic text-xs text-muted">
           {actionContext}
         </div>
       </div>

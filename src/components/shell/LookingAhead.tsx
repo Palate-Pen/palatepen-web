@@ -79,10 +79,10 @@ export async function LookingAhead({
   return (
     <section className="mt-12">
       <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-        <div className="font-display font-semibold text-[10px] tracking-[0.5em] uppercase text-gold">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           Looking Ahead
         </div>
-        <div className="font-serif italic text-[13px] text-muted">
+        <div className="font-serif italic text-sm text-muted">
           {signals.length === 0
             ? 'patterns will appear here as the kitchen builds history'
             : signalsMeta(signals)}
@@ -91,7 +91,7 @@ export async function LookingAhead({
 
       {signals.length === 0 ? (
         <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-7">
-          <div className="font-serif italic text-[15px] text-muted leading-relaxed">
+          <div className="font-serif italic text-sm text-muted leading-relaxed">
             No forward signals yet for this surface. The system needs a few weeks of scanned invoices, prep entries, or recipe activity before patterns surface. Until then, this space waits.
           </div>
         </div>
@@ -124,13 +124,13 @@ function AheadCard({ signal: s }: { signal: ForwardSignal }) {
       <div className="flex items-baseline justify-between mb-4 gap-3">
         <div
           className={
-            'font-display font-semibold text-[9px] tracking-[0.4em] uppercase ' +
+            'font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
             severityLabelColor[s.severity]
           }
         >
           {s.section_label}
         </div>
-        <div className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase text-muted px-2 py-1 border border-rule whitespace-nowrap">
+        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted px-2 py-1 border border-rule whitespace-nowrap">
           {tagLabel[s.tag]}
         </div>
       </div>
@@ -146,7 +146,7 @@ function AheadCard({ signal: s }: { signal: ForwardSignal }) {
       </div>
 
       <div
-        className="font-serif italic text-[15px] text-muted leading-relaxed mb-4"
+        className="font-serif italic text-sm text-muted leading-relaxed mb-4"
         dangerouslySetInnerHTML={{ __html: renderBodyMd(s.body_md) }}
       />
 
@@ -155,7 +155,7 @@ function AheadCard({ signal: s }: { signal: ForwardSignal }) {
           {s.action_label ? (
             <a
               href={s.action_target ?? '#'}
-              className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold cursor-pointer"
+              className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer"
             >
               {s.action_label}
             </a>
@@ -163,7 +163,7 @@ function AheadCard({ signal: s }: { signal: ForwardSignal }) {
             <span />
           )}
           {s.action_context && (
-            <div className="font-serif italic text-[11px] text-muted">
+            <div className="font-serif italic text-xs text-muted">
               {s.action_context}
             </div>
           )}

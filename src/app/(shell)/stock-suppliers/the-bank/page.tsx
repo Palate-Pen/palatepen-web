@@ -45,19 +45,19 @@ export default async function TheBankPage() {
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
-          <div className="font-display font-semibold text-[9px] tracking-[0.5em] uppercase text-gold mb-3.5 flex items-center gap-3">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5 flex items-center gap-3">
             <span>Every Ingredient, Every Price</span>
             {lastUpdateLabel && (
-              <span className="font-serif italic text-[11px] tracking-normal normal-case text-muted inline-flex items-center gap-1.5">
+              <span className="font-serif italic text-xs tracking-normal normal-case text-muted inline-flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-healthy animate-pulse" />
                 Live · last update {lastUpdateLabel}
               </span>
             )}
           </div>
-          <h1 className="font-serif text-5xl text-ink leading-[1.05] tracking-[-0.015em]">
+          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
             <em className="text-gold not-italic font-medium italic">The Bank</em>
           </h1>
-          <p className="font-serif italic text-[17px] text-muted mt-3">
+          <p className="font-serif italic text-lg text-muted mt-3">
             {summary.ingredients_on_file} ingredients on file.{' '}
             {summary.prices_on_the_move > 0 ? (
               <>
@@ -112,7 +112,7 @@ export default async function TheBankPage() {
                 <div
                   key={i}
                   className={
-                    'font-display font-semibold text-[8px] tracking-[0.35em] uppercase text-muted ' +
+                    'font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted ' +
                     (i === 3 || i === 4 ? 'text-right' : '')
                   }
                 >
@@ -156,18 +156,18 @@ function Kpi({
 }) {
   return (
     <div className="bg-card px-7 py-6">
-      <div className="font-display font-semibold text-[8px] tracking-[0.4em] uppercase text-muted mb-3">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
         {label}
       </div>
       <div
         className={
-          'font-serif font-medium text-[36px] leading-none tracking-[-0.015em] ' +
+          'font-serif font-medium text-2xl leading-none tracking-[-0.015em] ' +
           (tone === 'attention' ? 'text-attention' : 'text-ink')
         }
       >
         {value}
       </div>
-      <div className="font-serif italic text-[13px] text-muted mt-2">{sub}</div>
+      <div className="font-serif italic text-sm text-muted mt-2">{sub}</div>
     </div>
   );
 }
@@ -217,25 +217,25 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
         <div className="font-serif font-semibold text-base text-ink flex items-center gap-2">
           {row.name}
           {justIn && (
-            <span className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase text-gold px-1.5 py-0.5 border border-gold/40 bg-gold-bg">
+            <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold px-1.5 py-0.5 border border-gold/40 bg-gold-bg">
               just in
             </span>
           )}
         </div>
         {row.spec && (
-          <div className="font-serif italic text-[12px] text-muted mt-0.5">
+          <div className="font-serif italic text-xs text-muted mt-0.5">
             {row.spec}
           </div>
         )}
       </div>
 
       <div>
-        <div className="font-serif text-[15px] text-ink">
+        <div className="font-serif text-sm text-ink">
           <em className="text-gold not-italic font-medium italic">
             {casualSupplier(row.supplier_name)}
           </em>
         </div>
-        <div className="text-[11px] text-muted mt-0.5">
+        <div className="text-xs text-muted mt-0.5">
           {row.multi_supplier_count > 1
             ? `${row.multi_supplier_count} suppliers`
             : 'single source'}
@@ -261,7 +261,7 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
             <circle cx={last.x} cy={last.y} r="2.5" fill="currentColor" />
           </svg>
         ) : (
-          <div className="text-[11px] text-muted-soft italic">
+          <div className="text-xs text-muted-soft italic">
             not enough history yet
           </div>
         )}
@@ -271,7 +271,7 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
         <div className="font-serif font-semibold text-lg text-ink leading-none">
           £{row.current_price.toFixed(2)}
         </div>
-        <div className="text-[11px] text-muted mt-0.5">
+        <div className="text-xs text-muted mt-0.5">
           {unitLabel(row.unit)}
         </div>
       </div>
