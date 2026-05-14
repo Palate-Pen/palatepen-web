@@ -5,12 +5,19 @@ export const metadata = { title: 'Welcome — Palatable' };
 
 const PROGRESS_PCT = 20;
 
-type SearchParams = { error?: string };
+type SearchParams = { error?: string; detail?: string };
 
 const ERROR_MESSAGES: Record<string, string> = {
   name_required: 'Your kitchen needs a name to continue.',
-  no_owner_membership: "We couldn't find your kitchen. Try signing out and back in.",
-  site_lookup_failed: 'Something went wrong loading your kitchen. Please try again.',
+  no_owner_membership:
+    "We couldn't find your kitchen. Try signing out and back in.",
+  query_failed:
+    'The membership lookup failed. Usually this means the v2 schema is not exposed in Supabase Settings → API → Exposed schemas.',
+  site_lookup_failed: "We couldn't load your kitchen — check the detail below.",
+  site_update_failed:
+    "We couldn't rename your kitchen — check the detail below.",
+  account_update_failed:
+    "We couldn't rename your account — check the detail below.",
 };
 
 export default async function OnboardingPage({
@@ -38,8 +45,13 @@ export default async function OnboardingPage({
       </p>
 
       {errorMessage && (
-        <div className="border-l-[3px] border-l-urgent text-urgent bg-urgent/5 px-4 py-3 mb-6 font-serif italic text-sm">
+        <div className="border-l-[3px] border-l-urgent text-urgent bg-urgent/5 px-4 py-3 mb-2 font-serif italic text-sm">
           {errorMessage}
+        </div>
+      )}
+      {params.detail && (
+        <div className="border-l-[3px] border-l-urgent/40 text-muted bg-urgent/5 px-4 py-2 mb-6 font-mono text-xs">
+          {params.detail}
         </div>
       )}
 

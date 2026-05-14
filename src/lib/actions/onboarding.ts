@@ -16,10 +16,6 @@ export async function saveKitchenName(formData: FormData) {
     redirect('/signin');
   }
 
-  // Find the user's owner membership; rename both the site and the account.
-  // Free/Pro/Kitchen tiers have exactly one auto-created site, so the rename
-  // applies to it. Group/Enterprise users (when supported) rename only the
-  // account here and pick a per-site name in a later onboarding step.
   const { data: memberships, error: memErr } = await supabase
     .from('memberships')
     .select('site_id')
@@ -27,7 +23,13 @@ export async function saveKitchenName(formData: FormData) {
     .eq('role', 'owner')
     .limit(1);
 
-  if (memErr || !memberships || memberships.length === 0) {
+  if (memErr) {
+    console.error('[onboarding] memberships query failed:', memErr);
+    redirect(
+      `/onboarding?error=query_failed&detail=${encodeURIComponent(memErr.message)}`,
+    );
+  }
+  if (!memberships || memberships.length === 0) {
     redirect('/onboarding?error=no_owner_membership');
   }
 
@@ -40,14 +42,35 @@ export async function saveKitchenName(formData: FormData) {
     .single();
 
   if (siteErr || !site) {
-    redirect('/onboarding?error=site_lookup_failed');
+    console.error('[onboarding] site lookup failed:', siteErr);
+    redirect(
+      `/onboarding?error=site_lookup_failed&detail=${encodeURIComponent(siteErr?.message ?? 'unknown')}`,
+    );
   }
 
-  await supabase.from('sites').update({ name: kitchenName }).eq('id', siteId);
-  await supabase
+  const { error: siteUpdateErr } = await supabase
+    .from('sites')
+    .update({ name: kitchenName })
+    .eq('id', siteId);
+
+  if (siteUpdateErr) {
+    console.error('[onboarding] site update failed:', siteUpdateErr);
+    redirect(
+      `/onboarding?error=site_update_failed&detail=${encodeURIComponent(siteUpdateErr.message)}`,
+    );
+  }
+
+  const { error: accountUpdateErr } = await supabase
     .from('accounts')
     .update({ name: kitchenName })
     .eq('id', site.account_id);
+
+  if (accountUpdateErr) {
+    console.error('[onboarding] account update failed:', accountUpdateErr);
+    redirect(
+      `/onboarding?error=account_update_failed&detail=${encodeURIComponent(accountUpdateErr.message)}`,
+    );
+  }
 
   redirect('/');
 }
