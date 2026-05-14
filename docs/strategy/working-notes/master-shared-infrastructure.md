@@ -290,3 +290,70 @@ If everything above were built before launch, that's ~3–4 weeks of pure founda
 **Isn't:** the product surfaces themselves (covered by customer + admin master views), the design language details (your visual work), or the implementation order (build sequence work).
 
 This is the architectural foundation. Read it. Mark up. Push back. Marked-up version becomes the technical spec for the foundation builds.
+
+---
+
+## Appendix — Rationale behind the infrastructure architecture
+
+*Added after the master view landed, to preserve the reasoning behind the shared infrastructure design.*
+
+### Why the notification engine is the highest-leverage build
+
+The notification engine powers four flagship surfaces:
+1. Chef morning brief (the customer product's first impression)
+2. Manager site status (the operational manager surface)
+3. Owner business pulse (the strategic owner surface, key to Group/Enterprise sales demos)
+4. Admin "Needs Attention" feed (operator survival)
+
+Build it once, four surfaces light up. Build any of them separately, you rebuild the engine three times — and they drift apart over time because the implementations diverge.
+
+The architectural pattern (events flow in → dispatcher routes by role → recipients see role-appropriate framing) is also the pattern for almost every intelligent surface in the product. Margin leakage detection feeds it. Stock alerts feed it. Credit note workflows feed it. Cost spike alerts feed it. The engine is infrastructure that surfaces will keep finding new uses for.
+
+Foundation week 1 of the build sequence is *largely* about getting this engine right.
+
+### Why one activity event stream rather than separate logs
+
+Three uses for an event log:
+1. **Admin audit log** — what admin actions happened, for security and traceability
+2. **Customer activity log** — what customers did, for support and pattern detection
+3. **System diagnostic log** — what the system itself did, for debugging
+
+Three separate tables would mean: three migrations, three sets of RLS policies, three dispatcher integration points, three query patterns. And cross-source queries (*"what admin action preceded that customer's issue?"*) become joins between tables that look almost identical.
+
+One `activity_events` table with a `source` column captures all three. Same schema, same indexes, same query patterns, one place to look. The cost is a single column of overhead per row; the gain is dramatically simpler infrastructure.
+
+### Why role detection is separate from permission gating
+
+Two different concerns:
+- **Role detection** decides *which shell to render*. Output: chef shell vs manager shell vs owner shell. A user might be entitled to multiple shells (Jack is both owner and active chef); the surface switcher lets them flip.
+- **Permission gating** decides *what actions are allowed*. Output: can this user create a recipe? Edit a menu? View billing? Independent of shell.
+
+Conflating them would mean rendering decisions get tangled with access decisions. Cleanly separated: shell is the *experience*, permissions are the *access control*. They share a data source (the user's role per outlet) but they read from it differently.
+
+### Why daily GP snapshots are foundation work
+
+Margins, in any form beyond *"current state right now"*, requires historical data. To say *"GP dropped 4 points this week"* the system needs a snapshot from a week ago to compare against.
+
+The cheapest place to capture this is **daily**, run via a cron job: at midnight UTC, for every dish, compute current cost (from current Bank prices), current GP, and save to `dish_margin_snapshots`. One row per dish per day. Manageable storage even at scale.
+
+Without this snapshot infrastructure: every time window selector option (7D vs 7D, Month vs Last, etc) becomes impossible. With it: any historical comparison is just a query on the snapshot table.
+
+This is genuinely foundation work — has to exist before the Margins surface can function meaningfully. Listed as Step 1 of the Margins build sequence.
+
+### Why feature flags evolve rather than rebuild
+
+Current flag system (`FEATURE_MIN_TIER` as a flat record, kill switches in Platform admin) is simple and works. The temptation when adding role-aware features is to refactor the flag system to handle role-based flags alongside tier-based.
+
+Better approach: keep the current system, *add* role-aware checks where needed, evolve naturally. Premature abstraction of the flag system would slow down v1 features. The flag taxonomy can be refactored when the patterns are clear from real use, not before.
+
+### Why visual design system extraction matters
+
+The admin product has the design language. The customer product (current state) doesn't fully share it. Without extracted design tokens, the two products will drift visually over time — small inconsistencies that compound until they feel like different products from different companies.
+
+Extracting tokens (colour vars, type scale, component primitives) once and applying them to both means: when something changes (a colour tone refines, the type scale adjusts), it changes everywhere. The two products stay aligned by *infrastructure*, not by hand-coordination.
+
+Cost: a few days of token extraction work. Payoff: every future surface built to the same standard.
+
+### What this appendix doesn't capture
+
+The implementation specifics of each system — schema-level decisions, indexing strategies, dispatcher rules, the exact event taxonomy. Those become per-system specs when the builds start. This document is the *strategic* architecture; the *tactical* specs come later.

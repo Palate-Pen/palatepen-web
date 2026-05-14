@@ -242,3 +242,72 @@ Items 1-7 are v1. Items 8-9 are nice-to-have for v1, definite for v1.1.
 **Isn't:** the implementation spec in code, the visual design tokens (those live in design-system-v6.md), the underlying margin leakage detection algorithm (lives in master-shared-infrastructure.md).
 
 Read together with `design-system-v6.md` and `chef-margins-mockup-v3.html`, this is the complete specification for the surface.
+
+---
+
+## Appendix — Rationale behind the surface design
+
+*Added after the surface landed, to preserve the reasoning behind the specific design decisions.*
+
+### Why attention cards rather than a paragraph
+
+A paragraph reads as a report. *"The lamb shawarma's GP has dropped to 64% over the past week, driven primarily by an increase in lamb shoulder pricing from Aubrey Allen of 12%..."* — that's prose. Slow to act on. Hard to scan when there are multiple issues.
+
+An attention card with a structured layout (dish name → number → cause → action) is scannable in 2 seconds. The chef sees what dish, what number, what's wrong, what to do — in that order. The card is the diagnostic. Read it and you know what to do. Two cards beside each other lets the chef see both issues at a glance without scrolling through prose.
+
+### Why 7D vs 7D as default time window
+
+Three options were considered:
+- **Last 7 days, no comparison** — shows current state but not movement
+- **Last 7 days vs prior 7 days** — shows current state *and* recent drift
+- **Last 30 days vs prior 30 days** — smoother, less reactive, slower to surface real problems
+
+7D vs 7D wins because:
+- Recent supplier price changes (the most common cause of margin drift) show up clearly within 7 days
+- Single-day noise (one bad invoice, one weekend) doesn't dominate
+- Chefs run weekly mental cycles around prep and ordering anyway
+
+Customisable per user (preferences system) for chefs who want a different cadence — a contract catering exec chef running a 3-month rolling view would set Month vs Last as their default.
+
+### Why three-layer pattern (intelligence → structure → detail)
+
+The same sous chef principle that powers chef home. Top is what the system *interprets* — the curated read of what matters. Middle is the *structure* — sections grouping the menu. Bottom is the *raw fact* — every dish with its numbers.
+
+This lets the chef read at three depths:
+- **Glance:** look at the attention cards. Done.
+- **Skim:** look at section summary. *Which part of my menu is in trouble?*
+- **Investigate:** scroll the dish detail. *Show me every dish.*
+
+The chef chooses their depth. Most days they stop at the attention cards. Some days they go all the way down. The page works at every level.
+
+### Why concrete numbers in attention cards
+
+A chef sees "64% GP" and knows what it means. They've been thinking about food cost percentages for years. Abstracting that into "below target" or "concerning" wastes their time and patronises them.
+
+The number is paired with movement (−4 points) and cause (Aubrey hit you with £14.20 on lamb shoulder Tuesday). Three pieces of data, all concrete, all actionable. Chef can take the card to the office and have a conversation with the manager about renegotiating with Aubrey. They couldn't do that with "Margin is concerning."
+
+### Why Costing and Margins both exist as separate tabs
+
+Different jobs:
+- **Costing** = edit and maintain the cost book. Authoring inline from recipes, drift detection on individual ingredients, the library of every costing.
+- **Margins** = see how the cost book is performing over time. Trends, slipping dishes, supplier exposure across the menu.
+
+Different mental modes too. A chef opens Costing when they're *building* (new dish, new costing, updating prices). They open Margins when they're *reviewing* (how's the menu doing this week?). Same data underneath, different verbs.
+
+The flow between them matters: from a slipping dish in Margins, one click drops you into that dish's Costing entry to investigate or re-cost.
+
+### Why Drinks shown but "not tracked" in v1
+
+Most kitchens don't cost drinks the way they cost food. Wine markup is set by the bar manager or owner, often as a flat percentage. Spirits and cocktails get their own costing structure. Forcing chefs to track drink margins in v1 either adds work they won't do or creates a tab that says "nothing tracked here."
+
+Showing Drinks as a section card with "list only / not tracked" acknowledges drinks exist (chefs might want to know the menu price for service purposes) without forcing the costing layer. Kitchens that *do* track drink margins can enable it via the preferences system. Most won't, and that's fine.
+
+### Why menu engineering deferred to manager shell + POS integration
+
+Menu engineering (stars / plowhorses / puzzles / dogs) requires sales data — popularity × profitability. Without POS integration, the system only has the profitability half. Forcing it to work without sales data would mean making up "popularity" from invoice frequency or order frequency — both of which approximate but don't accurately represent guest demand.
+
+Chef Margins answers the *operational* question (what's slipping). Manager Margins eventually answers the *strategic* question (what to remove from the menu). Different surfaces, different roles, different data dependencies. Building both in v1 would compromise both.
+
+### What this appendix doesn't capture
+
+The exact wording of every voice line. Those were iterated through three versions and reflect chef instinct, not theoretical voice design. Future iteration on copy is expected as the system meets real chefs — what reads right on paper may not read right in a kitchen at 6pm before service. Voice copy is a learned output, not a fixed one.

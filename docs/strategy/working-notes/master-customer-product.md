@@ -234,3 +234,67 @@ Recipes (full), Costing (workbench — to become library overview), Stock counti
 **Isn't:** the implementation order (see `pre-launch-build-sequence.md` — rewritten to match this shape), the visual design of any surface (your visual work), or the inventory of features (lives in `feature-inventory-2026-05-14.md`).
 
 This is the spec. Build to it.
+
+---
+
+## Appendix — Rationale behind the customer product shape
+
+*Added after the master view landed, to preserve the reasoning behind structural decisions.*
+
+### Why three role-aware shells rather than one shell with permissions
+
+The current product has one shell with 14 sidebar items. Permissions filter behaviour — a chef sees disabled buttons where they don't have access. A chef and an owner see the same shell with different things enabled.
+
+This sounds efficient but creates two real problems:
+1. **Navigation density.** 14 items is too many for a chef on a phone. Too few for an owner who needs cross-site analytics. One nav can't serve both.
+2. **Mental model mismatch.** A chef thinks about their kitchen; an owner thinks about their business. Showing both the same shell forces both to translate.
+
+Three role-aware shells (chef / manager / owner) give each role a calibrated experience. Same underlying data, three different ways into it. Permission gating stays separate — an owner *can* flip to chef shell to author a recipe (they have permission), they just don't *default* there. The shell is the *experience*; permissions are the *access control*. Different concerns.
+
+### Why Margins as chef-primary tab (and the original push-back was wrong)
+
+Earlier in the strategic session, the read was "Margins is owner/manager-primary, chef gets alerts via Inbox." That was wrong, and Jack corrected it on first sight of the shape.
+
+The chef question Margins answers is *"how is my menu performing dish by dish, right now?"* That's a daily operational question, not an accounting one. Chefs care deeply about which dishes are healthy, which are slipping, which are exposed to which suppliers. They make decisions about menu changes, supplier negotiations, and what to push on service based on this read.
+
+What's different between roles is the *default scope*:
+- Chef Margins → my menu's performance
+- Manager Margins → this site's performance + operational drill-down
+- Owner Margins → group rollup, supplier benchmarking across sites
+
+Same surface, three role-scoped defaults. Same pattern as Home (chef morning brief / manager site status / owner business pulse).
+
+### Why Bank + Invoices + Suppliers + Waste consolidate
+
+Four tabs, but they're four views of the same data graph: *ingredients ← invoices ← suppliers ← prices, with waste closing the loop on consumption.* They were built as separate tabs because they were built separately. Conceptually, they're one mental surface: *managing what you buy and what it costs.*
+
+Forcing the chef to context-switch between four tabs to do what's really one job is friction. Consolidating into a single "Stock & Suppliers" tab with sections inside is cleaner. *Tidy station = tidy mind = clean good food.*
+
+The "Invoice scan" quick action stays prominent on chef home (it's frequent and time-sensitive), but the inventory of past invoices, the supplier directory, the Bank ingredient catalogue, and the waste log all live in one consolidated tab.
+
+### Why Notebook is a key feature, not just a tab
+
+Three reasons:
+1. **No competitor has it.** Every other kitchen software treats notes as an afterthought. Operational moat.
+2. **Real pain point.** Paper notebooks get ruined by oil, water, fire, the dishwasher. Every chef has lost notes this way. A genuine digital kitchen notebook is something chefs would actually want, not something they'll tolerate.
+3. **Chef-authentic.** Built by someone who actually used paper notebooks in kitchens. Voice memos, photos, sketches, taggable experiments — these are what chefs actually want, not what product managers think they want.
+
+This is the only chef-specific feature in Palatable that no other product has. Worth treating as a real product feature, not "freeform notes that link to recipes."
+
+### Why owner shell only at Group+ tier
+
+Single-site Pro/Kitchen owner-operators are *typically the chef* of their own business. Showing them an owner shell with one site in it makes them feel like they're using an enterprise tool designed for someone else. They want the chef shell — they want to be in the kitchen, not above it.
+
+Owner shell is fundamentally a multi-site experience. The Sites overview, cross-site Margins comparisons, group-level supplier benchmarking — none of these make sense for a single site. So owner shell renders only at Group/Enterprise tier. Below that, the user sees chef or manager shell based on their primary role.
+
+### Why surface switcher is per-role rather than per-session
+
+A user who's both an owner *and* an active chef (Jack himself, for instance) has different default preferences in each role. Their "owner me" wants the business pulse home. Their "chef me" wants the morning brief with prep alerts. When they switch role, they should land in *that role's preferred view*, not carry their previous state over.
+
+Per-session would mean: I last looked at Margins, so when I switch to chef shell I land in Margins. That's noise — I switched role for a reason, the system should respect the role.
+
+Per-role means: each role context is independent. My chef context has its own preferences and last-state; my owner context has its own. Cleaner mental model.
+
+### What this appendix doesn't capture
+
+The specific consolidation naming ("Stock & Suppliers" vs alternatives like "Larder" or "Kitchen"). The exact tab order in chef shell. The specific seven-tab count. These are *iterable* — the structural decisions above are the architecture; the naming and ordering will likely refine as the surfaces get built.

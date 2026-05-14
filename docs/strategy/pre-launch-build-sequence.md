@@ -278,3 +278,76 @@ This is meaningfully more product than "another stock/recipe/costing tool." It's
 **Is:** the build order for v1, in weeks, working back from a coherent launch. Replaces the May 13 build sequence which assumed a different product shape.
 
 **Isn't:** detailed engineering specs (those come per-feature), the visual design (Jack's work), or a guarantee that 14 weeks is exact — real estimates always slip; this is the *order*, not a contract.
+
+---
+
+## Appendix — Rationale behind the build sequence
+
+*Added after the sequence landed, to preserve the reasoning behind why this order rather than another.*
+
+### Why foundation infrastructure first (weeks 1-3)
+
+Three pieces of plumbing — notification engine, role-aware shell rendering, activity event stream — are dependencies for *everything else*. Every flagship surface needs them. Every intelligence feature needs them. Build them first, even though they're invisible at first, because:
+
+1. **Building any surface without them means rebuilding parts of them later.** A chef home built before the notification engine has to fake the morning brief. When the engine arrives, the fake gets replaced — more work than building it once correctly.
+2. **They take real time to get right.** Notification engine schema and dispatcher routing rules need design thinking; activity event stream needs schema decisions; role-aware shell rendering touches every route. Trying to slot these in mid-build creates fragile foundations.
+3. **They're not visible features.** Customers won't see "Phase 1 — foundation infrastructure" as a thing. They'll see the surfaces that get built on top. So the foundation has to be *done* before customer-visible features begin, otherwise it gets squeezed by feature pressure.
+
+Front-loading foundation work feels slow but actually accelerates everything that comes after.
+
+### Why chef home before owner home before manager home
+
+Three priority calls:
+- **Chef home is most-used.** Every chef on the platform opens chef home daily. Owner home gets opened weekly at most. Manager home depends on operation type — some sites have active managers, others don't.
+- **Owner home is the B2B demo surface.** When selling Group/Enterprise tier, the owner home is what the buyer wants to see. *"What will my operations team see?"* — the answer is owner home. Building it second means the demo is real, not mockup.
+- **Manager home is smallest user group at launch.** Honest reality: most early customers will be single-site operations where the chef is also the manager. Manager shell users are a future audience. Build it third — competent but not the priority.
+
+Same total effort, different ordering, much better strategic positioning.
+
+### Why margin leakage detection is the headline v1 intelligence feature
+
+The whole product positions itself as *"the intelligent sous chef."* That claim either lives or dies on what intelligence the product actually delivers.
+
+Most kitchen software is reactive: chef enters data, software displays it. The differentiator is *proactive* intelligence — the system notices things and surfaces them before the chef has to look. Margin leakage detection is the clearest example: the system watches GP per dish over time, detects drift, attributes it to specific ingredient cost movements, surfaces it to the chef with a one-sentence diagnostic.
+
+Without this working at v1, Palatable is just another stock/recipe/costing tool. With it, the "intelligent sous chef" claim is real — and the rest of the surfaces (morning brief, owner business pulse) become demonstrations of it.
+
+### Why credit note workflow stays in v1
+
+It's a chef-love feature. Every chef has experienced the friction of:
+1. Receive a delivery that's short or wrong
+2. Notice it manually (or, worse, not notice it)
+3. Email the supplier with the discrepancy
+4. Track whether the credit was issued
+5. Reconcile against the invoice
+
+This is unrewarding manual work. The current system already detects discrepancies (Invoice vs PO comparison). Automating the chase — draft the email, track status, surface in chef Inbox when handled — is a small build on existing infrastructure. The chef-love payoff is disproportionate to the build cost.
+
+Also: it's a perfect demonstration of the "system handles the admin so the chef can cook" positioning. Customers tell other customers about this feature.
+
+### Why POS integration is deferred to post-launch
+
+POS integration is genuinely valuable — it enables menu engineering (sales × margin), enables forecasting (predict next week's prep from last week's sales), enables the manager Margins surface to be properly strategic.
+
+But:
+1. **Every POS is different.** Square has a clean API. Lightspeed has a half-API. Some legacy systems have nothing. Each POS is a separate integration project.
+2. **No POS integration works for everyone.** Whichever POS we integrate first serves only the customers on that POS. Others are excluded.
+3. **The features that depend on POS (menu engineering, forecasting) are *enhancement* features, not core.** Margin leakage works without POS data. Credit note workflow works without POS data. The core proposition stands without POS.
+
+So: ship v1 without POS, validate the core proposition, then add POS integrations one at a time (Square first because of clean API + market share). The deferred features become reasons to upgrade to a higher tier.
+
+### Why Notebook expansion gets its own dedicated build phase
+
+Notebook isn't a sub-feature of another surface. It's its own product within the product — different mental model, different design pattern (more like a content app), different content types (voice, photo, sketch, text), different access patterns (mobile-first, private-by-default).
+
+Compressing it into the schedule of another surface would either undersize it (it becomes the half-built notes page that exists currently) or compromise the other surface. Giving it dedicated weeks (Phase 3, weeks 11-12) means it gets the attention it deserves as the operational moat it's positioned to be.
+
+### Why the friendly beta is week 14, not earlier
+
+Operators are a finite resource. Asking them to test an unfinished product wastes their patience and yields feedback on things you already know are unfinished. Better to ship them something close to v1 and ask them to find the *real* issues — the ones you don't already know about.
+
+Three-to-five operators, two weeks of structured feedback, with at least one multi-site customer covering all three roles (chef, manager, owner). That gives meaningful coverage of the role-aware design before public launch.
+
+### What this appendix doesn't capture
+
+Specific week-by-week task lists (those are tactical and will adjust as work progresses). The exact selection of beta operators. The detailed list of pre-launch legal/T&Cs/GDPR items (those have their own checklist).

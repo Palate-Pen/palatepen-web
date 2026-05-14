@@ -379,3 +379,49 @@ all 0.15s;        /* hover */
 ```
 
 That's v6. Build to it.
+
+---
+
+## Appendix — Rationale behind the architectural decisions
+
+*Added after the design system landed, to preserve the reasoning behind decisions that future Claude Code sessions might second-guess. The decisions themselves are documented above; this captures the **why**.*
+
+### Why light mode as default
+
+The admin product was built in light mode and reads cleaner than the dark v1 of chef home. Light cream paper with deep warm ink and gold accents matches the Palate & Pen consultancy proposal — same brand identity across the consultancy and the software. Dark mode lives in user preferences for chefs who work late-night service or want it for environmental reasons, but the default is light because the editorial-magazine register reads more confident there.
+
+### Why mode-shifted voice (Section 4)
+
+Kitchens have two operating modes. Mise en place is banter — chefs joke, prep, take the piss out of each other. Service is intense — short sentences, direct communication, no time for jokes. The system that lives in a chef's pocket should mirror this rhythm. When something's wrong, the sous chef voice gets serious. When everything's holding, it has permission to be dry. Most software has one tone regardless of context. Palatable has two, and the shift is what makes it feel like it understands kitchens rather than just reports on them.
+
+### Why italic-gold for the noun that matters
+
+Consistent with the Palate & Pen consultancy proposal — the brand already does this. Functionally: the reader's eye lands on the meaningful word without having to scan the whole sentence. In *"the **lamb shawarma** GP has dropped to 64%"*, the chef knows the *what* (lamb shawarma) and the *number* (64%) in less than a second of glance. Limited to 1-2 per sentence — overuse kills the emphasis.
+
+### Why Cinzel always uppercase + letter-spaced
+
+Cinzel is a display face that performs at small sizes when given air. Uppercase + 0.3-0.5em letter-spacing gives it the editorial-magazine architectural feel — section labels read like the small-caps headers in a serious magazine, not like generic SaaS UI labels. The discipline is non-negotiable because as soon as Cinzel goes sentence-case or tight, it looks wrong.
+
+### Why casual supplier names
+
+Chefs don't refer to suppliers by legal name. *"Aubrey hit you with £14.20"* is what a chef would say to another chef; *"Aubrey Allen Ltd has increased pricing by 12%"* sounds like a procurement email. The casual_name field is optional, falls back to legal name when unset, and gets prompted during supplier creation with *"what do you call them in the kitchen?"*. Small piece of product, real authenticity payoff.
+
+### Why menu order discipline
+
+Chefs think about their menu in menu order, not alphabetical order. When a chef opens Margins and sees performance grouped by section, they read it the same way a guest reads the menu — top to bottom, Starters → Mains → Grill → Sides → Desserts. Alphabetical would force them to mentally re-order. Flagged sections get visual highlight (gold tint) but don't get promoted out of menu position, because promoting them breaks the chef's mental map.
+
+### Why empty-state-as-section-absent
+
+When the alerts section is rendered as "nothing to flag — all clear" it reads as broken. Either the data hasn't loaded, the system isn't watching, or something's failed silently. Removing the section entirely when there's nothing to flag means the page leads with the day/orientation layer instead — which is meaningful content. The visual rhythm of the page reads as healthy rather than empty.
+
+### Why sidebar collapse via top-bar toggle
+
+The previous approach (collapse button floating on the sidebar edge) clipped against the page boundary. Multiple iterations tried to fix it inside the sidebar. The cleanest solution was to move the toggle out of the sidebar entirely — into the top bar at the top-left, the same place Gmail, Notion, and Linear put their sidebar toggles. Standard pattern, no clipping, always in the same place regardless of state.
+
+### Why surface-specific design notes pattern
+
+The design system covers *patterns that repeat*. Surface-specific decisions (copy choices, edge cases, settings dependencies, build sequencing) don't generalise. Forcing them into the design system would bloat it and make patterns harder to find. The two-document pattern (system + per-surface notes) keeps each scannable and gives surface design its own clear home.
+
+### What this appendix doesn't capture
+
+Micro-tuning decisions — specific colour values, exact font sizes, specific letter-spacing values, individual copy phrases. Those were iterated through chef-home v1→v5 and Margins v1→v3. They're documented in the mockups themselves (which are reference implementations, not just visual examples). Future sessions can iterate further on these without needing the rationale — they're not architectural.

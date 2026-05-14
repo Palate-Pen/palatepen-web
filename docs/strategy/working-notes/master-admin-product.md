@@ -142,3 +142,66 @@ Ten surfaces. Each answering a specific operator question. Same calm low-density
 **Is:** the operator product's final strategic shape — what's there at v1, what's coming at v1.1, what's out of scope.
 
 **Isn't:** the build sequence (see `pre-launch-build-sequence.md`), the customer product (see `master-customer-product.md`), or design specs (Jack's visual work).
+
+---
+
+## Appendix — Rationale behind the admin product shape
+
+*Added after the master view landed, to preserve the reasoning behind structural decisions.*
+
+### Why admin is treated as a separate product
+
+Customer product and admin product share a codebase, a database, and a visual language. But they're different experiences:
+
+- **Different users.** Customer product: chefs, managers, owners. Admin: Jack only.
+- **Different priorities.** Customer product: calm, low-density, anticipatory. Admin: comprehensive, operator-grade intelligence.
+- **Different design philosophies.** Customer: editorial-magazine, calm typography. Admin: same aesthetic, but tolerating more density (operators want power; chefs want calm).
+- **Different release cadences.** Customer features ship slowly with chef testing. Admin features ship as soon as Jack needs them.
+
+Treating them as one product would force-blend their priorities. Treating them as separate products with shared infrastructure means each gets calibrated to its actual users.
+
+### Why full read+write impersonation (with T&Cs cover)
+
+Read-only impersonation lets you *see* what a customer sees. Read+write lets you *fix* what they're stuck on. The first time a customer has a corrupted recipe or a stuck workflow, read-only frustrates everyone — Jack can see the problem, can describe the fix, but can't actually do it. Customer has to do it themselves, with talk-through, slowly.
+
+Read+write impersonation means Jack can take action on the customer's behalf. *"I've cleared that stuck stock count for you. Try again now."* — that's a 30-second support interaction. With read-only it would be 15 minutes of walking the customer through clicks.
+
+The T&Cs cover this explicitly. The customer gets notified after the fact (in-app banner) for transparency. The action is logged in the audit stream. Power with accountability. Standard pattern for serious SaaS support.
+
+### Why merged Activity surface (Audit + Customer events + System)
+
+Three separate surfaces meant three different navigation destinations, three different mental models, three different sets of filters to learn. But the underlying *data* is one stream — every event that happens, source-tagged (admin / customer / system).
+
+One filterable surface is less navigation overhead, less code to maintain, and lets Jack cross-reference between sources. *"What admin action did I take just before that customer's data corrupted?"* — that question requires both streams. Merged Activity makes it answerable in one query.
+
+### Why TOTP 2FA at launch
+
+Admin has full read+write on customer data. That's a real security surface. Password alone is thin — phished, leaked, or guessed credentials would compromise every customer.
+
+TOTP via authenticator app is ~half a day of build, doesn't change daily UX (you set it once, then it's just one extra step at login), and brings the admin security posture up to enterprise SaaS baseline. The moment Palatable signs its first Group/Enterprise customer, that customer's procurement team will ask about admin security. Having 2FA in place from launch means the answer is *"yes, TOTP 2FA, audit logged"* rather than a scramble.
+
+Hardware key support and IP allowlisting are post-launch refinements when the user base justifies them.
+
+### Why skip mobile admin
+
+Admin is desktop work. Reviewing unit economics, investigating customer issues, managing feature flags — all of it is multi-window, multi-tab, requires real screen real estate. A phone-responsive admin would be technically possible but functionally unused.
+
+Skipping mobile admin reallocates design and engineering budget to making *desktop* admin excellent rather than mobile-responsive admin acceptable. Same total effort, better outcome. If a future state actually requires phone-accessible admin (Jack on holiday, customer crisis), the customer-side support tooling could be sufficient.
+
+### Why Control Desk removed
+
+A button on every admin page that didn't do anything. *"Could have a function but not sure what."*
+
+Cognitive load isn't free. Every UI element costs the user's attention, even when they've stopped consciously noticing it. A button that does nothing is worse than no button — it implies meaning, gets clicked occasionally, returns nothing.
+
+The right answer: remove it. If a quick-action menu becomes useful later, build it then with a clear purpose. Don't preserve cruft because it might one day mean something.
+
+### Why customer health monitoring is v1.1, not v1
+
+At v1 launch, there aren't enough customers for pattern detection on health to fire meaningfully. With 5 customers, "engagement frequency drop" is noise. With 50, it becomes signal.
+
+Build the *plumbing* in v1 (event logging via the activity stream) so the data accumulates. Surface the *health intelligence* in v1.1 once there's enough data for the patterns to mean something. Premature health monitoring fires false alarms and trains operators to ignore the system.
+
+### What this appendix doesn't capture
+
+The exact set of pattern detection rules for the Customer Activity Log (those are tactical and will grow over time). The specific scoring formula for Customer Health (extensible architecture; specific weights TBD). The pricing on potential admin tier upgrades.
