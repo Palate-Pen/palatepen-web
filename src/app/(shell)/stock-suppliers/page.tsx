@@ -1,3 +1,6 @@
+import { getShellContext } from '@/lib/shell/context';
+import { LookingAhead } from '@/components/shell/LookingAhead';
+
 export const metadata = { title: 'Stock & Suppliers — Palatable' };
 
 type AttentionSeverity = 'urgent' | 'attention' | 'info';
@@ -110,7 +113,9 @@ const deliveries = [
   },
 ];
 
-export default function StockSuppliersPage() {
+export default async function StockSuppliersPage() {
+  const ctx = await getShellContext();
+
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
@@ -261,6 +266,7 @@ export default function StockSuppliersPage() {
           <DestinationCard
             name="The Bank"
             tagline="every ingredient, every price, live"
+            href="/stock-suppliers/the-bank"
             iconPath={
               <>
                 <ellipse cx="12" cy="6" rx="9" ry="3" />
@@ -328,47 +334,7 @@ export default function StockSuppliersPage() {
         </div>
       </Section>
 
-      <Section
-        title="Looking Ahead"
-        meta="two patterns the system spotted · worth getting ahead of"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AheadCard
-            sectionLabel="Market Move"
-            tag="Plan For It"
-            headlinePre=""
-            headlineEm="Tahini"
-            headlinePost=" is drifting up across the market."
-            body={
-              <>
-                <strong className="not-italic font-semibold text-ink">
-                  Reza put it up 8% this week, Mediterranean up 6%
-                </strong>{' '}
-                — both moving the same direction tells you this isn't a supplier issue, it's the market. Likely to tick again in 2–3 weeks. Worth stocking what you'll need before then. Your hummus and baba ghanoush will both feel it.
-              </>
-            }
-            actionLabel="See affected dishes →"
-            actionContext="2 suppliers moving in step"
-          />
-          <AheadCard
-            sectionLabel="Next Week"
-            tag="Get Ready"
-            headlinePre="Next week is a "
-            headlineEm="heavy"
-            headlinePost=" one."
-            body={
-              <>
-                <strong className="not-italic font-semibold text-ink">
-                  Six deliveries booked, £840 across them.
-                </strong>{' '}
-                Aubrey's running big Monday and Saturday — about £390 of meat between them. Worth clearing walk-in space before the weekend and making sure someone's on the pass for both deliveries.
-              </>
-            }
-            actionLabel="See the week ahead →"
-            actionContext="Mon 18 May – Sun 24 May"
-          />
-        </div>
-      </Section>
+      <LookingAhead siteId={ctx.siteId} surface="stock-suppliers" />
     </div>
   );
 }
@@ -494,6 +460,7 @@ function DestinationCard({
   children,
   linkLabel,
   linkMeta,
+  href,
 }: {
   featured?: boolean;
   name: string;
@@ -502,14 +469,10 @@ function DestinationCard({
   children: React.ReactNode;
   linkLabel: string;
   linkMeta: string;
+  href?: string;
 }) {
-  return (
-    <div
-      className={
-        'bg-card border border-rule px-7 py-7 flex flex-col cursor-pointer transition-all hover:border-gold ' +
-        (featured ? 'md:col-span-2' : '')
-      }
-    >
+  const cardBody = (
+    <>
       <div className="flex items-center gap-4 mb-5">
         <div className="w-10 h-10 border border-gold rounded-sm flex items-center justify-center text-gold bg-gold-bg flex-shrink-0">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -529,13 +492,26 @@ function DestinationCard({
       <div className="flex-1 mb-4">{children}</div>
 
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold">
+        <span className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold">
           {linkLabel}
-        </a>
+        </span>
         <div className="font-serif italic text-[11px] text-muted">{linkMeta}</div>
       </div>
-    </div>
+    </>
   );
+
+  const className =
+    'bg-card border border-rule px-7 py-7 flex flex-col cursor-pointer transition-all hover:border-gold ' +
+    (featured ? 'md:col-span-2' : '');
+
+  if (href) {
+    return (
+      <a href={href} className={className}>
+        {cardBody}
+      </a>
+    );
+  }
+  return <div className={className}>{cardBody}</div>;
 }
 
 function StateRow({
@@ -575,51 +551,3 @@ function StateRow({
   );
 }
 
-function AheadCard({
-  sectionLabel,
-  tag,
-  headlinePre,
-  headlineEm,
-  headlinePost,
-  body,
-  actionLabel,
-  actionContext,
-}: {
-  sectionLabel: string;
-  tag: string;
-  headlinePre: string;
-  headlineEm: string;
-  headlinePost: string;
-  body: React.ReactNode;
-  actionLabel: string;
-  actionContext: string;
-}) {
-  return (
-    <div className="bg-card border border-rule px-7 py-7 border-l-4 border-l-gold">
-      <div className="flex items-baseline justify-between mb-4">
-        <div className="font-display font-semibold text-[9px] tracking-[0.4em] uppercase text-gold">
-          {sectionLabel}
-        </div>
-        <div className="font-display font-semibold text-[8px] tracking-[0.3em] uppercase text-muted px-2 py-1 border border-rule">
-          {tag}
-        </div>
-      </div>
-      <div className="font-serif text-xl text-ink mb-3 leading-snug">
-        {headlinePre}
-        <em className="text-gold not-italic font-medium italic">{headlineEm}</em>
-        {headlinePost}
-      </div>
-      <div className="font-serif italic text-[15px] text-muted leading-relaxed mb-4">
-        {body}
-      </div>
-      <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold cursor-pointer">
-          {actionLabel}
-        </a>
-        <div className="font-serif italic text-[11px] text-muted">
-          {actionContext}
-        </div>
-      </div>
-    </div>
-  );
-}
