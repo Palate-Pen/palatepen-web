@@ -107,18 +107,19 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 ## Recent activity
 
 **Last shipped:**
-- First vertical feature loop — The Bank end-to-end with the forward-intelligence engine live in production. Three new migrations (recipes / prep_items / forward_signals), 12-ingredient seed against the demo site, async server-rendered Bank page with live KPIs + per-row 30-day sparklines + casual-name supplier rendering, reusable LookingAhead server component reading v2.forward_signals, market-move detector cron at /api/cron/detect-market-moves authenticated via CRON_SECRET, daily 08:00 UTC schedule wired in vercel.json. Production-verified with a 200 + the expected JSON response; CRON_SECRET rotated to a transcript-free value. Closes the "first feature loop" item from the build-approach memory. Full detail in docs/progress-log.md.
-- All 9 remaining chef-shell tab routes ported from locked mockups as static visual scaffolding (Connections, Menus, Recipes, Settings, Inbox, Prep, Margins, Stock & Suppliers hub, Notebook). Visual coverage across the whole 10-tab surface. 2842 lines of TSX. Note: the Bank loop replaced the hub's hardcoded Looking Ahead with the real component; the other tabs still render constants until their loops run.
-- Strategic direction, design system v8, surface notes, and all chef-shell mockups locked. Manager Home locked; manager-shell tabs 2-10 pending detail design.
+- Invoice loop UI complete (scan / list / review / confirm pages on /stock-suppliers/invoices/*) + site-wide swap to Haiku 4.5 — central helper at `src/lib/anthropic.ts` is the single switching point. Working end-to-end in production: chef uploads invoice → Haiku extracts lines → review with Bank-match dots → confirm flips ingredient prices + marks delivery arrived, revalidates Hub and Bank. ~13× cost reduction on AI calls vs Sonnet 4.6.
+- Menu Builder v2 + Custom Template formatting guide locked (mockups in `docs/strategy/mockups/`). Manager Menu Builder v2 (Layout controls / Engineering Overlays / Custom Template Upload PDF·AI·Figma·PSD) is the second locked top-level Manager tab after Manager Home. Formatting guide is the bring-your-own-brand bridge — semantic layer naming convention (menu-title, section-header-N, dish-row-N-M, dish-name, dish-desc, dish-price, dish-image-N-M, logo, hero-image) means a designer's existing layout becomes a Palatable template. Wedge: nobody else ties menu design to live costing because nobody else has The Bank upstream.
+- First vertical feature loop — The Bank end-to-end with the forward-intelligence engine live in production. Three cron detectors (market-moves / recipe-staleness / cost-spikes) emit structured signals consumed by LookingAhead components on every surface. Full detail in docs/progress-log.md.
+- All 9 remaining chef-shell tab routes ported from locked mockups as static visual scaffolding. Visual coverage across the whole 10-tab surface.
+- Strategic direction, design system v8, surface notes, and all chef-shell mockups locked. Manager Home + Menu Builder locked; remaining 8 Manager tabs pending detail design. Founder Admin locked at `/admin`.
 
 **In flight:**
-- Phase A close-out: rotate-CRON_SECRET ✓, progress-log entry ✓, CLAUDE.md Recent activity (this) ✓, browser smoke-test of The Bank pending.
-- Next feature loop: Prep + Recipes (v2.prep_items and v2.recipes schemas already landed; seed + wire pages + add a recipe-staleness detector as the second cron).
+- Browser smoke-test of the invoice scan loop in production after the next deploy.
 
 **Next:**
-- Shared shell component extraction (Section / KpiCard / AttentionCard) from inlined ports into src/components/shell/ once Prep loop wraps.
-- Schema for the remaining v1 surfaces: v2.invoices (unlocks invoice scanning → auto Bank update — the operational moat), v2.deliveries, v2.waste_entries. Each then unlocks the next feature loop (Margins / Deliveries / Waste end-to-end).
-- Open question: Cash Flow / Payments surface still has no single home — TBD with owner-shell design.
+- Chef Menus edit-light view + the published web menu output (public reader at `/m/{slug}`) as the next pair to design. These pair with the Manager Menu Builder so the chef can preview-and-tweak a manager-published menu without breaking the lock, and so the public URL renders the live-costed menu cleanly.
+- Manager shell scaffold for the 8 remaining tabs once their mockups land.
+- Owner shell design — analytics-led, whole-business cross-site rollups (distinct from Manager's single-site exception management).
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.
 
@@ -162,14 +163,15 @@ Palatable is the hospitality platform where chefs do their work in the kitchen, 
 
 Two layered ideas.
 
-**1. Role determines surface set.** One system, three role-aware surface sets:
+**1. Role determines surface set.** One system, three role-aware customer surface sets plus an internal founder surface:
 - **Chef surface** — the sous chef. Calm, mobile-first, hides finance.
 - **Manager surface** — site operational status. Exception management.
 - **Owner surface** — business pulse, multi-site intelligence, financial reports.
+- **Founder Admin (`/admin`)** — internal command centre, locked to jack@palateandpen.co.uk via Supabase auth. Five domains: Users & Kitchens, Business, System Health, Content & Comms, Founder Ops. v8-styled. Not a customer surface — exists so the operator of the business has one place to see everything.
 
 **2. Within the chef set, ten tabs cover the chef's day:** Home, Prep, Recipes, Menus, Margins, Stock & Suppliers, Notebook, Inbox, Settings, Connections. Each surface answers one sous chef question; the chef's normal work feeds manager and owner views automatically. Full per-surface design rationale in `docs/strategy/working-notes/surface-notes-2026-05-14-evening.md` (locked 2026-05-14 final, supersedes earlier nine-tab and four-tab shapes).
 
-**3. Manager shell — ten tabs, parallel structure to chef shell.** Manager Home locked 2026-05-14; remaining nine tabs pending detail design.
+**3. Manager shell — ten tabs, parallel structure to chef shell.** Manager Home + Menu Builder (top-level tab — v2 mockup locked, includes Layout controls, Engineering Overlays with Chef/Customer view toggle, and Custom Template Upload backed by the semantic layer naming convention in the formatting guide) locked. Remaining 8 tabs pending detail design.
 
 Same underlying data. Role-aware experience. **Nobody does work for anyone else.**
 
