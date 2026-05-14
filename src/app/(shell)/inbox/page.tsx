@@ -125,7 +125,7 @@ function SignalRow({
   return (
     <div
       className={
-        'relative px-7 py-5 flex gap-4 items-start cursor-pointer transition-colors hover:bg-card-warm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
+        'relative px-7 py-5 flex gap-4 items-start transition-colors before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
         severityStripe[signal.severity] +
         (last ? '' : ' border-b border-rule') +
         (dismissed ? ' opacity-60' : '')
@@ -174,7 +174,7 @@ function SignalRow({
             {signal.action_label && (
               <a
                 href={signal.action_target ?? '#'}
-                className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold"
+                className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors"
               >
                 {signal.action_label}
               </a>

@@ -7,10 +7,33 @@ export const metadata = { title: 'Settings — Palatable' };
 
 export default async function SettingsPage() {
   const ctx = await getShellContext();
+  const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
+  const isFounder = ctx.email === 'jack@palateandpen.co.uk';
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[800px]">
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">Settings</h1>
+
+      {(canSeeManager || isFounder) && (
+        <Section title="Switch Surface">
+          {canSeeManager && (
+            <SurfaceLink
+              href="/manager"
+              eyebrow={ctx.role === 'owner' ? 'Owner access' : 'Manager access'}
+              title="Manager surface"
+              body="Site command — menu builder, P&L, team, deliveries oversight."
+            />
+          )}
+          {isFounder && (
+            <SurfaceLink
+              href="/admin"
+              eyebrow="Founder only"
+              title="Founder admin"
+              body="Cross-account command centre. Users · business · system · ops."
+            />
+          )}
+        </Section>
+      )}
 
       <AccessibilitySettings />
 
@@ -94,6 +117,40 @@ function Row({
         {value}
       </div>
     </div>
+  );
+}
+
+function SurfaceLink({
+  href,
+  eyebrow,
+  title,
+  body,
+}: {
+  href: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="px-7 py-5 flex items-center justify-between gap-4 hover:bg-paper-warm transition-colors group"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-1.5">
+          {eyebrow}
+        </div>
+        <div className="font-serif font-semibold text-base text-ink leading-tight">
+          {title}
+        </div>
+        <div className="font-serif italic text-sm text-muted mt-1">
+          {body}
+        </div>
+      </div>
+      <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted group-hover:text-gold transition-colors">
+        Open →
+      </span>
+    </Link>
   );
 }
 
