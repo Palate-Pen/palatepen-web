@@ -21,7 +21,8 @@ Palatable by Palate & Pen — Back office work you can stomach. A professional c
 - Tagline: Back office work you can stomach
 - By Palate & Pen
 - Logo: italic P + gold dot + alatable
-- Colours: Ink #0E0C0A, Gold #C8960A, Cream #F0E8DC, Paper #FAF7F2
+- Colours (v8, chef-shell canon): Ink #1A1612, Gold #B8923C, Paper #F8F4ED, Card #FFFFFF, Muted #7A6F5E, Muted-soft #A99B85, Urgent #A14424, Attention #B86A2E, Healthy #5D7F4F, Rule rgba(26,22,18,0.08). Full palette and severity language in `docs/strategy/working-notes/design-system-v8.md`.
+- Type stack: Cormorant Garamond (serif, headings + italic context), Cinzel (display, uppercase labels + small caps), Jost (sans, body)
 - Tiers: Free / Pro £25pm / Kitchen £59pm / Group £129pm / Enterprise (price on request — contact_sales route to hello@palateandpen.co.uk)
 - Tier limits (maxUsers · maxOutlets · maxScans/mo):
   - Free: 1 · 1 · 0

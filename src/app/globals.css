@@ -4,10 +4,20 @@
 
 @layer base {
   :root {
-    --ink: #0e0c0a;
-    --gold: #c8960a;
-    --cream: #f0e8dc;
-    --paper: #faf7f2;
+    --ink: #1a1612;
+    --paper: #f8f4ed;
+    --card: #ffffff;
+    --muted: #7a6f5e;
+    --muted-soft: #a99b85;
+    --gold: #b8923c;
+    --gold-bg: rgba(201, 168, 76, 0.06);
+    --urgent: #a14424;
+    --attention: #b86a2e;
+    --healthy: #5d7f4f;
+    --rule: rgba(26, 22, 18, 0.08);
+    --price-up: var(--urgent);
+    --price-down: var(--healthy);
+    --price-flat: var(--muted-soft);
   }
 
   html,
@@ -17,6 +27,6 @@
   }
 
   body {
-    font-family: theme('fontFamily.sans');
+    font-family: var(--font-sans), system-ui, sans-serif;
   }
 }
