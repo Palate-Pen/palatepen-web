@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import type { AllergenState } from '@/lib/allergens';
 
 export type IngredientFormInput = {
   name: string;
@@ -11,6 +12,7 @@ export type IngredientFormInput = {
   unit: string | null;
   category: string | null;
   current_price: number | null;
+  allergens: AllergenState;
 };
 
 export type PriceUpdateInput = {
@@ -75,6 +77,7 @@ export async function createIngredient(
       category: input.category?.trim() || null,
       current_price: input.current_price,
       last_seen_at: input.current_price != null ? now : null,
+      allergens: input.allergens as unknown as object,
     })
     .select('id')
     .single();
@@ -122,6 +125,7 @@ export async function updateIngredient(
       spec: input.spec?.trim() || null,
       unit: input.unit?.trim() || null,
       category: input.category?.trim() || null,
+      allergens: input.allergens as unknown as object,
     })
     .eq('id', ingredientId);
   if (error) return { ok: false, error: error.message };

@@ -6,6 +6,7 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { IngredientForm, type SupplierOption } from '../IngredientForm';
 import { PriceUpdateForm } from '../PriceUpdateForm';
+import { parseAllergens } from '@/lib/allergens';
 
 export const metadata = { title: 'Bank ingredient — Palatable' };
 
@@ -40,7 +41,7 @@ export default async function BankIngredientDetailPage({
     supabase
       .from('ingredients')
       .select(
-        'id, site_id, supplier_id, name, spec, unit, category, current_price, last_seen_at, suppliers:supplier_id (name)',
+        'id, site_id, supplier_id, name, spec, unit, category, current_price, last_seen_at, allergens, suppliers:supplier_id (name)',
       )
       .eq('id', id)
       .single(),
@@ -72,8 +73,10 @@ export default async function BankIngredientDetailPage({
     category: string | null;
     current_price: number | null;
     last_seen_at: string | null;
+    allergens: unknown;
     suppliers: { name: string } | null;
   };
+  const allergens = parseAllergens(ing.allergens);
 
   if (ing.site_id !== ctx.siteId) notFound();
 
@@ -265,7 +268,7 @@ export default async function BankIngredientDetailPage({
       )}
 
       <section className="mb-10">
-        <SectionHead title="Edit details" meta="name · supplier · spec · unit" />
+        <SectionHead title="Edit details" meta="name · supplier · spec · unit · allergens" />
         <IngredientForm
           mode="edit"
           ingredientId={ing.id}
@@ -276,6 +279,7 @@ export default async function BankIngredientDetailPage({
             unit: ing.unit,
             category: ing.category,
             current_price: ing.current_price,
+            allergens,
           }}
           suppliers={supplierOptions}
         />

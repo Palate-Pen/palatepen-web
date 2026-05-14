@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import type { AllergenState } from '@/lib/allergens';
 
 export type MenuSection =
   | 'starters'
@@ -28,6 +29,8 @@ export type RecipeFormInput = {
   portion_per_cover: number | null;
   sell_price: number | null;
   notes: string | null;
+  allergens: AllergenState;
+  locked: boolean;
   ingredients: Array<{
     name: string;
     qty: number;
@@ -113,6 +116,8 @@ export async function createRecipe(
       portion_per_cover: input.portion_per_cover,
       sell_price: input.sell_price,
       notes: input.notes?.trim() || null,
+      allergens: input.allergens as unknown as object,
+      locked: input.locked,
     })
     .select('id')
     .single();
@@ -174,6 +179,8 @@ export async function updateRecipe(
       portion_per_cover: input.portion_per_cover,
       sell_price: input.sell_price,
       notes: input.notes?.trim() || null,
+      allergens: input.allergens as unknown as object,
+      locked: input.locked,
     })
     .eq('id', recipeId);
   if (updErr) return { ok: false, error: updErr.message };

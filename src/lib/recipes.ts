@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { parseAllergens, type AllergenState } from '@/lib/allergens';
 
 export type RecipeIngredient = {
   id: string;
@@ -24,6 +25,9 @@ export type Recipe = {
    *  recipe-staleness detector + Margins page drift calc. */
   cost_baseline: number | null;
   costed_at: string | null;
+  allergens: AllergenState;
+  locked: boolean;
+  photo_url: string | null;
   ingredients: RecipeIngredient[];
   /** Sum of line_cost where present; free-text ingredients contribute 0. */
   total_cost: number;
@@ -40,7 +44,7 @@ export async function getRecipe(
   const { data: r } = await supabase
     .from('recipes')
     .select(
-      'id, site_id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at',
+      'id, site_id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url',
     )
     .eq('id', recipeId)
     .is('archived_at', null)
@@ -105,6 +109,9 @@ export async function getRecipe(
     notes: (r.notes as string | null) ?? null,
     cost_baseline: r.cost_baseline == null ? null : Number(r.cost_baseline),
     costed_at: (r.costed_at as string | null) ?? null,
+    allergens: parseAllergens(r.allergens),
+    locked: Boolean(r.locked),
+    photo_url: (r.photo_url as string | null) ?? null,
     ingredients: rIngs,
     total_cost: totalCost,
     cost_per_cover: costPerCover,
@@ -118,7 +125,7 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
   const { data: recipes, error: recipesErr } = await supabase
     .from('recipes')
     .select(
-      'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at',
+      'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url',
     )
     .eq('site_id', siteId)
     .is('archived_at', null)
@@ -198,6 +205,9 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
       cost_baseline:
         r.cost_baseline == null ? null : Number(r.cost_baseline),
       costed_at: (r.costed_at as string | null) ?? null,
+      allergens: parseAllergens(r.allergens),
+      locked: Boolean(r.locked),
+      photo_url: (r.photo_url as string | null) ?? null,
       ingredients: rIngs,
       total_cost: totalCost,
       cost_per_cover: costPerCover,

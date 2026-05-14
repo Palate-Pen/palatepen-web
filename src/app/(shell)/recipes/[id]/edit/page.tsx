@@ -39,6 +39,8 @@ export default async function EditRecipePage({
     portion_per_cover: recipe.portion_per_cover,
     sell_price: recipe.sell_price,
     notes: recipe.notes,
+    allergens: recipe.allergens,
+    locked: recipe.locked,
     ingredients: recipe.ingredients.map((i) => ({
       name: i.name,
       qty: i.qty,

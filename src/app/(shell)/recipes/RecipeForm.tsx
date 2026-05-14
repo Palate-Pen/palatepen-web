@@ -11,6 +11,8 @@ import {
   type MenuSection,
   type RecipeFormInput,
 } from './actions';
+import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
+import { AllergenPanel } from '@/components/allergens/AllergenPanel';
 
 export type BankIngredientOption = {
   id: string;
@@ -71,6 +73,8 @@ export function RecipeForm({
     portion_per_cover: number | null;
     sell_price: number | null;
     notes: string | null;
+    allergens: AllergenState;
+    locked: boolean;
     ingredients: Array<{
       name: string;
       qty: number;
@@ -97,6 +101,10 @@ export function RecipeForm({
     initial?.sell_price != null ? String(initial.sell_price) : '',
   );
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [allergens, setAllergens] = useState<AllergenState>(
+    initial?.allergens ?? { ...EMPTY_ALLERGENS },
+  );
+  const [locked, setLocked] = useState<boolean>(initial?.locked ?? false);
   const [rows, setRows] = useState<IngredientRow[]>(
     initial && initial.ingredients.length > 0
       ? initial.ingredients.map((i) => ({
@@ -184,6 +192,8 @@ export function RecipeForm({
       portion_per_cover: portionNum,
       sell_price: priceNum,
       notes: notes.trim() || null,
+      allergens,
+      locked,
       ingredients,
     };
   }
@@ -318,6 +328,17 @@ export function RecipeForm({
       </Section>
 
       <Section
+        title="Allergens"
+        sub="UK FIR 14 mandatory allergens. Set the dish-level state — chef-edited, overrides what's inherited from Bank ingredients."
+      >
+        <AllergenPanel
+          value={allergens}
+          onChange={setAllergens}
+          readOnly={locked}
+        />
+      </Section>
+
+      <Section
         title="Ingredients"
         sub="Type a name. If it matches an ingredient in The Bank, the cost flows live. Anything else is free-text — useful for new ingredients you'll bank later."
       >
@@ -353,7 +374,7 @@ export function RecipeForm({
       )}
 
       <div className="flex items-center justify-between gap-3 flex-wrap pt-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Link
             href={recipeId ? `/recipes/${recipeId}` : '/recipes'}
             className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
@@ -370,6 +391,22 @@ export function RecipeForm({
               {archiving ? 'Archiving…' : 'Archive recipe'}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setLocked((v) => !v)}
+            disabled={pending || archiving}
+            className={
+              'font-display font-semibold text-xs tracking-[0.18em] uppercase transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-40 ' +
+              (locked ? 'text-gold hover:text-gold-dark' : 'text-muted hover:text-gold')
+            }
+            title={
+              locked
+                ? 'Unlock to allow edits'
+                : 'Lock to prevent accidental edits'
+            }
+          >
+            {locked ? '🔒 Locked' : 'Lock recipe'}
+          </button>
         </div>
         <button
           type="button"

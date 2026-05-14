@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getRecipe, type RecipeIngredient } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { ALLERGENS } from '@/lib/allergens';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -139,6 +140,79 @@ export default async function RecipeDetailPage({
           </p>
         </div>
       )}
+
+      <section className="mt-10">
+        <SectionHead
+          title="Allergens"
+          meta={
+            recipe.allergens.contains.length === 0 &&
+            recipe.allergens.mayContain.length === 0
+              ? 'none declared'
+              : `${recipe.allergens.contains.length} contains · ${recipe.allergens.mayContain.length} may`
+          }
+        />
+        {recipe.allergens.contains.length === 0 &&
+        recipe.allergens.mayContain.length === 0 ? (
+          <div className="bg-card border border-rule px-10 py-8 text-center">
+            <p className="font-serif italic text-muted">
+              No allergens declared. Edit the recipe to capture the UK FIR mandatory 14.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-card border border-rule px-7 py-6">
+            {recipe.allergens.contains.length > 0 && (
+              <div className="mb-4">
+                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-urgent mb-2">
+                  Contains
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {recipe.allergens.contains.map((k) => {
+                    const a = ALLERGENS.find((x) => x.key === k);
+                    return (
+                      <span
+                        key={k}
+                        className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-2.5 py-1 bg-urgent/10 text-urgent border border-urgent/40"
+                      >
+                        {a?.short ?? k.toUpperCase()} · {a?.label ?? k}
+                      </span>
+                    );
+                  })}
+                </div>
+                {recipe.allergens.nutTypes.length > 0 && (
+                  <div className="font-serif italic text-xs text-muted">
+                    Specific tree nuts: {recipe.allergens.nutTypes.join(', ')}
+                  </div>
+                )}
+                {recipe.allergens.glutenTypes.length > 0 && (
+                  <div className="font-serif italic text-xs text-muted">
+                    Specific cereals: {recipe.allergens.glutenTypes.join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+            {recipe.allergens.mayContain.length > 0 && (
+              <div>
+                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-attention mb-2">
+                  May contain (cross-contamination)
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {recipe.allergens.mayContain.map((k) => {
+                    const a = ALLERGENS.find((x) => x.key === k);
+                    return (
+                      <span
+                        key={k}
+                        className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-2.5 py-1 bg-attention/10 text-attention border border-attention/40 border-dashed"
+                      >
+                        {a?.short ?? k.toUpperCase()} · {a?.label ?? k}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       <section className="mt-10">
         <SectionHead

@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getRecipes, type Recipe } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { AllergenChips } from '@/components/allergens/AllergenPanel';
 
 export const metadata = { title: 'Recipes — Palatable' };
 
@@ -143,12 +144,26 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
       className="bg-card border border-rule cursor-pointer transition-all hover:border-gold hover:shadow-[0_4px_16px_rgba(26,22,18,0.08)] flex flex-col"
     >
       <div className="px-6 py-6 border-b border-rule">
-        <div className="font-serif font-semibold text-2xl text-ink leading-tight">
+        <div className="font-serif font-semibold text-2xl text-ink leading-tight flex items-center gap-2">
           {recipe.name}
+          {recipe.locked && (
+            <span
+              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold"
+              title="Locked — edits gated"
+            >
+              🔒
+            </span>
+          )}
         </div>
         {meta && (
           <div className="text-xs text-muted mt-2 tracking-[0.02em]">
             {meta}
+          </div>
+        )}
+        {(recipe.allergens.contains.length > 0 ||
+          recipe.allergens.mayContain.length > 0) && (
+          <div className="mt-3">
+            <AllergenChips value={recipe.allergens} size="sm" />
           </div>
         )}
       </div>

@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createIngredient, updateIngredient } from './actions';
+import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
+import { AllergenPanel } from '@/components/allergens/AllergenPanel';
 
 export type SupplierOption = {
   id: string;
@@ -48,6 +50,7 @@ export function IngredientForm({
     unit: string | null;
     category: string | null;
     current_price: number | null;
+    allergens: AllergenState;
   };
   suppliers: SupplierOption[];
 }) {
@@ -61,6 +64,9 @@ export function IngredientForm({
   const [category, setCategory] = useState(initial?.category ?? '');
   const [currentPrice, setCurrentPrice] = useState<string>(
     initial?.current_price != null ? String(initial.current_price) : '',
+  );
+  const [allergens, setAllergens] = useState<AllergenState>(
+    initial?.allergens ?? { ...EMPTY_ALLERGENS },
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -92,6 +98,7 @@ export function IngredientForm({
               unit: unit.trim() || null,
               category: category.trim() || null,
               current_price: priceNum,
+              allergens,
             })
           : await updateIngredient(ingredientId!, {
               name: trimmedName,
@@ -99,6 +106,7 @@ export function IngredientForm({
               spec: spec.trim() || null,
               unit: unit.trim() || null,
               category: category.trim() || null,
+              allergens,
             });
       if (!res.ok) {
         setError(humaniseError(res.error));
@@ -197,6 +205,16 @@ export function IngredientForm({
             />
           </Field>
         )}
+      </div>
+
+      <div className="pt-2 border-t border-rule-soft">
+        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+          Allergens
+        </div>
+        <p className="font-serif italic text-xs text-muted mb-3">
+          Set the FIR allergens at the Bank level. Every recipe that links to this ingredient inherits them automatically.
+        </p>
+        <AllergenPanel value={allergens} onChange={setAllergens} />
       </div>
 
       {error && (
