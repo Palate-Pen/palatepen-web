@@ -41,7 +41,7 @@ export default function MenusPage() {
     <div className="px-14 pt-12 pb-20 max-w-[1000px]">
       <div className="flex justify-between items-start mb-8">
         <div className="flex-1">
-          <h1 className="font-serif text-4xl text-ink mb-2">Today's Menu</h1>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-2">Today's Menu</h1>
           <p className="font-serif italic text-base text-muted">
             Thursday 14 May · 142 covers forecast
           </p>

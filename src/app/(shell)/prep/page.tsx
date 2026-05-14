@@ -232,8 +232,8 @@ export default function PrepPage() {
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             What's Getting Made Today
           </div>
-          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
-            Today's <em className="text-gold not-italic font-medium italic">prep</em>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+            Today's <em className="text-gold font-semibold not-italic">prep</em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">
             Twelve items across four stations. Four done, three in progress, five to go.
@@ -411,7 +411,7 @@ function KpiCard({
       </div>
       <div
         className={
-          'font-serif font-medium text-2xl leading-none tracking-[-0.015em] ' +
+          'font-serif font-medium text-2xl leading-none ' +
           (tone === 'healthy'
             ? 'text-healthy'
             : tone === 'attention'

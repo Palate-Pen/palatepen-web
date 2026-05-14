@@ -123,8 +123,8 @@ export default async function StockSuppliersPage() {
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             The Flow Of Stuff
           </div>
-          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
-            <em className="text-gold not-italic font-medium italic">
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+            <em className="text-gold font-semibold not-italic">
               Stock & Suppliers
             </em>
           </h1>
@@ -379,7 +379,7 @@ function Kpi({
       </div>
       <div
         className={
-          'font-serif font-medium text-2xl leading-none tracking-[-0.015em] ' +
+          'font-serif font-medium text-2xl leading-none ' +
           (tone === 'attention'
             ? 'text-attention'
             : tone === 'healthy'

@@ -39,7 +39,7 @@ export default async function OnboardingPage({
         />
       </div>
 
-      <h1 className="font-serif text-4xl mb-3">Kitchen Name</h1>
+      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] mb-3">Kitchen Name</h1>
       <p className="font-serif italic text-sm text-muted mb-8">
         Step 1 of 5 · what&apos;s your kitchen called?
       </p>

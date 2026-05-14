@@ -17,7 +17,7 @@ const services: Service[] = [
 export default function ConnectionsPage() {
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1000px]">
-      <h1 className="font-serif text-4xl mb-8 text-ink">Integrations</h1>
+      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] mb-8 text-ink">Integrations</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {services.map((s) => (
           <ServiceCard key={s.name} service={s} />

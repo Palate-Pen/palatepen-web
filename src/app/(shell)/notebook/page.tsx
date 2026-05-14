@@ -240,9 +240,9 @@ export default function NotebookPage() {
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             Where The Thinking Lives
           </div>
-          <h1 className="font-serif text-4xl text-ink leading-[1.05] tracking-[-0.015em]">
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
             Your{' '}
-            <em className="text-gold not-italic font-medium italic">Notebook</em>
+            <em className="text-gold font-semibold not-italic">Notebook</em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">
             Forty-seven entries this year. Three with seasonal ingredients on the move.

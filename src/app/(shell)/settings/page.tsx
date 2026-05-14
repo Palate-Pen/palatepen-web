@@ -10,7 +10,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[800px]">
-      <h1 className="font-serif text-4xl text-ink mb-8">Settings</h1>
+      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">Settings</h1>
 
       <AccessibilitySettings />
 

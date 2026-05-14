@@ -2,24 +2,25 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { NavIcon, type NavIconName } from './NavIcons';
 
-type NavItem = { href: string; label: string };
+type NavItem = { href: string; label: string; icon: NavIconName };
 
 const KITCHEN: NavItem[] = [
-  { href: '/', label: 'Home' },
-  { href: '/prep', label: 'Prep' },
-  { href: '/recipes', label: 'Recipes' },
-  { href: '/menus', label: 'Menus' },
-  { href: '/margins', label: 'Margins' },
-  { href: '/stock-suppliers', label: 'Stock & Suppliers' },
-  { href: '/notebook', label: 'Notebook' },
+  { href: '/', label: 'Home', icon: 'home' },
+  { href: '/prep', label: 'Prep', icon: 'prep' },
+  { href: '/recipes', label: 'Recipes', icon: 'recipes' },
+  { href: '/menus', label: 'Menus', icon: 'menus' },
+  { href: '/margins', label: 'Margins', icon: 'margins' },
+  { href: '/stock-suppliers', label: 'Stock & Suppliers', icon: 'stock-suppliers' },
+  { href: '/notebook', label: 'Notebook', icon: 'notebook' },
 ];
 
-const INTELLIGENCE: NavItem[] = [{ href: '/inbox', label: 'Inbox' }];
+const INTELLIGENCE: NavItem[] = [{ href: '/inbox', label: 'Inbox', icon: 'inbox' }];
 
 const ACCOUNT: NavItem[] = [
-  { href: '/settings', label: 'Settings' },
-  { href: '/connections', label: 'Connections' },
+  { href: '/settings', label: 'Settings', icon: 'settings' },
+  { href: '/connections', label: 'Connections', icon: 'connections' },
 ];
 
 export function Sidebar({ kitchenName }: { kitchenName: string }) {
@@ -28,7 +29,7 @@ export function Sidebar({ kitchenName }: { kitchenName: string }) {
       <div className="h-[76px] px-6 border-b border-rule flex items-center flex-shrink-0">
         <Link
           href="/"
-          className="font-serif text-xl font-medium tracking-[0.16em] uppercase text-ink"
+          className="font-display text-xl font-semibold tracking-[0.16em] uppercase text-ink"
         >
           <span>P</span>
           <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
@@ -37,7 +38,7 @@ export function Sidebar({ kitchenName }: { kitchenName: string }) {
       </div>
 
       <div className="px-6 pt-3 pb-1">
-        <div className="font-display text-xs font-medium tracking-[0.4em] uppercase text-muted truncate">
+        <div className="font-display text-xs font-medium tracking-[0.32em] uppercase text-muted truncate">
           {kitchenName}
         </div>
       </div>
@@ -69,7 +70,7 @@ function Section({ label, items }: { label: string; items: NavItem[] }) {
   );
 }
 
-function NavLink({ href, label }: NavItem) {
+function NavLink({ href, label, icon }: NavItem) {
   const pathname = usePathname();
   const isActive =
     href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -77,13 +78,19 @@ function NavLink({ href, label }: NavItem) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3.5 px-6 py-2.5 border-l-2 transition-colors font-serif text-base font-medium tracking-[0.03em] ${
+      className={`flex items-center gap-3 px-6 py-2.5 border-l-2 transition-colors font-display text-xs font-semibold tracking-[0.18em] uppercase ${
         isActive
           ? 'border-l-gold bg-gold-bg text-ink'
           : 'border-l-transparent text-ink-soft hover:border-l-gold/40 hover:bg-gold-bg hover:text-ink'
       }`}
     >
-      {label}
+      <NavIcon
+        name={icon}
+        className={`w-[18px] h-[18px] flex-shrink-0 transition-colors ${
+          isActive ? 'text-gold' : 'text-muted'
+        }`}
+      />
+      <span className="leading-tight">{label}</span>
     </Link>
   );
 }

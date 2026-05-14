@@ -21,7 +21,7 @@ export default async function HomePage() {
         <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
           {tod.eyebrow}
         </div>
-        <h1 className="font-serif text-4xl md:text-4xl leading-[1.05] tracking-[-0.015em] text-ink">
+        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] md:text-4xl text-ink">
           {tod.greeting},{' '}
           <em className="text-gold font-medium">{ctx.firstName}</em>
           .
@@ -167,7 +167,7 @@ function Kpi({
       <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-muted mb-3">
         {label}
       </div>
-      <div className="font-serif text-3xl font-medium leading-none tracking-[-0.015em] text-ink">
+      <div className="font-serif text-3xl font-medium leading-none text-ink">
         {value}
       </div>
       <div className="font-serif italic text-sm text-muted mt-1.5">
