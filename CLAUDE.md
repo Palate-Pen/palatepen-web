@@ -209,3 +209,12 @@ When in doubt about a product or UX decision, read these first.
 - **Supabase MCP** — configured at project-local scope. Read-only enforced at the Postgres transaction layer (`BEGIN READ ONLY` wrapping all queries — verified 2026-05-14 with a `CREATE TABLE _readonly_probe` that returned SQLSTATE `25006 read_only_sql_transaction`). Scoped to project `xbnsytrcvyayzdxezpha` only. Used for verifying schema, running `SELECT` queries, reading the migrations folder. Migrations still run manually in the Supabase SQL editor per the existing convention.
 - **Misleading tool list.** The Supabase MCP advertises write tools (`execute_sql`, `apply_migration`, `deploy_edge_function`, branch tools) regardless of the `--read-only` flag. They fail at the database layer, not at the MCP boundary. The actual safety boundary is the Postgres role / transaction mode, not tool availability — don't infer read-only-vs-not from which tools are listed.
 - **Future sessions.** Prefer MCP tools over filesystem-only or paste-based workflows when working with repo state or DB schema context. Use the GitHub MCP to verify file contents post-write — that catches the Windows file encoding issues that bit us during the strategy doc work.
+
+## CLAUDE.md size discipline
+
+Keep this file lean — it's loaded on every Claude Code session, and bloat costs tokens. Rules:
+
+- Reference material (vocabularies, completed work, historical entries) goes in `docs/`. CLAUDE.md gets a one-line pointer.
+- The "Recent activity" stub stays terse — three short blocks (last shipped, in flight, next). Don't append; curate. Full detail goes in `docs/progress-log.md` and git commits.
+- New Roadmap phases stay inline only while active. Completed phases move to `docs/roadmap-archive.md` with a one-line pointer in their place.
+- Target: keep CLAUDE.md under 30k chars. If it crosses 40k, audit and extract.
