@@ -4,20 +4,20 @@ import './globals.css';
 
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: ['400', '600'],
+  weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-serif',
 });
 
 const cinzel = Cinzel({
   subsets: ['latin'],
-  weight: ['600'],
+  weight: ['500', '600', '700'],
   variable: '--font-display',
 });
 
 const jost = Jost({
   subsets: ['latin'],
-  weight: ['400', '600'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
 });
 

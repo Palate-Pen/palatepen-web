@@ -22,8 +22,8 @@
     --paper-warm: 242 237 224;
     --card: 255 255 255;
     --card-warm: 253 250 242;
-    --muted: 111 100 80;
-    --muted-soft: 138 125 103;
+    --muted: 95 85 68;
+    --muted-soft: 120 108 88;
     --gold: 184 146 60;
     --gold-light: 201 168 76;
     --gold-dark: 139 105 20;
@@ -68,10 +68,10 @@
   }
 
   html {
-    /* Bumped from browser default 16px to 17px so default body text
+    /* Bumped from browser default 16px to 18px so default body text
        reads larger; chefs scan this in motion. Scale multiplier above
        lets the user push to sm/md/lg. */
-    font-size: calc(17px * var(--font-scale));
+    font-size: calc(18px * var(--font-scale));
   }
 
   html,
@@ -82,5 +82,9 @@
 
   body {
     font-family: var(--font-sans), system-ui, sans-serif;
+    /* Bumped from the browser default 400 so body text reads with more
+       weight on the paper background. Components that explicitly set
+       font-semibold (600) or font-bold (700) override this. */
+    font-weight: 500;
   }
 }
