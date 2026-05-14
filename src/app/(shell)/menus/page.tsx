@@ -1,3 +1,8 @@
+import Link from 'next/link';
+import { getShellContext } from '@/lib/shell/context';
+import { KpiCard } from '@/components/shell/KpiCard';
+import { LookingAhead } from '@/components/shell/LookingAhead';
+
 export const metadata = { title: 'Menus — Palatable' };
 
 type Dish = { name: string; cost: string; portion: string };
@@ -36,29 +41,66 @@ const info = [
   { label: 'Last updated', value: 'Today 09:14 by Jack', tone: 'ink' as const },
 ];
 
-export default function MenusPage() {
+export default async function MenusPage() {
+  const ctx = await getShellContext();
+  const totalDishes = sections.reduce((s, sec) => s + sec.dishes.length, 0);
+
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1000px]">
-      <div className="flex justify-between items-start mb-8">
-        <div className="flex-1">
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-2">Today's Menu</h1>
-          <p className="font-serif italic text-base text-muted">
-            Thursday 14 May · 142 covers forecast
+    <div className="px-14 pt-12 pb-20 max-w-[1200px]">
+      <div className="flex justify-between items-start mb-8 gap-6 flex-wrap">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Today's Service
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-2">
+            Today's <em className="text-gold not-italic font-semibold">Menu</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            Thursday 14 May · 142 covers forecast · the dinner service menu
           </p>
         </div>
-        <div className="flex gap-3">
-          <ActionButton>Edit Menu</ActionButton>
+        <div className="flex gap-3 items-center">
+          <Link
+            href="/manager/menu-builder"
+            className="font-sans font-semibold text-xs tracking-[0.08em] uppercase px-5 py-2.5 border border-gold bg-transparent text-gold hover:bg-gold hover:text-paper transition-colors"
+          >
+            Edit menu →
+          </Link>
           <ActionButton primary>Print</ActionButton>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
+        <KpiCard
+          label="Cost per cover"
+          value="£22.34"
+          sub="all sections summed"
+        />
+        <KpiCard
+          label="Tonight's food cost"
+          value="£3,171.88"
+          sub="142 covers forecast"
+        />
+        <KpiCard
+          label="Menu margin"
+          value="68%"
+          sub="healthy"
+          tone="healthy"
+        />
+        <KpiCard
+          label="Dishes on menu"
+          value={String(totalDishes)}
+          sub={`${sections.length} sections`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {sections.map((s) => (
           <MenuSectionCard key={s.title} section={s} />
         ))}
       </div>
 
-      <div className="bg-card border border-rule px-8 py-7">
+      <div className="bg-card border border-rule px-8 py-6">
         {info.map((row, i) => (
           <div
             key={row.label}
@@ -81,6 +123,8 @@ export default function MenusPage() {
           </div>
         ))}
       </div>
+
+      <LookingAhead siteId={ctx.siteId} surface="menus" />
     </div>
   );
 }

@@ -19,6 +19,7 @@ export type HubSupplyGraphSignal = {
   headline_post: string | null;
   body_md: string;
   action_label: string | null;
+  action_target: string | null;
   action_context: string | null;
 };
 
@@ -162,7 +163,7 @@ export async function getHubSummary(siteId: string): Promise<HubSummary> {
   const { data: signalRows } = await supabase
     .from('forward_signals')
     .select(
-      'id, section_label, severity, headline_pre, headline_em, headline_post, body_md, action_label, action_context, emitted_at',
+      'id, section_label, severity, headline_pre, headline_em, headline_post, body_md, action_label, action_target, action_context, emitted_at',
     )
     .eq('site_id', siteId)
     .eq('target_surface', 'stock-suppliers')
@@ -192,6 +193,7 @@ export async function getHubSummary(siteId: string): Promise<HubSummary> {
         headline_post: (s.headline_post as string | null) ?? null,
         body_md: s.body_md as string,
         action_label: (s.action_label as string | null) ?? null,
+        action_target: (s.action_target as string | null) ?? null,
         action_context: (s.action_context as string | null) ?? null,
       };
     })

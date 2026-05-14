@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getRecipes, type Recipe } from '@/lib/recipes';
+import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 
 export const metadata = { title: 'Recipes — Palatable' };
@@ -14,14 +15,42 @@ const qtyFmt = new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 3,
 });
 
+const DRIFT_THRESHOLD = 0.03; // 3% drift = "needs a look"
+
 export default async function RecipesPage() {
   const ctx = await getShellContext();
   const recipes = await getRecipes(ctx.siteId);
 
+  const costed = recipes.filter((r) => r.cost_per_cover != null);
+  const avgCpc =
+    costed.length > 0
+      ? costed.reduce((s, r) => s + (r.cost_per_cover ?? 0), 0) / costed.length
+      : 0;
+  const drifting = recipes.filter(
+    (r) =>
+      r.cost_baseline != null &&
+      r.cost_per_cover != null &&
+      r.cost_baseline > 0 &&
+      Math.abs((r.cost_per_cover - r.cost_baseline) / r.cost_baseline) >
+        DRIFT_THRESHOLD,
+  ).length;
+  const fullyMatched = recipes.filter(
+    (r) =>
+      r.ingredients.length > 0 &&
+      r.matched_ingredient_count === r.ingredients.length,
+  ).length;
+  const matchPct =
+    recipes.length > 0
+      ? Math.round((fullyMatched / recipes.length) * 100)
+      : 0;
+
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+        Your Recipe Book
+      </div>
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        Recipes
+        <em className="text-gold font-semibold not-italic">Recipes</em>
       </h1>
       <p className="font-serif italic text-lg text-muted mb-8">
         {recipes.length > 0 ? (
@@ -32,6 +61,33 @@ export default async function RecipesPage() {
           <>No recipes yet. Costing will be live the moment you add one.</>
         )}
       </p>
+
+      {recipes.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
+          <KpiCard
+            label="Dishes On The Book"
+            value={String(recipes.length)}
+            sub={costed.length === recipes.length ? 'all costed' : `${costed.length} costed`}
+          />
+          <KpiCard
+            label="Avg Cost / Cover"
+            value={avgCpc > 0 ? `£${avgCpc.toFixed(2)}` : '—'}
+            sub="live from The Bank"
+          />
+          <KpiCard
+            label="Drifting"
+            value={String(drifting)}
+            sub={drifting === 0 ? 'all current' : 'price moved >3% since costed'}
+            tone={drifting > 0 ? 'attention' : undefined}
+          />
+          <KpiCard
+            label="Bank Match"
+            value={`${matchPct}%`}
+            sub={`${fullyMatched}/${recipes.length} fully linked`}
+            tone={matchPct === 100 ? 'healthy' : matchPct >= 70 ? undefined : 'attention'}
+          />
+        </div>
+      )}
 
       {recipes.length === 0 ? (
         <div className="bg-card border border-rule px-10 py-16 text-center">

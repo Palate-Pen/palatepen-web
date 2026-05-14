@@ -470,7 +470,10 @@ function SupplyGraphCard({ signal }: { signal: HubSupplyGraphSignal }) {
       />
       {signal.action_label && (
         <div className="flex items-center justify-between pt-3 border-t border-rule">
-          <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
+          <a
+            href={signal.action_target ?? '#'}
+            className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold hover:text-gold-dark transition-colors"
+          >
             {signal.action_label}
           </a>
           {signal.action_context && (

@@ -1,3 +1,7 @@
+import { getShellContext } from '@/lib/shell/context';
+import { KpiCard } from '@/components/shell/KpiCard';
+import { LookingAhead } from '@/components/shell/LookingAhead';
+
 export const metadata = { title: 'Notebook — Palatable' };
 
 type EntryType = 'voice' | 'photo' | 'sketch' | 'note';
@@ -232,7 +236,14 @@ const tagClass: Record<Tag['kind'], string> = {
   plain: 'bg-paper-warm text-ink-soft border-rule',
 };
 
-export default function NotebookPage() {
+export default async function NotebookPage() {
+  const ctx = await getShellContext();
+  const voiceCount = entries.filter((e) => e.type === 'voice').length;
+  const photoCount = entries.filter((e) => e.type === 'photo').length;
+  const sketchCount = entries.filter((e) => e.type === 'sketch').length;
+  const seasonalCount = entries.filter((e) => e.season != null).length;
+  const totalThisYear = 47;
+
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
@@ -245,7 +256,7 @@ export default function NotebookPage() {
             <em className="text-gold font-semibold not-italic">Notebook</em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">
-            Forty-seven entries this year. Three with seasonal ingredients on the move.
+            {totalThisYear} entries this year. {seasonCards.length} with seasonal ingredients on the move.
           </p>
         </div>
 
@@ -270,6 +281,30 @@ export default function NotebookPage() {
             <path d="M9 11h6M9 14h6M9 17h4" />
           </CaptureButton>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
+        <KpiCard
+          label="Entries This Year"
+          value={String(totalThisYear)}
+          sub="logged thoughts, ideas, voices"
+        />
+        <KpiCard
+          label="Voice Memos"
+          value={String(voiceCount)}
+          sub="quick captures in service"
+        />
+        <KpiCard
+          label="Photos & Sketches"
+          value={String(photoCount + sketchCount)}
+          sub={`${photoCount} photo · ${sketchCount} sketch`}
+        />
+        <KpiCard
+          label="Seasonal Threads"
+          value={String(seasonalCount + seasonCards.length)}
+          sub="ingredients on the move"
+          tone={seasonCards.length > 0 ? 'attention' : undefined}
+        />
       </div>
 
       <section className="mt-2 mb-10">
@@ -312,6 +347,8 @@ export default function NotebookPage() {
           <EntryCard key={i} entry={e} />
         ))}
       </div>
+
+      <LookingAhead siteId={ctx.siteId} surface="notebook" />
     </div>
   );
 }
@@ -377,9 +414,12 @@ function SeasonCard({ card }: { card: typeof seasonCards[number] }) {
         ))}
       </div>
       <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
+        <button
+          type="button"
+          className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold hover:text-gold-dark transition-colors bg-transparent border-0 p-0 cursor-pointer"
+        >
           {card.actionLabel}
-        </a>
+        </button>
         <div className="font-serif italic text-xs text-muted">
           {card.actionContext}
         </div>
