@@ -3,9 +3,11 @@ import { SignOutForm } from '@/components/shell/SignOutForm';
 import { AccessibilitySettings } from '@/components/shell/AccessibilitySettings';
 import { getShellContext } from '@/lib/shell/context';
 import { getUserPreferences, PREFERENCE_META } from '@/lib/preferences';
+import { getAccountPreferences } from '@/lib/account-preferences';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { PreferenceToggle } from './PreferenceToggle';
 import { InboxTokenPanel } from './InboxTokenPanel';
+import { AccountPreferencesPanel } from './AccountPreferencesPanel';
 
 export const metadata = { title: 'Settings — Palatable' };
 
@@ -19,6 +21,7 @@ export default async function SettingsPage() {
     .eq('id', ctx.accountId)
     .single();
   const inboxToken = (accountRow?.inbox_token as string | null) ?? null;
+  const accountPrefs = await getAccountPreferences(ctx.accountId);
   const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
   const isFounder = ctx.email === 'jack@palateandpen.co.uk';
   const isOwner = ctx.role === 'owner';
@@ -59,9 +62,7 @@ export default async function SettingsPage() {
       <AccessibilitySettings />
 
       <Section title="Kitchen Info">
-        <Row label="Kitchen name" value={ctx.kitchenName} />
-        <Row label="Kitchen size" value="Not set" muted />
-        <Row label="Kitchen location" value="Not set" muted />
+        <AccountPreferencesPanel initial={accountPrefs} canEdit={isOwner} />
       </Section>
 
       <Section title="Preferences">

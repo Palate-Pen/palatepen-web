@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { confirmInvoiceAction, rejectInvoiceAction } from './actions';
+import { FlagLineButton } from './FlagLineButton';
 
 export const metadata = { title: 'Invoice — Palatable' };
 
@@ -172,7 +173,7 @@ export default async function InvoiceDetailPage({
 
       <div className="bg-card border border-rule mb-10">
         <div className="hidden md:grid grid-cols-[2fr_90px_100px_100px_100px_60px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
-          {['Line', 'Qty', 'Unit price', 'Line total', 'Bank match', ''].map(
+          {['Line', 'Qty', 'Unit price', 'Line total', 'Bank match', 'Flag'].map(
             (h, i) => (
               <div
                 key={i}
@@ -196,6 +197,8 @@ export default async function InvoiceDetailPage({
               key={l.id}
               line={l}
               last={i === lines.length - 1}
+              invoiceId={invoice.id}
+              invoiceStatus={invoice.status}
             />
           ))
         )}
@@ -306,7 +309,17 @@ function KpiTile({
   );
 }
 
-function LineRow({ line, last }: { line: LineRow; last: boolean }) {
+function LineRow({
+  line,
+  last,
+  invoiceId,
+  invoiceStatus,
+}: {
+  line: LineRow;
+  last: boolean;
+  invoiceId: string;
+  invoiceStatus: InvoiceRow['status'];
+}) {
   const matched = line.ingredient_id != null;
   const flagged =
     (line.discrepancy_qty != null && line.discrepancy_qty !== 0) ||
@@ -357,7 +370,15 @@ function LineRow({ line, last }: { line: LineRow; last: boolean }) {
           </span>
         )}
       </div>
-      <div />
+      <div>
+        <FlagLineButton
+          invoiceId={invoiceId}
+          lineId={line.id}
+          initialQtyShort={line.discrepancy_qty ?? null}
+          initialNote={line.discrepancy_note ?? null}
+          disabled={invoiceStatus === 'confirmed' || invoiceStatus === 'rejected'}
+        />
+      </div>
     </div>
   );
 }

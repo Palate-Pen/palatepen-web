@@ -6,6 +6,7 @@ import { SectionHead } from '@/components/shell/SectionHead';
 import { ALLERGENS } from '@/lib/allergens';
 import { aggregateRecipeNutrition } from '@/lib/nutrition';
 import { NutritionDisplay } from '@/components/nutrition/NutritionDisplay';
+import { ComplianceCheck } from './ComplianceCheck';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -153,15 +154,25 @@ export default async function RecipeDetailPage({
       )}
 
       <section className="mt-10">
-        <SectionHead
-          title="Allergens"
-          meta={
-            recipe.allergens.contains.length === 0 &&
-            recipe.allergens.mayContain.length === 0
-              ? 'none declared'
-              : `${recipe.allergens.contains.length} contains · ${recipe.allergens.mayContain.length} may`
-          }
-        />
+        <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule flex-wrap gap-3">
+          <div className="flex items-baseline gap-4">
+            <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
+              Allergens
+            </div>
+            <div className="font-serif italic text-sm text-muted">
+              {recipe.allergens.contains.length === 0 &&
+              recipe.allergens.mayContain.length === 0
+                ? 'none declared'
+                : `${recipe.allergens.contains.length} contains · ${recipe.allergens.mayContain.length} may`}
+            </div>
+          </div>
+          <ComplianceCheck
+            recipeName={recipe.name}
+            ingredientCount={recipe.ingredients.length}
+            matchedIngredientCount={recipe.matched_ingredient_count}
+            allergens={recipe.allergens}
+          />
+        </div>
         {recipe.allergens.contains.length === 0 &&
         recipe.allergens.mayContain.length === 0 ? (
           <div className="bg-card border border-rule px-10 py-8 text-center">
