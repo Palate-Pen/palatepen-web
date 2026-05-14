@@ -5,8 +5,12 @@ import {
   type PrepStation,
   type PrepStatus,
 } from '@/lib/prep';
+import { getRecipes } from '@/lib/recipes';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
+import { PrepStatusButton } from './PrepStatusButton';
+import { PrepNotesField } from './PrepNotesField';
+import { AddPrepItemDialog } from './AddPrepItemDialog';
 
 export const metadata = { title: 'Prep — Palatable' };
 
@@ -16,30 +20,6 @@ const statusStripe: Record<PrepStatus, string> = {
   not_started: 'before:bg-muted-soft before:opacity-40',
   over_prepped: 'before:bg-attention',
   short: 'before:bg-urgent',
-};
-
-const statusPillColor: Record<PrepStatus, string> = {
-  done: 'text-healthy',
-  in_progress: 'text-gold',
-  not_started: 'text-muted',
-  over_prepped: 'text-attention',
-  short: 'text-urgent',
-};
-
-const statusDotColor: Record<PrepStatus, string> = {
-  done: 'bg-healthy',
-  in_progress: 'bg-gold',
-  not_started: 'bg-muted-soft',
-  over_prepped: 'bg-attention',
-  short: 'bg-urgent',
-};
-
-const statusLabel: Record<PrepStatus, string> = {
-  done: 'Done',
-  in_progress: 'In Progress',
-  not_started: 'Not Started',
-  over_prepped: 'Over-Prepped',
-  short: 'Short',
 };
 
 // Avatar gradients keyed by lowercased assigned_label. Anything else falls
@@ -89,10 +69,16 @@ function pctDone(board: { total_items: number; done: number }): string {
 export default async function PrepPage() {
   const ctx = await getShellContext();
   const today = new Date();
-  const board = await getPrepBoard(ctx.siteId, isoDate(today));
+  const todayIso = isoDate(today);
+  const [board, recipes] = await Promise.all([
+    getPrepBoard(ctx.siteId, todayIso),
+    getRecipes(ctx.siteId),
+  ]);
 
   const days = rollingDays(today);
   const stationCount = board.stations.length;
+  const recipeOptions = recipes.map((r) => ({ id: r.id, name: r.name }));
+  const knownStations = board.stations.map((s) => s.name);
 
   const inProgressChefs = Array.from(
     new Set(
@@ -126,21 +112,11 @@ export default async function PrepPage() {
           </p>
         </div>
 
-        <div className="bg-card border border-rule px-5 py-4 min-w-[240px] flex items-center gap-3.5 cursor-pointer transition-all hover:border-rule-gold hover:-translate-y-px">
-          <div className="w-10 h-10 border border-gold rounded-sm flex items-center justify-center text-gold bg-gold-bg flex-shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </div>
-          <div>
-            <div className="font-serif font-semibold text-base text-ink leading-tight">
-              Add prep item
-            </div>
-            <div className="font-serif italic text-xs text-muted mt-0.5">
-              recipe-linked or one-off
-            </div>
-          </div>
-        </div>
+        <AddPrepItemDialog
+          prepDate={todayIso}
+          recipes={recipeOptions}
+          knownStations={knownStations}
+        />
       </div>
 
       <div className="flex gap-2 items-center mb-8 flex-wrap">
@@ -367,7 +343,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
   return (
     <div
       className={
-        'relative grid grid-cols-1 md:grid-cols-[minmax(220px,1.4fr)_130px_110px_140px_minmax(140px,1fr)_60px] gap-5 px-7 py-4 items-center cursor-pointer transition-colors hover:bg-card-warm before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
+        'relative grid grid-cols-1 md:grid-cols-[minmax(220px,1.4fr)_130px_110px_140px_minmax(140px,1fr)_60px] gap-5 px-7 py-4 items-center transition-colors before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
         statusStripe[item.status] +
         (last ? '' : ' border-b border-rule-soft')
       }
@@ -435,32 +411,15 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
         </div>
       </div>
 
-      <div
-        className={
-          'inline-flex items-center gap-1.5 font-sans font-semibold text-xs tracking-[0.08em] uppercase ' +
-          statusPillColor[item.status]
-        }
-      >
-        <span
-          className={'w-1.5 h-1.5 rounded-full ' + statusDotColor[item.status]}
-        />
-        {statusLabel[item.status]}
+      <div>
+        <PrepStatusButton itemId={item.id} status={item.status} />
       </div>
 
-      <div
-        className={
-          'font-serif italic text-xs leading-snug ' +
-          (item.notes ? 'text-ink-soft' : 'text-muted-soft')
-        }
-      >
-        {item.notes ?? 'Add note'}
+      <div>
+        <PrepNotesField itemId={item.id} initial={item.notes} />
       </div>
 
-      <div className="text-muted-soft justify-self-end">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M9 6l6 6-6 6" />
-        </svg>
-      </div>
+      <div />
     </div>
   );
 }
