@@ -49,7 +49,7 @@ export default async function OwnerSettingsPage() {
     }>;
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1000px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1000px] mx-auto">
       <OwnerPageHeader
         eyebrow="The Business, Not The Kitchen"
         title="Settings"

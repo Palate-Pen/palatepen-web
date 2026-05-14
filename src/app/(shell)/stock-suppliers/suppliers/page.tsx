@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getSuppliers, type SupplierRow } from '@/lib/suppliers';
 import { KpiCard } from '@/components/shell/KpiCard';
@@ -24,7 +25,7 @@ export default async function SuppliersPage() {
   );
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -138,7 +139,10 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
           : 'text-muted';
 
   return (
-    <div className="bg-card border border-rule px-7 py-6 flex flex-col">
+    <Link
+      href={`/stock-suppliers/suppliers/${supplier.id}`}
+      className="bg-card border border-rule px-7 py-6 flex flex-col hover:border-rule-gold transition-colors"
+    >
       <div className="flex items-baseline justify-between mb-2">
         <div className="font-serif font-semibold text-lg text-ink">
           {supplier.name}
@@ -168,7 +172,7 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
           tone={supplier.flagged_count > 0 ? 'attention' : undefined}
         />
       </div>
-    </div>
+    </Link>
   );
 }
 

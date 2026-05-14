@@ -59,7 +59,7 @@ export default async function MarginDetailPage({
     recipe.sell_price > 0;
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1200px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1200px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Margins ·{' '}
         {recipe.menu_section

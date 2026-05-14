@@ -85,7 +85,7 @@ export default async function OwnerSitesPage() {
   );
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
       <OwnerPageHeader
         eyebrow="Every Kitchen You Own"
         title="Sites"

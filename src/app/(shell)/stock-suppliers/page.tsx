@@ -45,7 +45,7 @@ export default async function StockSuppliersPage() {
       : `${summary.waste_change_pct >= 0 ? 'up' : 'down'} ${Math.abs(summary.waste_change_pct).toFixed(0)}% vs last week`;
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">

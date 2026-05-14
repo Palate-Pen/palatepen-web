@@ -27,7 +27,7 @@ export default async function SettingsPage() {
   const isOwner = ctx.role === 'owner';
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[800px]">
+    <div className="px-14 pt-12 pb-20 max-w-[800px] mx-auto">
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">Settings</h1>
 
       {(canSeeManager || isFounder) && (

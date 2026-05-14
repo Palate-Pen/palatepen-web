@@ -2,7 +2,7 @@ export const metadata = { title: 'Admin · System Health — Palatable' };
 
 export default function AdminSystemPage() {
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1000px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1000px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Founder Admin
       </div>

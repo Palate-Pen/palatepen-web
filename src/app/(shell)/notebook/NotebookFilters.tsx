@@ -23,19 +23,47 @@ const FILTERS: Array<{ key: FilterKey; label: string; divider?: boolean }> = [
   { key: 'shared', label: 'Shared with brigade' },
 ];
 
+function collectTags(entries: NotebookEntry[]): string[] {
+  const counts = new Map<string, number>();
+  for (const e of entries) {
+    for (const t of e.tags) {
+      const key = t.text.toLowerCase().trim();
+      if (!key) continue;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([k]) => k)
+    .slice(0, 16);
+}
+
 export function NotebookFilters({ entries }: { entries: NotebookEntry[] }) {
   const [active, setActive] = useState<FilterKey>('all');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+
+  const tags = useMemo(() => collectTags(entries), [entries]);
 
   const filtered = useMemo(() => {
-    if (active === 'all') return entries;
-    if (active === 'seasonal') return entries.filter((e) => e.season_label != null);
-    if (active === 'shared') return entries.filter((e) => e.shared);
-    return entries.filter((e) => e.kind === active);
-  }, [active, entries]);
+    let pool = entries;
+    if (active === 'seasonal') {
+      pool = pool.filter((e) => e.season_label != null);
+    } else if (active === 'shared') {
+      pool = pool.filter((e) => e.shared);
+    } else if (active !== 'all') {
+      pool = pool.filter((e) => e.kind === active);
+    }
+    if (tagFilter) {
+      pool = pool.filter((e) =>
+        e.tags.some((t) => t.text.toLowerCase().trim() === tagFilter),
+      );
+    }
+    return pool;
+  }, [active, entries, tagFilter]);
 
   return (
     <>
-      <div className="flex gap-2 flex-wrap items-center mb-8 pb-4 border-b border-rule">
+      <div className="flex gap-2 flex-wrap items-center mb-4 pb-4 border-b border-rule">
         {FILTERS.map((f) => (
           <span key={f.key} className="flex items-center gap-2">
             {f.divider && <span className="text-muted-soft">·</span>}
@@ -54,6 +82,45 @@ export function NotebookFilters({ entries }: { entries: NotebookEntry[] }) {
           </span>
         ))}
       </div>
+
+      {tags.length > 0 && (
+        <div className="mb-8 pb-4 border-b border-rule">
+          <div className="flex items-center gap-3 mb-2 flex-wrap">
+            <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+              Filter by tag
+            </span>
+            {tagFilter && (
+              <button
+                type="button"
+                onClick={() => setTagFilter(null)}
+                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors bg-transparent border-0 p-0 cursor-pointer"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((t) => {
+              const isActive = tagFilter === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTagFilter(isActive ? null : t)}
+                  className={
+                    'font-sans text-xs px-2 py-1 border transition-colors ' +
+                    (isActive
+                      ? 'bg-gold border-gold text-paper'
+                      : 'bg-paper-warm text-ink-soft border-rule hover:border-gold hover:text-ink')
+                  }
+                >
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState filterKey={active} />

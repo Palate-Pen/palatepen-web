@@ -39,7 +39,7 @@ export default async function InvoicesListPage() {
   ).length;
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -243,8 +243,16 @@ function InvoiceRow({
       }
     >
       <div>
-        <div className="font-serif font-semibold text-base text-ink">
+        <div className="font-serif font-semibold text-base text-ink flex items-center gap-2 flex-wrap">
           {row.supplier_name ?? 'Unknown supplier'}
+          {row.source === 'email' && (
+            <span
+              title="Forwarded from supplier email"
+              className="font-display font-semibold text-[9px] tracking-[0.18em] uppercase px-1.5 py-0.5 bg-gold-bg text-gold-dark border border-gold/40"
+            >
+              ✉ Email
+            </span>
+          )}
         </div>
         {row.invoice_number && (
           <div className="font-serif italic text-xs text-muted mt-0.5">

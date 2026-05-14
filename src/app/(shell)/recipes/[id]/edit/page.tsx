@@ -51,7 +51,7 @@ export default async function EditRecipePage({
   };
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[900px]">
+    <div className="px-14 pt-12 pb-20 max-w-[900px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Recipes · Edit
       </div>

@@ -84,11 +84,64 @@ function formatDate(now: Date): string {
   return `${day}, ${date} · ${time}`;
 }
 
-export function Topbar() {
+const VIEW_LABEL: Record<string, string> = {
+  chef: 'Chef view',
+  manager: 'Manager view',
+  owner: 'Owner view',
+  admin: 'Founder',
+};
+
+function tierLabel(tier: string): string {
+  if (!tier) return 'Free';
+  return tier[0].toUpperCase() + tier.slice(1).toLowerCase();
+}
+
+export function Topbar({
+  tier = 'free',
+  view = 'chef',
+  isFounder = false,
+  role = 'chef',
+  email = '',
+}: {
+  tier?: string;
+  view?: 'chef' | 'manager' | 'owner' | 'admin';
+  isFounder?: boolean;
+  role?: 'owner' | 'manager' | 'chef' | 'viewer';
+  email?: string;
+} = {}) {
   const pathname = usePathname();
   const breadcrumb = resolveBreadcrumb(pathname);
   const back = resolveBackLink(pathname);
   const [dateLabel, setDateLabel] = useState('');
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+
+  const accessibleViews: Array<{
+    key: 'chef' | 'manager' | 'owner' | 'admin';
+    label: string;
+    href: string;
+  }> = [{ key: 'chef', label: VIEW_LABEL.chef, href: '/' }];
+  if (role === 'manager' || role === 'owner') {
+    accessibleViews.push({
+      key: 'manager',
+      label: VIEW_LABEL.manager,
+      href: '/manager',
+    });
+  }
+  if (role === 'owner') {
+    accessibleViews.push({
+      key: 'owner',
+      label: VIEW_LABEL.owner,
+      href: '/owner',
+    });
+  }
+  if (isFounder || email === 'jack@palateandpen.co.uk') {
+    accessibleViews.push({
+      key: 'admin',
+      label: VIEW_LABEL.admin,
+      href: '/admin',
+    });
+  }
+  const canSwitchView = accessibleViews.length > 1;
 
   useEffect(() => {
     const update = () => setDateLabel(formatDate(new Date()));
@@ -127,14 +180,77 @@ export function Topbar() {
           {breadcrumb}
         </div>
       </div>
-      <div className="flex items-center gap-7">
+      <div className="flex items-center gap-5">
         <div className="flex items-center gap-2 font-display text-xs font-semibold tracking-[0.3em] uppercase text-healthy">
           <span className="w-1.5 h-1.5 rounded-full bg-healthy animate-pulse" />
           Live
         </div>
+        <div className="hidden md:flex items-center gap-2 relative">
+          {isFounder ? (
+            <span
+              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border bg-gold-bg text-gold-dark border-gold/40"
+              title="Founder demo account · zero cost · not billable"
+            >
+              Founder
+            </span>
+          ) : (
+            <Link
+              href="/settings#tier"
+              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border bg-paper-warm text-ink-soft border-rule hover:border-gold hover:text-gold transition-colors"
+              title={`${tierLabel(tier)} tier · click to manage`}
+            >
+              {tierLabel(tier)}
+              <span className="ml-1 text-muted-soft">↑</span>
+            </Link>
+          )}
+
+          {canSwitchView ? (
+            <button
+              type="button"
+              onClick={() => setViewMenuOpen((v) => !v)}
+              onBlur={() => setTimeout(() => setViewMenuOpen(false), 120)}
+              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-ink text-paper hover:bg-ink-soft transition-colors inline-flex items-center gap-1"
+              title="Switch surface"
+              aria-haspopup="menu"
+              aria-expanded={viewMenuOpen}
+            >
+              {VIEW_LABEL[view] ?? 'View'}
+              <span className="text-paper/60">▾</span>
+            </button>
+          ) : (
+            <span
+              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-ink text-paper"
+              title={`Viewing as ${VIEW_LABEL[view]}`}
+            >
+              {VIEW_LABEL[view] ?? 'View'}
+            </span>
+          )}
+
+          {canSwitchView && viewMenuOpen && (
+            <div className="absolute top-full right-0 mt-2 bg-card border border-rule shadow-[0_8px_24px_rgba(26,22,18,0.12)] min-w-[180px] z-20">
+              {accessibleViews.map((v) => (
+                <Link
+                  key={v.key}
+                  href={v.href}
+                  className={
+                    'block px-4 py-2.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase transition-colors ' +
+                    (v.key === view
+                      ? 'bg-gold-bg text-gold-dark'
+                      : 'text-ink-soft hover:bg-paper-warm hover:text-ink')
+                  }
+                >
+                  {v.label}
+                  {v.key === view && (
+                    <span className="ml-2 text-gold">✓</span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
         <div
           suppressHydrationWarning
-          className="font-sans text-sm font-normal text-muted tracking-[0.02em]"
+          className="font-sans text-sm font-normal text-muted tracking-[0.02em] hidden lg:block"
         >
           {dateLabel}
         </div>

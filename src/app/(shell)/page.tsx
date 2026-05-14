@@ -26,7 +26,7 @@ export default async function HomePage() {
   const tod = timeOfDay(new Date());
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1200px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1200px] mx-auto">
       <div className="mb-12">
         <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
           {tod.eyebrow}

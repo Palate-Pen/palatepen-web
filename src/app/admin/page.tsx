@@ -32,7 +32,7 @@ export default async function AdminHomePage() {
   const _ = mrrTrend; // silence unused warning
 
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px]">
+    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
       {/* PAGE HEADER */}
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         The Business
