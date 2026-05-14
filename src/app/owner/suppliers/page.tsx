@@ -5,7 +5,7 @@ export const metadata = { title: 'Suppliers — Owner — Palatable' };
 
 export default function OwnerSuppliersPage() {
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <OwnerPageHeader
         eyebrow="Group Spend, Group Leverage"
         title="Suppliers"

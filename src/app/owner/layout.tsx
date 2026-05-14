@@ -1,15 +1,20 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { Sidebar } from '@/components/shell/Sidebar';
+import { Topbar } from '@/components/shell/Topbar';
+import { SidebarStateProvider } from '@/components/shell/SidebarState';
+import {
+  OWNER_ACCOUNT_ITEMS,
+  OWNER_SECTIONS,
+} from '@/components/shell/nav-config';
 
 /**
- * Owner shell. Sibling of /manager — same pattern: slim eyebrow + role
- * gate, no dense sidebar yet (only the founder uses this surface at
- * the moment; navigation between owner sub-routes happens via the
- * Owner Home page until a real multi-site customer drives sidebar
- * design).
+ * Owner shell. Same Sidebar + Topbar pattern as chef + manager.
+ * Owner-specific nav (8 tabs — Home + Sites live, rest pending design).
+ * Topbar view='owner' so the surface switcher reflects the current view.
  *
- * Role: owner only. Managers / chefs can't see this surface.
+ * Role gate: owner-only. Managers/chefs see "Not your room".
  */
 export default async function OwnerLayout({
   children,
@@ -24,7 +29,7 @@ export default async function OwnerLayout({
 
   const { data: memberships } = await supabase
     .from('memberships')
-    .select('site_id, role, sites:site_id (account_id)')
+    .select('site_id, role, sites:site_id (name, account_id)')
     .eq('user_id', user.id);
 
   const ownerMemberships = (memberships ?? []).filter(
@@ -54,23 +59,53 @@ export default async function OwnerLayout({
     );
   }
 
+  // Derive brand label + account for tier badge from the first owner
+  // membership. Multi-site rollup will fan over all of them once a real
+  // multi-site customer onboards.
+  const firstSite =
+    (ownerMemberships[0].sites as unknown as {
+      name: string;
+      account_id: string;
+    } | null) ?? null;
+  const brandLabel =
+    ownerMemberships.length === 1
+      ? (firstSite?.name ?? 'My Business')
+      : `${ownerMemberships.length} sites`;
+  const accountId = firstSite?.account_id;
+
+  let tier = 'free';
+  let isFounder = false;
+  if (accountId) {
+    const { data: account } = await supabase
+      .from('accounts')
+      .select('tier, is_founder')
+      .eq('id', accountId)
+      .single();
+    tier = (account?.tier as string | undefined) ?? 'free';
+    isFounder = Boolean(account?.is_founder);
+  }
+
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
-      <div className="bg-ink text-paper px-7 py-2.5 flex justify-between items-center flex-shrink-0">
-        <div className="font-display font-semibold text-[10px] tracking-[0.4em] uppercase text-gold-light">
-          Owner ·{' '}
-          {ownerMemberships.length === 1
-            ? 'single site'
-            : `${ownerMemberships.length} sites`}
+    <SidebarStateProvider>
+      <div className="min-h-screen flex bg-paper">
+        <Sidebar
+          brand={brandLabel}
+          surfaceTag="Owner"
+          homeHref="/owner"
+          sections={OWNER_SECTIONS}
+          accountItems={OWNER_ACCOUNT_ITEMS}
+        />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Topbar
+            tier={tier}
+            view="owner"
+            isFounder={isFounder}
+            role="owner"
+            email={user.email ?? ''}
+          />
+          <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
-        <Link
-          href="/"
-          className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-paper/60 hover:text-paper transition-colors"
-        >
-          ← Chef surface
-        </Link>
       </div>
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    </SidebarStateProvider>
   );
 }

@@ -5,14 +5,22 @@ import { createContext, useContext, useEffect, useState } from 'react';
 const KEY = 'palatable_sidebar_collapsed';
 
 type SidebarState = {
+  /** Desktop-only collapsed-to-rail state. Persisted to localStorage. */
   collapsed: boolean;
   toggle: () => void;
+  /** Mobile-only drawer-open state. Not persisted. */
+  mobileOpen: boolean;
+  openMobile: () => void;
+  closeMobile: () => void;
   hydrated: boolean;
 };
 
 const Ctx = createContext<SidebarState>({
   collapsed: false,
   toggle: () => {},
+  mobileOpen: false,
+  openMobile: () => {},
+  closeMobile: () => {},
   hydrated: false,
 });
 
@@ -22,18 +30,15 @@ export function SidebarStateProvider({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
-  // Read persisted state on mount. There is a brief frame where the
-  // sidebar renders expanded then snaps to collapsed if the user has
-  // it stored that way — acceptable for v1; a no-FOUC pre-hydration
-  // script would be a follow-up if it becomes annoying.
   useEffect(() => {
     try {
       const stored = localStorage.getItem(KEY);
       if (stored === '1') setCollapsed(true);
     } catch {
-      // localStorage unavailable
+      /* localStorage unavailable */
     }
     setHydrated(true);
   }, []);
@@ -48,8 +53,24 @@ export function SidebarStateProvider({
     });
   }
 
+  function openMobile() {
+    setMobileOpen(true);
+  }
+  function closeMobile() {
+    setMobileOpen(false);
+  }
+
   return (
-    <Ctx.Provider value={{ collapsed, toggle, hydrated }}>
+    <Ctx.Provider
+      value={{
+        collapsed,
+        toggle,
+        mobileOpen,
+        openMobile,
+        closeMobile,
+        hydrated,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );

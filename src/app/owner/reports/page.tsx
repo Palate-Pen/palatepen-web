@@ -4,7 +4,7 @@ export const metadata = { title: 'Reports — Owner — Palatable' };
 
 export default function OwnerReportsPage() {
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <OwnerPageHeader
         eyebrow="What Your Accountant Wants"
         title="Reports"

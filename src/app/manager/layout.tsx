@@ -1,15 +1,19 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { Sidebar } from '@/components/shell/Sidebar';
+import { Topbar } from '@/components/shell/Topbar';
+import { SidebarStateProvider } from '@/components/shell/SidebarState';
+import {
+  MANAGER_ACCOUNT_ITEMS,
+  MANAGER_SECTIONS,
+} from '@/components/shell/nav-config';
 
 /**
- * Manager shell layout. Slim — the locked manager mockups (Home,
- * Menu Builder) each carry their own dense top context bar, so this
- * layout intentionally provides only the role gate plus a minimal
- * eyebrow strip with a back-to-chef-shell link.
- *
- * Full ten-tab manager sidebar lands once the remaining 8 manager
- * tab mockups are designed (task #34 in CLAUDE.md roadmap).
+ * Manager shell. Mirrors the chef shell pattern — Sidebar + Topbar +
+ * scrollable main. Manager-specific nav (10 tabs, most pending design)
+ * + Topbar view='manager' so the view dropdown reflects the current
+ * surface.
  */
 export default async function ManagerLayout({
   children,
@@ -24,7 +28,7 @@ export default async function ManagerLayout({
 
   const { data: memberships } = await supabase
     .from('memberships')
-    .select('site_id, role, sites:site_id (name)')
+    .select('site_id, role, sites:site_id (name, account_id)')
     .eq('user_id', user.id)
     .limit(1);
   const membership = memberships?.[0];
@@ -55,24 +59,47 @@ export default async function ManagerLayout({
     );
   }
 
-  const siteName =
-    ((membership as unknown as { sites: { name: string } | null }).sites?.name) ??
-    'My Kitchen';
+  const site =
+    (membership.sites as unknown as {
+      name: string;
+      account_id: string;
+    } | null) ?? null;
+  const siteName = site?.name ?? 'My Kitchen';
+  const accountId = site?.account_id;
+
+  let tier = 'free';
+  let isFounder = false;
+  if (accountId) {
+    const { data: account } = await supabase
+      .from('accounts')
+      .select('tier, is_founder')
+      .eq('id', accountId)
+      .single();
+    tier = (account?.tier as string | undefined) ?? 'free';
+    isFounder = Boolean(account?.is_founder);
+  }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
-      <div className="bg-ink text-paper px-7 py-2.5 flex justify-between items-center flex-shrink-0">
-        <div className="font-display font-semibold text-[10px] tracking-[0.4em] uppercase text-gold-light">
-          Manager · {siteName}
+    <SidebarStateProvider>
+      <div className="min-h-screen flex bg-paper">
+        <Sidebar
+          brand={siteName}
+          surfaceTag="Manager"
+          homeHref="/manager"
+          sections={MANAGER_SECTIONS}
+          accountItems={MANAGER_ACCOUNT_ITEMS}
+        />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Topbar
+            tier={tier}
+            view="manager"
+            isFounder={isFounder}
+            role={role as 'owner' | 'manager' | 'chef' | 'viewer'}
+            email={user.email ?? ''}
+          />
+          <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
-        <Link
-          href="/"
-          className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-paper/60 hover:text-paper transition-colors"
-        >
-          ← Chef surface
-        </Link>
       </div>
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    </SidebarStateProvider>
   );
 }

@@ -3,6 +3,10 @@ import { Topbar } from '@/components/shell/Topbar';
 import { SidebarStateProvider } from '@/components/shell/SidebarState';
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import {
+  CHEF_ACCOUNT_ITEMS,
+  CHEF_SECTIONS,
+} from '@/components/shell/nav-config';
 
 export default async function ShellLayout({
   children,
@@ -22,7 +26,11 @@ export default async function ShellLayout({
   return (
     <SidebarStateProvider>
       <div className="min-h-screen flex bg-paper">
-        <Sidebar kitchenName={ctx.kitchenName} />
+        <Sidebar
+          brand={ctx.kitchenName}
+          sections={CHEF_SECTIONS}
+          accountItems={CHEF_ACCOUNT_ITEMS}
+        />
         <div className="flex-1 flex flex-col min-w-0">
           <Topbar
             tier={tier}

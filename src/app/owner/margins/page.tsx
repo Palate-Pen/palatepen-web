@@ -5,7 +5,7 @@ export const metadata = { title: 'Margins — Owner — Palatable' };
 
 export default function OwnerMarginsPage() {
   return (
-    <div className="px-14 pt-12 pb-20 max-w-[1400px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <OwnerPageHeader
         eyebrow="The Whole Menu, Across Every Site"
         title="Margins"

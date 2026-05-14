@@ -14,7 +14,18 @@ export type NavIconName =
   | 'notebook'
   | 'inbox'
   | 'settings'
-  | 'connections';
+  | 'connections'
+  | 'team'
+  | 'pl'
+  | 'service-notes'
+  | 'compliance'
+  | 'reports'
+  | 'deliveries'
+  | 'suppliers'
+  | 'sites'
+  | 'revenue'
+  | 'cash'
+  | 'menu-builder';
 
 const PATHS: Record<NavIconName, React.ReactNode> = {
   home: (
@@ -85,6 +96,84 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
     <>
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
+  team: (
+    <>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M15 21v-1a4 4 0 0 1 4-4h1" />
+    </>
+  ),
+  pl: (
+    <>
+      <path d="M3 3v18h18" />
+      <path d="M7 14l4-4 3 3 5-6" />
+      <path d="M14 7h5v5" />
+    </>
+  ),
+  'service-notes': (
+    <>
+      <path d="M5 4h11l4 4v12H5z" />
+      <path d="M9 12h7M9 16h5M9 8h4" />
+    </>
+  ),
+  compliance: (
+    <>
+      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </>
+  ),
+  reports: (
+    <>
+      <rect x="4" y="3" width="16" height="18" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+      <circle cx="18" cy="17" r="1.5" fill="currentColor" />
+    </>
+  ),
+  deliveries: (
+    <>
+      <path d="M3 7h13l3 4h2v6h-2" />
+      <path d="M3 7v10h13V7" />
+      <circle cx="7" cy="18" r="1.5" />
+      <circle cx="17" cy="18" r="1.5" />
+    </>
+  ),
+  suppliers: (
+    <>
+      <path d="M3 21V8l9-5 9 5v13" />
+      <path d="M9 21V12h6v9" />
+      <circle cx="12" cy="9" r="1.2" />
+    </>
+  ),
+  sites: (
+    <>
+      <rect x="3" y="4" width="7" height="7" />
+      <rect x="14" y="4" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+    </>
+  ),
+  revenue: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15 9.5a2.5 2.5 0 0 0-3-1.5c-1.5 0-2.5.5-2.5 2 0 1.2 1 1.7 2.5 2 1.5.3 2.5.8 2.5 2 0 1.5-1 2-2.5 2a2.5 2.5 0 0 1-3-1.5" />
+      <path d="M12 6v1.5M12 16.5v1.5" />
+    </>
+  ),
+  cash: (
+    <>
+      <rect x="2" y="6" width="20" height="12" rx="1" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M5 9v6M19 9v6" />
+    </>
+  ),
+  'menu-builder': (
+    <>
+      <rect x="4" y="3" width="16" height="18" rx="1" />
+      <path d="M8 7h8M8 11h8M8 15h5" />
+      <path d="M16 18l2-2-1-1-2 2v1z" />
     </>
   ),
 };
