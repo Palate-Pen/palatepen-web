@@ -1,6 +1,7 @@
 -- v2 schema — Palatable greenfield rewrite
 -- Migration: foundation (accounts, sites, memberships)
 -- Date: 2026-05-14
+-- Applied: 2026-05-14 (manual run via Supabase SQL editor; MCP-verified that schema, shell_role enum, accounts/sites/memberships tables (columns + defaults + CHECK + FKs + UNIQUE), all 5 indexes, all 7 RLS policies, all 4 triggers — including v2_on_auth_user_created on auth.users — and all 4 helper functions (user_site_ids, user_account_ids, touch_updated_at, handle_new_user) match this file exactly. The legacy public.handle_new_user trigger noted below also still exists; cleanup still pending.)
 --
 -- Tenancy primitive: accounts. Sites are children of accounts.
 -- Chef-shell users see one site at a time. Manager-shell users may
