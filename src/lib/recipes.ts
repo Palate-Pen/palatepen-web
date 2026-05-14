@@ -20,6 +20,10 @@ export type Recipe = {
   portion_per_cover: number | null;
   sell_price: number | null;
   notes: string | null;
+  /** Cost-per-cover at the time sell_price was last set. Drives the
+   *  recipe-staleness detector + Margins page drift calc. */
+  cost_baseline: number | null;
+  costed_at: string | null;
   ingredients: RecipeIngredient[];
   /** Sum of line_cost where present; free-text ingredients contribute 0. */
   total_cost: number;
@@ -35,7 +39,7 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
   const { data: recipes, error: recipesErr } = await supabase
     .from('recipes')
     .select(
-      'id, name, menu_section, serves, portion_per_cover, sell_price, notes',
+      'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at',
     )
     .eq('site_id', siteId)
     .is('archived_at', null)
@@ -112,6 +116,9 @@ export async function getRecipes(siteId: string): Promise<Recipe[]> {
       portion_per_cover: portion,
       sell_price: r.sell_price == null ? null : Number(r.sell_price),
       notes: (r.notes as string | null) ?? null,
+      cost_baseline:
+        r.cost_baseline == null ? null : Number(r.cost_baseline),
+      costed_at: (r.costed_at as string | null) ?? null,
       ingredients: rIngs,
       total_cost: totalCost,
       cost_per_cover: costPerCover,
