@@ -13,7 +13,8 @@ type NavItem = {
 
 // Inline admin-specific icons. Separate from chef NavIcons since the
 // vocabulary doesn't overlap (Users / Business / System / Content / Ops
-// don't have chef-shell analogues).
+// don't have chef-shell analogues). Same 24x24 viewBox + 1.5 stroke as
+// chef NavIcons so they render at identical visual weight.
 const ICON_HOME = (
   <>
     <path d="M3 11l9-8 9 8M5 10v10h14V10" />
@@ -86,8 +87,8 @@ export function AdminSidebar({
       } bg-paper-warm border-r border-rule h-screen sticky top-0 flex flex-col overflow-hidden flex-shrink-0 transition-[width] duration-200`}
     >
       <div
-        className={`h-[76px] border-b border-rule flex flex-col justify-center flex-shrink-0 ${
-          collapsed ? 'px-0 items-center' : 'px-6 items-start'
+        className={`h-[76px] border-b border-rule flex items-center flex-shrink-0 ${
+          collapsed ? 'px-0 justify-center' : 'px-6'
         }`}
       >
         <Link
@@ -99,12 +100,15 @@ export function AdminSidebar({
           <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
           {!collapsed && <span>alatable</span>}
         </Link>
-        {!collapsed && (
-          <div className="font-display text-xs font-medium tracking-[0.32em] uppercase text-muted mt-1">
+      </div>
+
+      {!collapsed && (
+        <div className="px-6 pt-3 pb-1">
+          <div className="font-display text-xs font-medium tracking-[0.32em] uppercase text-muted truncate">
             Founder Admin
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <nav className="flex-1 overflow-y-auto py-2">
         <Section label="Overview" items={OVERVIEW} collapsed={collapsed} />
@@ -153,32 +157,32 @@ function NavLink({
       href={href}
       title={collapsed ? label : undefined}
       className={`flex items-center transition-colors font-display text-xs font-semibold tracking-[0.18em] uppercase border-l-2 relative ${
-        collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-6 py-2.5 justify-between'
+        collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-6 py-2.5'
       } ${
         isActive
           ? 'border-l-gold bg-gold-bg text-ink'
           : 'border-l-transparent text-ink-soft hover:border-l-gold/40 hover:bg-gold-bg hover:text-ink'
       }`}
     >
-      <span className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className={`flex-shrink-0 transition-colors ${
-            isActive ? 'text-gold' : 'text-muted'
-          }`}
-        >
-          {icon}
-        </svg>
-        {!collapsed && <span className="leading-tight">{label}</span>}
-      </span>
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className={`flex-shrink-0 transition-colors ${
+          isActive ? 'text-gold' : 'text-muted'
+        }`}
+      >
+        {icon}
+      </svg>
+      {!collapsed && (
+        <span className="leading-tight flex-1">{label}</span>
+      )}
       {badge && !collapsed && (
         <span
           className={`font-display text-xs font-semibold px-1.5 py-0.5 min-w-[20px] text-center leading-none ${
