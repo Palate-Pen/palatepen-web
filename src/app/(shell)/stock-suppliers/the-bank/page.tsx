@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import {
   getBankRows,
@@ -70,6 +71,12 @@ export default async function TheBankPage() {
             )}
           </p>
         </div>
+        <Link
+          href="/stock-suppliers/the-bank/new"
+          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+        >
+          + Add ingredient
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
@@ -180,7 +187,8 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
   const last = sparklineLastPoint(row.history);
 
   return (
-    <div
+    <Link
+      href={`/stock-suppliers/the-bank/${row.ingredient_id}`}
       className={
         'grid grid-cols-1 md:grid-cols-[2fr_1.4fr_140px_110px_110px_40px] gap-4 px-6 py-4 items-center border-b border-rule-soft last:border-b-0 cursor-pointer hover:bg-card-warm transition-colors ' +
         (justIn ? 'bg-gold-bg' : '')
@@ -292,6 +300,6 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
           <path d="M9 6l6 6-6 6" />
         </svg>
       </div>
-    </div>
+    </Link>
   );
 }
