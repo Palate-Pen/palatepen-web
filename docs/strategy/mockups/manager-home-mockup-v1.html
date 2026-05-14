@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Manager — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --card: #FFFFFF;
+    --ink: #1A1612;
+    --muted: #7A6F5E;
+    --gold: #B8923C;
+    --rule: rgba(26,22,18,0.08);
+    --healthy: #5D7F4F;
+    --attention: #B86A2E;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 252px 1fr;
+  }
+  .sidebar { background: #F2EDE0; border-right: 1px solid var(--rule); padding: 24px 0; overflow-y: auto; max-height: 100vh; }
+  .sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
+  .brand-name { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .brand-sub { font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+  .nav-item { display: flex; align-items: center; gap: 14px; padding: 10px 24px; color: var(--ink-soft); text-decoration: none; border-left: 2px solid transparent; }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: rgba(201,168,76,0.06); }
+  .nav-label { font-family: 'Cormorant Garamond', serif; font-size: 16px; }
+
+  .main { min-width: 0; }
+  .topbar { height: 76px; display: flex; justify-content: space-between; align-items: center; padding: 0 56px; border-bottom: 1px solid var(--rule); background: var(--paper); }
+  .topbar-left { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px; }
+  .topbar-right { display: flex; gap: 24px; align-items: center; }
+  .print-btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.3em; padding: 10px 20px; background: var(--gold); color: var(--paper); border: none; cursor: pointer; text-transform: uppercase; }
+
+  .page { padding: 48px 56px 80px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px; color: var(--ink); margin-bottom: 12px; }
+  .page-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px; color: var(--muted); margin-bottom: 32px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 40px; }
+  .kpi-card { background: var(--card); padding: 28px 32px; }
+  .kpi-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
+  .kpi-value { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px; color: var(--ink); }
+  .kpi-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  .reporting-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 48px; }
+  .reporting-card { background: var(--card); border: 1px solid var(--rule); padding: 28px 32px; }
+  .reporting-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 20px; color: var(--ink); margin-bottom: 16px; }
+  .reporting-content { font-family: 'Jost', sans-serif; font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+  .reporting-list { list-style: none; padding: 0; }
+  .reporting-list li { padding: 6px 0; display: flex; justify-content: space-between; }
+  .reporting-list li strong { font-weight: 600; color: var(--ink); }
+
+  .menu-builder { background: var(--card); border: 1px solid var(--rule); padding: 28px 32px; margin-bottom: 48px; }
+  .menu-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 20px; color: var(--ink); margin-bottom: 20px; }
+  .menu-sections { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .menu-section { border: 1px dashed var(--rule); padding: 16px; background: #FDFAF2; }
+  .menu-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
+  .menu-item { font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--ink); padding: 6px 0; border-bottom: 1px solid var(--rule); }
+  .menu-item:last-child { border-bottom: none; }
+  .add-dish-btn { width: 100%; padding: 12px; margin-top: 12px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; background: transparent; border: 1px dashed var(--gold); color: var(--gold); cursor: pointer; }
+
+  .mockup-footnote { margin: 0 56px 60px; padding: 32px 32px; background: #F2EDE0; border: 1px solid var(--rule); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px; color: var(--muted); line-height: 1.7; }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">Palatable</div>
+    <div class="brand-sub">Manager View</div>
+  </div>
+  <nav>
+    <a class="nav-item active" href="#">
+      <span class="nav-label">Home</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Prep</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Recipes</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Margins</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Stock & Suppliers</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Waste</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Menus</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Reporting</span>
+    </a>
+    <a class="nav-item" href="#">
+      <span class="nav-label">Settings</span>
+    </a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">Manager · Berber & Q</div>
+    <div class="topbar-right">
+      <button class="print-btn">Print Dashboard</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="page-title">Operations Home</div>
+    <div class="page-sub">Business summary · this week · prep visibility · menu status · staffing · margins.</div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">This Week Covers</div>
+        <div class="kpi-value">942</div>
+        <div class="kpi-sub">+12% vs last week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Food Cost This Week</div>
+        <div class="kpi-value">£2,840</div>
+        <div class="kpi-sub">30% of revenue</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Outstanding Invoices</div>
+        <div class="kpi-value">£2,822</div>
+        <div class="kpi-sub">3 suppliers · 12 days avg</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Waste This Week</div>
+        <div class="kpi-value">£562</div>
+        <div class="kpi-sub">vs £620 budget (9% under)</div>
+      </div>
+    </div>
+
+    <!-- Prep Visibility -->
+    <div class="reporting-card">
+      <div class="reporting-title">Prep Status · Today</div>
+      <div class="reporting-content">
+        <ul class="reporting-list">
+          <li><span>Garde Manger (Tom)</span> <strong>3 of 5 done · 60% complete</strong></li>
+          <li><span>Grill (Maria)</span> <strong>1 of 4 done · 25% complete</strong></li>
+          <li><span>Pass (Sam)</span> <strong>0 of 2 done · 0% complete · 2 unassigned</strong></li>
+          <li><span>Pastry (unassigned)</span> <strong>0 of 1 · needs assignment</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Menu Builder -->
+    <div class="menu-builder">
+      <div class="menu-title">Menu Builder · Today's Service</div>
+      <div class="menu-sections">
+        <div class="menu-section">
+          <div class="menu-section-label">Starters</div>
+          <div class="menu-item">Hummus</div>
+          <div class="menu-item">Baba Ghanoush</div>
+          <div class="menu-item">Şakşuka</div>
+          <button class="add-dish-btn">+ Add Dish</button>
+        </div>
+        <div class="menu-section">
+          <div class="menu-section-label">Mains</div>
+          <div class="menu-item">Lamb Shawarma</div>
+          <div class="menu-item">Beef Short Rib Braise</div>
+          <div class="menu-item">Chicken Thigh Skewers</div>
+          <button class="add-dish-btn">+ Add Dish</button>
+        </div>
+        <div class="menu-section">
+          <div class="menu-section-label">Desserts</div>
+          <div class="menu-item">Knafeh</div>
+          <div class="menu-item">Lemon Posset</div>
+          <button class="add-dish-btn">+ Add Dish</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporting -->
+    <div class="reporting-grid">
+      <div class="reporting-card">
+        <div class="reporting-title">Supplier Spend · Q2</div>
+        <div class="reporting-content">
+          <ul class="reporting-list">
+            <li><span>Aubrey Allen</span> <strong>41%</strong></li>
+            <li><span>Wright Brothers</span> <strong>22%</strong></li>
+            <li><span>Mediterranean Direct</span> <strong>18%</strong></li>
+            <li><span>Reza</span> <strong>12%</strong></li>
+            <li><span>Other</span> <strong>7%</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="reporting-card">
+        <div class="reporting-title">Waste by Category · Q2</div>
+        <div class="reporting-content">
+          <ul class="reporting-list">
+            <li><span>Herbs</span> <strong>£240 · 33%</strong></li>
+            <li><span>Vegetables</span> <strong>£180 · 25%</strong></li>
+            <li><span>Dairy</span> <strong>£140 · 19%</strong></li>
+            <li><span>Meat</span> <strong>£100 · 14%</strong></li>
+            <li><span>Pantry</span> <strong>£80 · 11%</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="reporting-card">
+        <div class="reporting-title">Dish Margins · Top Performers</div>
+        <div class="reporting-content">
+          <ul class="reporting-list">
+            <li><span>Hummus</span> <strong>70% margin</strong></li>
+            <li><span>Baba Ghanoush</span> <strong>65% margin</strong></li>
+            <li><span>Şakşuka</span> <strong>62% margin</strong></li>
+            <li><span>Tahini sauce</span> <strong>58% margin</strong></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="reporting-card">
+        <div class="reporting-title">Staffing · This Week</div>
+        <div class="reporting-content">
+          <ul class="reporting-list">
+            <li><span>Scheduled hours</span> <strong>156</strong></li>
+            <li><span>Estimated payroll</span> <strong>£1,872</strong></li>
+            <li><span>Coverage gaps</span> <strong>Friday PM · find sous chef cover</strong></li>
+            <li><span>Training in progress</span> <strong>Sam · Prep → Grill transition</strong></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mockup-footnote">
+    <div class="footnote-label">Manager v1 — Business Operations</div>
+    <div class="footnote-body">
+      <strong>Manager view mirrors chef shell structure (9 tabs) but reframes data for business operations.</strong> Home shows operational KPIs (covers, food cost, outstanding invoices, waste). Prep visibility shows brigade status at a glance. Menu builder lets the manager drag dishes into today's menu (Starters / Mains / Desserts) and print. Reporting section surfaces supplier spend breakdown, waste patterns, dish margins (what's working), staffing allocation.<br><br>
+      <strong>Every page has a print button.</strong> Print dashboard exports the current view as a PDF optimized for A4 printing. This supports the traditional manager workflow — print the daily sheet, walk the kitchen, annotate.<br><br>
+      <strong>Cross-tabs navigate the full operational picture.</strong> Prep tab shows brigade station-by-station. Recipes tab shows all dishes with current costing. Stock & Suppliers shows cash exposure + supplier performance. Waste shows week patterns + intervention points. Margins shows which dishes are working. Reporting aggregates everything into business summaries.
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

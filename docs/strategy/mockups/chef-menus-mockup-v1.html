@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Menus — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant_Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@600&family=Jost:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --card: #FFFFFF;
+    --ink: #1A1612;
+    --muted: #7A6F5E;
+    --gold: #B8923C;
+    --rule: rgba(26,22,18,0.08);
+    --healthy: #5D7F4F;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 56px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant_Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--paper);
+    opacity: 0.7;
+  }
+
+  .page { padding: 48px 56px 80px; max-width: 1000px; }
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+  .page-left { flex: 1; }
+  .page-title {
+    font-family: 'Cormorant_Garamond', serif;
+    font-weight: 400;
+    font-size: 48px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .page-sub {
+    font-family: 'Cormorant_Garamond', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .page-actions { display: flex; gap: 12px; }
+  .action-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { background: var(--gold); color: var(--paper); }
+  .action-btn.primary { background: var(--gold); color: var(--paper); border-color: var(--gold); }
+
+  .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 48px; }
+  .menu-section { background: var(--card); border: 1px solid var(--rule); }
+  .section-head { padding: 20px 24px; border-bottom: 1px solid var(--rule); }
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .section-count {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .menu-items { padding: 16px 24px; }
+  .menu-item { padding: 12px 0; border-bottom: 1px solid var(--rule); cursor: pointer; transition: all 0.15s; }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item:hover { color: var(--gold); }
+  .item-name {
+    font-family: 'Cormorant_Garamond', serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .item-meta {
+    font-family: 'Jost', sans-serif;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .section-footer { padding: 12px 24px; border-top: 1px solid var(--rule); background: #FDFAF2; }
+  .add-btn {
+    width: 100%;
+    padding: 8px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    background: transparent;
+    border: 1px dashed var(--gold);
+    color: var(--gold);
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .menu-info { background: var(--card); border: 1px solid var(--rule); padding: 28px 32px; margin-bottom: 48px; }
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .info-row:last-child { border-bottom: none; }
+  .info-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .info-value {
+    font-family: 'Cormorant_Garamond', serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .mockup-footnote {
+    margin: 0 56px 60px;
+    padding: 32px 32px;
+    background: #F2EDE0;
+    border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant_Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .footnote-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef Menus</div>
+  <div class="mockup-banner-meta">Today's live menu · edit · reference recipes · print</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div class="page-left">
+      <div class="page-title">Today's Menu</div>
+      <div class="page-sub">Thursday 14 May · 142 covers forecast</div>
+    </div>
+    <div class="page-actions">
+      <button class="action-btn">Edit Menu</button>
+      <button class="action-btn primary">Print</button>
+    </div>
+  </div>
+
+  <div class="menu-grid">
+    <div class="menu-section">
+      <div class="section-head">
+        <div class="section-title">Starters</div>
+        <div class="section-count">3 dishes</div>
+      </div>
+      <div class="menu-items">
+        <div class="menu-item">
+          <div class="item-name">Hummus</div>
+          <div class="item-meta">£1.24 cost · 4 per cover</div>
+        </div>
+        <div class="menu-item">
+          <div class="item-name">Baba Ghanoush</div>
+          <div class="item-meta">£1.68 cost · 3 per cover</div>
+        </div>
+        <div class="menu-item">
+          <div class="item-name">Şakşuka</div>
+          <div class="item-meta">£1.04 cost · 3 per cover</div>
+        </div>
+      </div>
+      <div class="section-footer">
+        <button class="add-btn">+ Add Dish</button>
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <div class="section-head">
+        <div class="section-title">Mains</div>
+        <div class="section-count">3 dishes</div>
+      </div>
+      <div class="menu-items">
+        <div class="menu-item">
+          <div class="item-name">Lamb Shawarma</div>
+          <div class="item-meta">£4.92 cost · 2 per cover</div>
+        </div>
+        <div class="menu-item">
+          <div class="item-name">Beef Short Rib Braise</div>
+          <div class="item-meta">£6.84 cost · 1.2 per cover</div>
+        </div>
+        <div class="menu-item">
+          <div class="item-name">Chicken Thigh Skewers</div>
+          <div class="item-meta">£3.60 cost · 2.4 per cover</div>
+        </div>
+      </div>
+      <div class="section-footer">
+        <button class="add-btn">+ Add Dish</button>
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <div class="section-head">
+        <div class="section-title">Desserts</div>
+        <div class="section-count">2 dishes</div>
+      </div>
+      <div class="menu-items">
+        <div class="menu-item">
+          <div class="item-name">Knafeh</div>
+          <div class="item-meta">£2.18 cost · 1 per cover</div>
+        </div>
+        <div class="menu-item">
+          <div class="item-name">Lemon Posset</div>
+          <div class="item-meta">£0.84 cost · 1 per cover</div>
+        </div>
+      </div>
+      <div class="section-footer">
+        <button class="add-btn">+ Add Dish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="menu-info">
+    <div class="info-row">
+      <div class="info-label">Total menu cost per cover</div>
+      <div class="info-value">£22.34</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Total menu cost tonight (142 covers)</div>
+      <div class="info-value">£3,171.88</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Margin on menu</div>
+      <div class="info-value" style="color: var(--healthy);">68% (healthy)</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">Last updated</div>
+      <div class="info-value">Today 09:14 by Jack</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="mockup-footnote">
+  <div class="footnote-label">Menus v1 — Live Menu Reference</div>
+  <div class="footnote-body">
+    <strong>Menus is the chef's live reference.</strong> Three columns (Starters / Mains / Desserts) show today's menu with each dish's cost per unit and portion count. Chef can click through to the full recipe in the Recipes tab, or hit "Reference Recipe" to see technique inline. Edit Menu button lets the chef adjust (swap a dish, add a seasonal alternative). Print button exports a kitchen copy + front-of-house copy.<br><br>
+    <strong>Cost transparency.</strong> Total menu cost per cover (£22.34), total for tonight's covers (£3,171.88), and margin health (68% = healthy green). If the menu drifts expensive (cost spikes because of ingredient price moves in The Bank), the chef sees it instantly.<br><br>
+    <strong>Cross-surface.</strong> Clicking a dish name opens the recipe detail. Clicking cost takes you to The Bank filtered by that ingredient. Clicking "Edit Menu" opens the manager's menu builder for full menu revision (future: manager access only, or chef access with approval workflow).
+  </div>
+</div>
+
+</body>
+</html>

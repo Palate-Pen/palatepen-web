@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Recipes — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --card: #FFFFFF;
+    --ink: #1A1612;
+    --muted: #7A6F5E;
+    --gold: #B8923C;
+    --rule: rgba(26,22,18,0.08);
+    --healthy: #5D7F4F;
+    --attention: #B86A2E;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.4em; color: var(--gold); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--paper); opacity: 0.7; }
+  
+  .page { padding: 48px 56px 80px; max-width: 1400px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px; color: var(--ink); margin-bottom: 12px; }
+  .page-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px; color: var(--muted); margin-bottom: 32px; }
+
+  .recipes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 48px; }
+  .recipe-card { background: var(--card); border: 1px solid var(--rule); cursor: pointer; transition: all 0.15s; }
+  .recipe-card:hover { border-color: var(--gold); box-shadow: 0 4px 16px rgba(26,22,18,0.08); }
+  
+  .recipe-header { padding: 24px; border-bottom: 1px solid var(--rule); }
+  .recipe-name { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 24px; color: var(--ink); line-height: 1.2; }
+  .recipe-meta { font-family: 'Jost', sans-serif; font-size: 11px; color: var(--muted); margin-top: 8px; letter-spacing: 0.02em; }
+
+  .recipe-cost-bar { background: linear-gradient(90deg, rgba(93,127,79,0.06) 0%, transparent 100%); padding: 16px 24px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+  .cost-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; }
+  .cost-value { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 20px; color: var(--healthy); letter-spacing: -0.005em; }
+  .cost-per-cover { font-family: 'Jost', sans-serif; font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .recipe-ingredients { padding: 20px 24px; }
+  .ingredient-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .ingredient-row:last-child { border-bottom: none; }
+  .ingredient-name { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: var(--ink); }
+  .ingredient-qty { font-family: 'Jost', sans-serif; font-size: 10px; color: var(--muted); }
+  .ingredient-cost { font-family: 'Cormorant Garamond', serif; font-size: 12px; color: var(--ink-soft); text-align: right; }
+
+  .recipe-footer { padding: 16px 24px; background: var(--paper); border-top: 1px solid var(--rule); display: flex; gap: 8px; }
+  .recipe-btn { flex: 1; padding: 8px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase; background: transparent; border: 1px solid var(--rule); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .recipe-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  .mockup-footnote { margin: 0 56px 60px; padding: 32px 32px; background: #F2EDE0; border: 1px solid var(--rule); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px; color: var(--muted); line-height: 1.7; }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef Recipes · Costing Inline</div>
+  <div class="mockup-banner-meta">Dish tiles with full spec · ingredients from Bank · cost per ingredient + total</div>
+</div>
+
+<div class="page">
+  <div class="page-title">Recipes</div>
+  <div class="page-sub">Seventeen dishes. Costing pulled live from The Bank. Edit · scale · print.</div>
+
+  <div class="recipes-grid">
+
+    <!-- Hummus -->
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div class="recipe-name">Hummus</div>
+        <div class="recipe-meta">Serves 8 · 4 portions per cover</div>
+      </div>
+      <div class="recipe-cost-bar">
+        <div class="cost-label">Cost per cover</div>
+        <div>
+          <div class="cost-value">£1.24</div>
+          <div class="cost-per-cover">total dish £9.92</div>
+        </div>
+      </div>
+      <div class="recipe-ingredients">
+        <div class="ingredient-row">
+          <div class="ingredient-name">Chickpea, tinned</div>
+          <div class="ingredient-qty">1.2 kg</div>
+          <div class="ingredient-cost">£2.16</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Tahini</div>
+          <div class="ingredient-qty">240 ml</div>
+          <div class="ingredient-cost">£2.88</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Lemon, juice</div>
+          <div class="ingredient-qty">120 ml</div>
+          <div class="ingredient-cost">£1.20</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Garlic</div>
+          <div class="ingredient-qty">20 g</div>
+          <div class="ingredient-cost">£0.40</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Olive oil, extra virgin</div>
+          <div class="ingredient-qty">60 ml</div>
+          <div class="ingredient-cost">£1.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Salt</div>
+          <div class="ingredient-qty">8 g</div>
+          <div class="ingredient-cost">£0.48</div>
+        </div>
+      </div>
+      <div class="recipe-footer">
+        <button class="recipe-btn">Edit</button>
+        <button class="recipe-btn">Scale</button>
+        <button class="recipe-btn">Print</button>
+      </div>
+    </div>
+
+    <!-- Baba Ghanoush -->
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div class="recipe-name">Baba Ghanoush</div>
+        <div class="recipe-meta">Serves 6 · 3 portions per cover</div>
+      </div>
+      <div class="recipe-cost-bar">
+        <div class="cost-label">Cost per cover</div>
+        <div>
+          <div class="cost-value">£1.68</div>
+          <div class="cost-per-cover">total dish £10.08</div>
+        </div>
+      </div>
+      <div class="recipe-ingredients">
+        <div class="ingredient-row">
+          <div class="ingredient-name">Aubergine</div>
+          <div class="ingredient-qty">800 g</div>
+          <div class="ingredient-cost">£2.40</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Tahini</div>
+          <div class="ingredient-qty">180 ml</div>
+          <div class="ingredient-cost">£2.16</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Lemon, juice</div>
+          <div class="ingredient-qty">90 ml</div>
+          <div class="ingredient-cost">£0.90</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Garlic</div>
+          <div class="ingredient-qty">15 g</div>
+          <div class="ingredient-cost">£0.30</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Olive oil</div>
+          <div class="ingredient-qty">45 ml</div>
+          <div class="ingredient-cost">£1.35</div>
+        </div>
+      </div>
+      <div class="recipe-footer">
+        <button class="recipe-btn">Edit</button>
+        <button class="recipe-btn">Scale</button>
+        <button class="recipe-btn">Print</button>
+      </div>
+    </div>
+
+    <!-- Shawarma -->
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div class="recipe-name">Lamb Shawarma</div>
+        <div class="recipe-meta">Serves 12 · 2 portions per cover</div>
+      </div>
+      <div class="recipe-cost-bar">
+        <div class="cost-label">Cost per cover</div>
+        <div>
+          <div class="cost-value">£4.92</div>
+          <div class="cost-per-cover">total dish £29.52</div>
+        </div>
+      </div>
+      <div class="recipe-ingredients">
+        <div class="ingredient-row">
+          <div class="ingredient-name">Lamb shoulder, diced</div>
+          <div class="ingredient-qty">1.6 kg</div>
+          <div class="ingredient-cost">£19.20</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Shawarma spice blend</div>
+          <div class="ingredient-qty">40 g</div>
+          <div class="ingredient-cost">£2.40</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Yogurt, plain</div>
+          <div class="ingredient-qty">400 ml</div>
+          <div class="ingredient-cost">£2.00</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Lemon</div>
+          <div class="ingredient-qty">2</div>
+          <div class="ingredient-cost">£0.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Garlic</div>
+          <div class="ingredient-qty">30 g</div>
+          <div class="ingredient-cost">£0.60</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Olive oil</div>
+          <div class="ingredient-qty">80 ml</div>
+          <div class="ingredient-cost">£2.40</div>
+        </div>
+      </div>
+      <div class="recipe-footer">
+        <button class="recipe-btn">Edit</button>
+        <button class="recipe-btn">Scale</button>
+        <button class="recipe-btn">Print</button>
+      </div>
+    </div>
+
+    <!-- Şakşuka -->
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div class="recipe-name">Şakşuka</div>
+        <div class="recipe-meta">Serves 8 · 3 portions per cover</div>
+      </div>
+      <div class="recipe-cost-bar">
+        <div class="cost-label">Cost per cover</div>
+        <div>
+          <div class="cost-value">£1.04</div>
+          <div class="cost-per-cover">total dish £8.32</div>
+        </div>
+      </div>
+      <div class="recipe-ingredients">
+        <div class="ingredient-row">
+          <div class="ingredient-name">Aubergine</div>
+          <div class="ingredient-qty">600 g</div>
+          <div class="ingredient-cost">£1.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Tomato, fresh</div>
+          <div class="ingredient-qty">500 g</div>
+          <div class="ingredient-cost">£1.50</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Onion</div>
+          <div class="ingredient-qty">400 g</div>
+          <div class="ingredient-cost">£0.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Peppers, mixed</div>
+          <div class="ingredient-qty">400 g</div>
+          <div class="ingredient-cost">£1.60</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Olive oil</div>
+          <div class="ingredient-qty">60 ml</div>
+          <div class="ingredient-cost">£1.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Tomato paste</div>
+          <div class="ingredient-qty">60 g</div>
+          <div class="ingredient-cost">£0.90</div>
+        </div>
+      </div>
+      <div class="recipe-footer">
+        <button class="recipe-btn">Edit</button>
+        <button class="recipe-btn">Scale</button>
+        <button class="recipe-btn">Print</button>
+      </div>
+    </div>
+
+    <!-- Beef Short Rib -->
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div class="recipe-name">Beef Short Rib Braise</div>
+        <div class="recipe-meta">Serves 10 · 1.2 portions per cover</div>
+      </div>
+      <div class="recipe-cost-bar">
+        <div class="cost-label">Cost per cover</div>
+        <div>
+          <div class="cost-value">£6.84</div>
+          <div class="cost-per-cover">total dish £68.40</div>
+        </div>
+      </div>
+      <div class="recipe-ingredients">
+        <div class="ingredient-row">
+          <div class="ingredient-name">Beef short rib</div>
+          <div class="ingredient-qty">2.4 kg</div>
+          <div class="ingredient-cost">£48.00</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Red wine</div>
+          <div class="ingredient-qty">500 ml</div>
+          <div class="ingredient-cost">£6.00</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Stock, beef</div>
+          <div class="ingredient-qty">1 L</div>
+          <div class="ingredient-cost">£2.00</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Carrot</div>
+          <div class="ingredient-qty">400 g</div>
+          <div class="ingredient-cost">£0.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Celery</div>
+          <div class="ingredient-qty">300 g</div>
+          <div class="ingredient-cost">£0.60</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Onion</div>
+          <div class="ingredient-qty">400 g</div>
+          <div class="ingredient-cost">£0.80</div>
+        </div>
+      </div>
+      <div class="recipe-footer">
+        <button class="recipe-btn">Edit</button>
+        <button class="recipe-btn">Scale</button>
+        <button class="recipe-btn">Print</button>
+      </div>
+    </div>
+
+    <!-- Knafeh -->
+    <div class="recipe-card">
+      <div class="recipe-header">
+        <div class="recipe-name">Knafeh</div>
+        <div class="recipe-meta">Serves 10 · 1 portion per cover</div>
+      </div>
+      <div class="recipe-cost-bar">
+        <div class="cost-label">Cost per cover</div>
+        <div>
+          <div class="cost-value">£2.18</div>
+          <div class="cost-per-cover">total dish £21.80</div>
+        </div>
+      </div>
+      <div class="recipe-ingredients">
+        <div class="ingredient-row">
+          <div class="ingredient-name">Kataifi dough</div>
+          <div class="ingredient-qty">500 g</div>
+          <div class="ingredient-cost">£4.50</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Mozzarella, fresh</div>
+          <div class="ingredient-qty">400 g</div>
+          <div class="ingredient-cost">£4.80</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Honey</div>
+          <div class="ingredient-qty">200 ml</div>
+          <div class="ingredient-cost">£3.00</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Pistachios, crushed</div>
+          <div class="ingredient-qty">100 g</div>
+          <div class="ingredient-cost">£3.00</div>
+        </div>
+        <div class="ingredient-row">
+          <div class="ingredient-name">Butter</div>
+          <div class="ingredient-qty">200 g</div>
+          <div class="ingredient-cost">£2.40</div>
+        </div>
+      </div>
+      <div class="recipe-footer">
+        <button class="recipe-btn">Edit</button>
+        <button class="recipe-btn">Scale</button>
+        <button class="recipe-btn">Print</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mockup-footnote">
+    <div class="footnote-label">Recipes v1 — Costing Inline</div>
+    <div class="footnote-body">
+      <strong>One tab, two functions: recipes + costing merged.</strong> Each dish lives as a tile. Header shows dish name + prep yield. Cost bar shows cost per cover (green healthy colour) + total dish cost. Ingredients list shows qty, source ingredient name from The Bank, and live cost pulled from current Bank price. If tahini is £12/L, the cost updates instantly across all recipes using tahini.<br><br>
+      <strong>Three actions per tile: Edit · Scale · Print.</strong> Edit opens the recipe detail view (not shown). Scale lets the chef adjust cover count on the fly (*"if we're 180 covers tonight instead of 142, scale shawarma up to 2.2 portions"*). Print gives a kitchen print-out of the recipe with current costs embedded.<br><br>
+      <strong>Cost is the intelligence layer.</strong> Chef sees instantly which dishes are expensive (beef short rib £6.84 per cover) vs efficient (hummus £1.24). Over time, patterns emerge — *"our margin on knafeh is tight at current honey prices, consider a lemon posset alternative when honey spikes"* — that surface in Looking Ahead on the manager dashboard.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
