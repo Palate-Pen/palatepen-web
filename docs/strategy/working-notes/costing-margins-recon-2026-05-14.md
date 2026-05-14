@@ -1,5 +1,7 @@
 # Costing → Margins rename — recon report
 
+> Historical working note captured 2026-05-14 to support the shape decision. Line references to other docs are accurate as of this date and not maintained — see live docs for current state.
+
 **Date:** 2026-05-14
 **Status:** Recon complete. Shape decision pending. No code changes made.
 **Picking up tomorrow.**
