@@ -1,4 +1,4 @@
-export type KpiTone = 'healthy' | 'attention';
+export type KpiTone = 'healthy' | 'attention' | 'urgent';
 
 /** Hero KPIs (text-3xl, 36px) are reserved for Home; everything else
  *  uses 'small' (text-2xl, 28px) per the locked type scale. */
@@ -25,7 +25,9 @@ export function KpiCard({
       ? 'text-healthy'
       : tone === 'attention'
         ? 'text-attention'
-        : 'text-ink';
+        : tone === 'urgent'
+          ? 'text-urgent'
+          : 'text-ink';
 
   return (
     <div className="bg-card px-7 py-6">

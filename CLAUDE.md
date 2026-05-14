@@ -142,7 +142,7 @@ Full Progress Log lives in docs/progress-log.md. Add new entries there going for
 - supabase-js `.insert(...)` without `.select()` can resolve before PostgREST commits when RLS is enabled. The shared `audit()` helper uses `.insert(...).select().single()` so the await fully round-trips.
 - Sensitive Vercel env vars (Stripe, Supabase service role, Anthropic) cannot be pulled to local `.env.local`. To run admin/server routes locally that need them, paste manually. Pulled values come back as empty strings.
 - **Migrations run manually in Supabase SQL editor.** No supabase-cli pipeline yet — when a new migration lands in `supabase/migrations/YYYYMMDD_descriptive_name.sql`, paste it into the Supabase SQL editor and run it. (Historical migrations 001–010 use the older `NNN_*.sql` form; new files use the date-prefixed convention starting with `20260513_phase3_multi_outlet.sql`.) Migration `010_anthropic_usage.sql` adds the per-call metering table the admin Infrastructure dashboard reads to show actual Anthropic spend vs the formula estimate — run it before usage data will populate; without it the admin endpoint returns zeros + a `tableMissing` flag and the UI prompts you to run it.
-- **Anthropic credit balance is a live operational dependency.** Recipe import (`/api/palatable/import-recipe`) and invoice scanning (`/api/palatable/scan-invoice`) both call Sonnet 4.6 via api.anthropic.com. If the balance hits £0 the API returns HTTP 400 "Your credit balance is too low" — the UI surfaces this as a clear error pill but the feature is dead until topped up. Top-up: https://console.anthropic.com/settings/plans. Cost is roughly $0.005 per import or scan with Sonnet 4.6 — small refills go a long way.
+- **Anthropic credit balance is a live operational dependency.** Recipe import (`/api/palatable/import-recipe`) and invoice scanning (`/api/palatable/scan-invoice`) both call Haiku 4.5 via api.anthropic.com — model ID `claude-haiku-4-5-20251001`, centralised in `src/lib/anthropic.ts` (swap once there to change tier). If the balance hits £0 the API returns HTTP 400 "Your credit balance is too low" — the UI surfaces this as a clear error pill but the feature is dead until topped up. Top-up: https://console.anthropic.com/settings/plans. Cost on Haiku 4.5 is a fraction of a penny per call (~13× cheaper than the previous Sonnet 4.6 default). Switched site-wide on 2026-05-14.
 
 ## Palatable — Strategic Direction (May 2026)
 
@@ -208,7 +208,7 @@ When in doubt about a product or UX decision, read these first.
 - All file writes via Node.js setup scripts to avoid Windows encoding issues
 - Repo: Palate-Pen/palatepen-web, branch main
 - Palatable web app lives at `Documents/palateandpen/web/`; mobile sibling at `Documents/palateandpen/app/`
-- Stack: Next.js 14.2.5, React 18, Supabase (EU West London, project `xbnsytrcvyayzdxezpha`), Stripe, Tailwind, Anthropic Sonnet 4.6 server-side
+- Stack: Next.js 14.2.5, React 18, Supabase (EU West London, project `xbnsytrcvyayzdxezpha`), Stripe, Tailwind, Anthropic Haiku 4.5 server-side
 
 ### MCP Tooling
 

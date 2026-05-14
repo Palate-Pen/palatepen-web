@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
+import {
+  ANTHROPIC_MODEL,
+  ANTHROPIC_VERSION,
+  ANTHROPIC_MAX_TOKENS,
+} from '@/lib/anthropic';
 
 /**
  * Invoice scanning endpoint. Accepts a multipart/form-data POST with a
- * single `file` field (image of an invoice). Sends to Anthropic Sonnet
+ * single `file` field (image of an invoice). Sends to Anthropic Haiku
  * with vision, parses extracted line items, inserts v2.invoices +
  * v2.invoice_lines in 'scanned' status. Returns the invoice + lines
  * so the chef can review and confirm via /api/palatable/confirm-invoice.
@@ -13,13 +18,11 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service';
  * owner/manager/chef membership on the active site (resolved from the
  * first membership row for v1 — single-site assumption).
  *
- * Costs: ~$0.005 per call with Sonnet 4.6 (per CLAUDE.md). If
- * ANTHROPIC_API_KEY is missing or credits are exhausted, the call
- * returns the appropriate 4xx/5xx — no silent fallback.
+ * Costs: fraction of a penny per call on Haiku 4.5 (~13× cheaper than
+ * Sonnet 4.6 on the same payload shape). If ANTHROPIC_API_KEY is
+ * missing or credits are exhausted, the call returns 4xx/5xx — no
+ * silent fallback.
  */
-
-const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
-const MAX_TOKENS = 4096;
 const ALLOWED_MIME = new Set([
   'image/jpeg',
   'image/png',
@@ -149,11 +152,11 @@ export async function POST(req: Request) {
     headers: {
       'content-type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': ANTHROPIC_VERSION,
     },
     body: JSON.stringify({
       model: ANTHROPIC_MODEL,
-      max_tokens: MAX_TOKENS,
+      max_tokens: ANTHROPIC_MAX_TOKENS,
       messages: [{ role: 'user', content: contentBlocks }],
     }),
   });

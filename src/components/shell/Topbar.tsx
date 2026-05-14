@@ -4,18 +4,25 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { CollapseToggle } from './CollapseToggle';
 
-const BREADCRUMBS: Record<string, string> = {
-  '/': 'Home',
-  '/prep': 'Prep',
-  '/recipes': 'Recipes',
-  '/menus': 'Menus',
-  '/margins': 'Margins',
-  '/stock-suppliers': 'Stock & Suppliers',
-  '/notebook': 'Notebook',
-  '/inbox': 'Inbox',
-  '/settings': 'Settings',
-  '/connections': 'Connections',
-};
+const BREADCRUMBS: Array<{ prefix: string; label: string }> = [
+  { prefix: '/prep', label: 'Prep' },
+  { prefix: '/recipes', label: 'Recipes' },
+  { prefix: '/menus', label: 'Menus' },
+  { prefix: '/margins', label: 'Margins' },
+  { prefix: '/stock-suppliers', label: 'Stock & Suppliers' },
+  { prefix: '/notebook', label: 'Notebook' },
+  { prefix: '/inbox', label: 'Inbox' },
+  { prefix: '/settings', label: 'Settings' },
+  { prefix: '/connections', label: 'Connections' },
+];
+
+function resolveBreadcrumb(pathname: string): string {
+  if (pathname === '/') return 'Home';
+  const match = BREADCRUMBS.find(
+    (b) => pathname === b.prefix || pathname.startsWith(b.prefix + '/'),
+  );
+  return match?.label ?? 'Palatable';
+}
 
 function formatDate(now: Date): string {
   const day = now.toLocaleDateString('en-GB', { weekday: 'long' });
@@ -34,7 +41,7 @@ function formatDate(now: Date): string {
 
 export function Topbar() {
   const pathname = usePathname();
-  const breadcrumb = BREADCRUMBS[pathname] ?? 'Palatable';
+  const breadcrumb = resolveBreadcrumb(pathname);
   const [dateLabel, setDateLabel] = useState('');
 
   useEffect(() => {

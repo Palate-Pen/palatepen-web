@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
@@ -60,7 +61,10 @@ export default async function StockSuppliersPage() {
           </p>
         </div>
 
-        <div className="bg-card border border-rule px-5 py-4 min-w-[240px] flex items-center gap-3.5 cursor-pointer transition-all hover:border-rule-gold hover:-translate-y-px">
+        <Link
+          href="/stock-suppliers/invoices/scan"
+          className="bg-card border border-rule px-5 py-4 min-w-[240px] flex items-center gap-3.5 cursor-pointer transition-all hover:border-rule-gold hover:-translate-y-px"
+        >
           <div className="w-10 h-10 border border-gold rounded-sm flex items-center justify-center text-gold bg-gold-bg flex-shrink-0">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 7h3l1.5-2h7L17 7h3v12H4V7z" />
@@ -82,7 +86,7 @@ export default async function StockSuppliersPage() {
               <span>or upload PDF</span>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
@@ -194,6 +198,7 @@ export default async function StockSuppliersPage() {
           <DestinationCard
             name="Invoices"
             tagline="paperwork, discrepancies, credit notes"
+            href="/stock-suppliers/invoices"
             iconPath={
               <>
                 <path d="M6 3h10l4 4v14H6V3z" />
