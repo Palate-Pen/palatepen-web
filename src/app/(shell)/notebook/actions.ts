@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import type { NotebookTag } from '@/lib/notebook';
+import type { NotebookTag } from '@/lib/notebook-shared';
 
 type ActionResult = { ok: true; id: string } | { ok: false; error: string };
 

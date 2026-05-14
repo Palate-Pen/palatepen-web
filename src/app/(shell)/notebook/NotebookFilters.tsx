@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { NotebookEntry } from '@/lib/notebook';
-import { notebookDateLabel } from '@/lib/notebook';
+import type { NotebookEntry } from '@/lib/notebook-shared';
+import { notebookDateLabel } from '@/lib/notebook-shared';
 
 export type FilterKey =
   | 'all'

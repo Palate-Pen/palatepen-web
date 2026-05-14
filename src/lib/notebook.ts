@@ -1,37 +1,26 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import type {
+  NotebookEntry,
+  NotebookKind,
+  NotebookTag,
+  SeasonTone,
+} from '@/lib/notebook-shared';
 
-export type NotebookKind = 'note' | 'voice' | 'photo' | 'sketch';
+// Re-export types + utils from the server-free shared module so
+// existing `from '@/lib/notebook'` imports keep working. Client
+// components should prefer importing from '@/lib/notebook-shared'
+// directly; the re-exports here are only safe to use from server
+// modules.
+export type {
+  NotebookEntry,
+  NotebookKind,
+  NotebookTag,
+  NotebookData,
+  SeasonTone,
+} from '@/lib/notebook-shared';
+export { notebookDateLabel } from '@/lib/notebook-shared';
 
-export type NotebookTag = {
-  kind: 'dish' | 'detected' | 'plain';
-  text: string;
-};
-
-export type SeasonTone = 'peak' | 'ending' | 'arriving';
-
-export type NotebookEntry = {
-  id: string;
-  kind: NotebookKind;
-  title: string;
-  body_md: string | null;
-  attachment_url: string | null;
-  voice_duration_seconds: number | null;
-  tags: NotebookTag[];
-  season_label: string | null;
-  season_tone: SeasonTone | null;
-  shared: boolean;
-  created_at: string;
-};
-
-export type NotebookData = {
-  entries: NotebookEntry[];
-  total_this_year: number;
-  voice_count: number;
-  photo_count: number;
-  sketch_count: number;
-  note_count: number;
-  seasonal_count: number;
-};
+import type { NotebookData } from '@/lib/notebook-shared';
 
 type Raw = {
   id: string;
@@ -76,7 +65,7 @@ export async function getNotebookData(
       r.season_tone === 'peak' ||
       r.season_tone === 'ending' ||
       r.season_tone === 'arriving'
-        ? r.season_tone
+        ? (r.season_tone as SeasonTone)
         : null,
     shared: r.shared,
     created_at: r.created_at,
@@ -97,42 +86,4 @@ export async function getNotebookData(
     note_count: entries.filter((e) => e.kind === 'note').length,
     seasonal_count: entries.filter((e) => e.season_label != null).length,
   };
-}
-
-const dayMs = 24 * 60 * 60 * 1000;
-const longDateFmt = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-});
-const weekdayDateFmt = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
-const timeFmt = new Intl.DateTimeFormat('en-GB', {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
-
-/** "Today 09:14" / "Yesterday 22:18" / "Sun 11 May" / "19 April" */
-export function notebookDateLabel(iso: string, now: Date = new Date()): string {
-  const t = new Date(iso);
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const tStartOfDay = new Date(t);
-  tStartOfDay.setHours(0, 0, 0, 0);
-  const diffDays = Math.round(
-    (startOfDay.getTime() - tStartOfDay.getTime()) / dayMs,
-  );
-
-  if (diffDays === 0) return `Today ${timeFmt.format(t)}`;
-  if (diffDays === 1) return `Yesterday ${timeFmt.format(t)}`;
-  if (diffDays > 1 && diffDays <= 7) return weekdayDateFmt.format(t);
-  if (t.getFullYear() === now.getFullYear()) return longDateFmt.format(t);
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(t);
 }
