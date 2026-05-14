@@ -108,7 +108,7 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 
 **Last shipped (foundation week 1):**
 - Backfill migration applied (defensive no-op, schema invariants verified intact)
-- MCP tooling added — GitHub MCP and Supabase MCP (read-only), both proven functional
+- MCP tooling added — GitHub MCP and Supabase MCP (now read-write against prod; see MCP Tooling section for discipline), both proven functional
 - Strategic direction locked — three role-aware surfaces, four sous chef tabs (Recipes/Costing/Margins/Reports), see Palatable — Strategic Direction section below
 - CLAUDE.md cleanup commits 1 and 2 — reference material extracted, Progress Log moved to docs/progress-log.md
 - 2026-05-14 PM: Locked final strategy spec across customer + admin + build sequence; captured design system v6 with chef-home and chef-margins mockups as visual canon for any UI work going forward. See docs/strategy/working-notes/design-system-v6.md and docs/strategy/mockups/.
@@ -218,8 +218,11 @@ When in doubt about a product or UX decision, read these first.
 ### MCP Tooling
 
 - **GitHub MCP** — configured at project-local scope. Authenticated via a fine-grained PAT scoped to `Palate-Pen/palatepen-web` only. Used for reading repo files, viewing commits and PRs, and managing issues. **Token expires 90 days from generation — set a calendar reminder for rotation.**
-- **Supabase MCP** — configured at project-local scope. Read-only enforced at the Postgres transaction layer (`BEGIN READ ONLY` wrapping all queries — verified 2026-05-14 with a `CREATE TABLE _readonly_probe` that returned SQLSTATE `25006 read_only_sql_transaction`). Scoped to project `xbnsytrcvyayzdxezpha` only. Used for verifying schema, running `SELECT` queries, reading the migrations folder. Migrations still run manually in the Supabase SQL editor per the existing convention.
-- **Misleading tool list.** The Supabase MCP advertises write tools (`execute_sql`, `apply_migration`, `deploy_edge_function`, branch tools) regardless of the `--read-only` flag. They fail at the database layer, not at the MCP boundary. The actual safety boundary is the Postgres role / transaction mode, not tool availability — don't infer read-only-vs-not from which tools are listed.
+- **Supabase MCP** — configured at project-local scope. Scoped to project `xbnsytrcvyayzdxezpha` only. **Read-write against production** — verified 2026-05-14 PM with a `CREATE TABLE _readwrite_probe; DROP TABLE _readwrite_probe;` round-trip that completed without error (previously read-only; boundary lifted since the earlier 25006 probe). There is no staging — every MCP write hits live data. Discipline below is **not optional**:
+  - **DDL / schema changes:** author as a migration file in `supabase/migrations/YYYYMMDD_descriptive_name.sql` first, get it reviewed, then run via `apply_migration` or paste into the Supabase SQL editor. Never run ad-hoc DDL via `execute_sql` against production.
+  - **DML on user/account data:** confirm with the user before running anything that mutates more than one row, or any `UPDATE`/`DELETE` without a tight `WHERE`. Show the affected row count from a `SELECT` first.
+  - **Read queries (`SELECT`, `list_tables`, `get_advisors`, `get_logs`):** run freely.
+  - **Hard stops — never run without explicit, scoped say-so in the same turn:** `DROP TABLE` / `DROP SCHEMA` on real tables, `TRUNCATE`, anything touching `auth.*`, anything irreversible. A standing "you can edit Supabase" does not authorize these.
 - **Future sessions.** Prefer MCP tools over filesystem-only or paste-based workflows when working with repo state or DB schema context. Use the GitHub MCP to verify file contents post-write — that catches the Windows file encoding issues that bit us during the strategy doc work.
 
 ### CLAUDE.md size discipline
