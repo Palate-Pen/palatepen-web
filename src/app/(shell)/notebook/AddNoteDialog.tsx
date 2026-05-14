@@ -3,18 +3,22 @@
 import { useState, useTransition } from 'react';
 import { addNoteEntry } from './actions';
 
-export function AddNoteDialog() {
+export function AddNoteDialog({
+  defaultShared = true,
+}: {
+  defaultShared?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [shared, setShared] = useState(true);
+  const [shared, setShared] = useState(defaultShared);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function reset() {
     setTitle('');
     setBody('');
-    setShared(true);
+    setShared(defaultShared);
     setError(null);
   }
 

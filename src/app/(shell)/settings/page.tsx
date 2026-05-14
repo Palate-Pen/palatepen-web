@@ -2,11 +2,14 @@ import Link from 'next/link';
 import { SignOutForm } from '@/components/shell/SignOutForm';
 import { AccessibilitySettings } from '@/components/shell/AccessibilitySettings';
 import { getShellContext } from '@/lib/shell/context';
+import { getUserPreferences, PREFERENCE_META } from '@/lib/preferences';
+import { PreferenceToggle } from './PreferenceToggle';
 
 export const metadata = { title: 'Settings — Palatable' };
 
 export default async function SettingsPage() {
   const ctx = await getShellContext();
+  const prefs = await getUserPreferences(ctx.userId);
   const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
   const isFounder = ctx.email === 'jack@palateandpen.co.uk';
 
@@ -44,9 +47,24 @@ export default async function SettingsPage() {
       </Section>
 
       <Section title="Preferences">
-        <ToggleRow label="Auto-bank invoices" on />
-        <ToggleRow label="Looking Ahead notifications" on />
-        <ToggleRow label="Team can view Notebook" on={false} />
+        <PreferenceToggle
+          prefKey="auto_bank_invoices"
+          label={PREFERENCE_META.auto_bank_invoices.label}
+          description={PREFERENCE_META.auto_bank_invoices.description}
+          initial={prefs.auto_bank_invoices}
+        />
+        <PreferenceToggle
+          prefKey="looking_ahead_notifications"
+          label={PREFERENCE_META.looking_ahead_notifications.label}
+          description={PREFERENCE_META.looking_ahead_notifications.description}
+          initial={prefs.looking_ahead_notifications}
+        />
+        <PreferenceToggle
+          prefKey="team_view_notebook"
+          label={PREFERENCE_META.team_view_notebook.label}
+          description={PREFERENCE_META.team_view_notebook.description}
+          initial={prefs.team_view_notebook}
+        />
       </Section>
 
       <Section title="Connections">
@@ -154,24 +172,3 @@ function SurfaceLink({
   );
 }
 
-function ToggleRow({ label, on }: { label: string; on: boolean }) {
-  return (
-    <div className="px-7 py-4 flex justify-between items-center">
-      <div className="font-serif text-sm text-ink">{label}</div>
-      <div
-        className={
-          'w-10 h-6 rounded-full relative transition-colors ' +
-          (on ? 'bg-gold' : 'bg-rule')
-        }
-        aria-label={`${label} ${on ? 'on' : 'off'}`}
-      >
-        <span
-          className={
-            'absolute w-5 h-5 bg-white rounded-full top-0.5 transition-[left] ' +
-            (on ? 'left-0.5' : 'left-[18px]')
-          }
-        />
-      </div>
-    </div>
-  );
-}

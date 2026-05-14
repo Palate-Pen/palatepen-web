@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getNotebookData } from '@/lib/notebook';
+import { getUserPreferences } from '@/lib/preferences';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { AddNoteDialog } from './AddNoteDialog';
@@ -75,7 +76,10 @@ const seasonCards: Array<{
 
 export default async function NotebookPage() {
   const ctx = await getShellContext();
-  const data = await getNotebookData(ctx.siteId);
+  const [data, prefs] = await Promise.all([
+    getNotebookData(ctx.siteId),
+    getUserPreferences(ctx.userId),
+  ]);
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
@@ -110,7 +114,7 @@ export default async function NotebookPage() {
             <path d="M14 8h7v7" />
             <path d="M3 21h18" />
           </CaptureSoonButton>
-          <AddNoteDialog />
+          <AddNoteDialog defaultShared={prefs.team_view_notebook} />
         </div>
       </div>
 
