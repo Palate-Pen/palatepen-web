@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getInboxSignals, type InboxSignal } from '@/lib/inbox';
+import { SignalActions } from './SignalActions';
 
 export const metadata = { title: 'Inbox — Palatable' };
 
@@ -78,6 +79,7 @@ export default async function InboxPage() {
   const signals = await getInboxSignals(ctx.siteId);
   const now = new Date();
   const active = signals.filter((s) => !s.dismissed_at);
+  const actedCount = signals.filter((s) => s.acted_at).length;
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1200px]">
@@ -87,7 +89,11 @@ export default async function InboxPage() {
       <p className="font-serif italic text-lg text-muted mb-8">
         {signals.length === 0
           ? 'Nothing yet — signals will land here as the system spots patterns.'
-          : `${active.length} ${active.length === 1 ? 'signal' : 'signals'} across every surface. Newest first.`}
+          : `${active.length} ${active.length === 1 ? 'signal' : 'signals'} active across every surface, newest first${
+              actedCount > 0
+                ? ` · ${actedCount} acted on`
+                : ''
+            }.`}
       </p>
 
       {signals.length === 0 ? (
@@ -122,13 +128,14 @@ function SignalRow({
   last: boolean;
 }) {
   const dismissed = !!signal.dismissed_at;
+  const acted = !!signal.acted_at;
   return (
     <div
       className={
         'relative px-7 py-5 flex gap-4 items-start transition-colors before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] ' +
         severityStripe[signal.severity] +
         (last ? '' : ' border-b border-rule') +
-        (dismissed ? ' opacity-60' : '')
+        (acted ? ' opacity-70' : dismissed ? ' opacity-60' : '')
       }
     >
       <div
@@ -169,28 +176,29 @@ function SignalRow({
           dangerouslySetInnerHTML={{ __html: escapeAndBold(signal.body_md) }}
         />
 
-        {(signal.action_label || signal.action_context) && (
-          <div className="flex items-center gap-4 mt-3">
-            {signal.action_label && (
-              <a
-                href={signal.action_target ?? '#'}
-                className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors"
-              >
-                {signal.action_label}
-              </a>
-            )}
-            {signal.action_context && (
-              <span className="font-serif italic text-xs text-muted">
-                {signal.action_context}
-              </span>
-            )}
-            {dismissed && (
-              <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted-soft ml-auto">
-                Dismissed
-              </span>
-            )}
+        <div className="flex items-center gap-4 mt-3 flex-wrap">
+          {signal.action_label && (
+            <a
+              href={signal.action_target ?? '#'}
+              className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors"
+            >
+              {signal.action_label}
+            </a>
+          )}
+          {signal.action_context && (
+            <span className="font-serif italic text-xs text-muted">
+              {signal.action_context}
+            </span>
+          )}
+          <div className="ml-auto">
+            <SignalActions
+              signalId={signal.id}
+              dismissed={dismissed}
+              acted={acted}
+              hasActionTarget={signal.action_target != null}
+            />
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
