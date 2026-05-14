@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Menu Builder — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --star: #B8923C;
+    --plowhorse: #5D7F4F;
+    --puzzle: #B86A2E;
+    --dog: #A14424;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  .page { padding: 0; max-width: 100%; }
+
+  /* Top bar */
+  .builder-bar {
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .builder-bar-left { display: flex; align-items: center; gap: 16px; }
+  .menu-name {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--ink);
+    border: none;
+    background: transparent;
+    cursor: text;
+    padding: 4px 8px;
+    border-radius: 2px;
+  }
+  .menu-name:hover { background: var(--card); }
+  .menu-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .menu-status-pill {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 4px 10px;
+    background: var(--gold-bg);
+    color: var(--gold-dark);
+    text-transform: uppercase;
+  }
+  .builder-bar-actions { display: flex; gap: 10px; align-items: center; }
+  .builder-bar-center { display: flex; justify-content: center; }
+
+  /* View mode toggle */
+  .view-toggle {
+    display: inline-flex;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .view-toggle-btn:hover { color: var(--ink); }
+  .view-toggle-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .view-toggle-btn svg { width: 14px; height: 14px; }
+
+  /* Layout controls */
+  .layout-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .layout-btn {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .layout-btn:hover { border-color: var(--gold); }
+  .layout-btn.active {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+    border-width: 2px;
+    padding: 11px 7px;
+  }
+  .layout-icon {
+    width: 32px;
+    height: 24px;
+    display: flex;
+    gap: 2px;
+  }
+  .layout-icon span {
+    flex: 1;
+    background: var(--muted-soft);
+    border-radius: 1px;
+  }
+  .layout-btn.active .layout-icon span { background: var(--gold); }
+  .layout-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+
+  /* Engineering toggles */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .toggle-row:last-child { border: none; }
+  .toggle-label {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .toggle-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .toggle-switch {
+    width: 38px;
+    height: 22px;
+    background: var(--gold);
+    border-radius: 11px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: var(--paper);
+    border-radius: 50%;
+    top: 3px;
+    left: 19px;
+    transition: left 0.15s;
+  }
+  .toggle-switch.off {
+    background: var(--rule);
+  }
+  .toggle-switch.off::after {
+    left: 3px;
+  }
+
+  /* Custom template upload */
+  .upload-zone {
+    border: 2px dashed var(--rule);
+    background: var(--card);
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 12px;
+  }
+  .upload-zone:hover {
+    border-color: var(--gold);
+    background: var(--gold-bg);
+  }
+  .upload-icon {
+    width: 32px;
+    height: 32px;
+    margin: 0 auto 8px;
+    color: var(--gold);
+  }
+  .upload-icon svg { width: 32px; height: 32px; }
+  .upload-text {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .upload-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .format-guide-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .format-guide-link:hover { border-color: var(--gold); }
+  .format-guide-icon {
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .format-guide-icon svg { width: 16px; height: 16px; }
+  .format-guide-text {
+    flex: 1;
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .format-guide-text strong { font-weight: 600; }
+  .format-guide-arrow {
+    color: var(--muted-soft);
+  }
+  .format-guide-arrow svg { width: 14px; height: 14px; }
+  .action-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 10px 18px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .action-btn.primary { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .action-btn.primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+  .action-btn svg { width: 14px; height: 14px; margin-right: 6px; vertical-align: middle; }
+
+  /* Main 3-column layout */
+  .builder-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 340px;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* LEFT: Dish library */
+  .dish-library {
+    background: var(--card);
+    border-right: 1px solid var(--rule);
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    position: sticky;
+    top: 60px;
+  }
+  .library-head {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-warm);
+  }
+  .library-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .library-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .library-search {
+    width: 100%;
+    padding: 10px 14px;
+    margin: 16px 24px 0;
+    width: calc(100% - 48px);
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+  }
+  .library-search:focus { outline: none; border-color: var(--gold); }
+
+  .library-filters {
+    padding: 12px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .filter-chip {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 5px 10px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .filter-chip:hover { border-color: var(--gold); color: var(--gold); }
+  .filter-chip.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+  .dish-list { padding: 8px 0; }
+  .dish-tile {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--rule-soft);
+    cursor: grab;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .dish-tile:hover { background: var(--card-warm); }
+  .dish-tile::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: transparent;
+  }
+  .dish-tile.star::before { background: var(--star); }
+  .dish-tile.plowhorse::before { background: var(--plowhorse); }
+  .dish-tile.puzzle::before { background: var(--puzzle); }
+  .dish-tile.dog::before { background: var(--dog); opacity: 0.5; }
+  .dish-tile.unused { opacity: 0.6; }
+  .dish-tile.unused::before { background: var(--muted-soft); }
+
+  .dish-tile-name {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .dish-tile-meta {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+  }
+  .dish-cost {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .dish-cost strong { color: var(--ink); font-weight: 600; }
+  .dish-margin {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .dish-margin.healthy { color: var(--healthy); }
+  .dish-margin.attention { color: var(--attention); }
+  .dish-margin.urgent { color: var(--urgent); }
+  .dish-classification {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    padding: 2px 6px;
+    border-radius: 1px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .dish-classification.star { background: var(--star); color: var(--paper); }
+  .dish-classification.plowhorse { background: var(--plowhorse); color: var(--paper); }
+  .dish-classification.puzzle { background: var(--puzzle); color: var(--paper); }
+  .dish-classification.dog { background: var(--dog); color: var(--paper); }
+  .dish-classification.unused {
+    background: transparent;
+    border: 1px dashed var(--muted-soft);
+    color: var(--muted);
+  }
+
+  /* MIDDLE: Canvas */
+  .canvas-wrap {
+    background: #E8E2D6;
+    padding: 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .menu-preview {
+    background: var(--paper);
+    width: 100%;
+    max-width: 720px;
+    min-height: 900px;
+    padding: 56px 64px 64px;
+    box-shadow: 0 8px 32px rgba(26,22,18,0.12);
+    position: relative;
+  }
+
+  /* Editorial template — Palatable default */
+  .menu-preview.editorial {
+    background: var(--paper);
+  }
+  .menu-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .menu-header-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .menu-header-name {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 44px;
+    color: var(--ink);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    margin-bottom: 10px;
+  }
+  .menu-header-name em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .menu-header-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--muted);
+  }
+
+  .menu-section {
+    margin-bottom: 36px;
+    position: relative;
+  }
+  .menu-section.golden::after {
+    content: 'GOLDEN TRIANGLE';
+    position: absolute;
+    top: -12px;
+    right: 0;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    background: var(--paper);
+    padding: 2px 8px;
+  }
+  .menu-section.golden {
+    background: var(--gold-bg);
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 16px;
+    border-radius: 2px;
+  }
+  .menu-section-head {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .dish-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    padding: 14px 0;
+    align-items: baseline;
+    position: relative;
+  }
+  .dish-row.featured { padding-left: 12px; border-left: 2px solid var(--gold); }
+  .dish-row.featured::after {
+    content: 'STAR';
+    position: absolute;
+    right: -32px;
+    top: 14px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    color: var(--star);
+  }
+  .dish-row.puzzle-flag::after {
+    content: 'PUZZLE';
+    position: absolute;
+    right: -42px;
+    top: 14px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    color: var(--puzzle);
+  }
+  .dish-row-name {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .dish-row-desc {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .dish-row-price {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* RIGHT: Settings panel */
+  .settings-panel {
+    background: var(--paper-warm);
+    border-left: 1px solid var(--rule);
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+    position: sticky;
+    top: 60px;
+    padding: 20px 24px 80px;
+  }
+
+  .panel-section { margin-bottom: 32px; }
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Templates */
+  .template-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .template-card {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .template-card:hover { border-color: var(--gold); }
+  .template-card.selected { border-color: var(--gold); background: var(--gold-bg); border-width: 2px; padding: 11px; }
+  .template-thumb {
+    width: 100%;
+    height: 80px;
+    background: var(--paper);
+    margin-bottom: 8px;
+    position: relative;
+    border: 1px solid var(--rule);
+    overflow: hidden;
+  }
+  .template-thumb.editorial { background: var(--paper); }
+  .template-thumb.editorial::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 3px;
+    background: var(--gold);
+  }
+  .template-thumb.editorial::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: 12px;
+    right: 12px;
+    height: 40px;
+    background: repeating-linear-gradient(180deg, var(--ink-soft) 0, var(--ink-soft) 1px, transparent 1px, transparent 8px);
+    opacity: 0.4;
+  }
+  .template-thumb.minimal { background: #FFFFFF; }
+  .template-thumb.minimal::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    height: 8px;
+    background: var(--ink);
+  }
+  .template-thumb.minimal::after {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: 12px;
+    right: 12px;
+    height: 36px;
+    background: repeating-linear-gradient(180deg, var(--ink) 0, var(--ink) 2px, transparent 2px, transparent 10px);
+    opacity: 0.8;
+  }
+  .template-thumb.chalkboard { background: #2a2520; }
+  .template-thumb.chalkboard::before {
+    content: 'Menu';
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: #f5ebd6;
+  }
+  .template-thumb.chalkboard::after {
+    content: '';
+    position: absolute;
+    top: 36px;
+    left: 12px;
+    right: 12px;
+    height: 30px;
+    background: repeating-linear-gradient(180deg, #f5ebd6 0, #f5ebd6 1px, transparent 1px, transparent 8px);
+    opacity: 0.6;
+  }
+  .template-thumb.bistro { background: #F2EDE0; }
+  .template-thumb.bistro::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--attention);
+    box-shadow: 12px 0 0 var(--attention);
+  }
+  .template-thumb.bistro::after {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 14px;
+    right: 14px;
+    height: 36px;
+    background: repeating-linear-gradient(180deg, var(--ink-soft) 0, var(--ink-soft) 1px, transparent 1px, transparent 7px);
+    opacity: 0.5;
+  }
+  .template-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .template-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Stats */
+  .stats-list { display: flex; flex-direction: column; gap: 10px; }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .stat-row:last-child { border: none; }
+  .stat-label {
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .stat-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .stat-value.healthy { color: var(--healthy); }
+  .stat-value.attention { color: var(--attention); }
+
+  /* Suggestions */
+  .suggestion {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--gold);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .suggestion.urgent { border-left-color: var(--urgent); }
+  .suggestion.attention { border-left-color: var(--attention); }
+  .suggestion-tag {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .suggestion.urgent .suggestion-tag { color: var(--urgent); }
+  .suggestion.attention .suggestion-tag { color: var(--attention); }
+  .suggestion-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .suggestion-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .suggestion-action {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-top: 8px;
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  /* Output formats */
+  .formats-grid { display: flex; flex-direction: column; gap: 8px; }
+  .format-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .format-row:hover { border-color: var(--gold); }
+  .format-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gold-bg);
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .format-icon svg { width: 18px; height: 18px; }
+  .format-info { flex: 1; }
+  .format-name {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .format-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Footnote */
+  .footnote {
+    margin: 32px 56px 60px;
+    padding: 32px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .footnote-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .footnote-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v2 · Manager · Menu Builder</div>
+  <div class="mockup-banner-meta">+ column toggles · view modes · custom template upload · formatting guide</div>
+</div>
+
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="builder-bar">
+    <div class="builder-bar-left">
+      <input class="menu-name" value="Dinner Menu — May 2026" />
+      <div class="menu-meta">9 dishes · last edited 14 May 09:42</div>
+      <div class="menu-status-pill">Published</div>
+    </div>
+    <div class="builder-bar-center">
+      <div class="view-toggle">
+        <button class="view-toggle-btn active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Chef View
+        </button>
+        <button class="view-toggle-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Customer View
+        </button>
+      </div>
+    </div>
+    <div class="builder-bar-actions">
+      <button class="action-btn">Preview</button>
+      <button class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+        Print
+      </button>
+      <button class="action-btn primary">
+        Publish updates
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN 3-COLUMN LAYOUT -->
+  <div class="builder-layout">
+
+    <!-- LEFT: Dish library -->
+    <aside class="dish-library">
+      <div class="library-head">
+        <div class="library-title">Dish Library</div>
+        <div class="library-sub">17 dishes · pull from Recipes</div>
+      </div>
+
+      <input class="library-search" placeholder="Search dishes..." />
+
+      <div class="library-filters">
+        <button class="filter-chip active">All</button>
+        <button class="filter-chip">Stars</button>
+        <button class="filter-chip">Plowhorses</button>
+        <button class="filter-chip">Puzzles</button>
+        <button class="filter-chip">Unused</button>
+      </div>
+
+      <div class="dish-list">
+
+        <div class="dish-tile star">
+          <div class="dish-tile-name">Hummus</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£1.24</strong></span>
+            <span class="dish-margin healthy">70%</span>
+          </div>
+          <span class="dish-classification star">Star</span>
+        </div>
+
+        <div class="dish-tile star">
+          <div class="dish-tile-name">Lamb Shawarma</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£4.92</strong></span>
+            <span class="dish-margin healthy">68%</span>
+          </div>
+          <span class="dish-classification star">Star</span>
+        </div>
+
+        <div class="dish-tile plowhorse">
+          <div class="dish-tile-name">Baba Ghanoush</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£1.68</strong></span>
+            <span class="dish-margin attention">58%</span>
+          </div>
+          <span class="dish-classification plowhorse">Plowhorse</span>
+        </div>
+
+        <div class="dish-tile plowhorse">
+          <div class="dish-tile-name">Şakşuka</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£1.04</strong></span>
+            <span class="dish-margin healthy">62%</span>
+          </div>
+          <span class="dish-classification plowhorse">Plowhorse</span>
+        </div>
+
+        <div class="dish-tile puzzle">
+          <div class="dish-tile-name">Beef Short Rib</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£6.84</strong></span>
+            <span class="dish-margin healthy">72%</span>
+          </div>
+          <span class="dish-classification puzzle">Puzzle</span>
+        </div>
+
+        <div class="dish-tile puzzle">
+          <div class="dish-tile-name">Knafeh</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£2.18</strong></span>
+            <span class="dish-margin healthy">76%</span>
+          </div>
+          <span class="dish-classification puzzle">Puzzle</span>
+        </div>
+
+        <div class="dish-tile dog">
+          <div class="dish-tile-name">Halloumi Fries</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£2.40</strong></span>
+            <span class="dish-margin urgent">42%</span>
+          </div>
+          <span class="dish-classification dog">Dog</span>
+        </div>
+
+        <div class="dish-tile unused">
+          <div class="dish-tile-name">Tahini Sauce</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£0.84</strong></span>
+            <span class="dish-margin healthy">—</span>
+          </div>
+          <span class="dish-classification unused">Side / Unused</span>
+        </div>
+
+        <div class="dish-tile unused">
+          <div class="dish-tile-name">Lemon Posset</div>
+          <div class="dish-tile-meta">
+            <span class="dish-cost">cost <strong>£0.84</strong></span>
+            <span class="dish-margin healthy">—</span>
+          </div>
+          <span class="dish-classification unused">Unused</span>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- MIDDLE: Canvas -->
+    <main class="canvas-wrap">
+
+      <!-- Menu preview (Editorial template) -->
+      <div class="menu-preview editorial">
+
+        <div class="menu-header">
+          <div class="menu-header-eyebrow">Berber &amp; Q · Shoreditch</div>
+          <div class="menu-header-name">Dinner <em>menu</em></div>
+          <div class="menu-header-sub">A celebration of the Levant · charcoal, smoke, and spice</div>
+        </div>
+
+        <div class="menu-section golden">
+          <div class="menu-section-head">To Begin</div>
+
+          <div class="dish-row featured">
+            <div>
+              <div class="dish-row-name">Hummus</div>
+              <div class="dish-row-desc">Tahini, lemon, garlic, warm flatbread</div>
+            </div>
+            <div class="dish-row-price">£8</div>
+          </div>
+
+          <div class="dish-row">
+            <div>
+              <div class="dish-row-name">Baba Ghanoush</div>
+              <div class="dish-row-desc">Smoked aubergine, tahini, pomegranate, mint</div>
+            </div>
+            <div class="dish-row-price">£9</div>
+          </div>
+
+          <div class="dish-row">
+            <div>
+              <div class="dish-row-name">Şakşuka</div>
+              <div class="dish-row-desc">Stewed aubergine and peppers, labneh, herbs</div>
+            </div>
+            <div class="dish-row-price">£9</div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-head">From the Grill</div>
+
+          <div class="dish-row featured">
+            <div>
+              <div class="dish-row-name">Lamb Shawarma</div>
+              <div class="dish-row-desc">Slow-roasted lamb shoulder, pickles, garlic sauce</div>
+            </div>
+            <div class="dish-row-price">£18</div>
+          </div>
+
+          <div class="dish-row puzzle-flag">
+            <div>
+              <div class="dish-row-name">Beef Short Rib Braise</div>
+              <div class="dish-row-desc">Red wine braise, root vegetables, gremolata</div>
+            </div>
+            <div class="dish-row-price">£26</div>
+          </div>
+
+          <div class="dish-row">
+            <div>
+              <div class="dish-row-name">Chicken Thigh Skewers</div>
+              <div class="dish-row-desc">Berbere spice, charred lemon, tahini yoghurt</div>
+            </div>
+            <div class="dish-row-price">£16</div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-head">To Finish</div>
+
+          <div class="dish-row puzzle-flag">
+            <div>
+              <div class="dish-row-name">Knafeh</div>
+              <div class="dish-row-desc">Kataifi, mozzarella, honey, crushed pistachios</div>
+            </div>
+            <div class="dish-row-price">£9</div>
+          </div>
+
+          <div class="dish-row">
+            <div>
+              <div class="dish-row-name">Lemon Posset</div>
+              <div class="dish-row-desc">Cream, lemon, shortbread, candied peel</div>
+            </div>
+            <div class="dish-row-price">£7</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- RIGHT: Settings -->
+    <aside class="settings-panel">
+
+      <!-- Layout -->
+      <section class="panel-section">
+        <div class="panel-title">Layout</div>
+        <div class="layout-controls">
+          <button class="layout-btn active">
+            <div class="layout-icon"><span></span></div>
+            <div class="layout-label">Single</div>
+          </button>
+          <button class="layout-btn">
+            <div class="layout-icon"><span></span><span></span></div>
+            <div class="layout-label">Two Col</div>
+          </button>
+          <button class="layout-btn">
+            <div class="layout-icon"><span></span><span></span><span></span></div>
+            <div class="layout-label">Three Col</div>
+          </button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Show prices</div>
+            <div class="toggle-meta">£8 / £18 / £26</div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Show descriptions</div>
+            <div class="toggle-meta">italic line under name</div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Section dividers</div>
+            <div class="toggle-meta">gold underline</div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Allergen icons</div>
+            <div class="toggle-meta">V · VG · GF · contains nuts</div>
+          </div>
+          <div class="toggle-switch off"></div>
+        </div>
+      </section>
+
+      <!-- Engineering View -->
+      <section class="panel-section">
+        <div class="panel-title">Engineering Overlays</div>
+        <div style="font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.5;">
+          Internal cues to help you design. Auto-hidden in Customer View and print output.
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Golden triangle highlight</div>
+            <div class="toggle-meta">prime real estate</div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Star &amp; Puzzle labels</div>
+            <div class="toggle-meta">corner pills</div>
+          </div>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Margin indicators</div>
+            <div class="toggle-meta">% next to each dish</div>
+          </div>
+          <div class="toggle-switch off"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Cost per cover</div>
+            <div class="toggle-meta">food cost £ per dish</div>
+          </div>
+          <div class="toggle-switch off"></div>
+        </div>
+      </section>
+
+      <!-- Templates -->
+      <section class="panel-section">
+        <div class="panel-title">Template</div>
+        <div class="template-grid">
+          <div class="template-card selected">
+            <div class="template-thumb editorial"></div>
+            <div class="template-name">Editorial</div>
+            <div class="template-sub">Palatable default</div>
+          </div>
+          <div class="template-card">
+            <div class="template-thumb minimal"></div>
+            <div class="template-name">Bold Minimal</div>
+            <div class="template-sub">High contrast</div>
+          </div>
+          <div class="template-card">
+            <div class="template-thumb chalkboard"></div>
+            <div class="template-name">Chalkboard</div>
+            <div class="template-sub">Bistro feel</div>
+          </div>
+          <div class="template-card">
+            <div class="template-thumb bistro"></div>
+            <div class="template-name">Warm Bistro</div>
+            <div class="template-sub">Terracotta</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Custom Template Upload -->
+      <section class="panel-section">
+        <div class="panel-title">Your Own Template</div>
+        <div class="upload-zone">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+          </div>
+          <div class="upload-text">Upload your menu template</div>
+          <div class="upload-meta">PDF, AI, Figma, PSD · max 20MB</div>
+        </div>
+        <a class="format-guide-link">
+          <div class="format-guide-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+            </svg>
+          </div>
+          <div class="format-guide-text">
+            <strong>Formatting guide</strong> · how to prep your file
+          </div>
+          <div class="format-guide-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </a>
+      </section>
+
+      <!-- Menu Engineering -->
+      <section class="panel-section">
+        <div class="panel-title">Menu Engineering</div>
+        <div class="stats-list">
+          <div class="stat-row">
+            <div class="stat-label">Avg margin across menu</div>
+            <div class="stat-value healthy">66%</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">Avg cover spend (est.)</div>
+            <div class="stat-value">£28</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">Stars in golden triangle</div>
+            <div class="stat-value healthy">2 of 2</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">Puzzles needing attention</div>
+            <div class="stat-value attention">2</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-label">Dogs on menu</div>
+            <div class="stat-value healthy">0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Suggestions -->
+      <section class="panel-section">
+        <div class="panel-title">Suggestions</div>
+
+        <div class="suggestion attention">
+          <div class="suggestion-tag">Margin Slip</div>
+          <div class="suggestion-body">
+            <strong>Hummus margin dropped from 72% to 70% this week.</strong> Tahini up 12% across both suppliers. Consider £0.50 price increase to £8.50.
+          </div>
+          <a class="suggestion-action">Apply &amp; preview →</a>
+        </div>
+
+        <div class="suggestion">
+          <div class="suggestion-tag">Reposition</div>
+          <div class="suggestion-body">
+            <strong>Beef Short Rib is a Puzzle (high margin, low orders).</strong> Currently mid-section. Consider moving up or rewriting description to lead with "slow-roasted overnight".
+          </div>
+          <a class="suggestion-action">Show in canvas →</a>
+        </div>
+
+        <div class="suggestion">
+          <div class="suggestion-tag">Seasonal Hook</div>
+          <div class="suggestion-body">
+            <strong>Wild garlic peaking this week.</strong> 3 chef notebook entries reference it. Worth adding a wild garlic feature dish?
+          </div>
+          <a class="suggestion-action">Browse seasonal →</a>
+        </div>
+
+      </section>
+
+      <!-- Output formats -->
+      <section class="panel-section">
+        <div class="panel-title">Output Formats</div>
+        <div class="formats-grid">
+
+          <div class="format-row">
+            <div class="format-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+            </div>
+            <div class="format-info">
+              <div class="format-name">Print (PDF)</div>
+              <div class="format-meta">A4 · A5 · custom sizes</div>
+            </div>
+          </div>
+
+          <div class="format-row">
+            <div class="format-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div class="format-info">
+              <div class="format-name">Web menu</div>
+              <div class="format-meta">palatable.menu/berber-and-q</div>
+            </div>
+          </div>
+
+          <div class="format-row">
+            <div class="format-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="3" height="3"/><rect x="18" y="13" width="3" height="3"/><rect x="13" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
+            </div>
+            <div class="format-info">
+              <div class="format-name">QR code</div>
+              <div class="format-meta">prints + downloads</div>
+            </div>
+          </div>
+
+          <div class="format-row">
+            <div class="format-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M9 3v18"/></svg>
+            </div>
+            <div class="format-info">
+              <div class="format-name">Poster / Chalkboard</div>
+              <div class="format-meta">specials · daily features</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </aside>
+  </div>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">Menu Builder v2 — Editing Power Added</div>
+  <div class="footnote-body">
+    <strong>v2 adds the editing controls that turn this from a smart preview into a real design tool.</strong><br><br>
+    <strong>View mode toggle (top bar).</strong> Chef View shows menu engineering overlays — golden triangle highlight, Star/Puzzle labels, margin indicators if enabled. Customer View hides all of it and shows the menu exactly as a guest will see it. Same surface, two lenses. Critical because the overlays are useful for designing but would confuse a customer if accidentally printed.<br><br>
+    <strong>Layout controls.</strong> Single column (current view, classic editorial), Two column (more dishes per page, useful for longer menus), Three column (drinks lists, all-day diner menus). Per-element toggles below — show prices on/off (some venues hide prices for tastings or guests), show descriptions, section dividers, allergen icons. Toggles use the v8 gold-fill switch pattern.<br><br>
+    <strong>Engineering Overlays — separated section with explicit "internal cues" disclaimer.</strong> Golden triangle highlight, Star &amp; Puzzle labels, margin %s, cost-per-cover — all toggleable independently. Auto-hidden when View Mode is Customer View, auto-hidden in print/PDF output. The chef can play with which signals they want to see while editing without polluting what guests will see.<br><br>
+    <strong>Custom Template Upload — the "bring your own" option.</strong> Drag-drop zone accepts PDF, AI (Illustrator), Figma exports, PSD. Max 20MB. For kitchens with existing brand identity (Berber &amp; Q has hand-illustrated menus designed by a studio) who want Palatable's costing intelligence but not Palatable's visual templates. Below the upload zone, a "Formatting guide" link opens a detailed how-to (separate page/modal not shown here) — page sizes, font safe-zones, dish placeholders, image specifications, what Palatable injects vs preserves.<br><br>
+    <strong>The formatting guide tells uploaders:</strong> use page size A4 or US Letter portrait, leave a "dishes" placeholder area where Palatable will inject the menu content, supply fonts as embedded (or use Palatable defaults), name layers semantically (section-header, dish-name, dish-price), provide editable text frames where prices will live, supply CMYK colour profiles for print accuracy. The guide is the bridge between "design tool I already use" and "Palatable operational intelligence" — it makes adoption frictionless for studios and chefs with existing brand work.<br><br>
+    <strong>The wedge holds.</strong> Even with a custom template uploaded, the Bank pulls live prices, menu engineering classifies dishes, the suggestions panel flags margin slips, the QR/print/web outputs all stay synced. The chef gets their visual brand AND our operational layer. No menu designer on the market offers that.
+  </div>
+</div>
+
+</body>
+</html>

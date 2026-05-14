@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Custom Template Formatting Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  .page { max-width: 920px; margin: 0 auto; padding: 64px 56px 80px; }
+
+  /* Header */
+  .page-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .page-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin-bottom: 16px;
+  }
+  .page-title em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .page-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 48px;
+    max-width: 700px;
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    padding: 24px 28px;
+    margin-bottom: 56px;
+  }
+  .toc-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .toc-list { list-style: none; padding: 0; }
+  .toc-list li {
+    padding: 6px 0;
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .toc-list li::before {
+    content: counter(list-item) '.';
+    color: var(--gold);
+    margin-right: 12px;
+    font-weight: 600;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 56px; }
+  .section-num {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 30px;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .section-title em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 600;
+  }
+  .section-body {
+    font-family: 'Lora', serif;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin-bottom: 24px;
+  }
+  .section-body strong {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .section-body em {
+    font-style: italic;
+    color: var(--gold-dark);
+  }
+
+  /* Lists */
+  .checklist {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--gold);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .checklist-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .checklist-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: flex-start;
+  }
+  .checklist-item:last-child { border: none; }
+  .check-mark {
+    width: 20px;
+    height: 20px;
+    background: var(--gold);
+    color: var(--paper);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .check-mark svg { width: 11px; height: 11px; }
+  .check-content {
+    flex: 1;
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .check-content strong { color: var(--ink); font-weight: 600; }
+
+  /* Warning callouts */
+  .callout {
+    border: 1px solid var(--attention);
+    background: rgba(184,106,46,0.04);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .callout-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--attention);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .callout-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .callout-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* Code block */
+  .code-block {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    border-radius: 2px;
+  }
+  .code-block .comment { color: var(--gold-light); }
+  .code-block .tag { color: #C9A84C; }
+
+  /* Layer naming table */
+  .table {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    width: 100%;
+    margin-bottom: 24px;
+  }
+  .table-head {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+  }
+  .table-head-cell {
+    padding: 12px 20px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .table-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .table-row:last-child { border: none; }
+  .table-cell {
+    padding: 14px 20px;
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .table-cell.code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--gold-dark);
+    font-weight: 500;
+  }
+  .table-cell strong { color: var(--ink); font-weight: 600; }
+
+  /* Page size diagram */
+  .diagram {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 32px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+  }
+  .page-diagram {
+    width: 180px;
+    height: 260px;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .page-diagram-zone {
+    position: absolute;
+    border: 2px dashed var(--gold);
+    background: var(--gold-bg);
+  }
+  .page-diagram-zone.header {
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    height: 36px;
+  }
+  .page-diagram-zone.dishes {
+    top: 64px;
+    left: 16px;
+    right: 16px;
+    bottom: 32px;
+  }
+  .page-diagram-zone.footer {
+    bottom: 8px;
+    left: 16px;
+    right: 16px;
+    height: 16px;
+  }
+  .zone-label {
+    position: absolute;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .diagram-text {
+    flex: 1;
+  }
+  .diagram-text h4 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .diagram-text p {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  /* CTA */
+  .cta-block {
+    background: var(--gold-bg);
+    border: 1px solid var(--gold);
+    padding: 32px 36px;
+    text-align: center;
+    margin-top: 48px;
+  }
+  .cta-title {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 26px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .cta-title em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 600;
+  }
+  .cta-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .cta-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 14px 32px;
+    background: var(--gold);
+    color: var(--paper);
+    border: 1px solid var(--gold);
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+  }
+  .cta-btn:hover { background: var(--gold-dark); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Custom Template · Formatting Guide</div>
+  <div class="mockup-banner-meta">How to prep your menu file for Palatable</div>
+</div>
+
+<div class="page">
+
+  <div class="page-eyebrow">Bring Your Own Brand</div>
+  <h1 class="page-title">Custom template <em>formatting guide</em></h1>
+  <p class="page-sub">If your kitchen already has a designed menu — by a studio, agency, or in-house designer — you can upload it to Palatable and we'll inject the costing intelligence, menu engineering, and live updates while preserving your visual identity. Here's exactly how to prep the file.</p>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-label">In This Guide</div>
+    <ol class="toc-list">
+      <li>What we accept and what we don't</li>
+      <li>Page sizes and safe zones</li>
+      <li>Layer naming conventions</li>
+      <li>Editable text frames</li>
+      <li>Fonts and embedding</li>
+      <li>Colour profiles for print</li>
+      <li>Images and placeholders</li>
+      <li>What Palatable injects vs preserves</li>
+      <li>Final checklist before upload</li>
+    </ol>
+  </div>
+
+  <!-- 1: ACCEPTED FILES -->
+  <section class="section">
+    <div class="section-num">01 · File Types</div>
+    <h2 class="section-title">What we <em>accept</em>, and what we don't.</h2>
+    <p class="section-body">
+      Palatable supports the four formats designers actually work in: <strong>PDF (vector with editable text)</strong>, <strong>AI (Adobe Illustrator)</strong>, <strong>Figma (exported as .fig or shared via link)</strong>, and <strong>PSD (Photoshop)</strong>. Max file size is 20MB.
+    </p>
+
+    <div class="checklist">
+      <div class="checklist-title">Accepted</div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>PDF</strong> — vector preferred, with editable text layers (not flattened or outlined)</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>AI</strong> — Illustrator CC 2020+ format, with named layers</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>Figma</strong> — paste a share link with view access, or export as .fig</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>PSD</strong> — works but text-heavy menus do better in vector formats</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Won't work</div>
+      <div class="callout-body">
+        <strong>Flattened PDFs</strong> (text rasterised to image), <strong>JPG/PNG only</strong> (no text data), <strong>InDesign INDD files</strong> (use PDF export), <strong>Word/Pages documents</strong> (export to PDF first). If your file is older than 2020 or you're not sure if text is editable, open it in Acrobat or Preview and try to highlight a dish name — if you can't select text, we can't inject it.
+      </div>
+    </div>
+  </section>
+
+  <!-- 2: PAGE SIZES -->
+  <section class="section">
+    <div class="section-num">02 · Page Sizes</div>
+    <h2 class="section-title">Page sizes and <em>safe zones</em>.</h2>
+    <p class="section-body">
+      We support standard menu sizes out of the box: <strong>A4 portrait (210 × 297mm)</strong>, <strong>A5 portrait (148 × 210mm)</strong>, <strong>US Letter (8.5 × 11in)</strong>, <strong>tri-fold (varies)</strong>, and <strong>custom sizes</strong> up to A2. Make sure your file uses one of these consistently.
+    </p>
+
+    <div class="diagram">
+      <div class="page-diagram">
+        <div class="page-diagram-zone header">
+          <span class="zone-label">Header</span>
+        </div>
+        <div class="page-diagram-zone dishes">
+          <span class="zone-label">Dishes</span>
+        </div>
+        <div class="page-diagram-zone footer">
+          <span class="zone-label">Footer</span>
+        </div>
+      </div>
+      <div class="diagram-text">
+        <h4>Three zones we recognise</h4>
+        <p><strong>Header zone</strong> — your logo, menu title, "Dinner Menu" eyebrow, location. Stays static between updates.</p>
+        <p><strong>Dishes zone</strong> — where Palatable injects content. Leave this empty in your template, or fill with placeholder text we'll replace.</p>
+        <p><strong>Footer zone</strong> — allergen info, dietary notes, social handles, address. Stays static.</p>
+        <p>Use bleed and trim guides as you would for print. Keep critical content 5mm inside the trim line.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3: LAYER NAMING -->
+  <section class="section">
+    <div class="section-num">03 · Layer Naming</div>
+    <h2 class="section-title">Name your layers <em>semantically</em>.</h2>
+    <p class="section-body">
+      This is the most important step. We read your layer/frame names to know what goes where. Use these exact prefixes — case-insensitive — and Palatable will inject content into the right places automatically.
+    </p>
+
+    <div class="table">
+      <div class="table-head">
+        <div class="table-head-cell">Layer / Frame Name</div>
+        <div class="table-head-cell">What Palatable Injects</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">menu-title</div>
+        <div class="table-cell">The menu name you set in Palatable ("Dinner Menu — May 2026")</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">menu-eyebrow</div>
+        <div class="table-cell">Optional eyebrow text above the title ("Berber &amp; Q · Shoreditch")</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">menu-sub</div>
+        <div class="table-cell">Optional sub-headline beneath the title</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">section-header-N</div>
+        <div class="table-cell"><strong>N is the section index (1, 2, 3...)</strong>. Maps to "Starters", "Mains", "Desserts" in order.</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">dish-row-N-M</div>
+        <div class="table-cell"><strong>N = section, M = dish</strong>. Container for one dish (name + description + price grouped).</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">dish-name</div>
+        <div class="table-cell">Dish name (must be inside a dish-row container)</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">dish-desc</div>
+        <div class="table-cell">Dish description (optional — toggle on/off in Palatable)</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">dish-price</div>
+        <div class="table-cell">Price — Palatable updates this when you change the price</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">footer-allergens</div>
+        <div class="table-cell">Allergen disclaimer text (we don't modify, just preserve)</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Tip</div>
+      <div class="callout-body">
+        If you have <strong>15 dishes across 3 sections</strong>, you'll have <code>section-header-1</code>, <code>section-header-2</code>, <code>section-header-3</code>, and dish rows numbered <code>dish-row-1-1</code> through <code>dish-row-3-5</code>. Make as many dish rows as your menu's longest section. Empty rows hide automatically.
+      </div>
+    </div>
+  </section>
+
+  <!-- 4: TEXT FRAMES -->
+  <section class="section">
+    <div class="section-num">04 · Editable Text Frames</div>
+    <h2 class="section-title">Use real text frames, <em>not paths</em>.</h2>
+    <p class="section-body">
+      Every text element we need to update must be a live text frame — <strong>not text converted to outlines or paths</strong>. If your designer converted text to paths for typographic effect, Palatable can't edit it. Keep at least the dish-name, dish-desc, dish-price, and section-header frames as live text.
+    </p>
+
+    <div class="checklist">
+      <div class="checklist-title">Text frame setup</div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>Single-line frames</strong> for dish-name and dish-price. Auto-resize disabled.</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>Auto-height multi-line frames</strong> for dish-desc. We expand as needed without breaking layout.</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>Paragraph styles applied</strong> — we read the style, not inline overrides</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content"><strong>Right-aligned for dish-price</strong> so currency symbol and number stay visually anchored</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: FONTS -->
+  <section class="section">
+    <div class="section-num">05 · Fonts</div>
+    <h2 class="section-title">Embed fonts or use <em>web-safe alternatives</em>.</h2>
+    <p class="section-body">
+      Custom fonts must be embedded in PDFs (subset is fine) and linked correctly in AI/PSD. For web menu output, we need Google Fonts equivalents — or upload your font files as a separate ZIP if you have web-licensed versions. Brand fonts without web licenses will fall back to closest Google Font.
+    </p>
+
+    <div class="callout">
+      <div class="callout-label">License check</div>
+      <div class="callout-body">
+        <strong>Most premium fonts are licensed for print but not for web embedding.</strong> If your brand uses Helvetica Neue, GT America, or other commercial fonts, check with your designer whether you have web licenses. Without them, your web menu and QR code menu will use a Palatable-selected Google Font alternative. Your print PDF will use your original fonts.
+      </div>
+    </div>
+  </section>
+
+  <!-- 6: COLOUR PROFILES -->
+  <section class="section">
+    <div class="section-num">06 · Colour Profiles</div>
+    <h2 class="section-title">CMYK for print, <em>sRGB for web</em>.</h2>
+    <p class="section-body">
+      Palatable auto-converts colour profiles depending on output, but for best print accuracy, supply your file in <strong>CMYK with FOGRA39 or US SWOP profile</strong>. We'll generate sRGB versions for the web menu and QR output automatically.
+    </p>
+    <p class="section-body">
+      Spot colours (Pantone) are preserved in print output but converted to nearest CMYK for digital. If you've used a specific brand Pantone, supply the CMYK breakdown alongside the file.
+    </p>
+  </section>
+
+  <!-- 7: IMAGES -->
+  <section class="section">
+    <div class="section-num">07 · Images and Placeholders</div>
+    <h2 class="section-title">If you use dish photography.</h2>
+    <p class="section-body">
+      Most editorial menus don't use dish photos, but if yours does, place image frames using these naming conventions and we'll inject the correct dish photo from your Palatable library:
+    </p>
+
+    <div class="table">
+      <div class="table-head">
+        <div class="table-head-cell">Frame Name</div>
+        <div class="table-head-cell">What Palatable Injects</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">dish-image-N-M</div>
+        <div class="table-cell">Image for the dish in section N, position M. Pulls from Recipes library photo.</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">logo</div>
+        <div class="table-cell">Your kitchen logo (uploaded once in Palatable Settings → Brand)</div>
+      </div>
+      <div class="table-row">
+        <div class="table-cell code">hero-image</div>
+        <div class="table-cell">Optional hero image at top of menu</div>
+      </div>
+    </div>
+
+    <p class="section-body">
+      Supply image frames sized to the final dimension you want — Palatable will fit dish photos to the frame using a smart-crop algorithm that prioritises plate-centring.
+    </p>
+  </section>
+
+  <!-- 8: WHAT WE INJECT -->
+  <section class="section">
+    <div class="section-num">08 · What Palatable Injects vs Preserves</div>
+    <h2 class="section-title">Your design <em>stays yours</em>.</h2>
+    <p class="section-body">
+      We only inject content into the layers you've named. Everything else — your logo placement, decorative elements, illustrations, borders, hand-drawn flourishes, custom typography effects, paper texture, layout grid — is preserved exactly as you designed it.
+    </p>
+
+    <div class="checklist">
+      <div class="checklist-title">What Palatable updates automatically</div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Dish names, descriptions, and prices from your Recipes library</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Section headers in the order you've arranged them in Menu Builder</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Dish images (if frames named correctly)</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Removes empty dish rows automatically when sections are shorter</div>
+      </div>
+    </div>
+
+    <div class="checklist">
+      <div class="checklist-title">What Palatable never touches</div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Your logo, brand marks, decorative typography</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Backgrounds, paper textures, illustrative elements</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Footer copyright, allergens, social handles, address</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Any layer you haven't named with our conventions</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9: FINAL CHECKLIST -->
+  <section class="section">
+    <div class="section-num">09 · Final Checklist</div>
+    <h2 class="section-title">Before you <em>upload</em>.</h2>
+
+    <div class="checklist">
+      <div class="checklist-title">Run through this list</div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">File is PDF, AI, Figma, or PSD — under 20MB</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Page size is A4 / A5 / US Letter / tri-fold / custom (max A2)</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">All layers named semantically (menu-title, section-header-N, dish-row-N-M, etc.)</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Text frames are live (not converted to paths)</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Fonts embedded or web-licensed alternatives noted</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Colour profile is CMYK for print files</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Image frames named correctly if using dish photography</div>
+      </div>
+      <div class="checklist-item">
+        <div class="check-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="check-content">Header and footer zones identified clearly</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Need help?</div>
+      <div class="callout-body">
+        <strong>If your menu was designed by an external studio,</strong> forward this guide to them — most designers can prep a Palatable-ready file in 30–60 minutes from an existing menu. If you don't have a designer and want help, contact our team at <strong>support@palateandpen.co.uk</strong> and we'll review your file before you upload.
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-block">
+    <div class="cta-title">Ready to <em>upload</em>?</div>
+    <div class="cta-sub">We'll review your file in under 24 hours and confirm it's good to go.</div>
+    <a class="cta-btn" href="#">Back to Menu Builder →</a>
+  </div>
+
+</div>
+
+</body>
+</html>
