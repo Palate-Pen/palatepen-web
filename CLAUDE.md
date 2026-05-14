@@ -55,7 +55,7 @@ Complete. See docs/roadmap-archive.md for full checklist.
 
 ### Phase 3 — Kitchen and Group Tier
 
-- [ ] Costing → Margins rename: now part of the broader 9-tab chef shell (shape (d) superseded 2026-05-14 evening lock). Strategy docs + surface-by-surface mockups locked; Margins v3 still pending Looking Ahead retrofit. Recon: docs/strategy/working-notes/costing-margins-recon-2026-05-14.md.
+- [ ] Costing → Margins rename: complete in design — Costing folded entirely into Margins as part of 10-tab chef shell (2026-05-14 final lock). Build still pending. Recon: docs/strategy/working-notes/costing-margins-recon-2026-05-14.md.
 - [x] Multi-user access with team permissions *(All 4 stages shipped — schema + contexts + Team UI + invite/accept + role gating + Stripe webhook to accounts.tier; legacy user_id RLS still in place pending cleanup, see Progress Log)*
 - [ ] Multiple outlets under one account
 - [ ] Central kitchen management
@@ -112,17 +112,17 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 - CLAUDE.md cleanup commits 1 and 2 — reference material extracted, Progress Log moved to docs/progress-log.md
 - 2026-05-14 PM: Locked final strategy spec across customer + admin + build sequence; captured design system v6 with chef-home and chef-margins mockups as visual canon for any UI work going forward. See docs/strategy/working-notes/design-system-v6.md and docs/strategy/mockups/.
 - 2026-05-14 PM (late): Locked Stock & Suppliers hub design at v3, captured design system v7 with Looking Ahead pattern and Working severity, expanded master views with self-serve integration architecture (user-credential-based, no B2B partnerships needed) and forward-intelligence engine as foundation subsystem. Honest revised build sequence at 6-9 months solo-build to v1 launch. See docs/strategy/working-notes/design-system-v7.md.
-- 2026-05-14 PM (evening lock): Stock & Suppliers complete — hub + 7 sub-pages locked (Notebook, Seasonal, Suppliers, The Bank, Invoices, Deliveries, Waste). Added Prep tab (chef shell now 9 tabs — Prep slotted at position 2, after Home) and Order Drafter modal (launched from Deliveries + Suppliers, 4-channel). Design system v8 captures 15 new patterns + write-and-workflow surface type. See docs/strategy/working-notes/design-system-v8.md and surface-notes-2026-05-14-evening.md; mockups under docs/strategy/mockups/.
+- 2026-05-14 PM (evening lock): Stock & Suppliers complete — hub + 7 sub-pages locked (Notebook, Seasonal, Suppliers, The Bank, Invoices, Deliveries, Waste). Added Prep tab (chef shell then 9 tabs — Prep at position 2, after Home) and Order Drafter modal (launched from Deliveries + Suppliers, 4-channel). Design system v8 captures 15 new patterns + write-and-workflow surface type. See docs/strategy/working-notes/design-system-v8.md and surface-notes-2026-05-14-evening.md; mockups under docs/strategy/mockups/.
+- 2026-05-14 PM (final lock): Chef shell complete — 10 tabs locked (Home / Prep / Recipes / Menus / Margins / Stock & Suppliers / Notebook / Inbox / Settings / Connections). Costing folded into Margins; Reports dropped; Notebook promoted from Stock & Suppliers sub-page; Settings + Connections promoted from cross-shell to chef-shell. Manager Home locked (manager shell 10 tabs, others pending detail design). Onboarding flow locked. Path B greenfield rewrite decision made — legacy app stays in `legacy/` for reference, v2 builds at standard `src/` root with a new `v2` Supabase schema. See docs/strategy/mockups/.
 
 **In flight:**
-- Chef shell surface design: Recipes / Costing / Menus / Inbox tabs still to design
-- Retrofits: chef-home v5 + Margins v3 need Looking Ahead alignment with v8 patterns
+- Manager shell detail design (9 tabs remaining after Home)
+- v2 scaffold: `legacy/` move + `v2` Supabase schema + new Next.js project structure
 
 **Next:**
-- Cross-shell surfaces: Settings / Connections / Onboarding
-- Manager shell variants (across the 9 tabs) and Owner shell with Sites + group rollups
+- Owner shell with Sites + group rollups
 - Open question: Cash Flow / Payments surface has no single home yet
-- Build phase (post-design): Foundation + chef shell scaffolding — honest 6-9 month plan in docs/strategy/pre-launch-build-sequence.md
+- Build phase: Foundation + chef shell scaffolding — see docs/strategy/pre-launch-build-sequence.md (honest 6-9 month plan)
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.
 
@@ -171,7 +171,9 @@ Two layered ideas.
 - **Manager surface** — site operational status. Exception management.
 - **Owner surface** — business pulse, multi-site intelligence, financial reports.
 
-**2. Within the chef set, nine tabs cover the chef's day:** Home, Prep, Recipes, Costing, Menus, Margins, Stock & Suppliers, Reports, Inbox. Each surface answers one sous chef question; the chef's normal work feeds manager and owner views automatically. Full per-surface design rationale in `docs/strategy/working-notes/surface-notes-2026-05-14-evening.md` (locked 2026-05-14 evening, supersedes earlier four-tab shape (d)).
+**2. Within the chef set, ten tabs cover the chef's day:** Home, Prep, Recipes, Menus, Margins, Stock & Suppliers, Notebook, Inbox, Settings, Connections. Each surface answers one sous chef question; the chef's normal work feeds manager and owner views automatically. Full per-surface design rationale in `docs/strategy/working-notes/surface-notes-2026-05-14-evening.md` (locked 2026-05-14 final, supersedes earlier nine-tab and four-tab shapes).
+
+**3. Manager shell — ten tabs, parallel structure to chef shell.** Manager Home locked 2026-05-14; remaining nine tabs pending detail design.
 
 Same underlying data. Role-aware experience. **Nobody does work for anyone else.**
 
