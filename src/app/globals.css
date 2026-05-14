@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --ink: #0e0c0a;
+    --gold: #c8960a;
+    --cream: #f0e8dc;
+    --paper: #faf7f2;
+  }
+
+  html,
+  body {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: theme('fontFamily.sans');
+  }
+}

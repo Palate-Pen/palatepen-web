@@ -4,8 +4,8 @@ node_modules/
 *.log
 dist/
 .vercel
-.scripts/auth-state.json
-.scripts/*.png
+**/.scripts/auth-state.json
+**/.scripts/*.png
 .claude/
 next-env.d.ts
 *.tsbuildinfo
