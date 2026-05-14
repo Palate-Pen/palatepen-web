@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Order Drafter — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: rgba(26,22,18,0.5);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+    padding: 40px;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; align-items: center; margin: -40px -40px 40px -40px; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--paper); opacity: 0.7; }
+
+  /* Drafter as modal/sheet */
+  .drafter {
+    max-width: 920px;
+    margin: 0 auto;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    box-shadow: 0 24px 64px rgba(26,22,18,0.4);
+  }
+
+  .drafter-head {
+    padding: 28px 40px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 24px;
+  }
+  .drafter-eyebrow { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .drafter-title { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 28px; color: var(--ink); line-height: 1.2; letter-spacing: -0.01em; }
+  .drafter-title em { color: var(--gold); font-style: italic; }
+  .drafter-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--muted); margin-top: 6px; }
+  .close-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--rule); color: var(--muted); cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+  .close-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .close-btn svg { width: 14px; height: 14px; }
+
+  .drafter-body { padding: 28px 40px; }
+
+  /* Section heads inside drafter */
+  .drafter-section { margin-bottom: 28px; }
+  .drafter-section:last-child { margin-bottom: 0; }
+  .section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: baseline; justify-content: space-between; }
+  .section-label-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: var(--muted-soft); letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+  /* Order items table */
+  .order-table { background: var(--card); border: 1px solid var(--rule); }
+  .order-head { display: grid; grid-template-columns: minmax(200px, 1.4fr) 110px 100px 100px 50px; gap: 16px; padding: 12px 20px; background: var(--paper-warm); border-bottom: 1px solid var(--rule); }
+  .order-head-cell { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase; }
+  .order-head-cell.right { text-align: right; }
+  .order-row { display: grid; grid-template-columns: minmax(200px, 1.4fr) 110px 100px 100px 50px; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--rule-soft); align-items: center; }
+  .order-row:last-child { border-bottom: none; }
+  .item-name { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 15px; color: var(--ink); line-height: 1.3; }
+  .item-spec { font-family: 'Jost', sans-serif; font-weight: 400; font-size: 10px; color: var(--muted); letter-spacing: 0.02em; margin-top: 2px; }
+  .qty-input { display: flex; align-items: center; gap: 0; border: 1px solid var(--rule); background: var(--card); }
+  .qty-btn { width: 28px; height: 32px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-family: 'Cormorant Garamond', serif; font-size: 16px; transition: color 0.15s; }
+  .qty-btn:hover { color: var(--gold); }
+  .qty-value { flex: 1; text-align: center; font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 14px; color: var(--ink); padding: 0 6px; min-width: 32px; }
+  .item-unit { font-family: 'Jost', sans-serif; font-size: 11px; color: var(--muted); letter-spacing: 0.02em; text-align: center; }
+  .item-est { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 14px; color: var(--ink-soft); text-align: right; }
+  .item-est-rate { font-family: 'Jost', sans-serif; font-size: 10px; color: var(--muted-soft); margin-top: 2px; text-align: right; }
+  .item-remove { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--muted-soft); cursor: pointer; }
+  .item-remove:hover { color: var(--urgent); }
+  .item-remove svg { width: 14px; height: 14px; }
+
+  .add-line { padding: 14px 20px; border-top: 1px solid var(--rule); background: var(--paper-warm); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s; }
+  .add-line:hover { background: var(--gold-bg); }
+  .add-line-icon { width: 28px; height: 28px; border: 1px dashed var(--gold); border-radius: 2px; display: flex; align-items: center; justify-content: center; color: var(--gold); }
+  .add-line-icon svg { width: 14px; height: 14px; }
+  .add-line-label { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); }
+
+  /* Suggestion row */
+  .suggestion-row { padding: 14px 20px; border-top: 1px solid var(--rule); background: var(--gold-bg); display: flex; gap: 14px; align-items: center; }
+  .suggestion-icon { width: 24px; height: 24px; color: var(--gold); flex-shrink: 0; }
+  .suggestion-icon svg { width: 24px; height: 24px; }
+  .suggestion-text { flex: 1; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+  .suggestion-text strong { font-style: normal; font-weight: 600; color: var(--ink); }
+  .suggestion-add { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; padding: 6px 12px; border: 1px solid var(--gold); background: transparent; cursor: pointer; transition: all 0.15s; }
+  .suggestion-add:hover { background: var(--gold); color: var(--paper); }
+
+  /* Order total */
+  .order-total { padding: 16px 20px; border-top: 2px solid var(--ink); background: var(--paper-warm); display: flex; justify-content: space-between; align-items: center; }
+  .total-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.4em; color: var(--ink); text-transform: uppercase; }
+  .total-value { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 22px; color: var(--ink); letter-spacing: -0.005em; }
+  .total-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Channel selector */
+  .channel-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .channel-card { background: var(--card); border: 1px solid var(--rule); padding: 18px 16px; cursor: pointer; transition: all 0.15s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; }
+  .channel-card:hover { border-color: var(--rule-gold); }
+  .channel-card.selected { border-color: var(--gold); background: var(--gold-bg); }
+  .channel-card.selected::before { content: ''; position: absolute; top: -1px; left: -1px; right: -1px; height: 3px; background: var(--gold); }
+  .channel-card.disabled { opacity: 0.4; cursor: not-allowed; }
+  .channel-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--gold); }
+  .channel-icon svg { width: 24px; height: 24px; }
+  .channel-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase; }
+  .channel-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 11px; color: var(--muted); line-height: 1.3; }
+  .channel-card.selected .channel-name { color: var(--gold-dark); }
+
+  /* Composed message preview */
+  .message-preview { background: var(--card); border: 1px solid var(--rule); }
+  .message-fields { padding: 20px 24px; border-bottom: 1px solid var(--rule-soft); }
+  .message-field-row { display: grid; grid-template-columns: 80px 1fr; gap: 16px; padding: 8px 0; align-items: baseline; }
+  .message-field-row + .message-field-row { border-top: 1px solid var(--rule-soft); }
+  .field-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase; }
+  .field-value { font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--ink); line-height: 1.5; }
+  .field-value em { color: var(--gold); font-style: italic; }
+  .message-body { padding: 24px; font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--ink-soft); line-height: 1.7; white-space: pre-line; }
+  .message-body strong { font-weight: 600; color: var(--ink); }
+  .message-body .greeting { font-style: italic; color: var(--ink); }
+  .message-body ul { margin: 12px 0; padding-left: 24px; }
+  .message-body li { padding: 3px 0; font-family: 'Cormorant Garamond', serif; }
+
+  /* Actions footer */
+  .drafter-foot { padding: 24px 40px; border-top: 1px solid var(--rule); background: var(--paper-warm); display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .foot-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--muted); }
+  .foot-meta strong { font-style: normal; font-weight: 600; color: var(--ink); }
+  .foot-actions { display: flex; gap: 12px; }
+  .btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; padding: 12px 24px; cursor: pointer; transition: all 0.15s; border: 1px solid; }
+  .btn.secondary { background: transparent; border-color: var(--rule); color: var(--ink-soft); }
+  .btn.secondary:hover { border-color: var(--ink); color: var(--ink); }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: var(--paper); display: inline-flex; align-items: center; gap: 10px; }
+  .btn.primary:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+  .btn.primary svg { width: 14px; height: 14px; }
+
+  .mockup-footnote { margin: 40px auto 60px; max-width: 920px; padding: 32px 32px; background: var(--paper-warm); border: 1px solid var(--rule); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px; color: var(--ink-soft); line-height: 1.7; }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Order Drafter · Modal Surface</div>
+  <div class="mockup-banner-meta">Launched from Deliveries or Suppliers · multi-channel (Email/WhatsApp/Portal/Phone)</div>
+</div>
+
+<div class="drafter">
+
+  <div class="drafter-head">
+    <div>
+      <div class="drafter-eyebrow">Drafting order</div>
+      <div class="drafter-title">Order to <em>Aubrey</em></div>
+      <div class="drafter-sub">Saturday top-up · Sarah Mitchell · order by Fri 17:00</div>
+    </div>
+    <button class="close-btn" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="drafter-body">
+
+    <!-- ITEMS -->
+    <div class="drafter-section">
+      <div class="section-label">
+        <span>Order Items</span>
+        <span class="section-label-meta">Suggested from your Saturday pattern</span>
+      </div>
+
+      <div class="order-table">
+        <div class="order-head">
+          <div class="order-head-cell">Item</div>
+          <div class="order-head-cell">Quantity</div>
+          <div class="order-head-cell">Unit</div>
+          <div class="order-head-cell right">Est. value</div>
+          <div class="order-head-cell"></div>
+        </div>
+
+        <div class="order-row">
+          <div>
+            <div class="item-name">Chicken thigh, boneless</div>
+            <div class="item-spec">free range · skin on</div>
+          </div>
+          <div class="qty-input">
+            <button class="qty-btn">−</button>
+            <span class="qty-value">8</span>
+            <button class="qty-btn">+</button>
+          </div>
+          <div class="item-unit">kg</div>
+          <div>
+            <div class="item-est">£62.40</div>
+            <div class="item-est-rate">at £7.80/kg</div>
+          </div>
+          <div class="item-remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+
+        <div class="order-row">
+          <div>
+            <div class="item-name">Beef mince, 15% fat</div>
+            <div class="item-spec">Aberdeen Angus</div>
+          </div>
+          <div class="qty-input">
+            <button class="qty-btn">−</button>
+            <span class="qty-value">5</span>
+            <button class="qty-btn">+</button>
+          </div>
+          <div class="item-unit">kg</div>
+          <div>
+            <div class="item-est">£58.50</div>
+            <div class="item-est-rate">at £11.70/kg</div>
+          </div>
+          <div class="item-remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+
+        <div class="order-row">
+          <div>
+            <div class="item-name">Lamb merguez</div>
+            <div class="item-spec">house-spec recipe</div>
+          </div>
+          <div class="qty-input">
+            <button class="qty-btn">−</button>
+            <span class="qty-value">3</span>
+            <button class="qty-btn">+</button>
+          </div>
+          <div class="item-unit">kg</div>
+          <div>
+            <div class="item-est">£42.00</div>
+            <div class="item-est-rate">at £14.00/kg</div>
+          </div>
+          <div class="item-remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </div>
+        </div>
+
+        <!-- Suggestion row -->
+        <div class="suggestion-row">
+          <div class="suggestion-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 8v4M12 16h.01"/>
+            </svg>
+          </div>
+          <div class="suggestion-text">
+            <strong>Friday's looking heavy</strong> — 168 covers booked. Last time your Saturday top-up included <em>chicken wings</em> for the weekend special. Worth adding?
+          </div>
+          <button class="suggestion-add">Add 4kg</button>
+        </div>
+
+        <!-- Add line -->
+        <div class="add-line">
+          <div class="add-line-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+          <div class="add-line-label">Add another item</div>
+        </div>
+
+        <!-- Total -->
+        <div class="order-total">
+          <div>
+            <div class="total-label">Estimated total</div>
+            <div class="total-meta">£175 ± 10% based on last 4 weeks</div>
+          </div>
+          <div class="total-value">£162.90</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANNEL -->
+    <div class="drafter-section">
+      <div class="section-label">
+        <span>How to send</span>
+        <span class="section-label-meta">Sarah prefers WhatsApp · email for record</span>
+      </div>
+
+      <div class="channel-grid">
+        <div class="channel-card selected">
+          <div class="channel-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <path d="M22 6l-10 7L2 6"/>
+            </svg>
+          </div>
+          <div class="channel-name">Email</div>
+          <div class="channel-meta">sarah@aubreyallen.co.uk</div>
+        </div>
+
+        <div class="channel-card">
+          <div class="channel-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+          </div>
+          <div class="channel-name">WhatsApp</div>
+          <div class="channel-meta">07734 281 094</div>
+        </div>
+
+        <div class="channel-card disabled">
+          <div class="channel-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18"/>
+              <path d="M3 9h18M9 3v18"/>
+            </svg>
+          </div>
+          <div class="channel-name">Portal</div>
+          <div class="channel-meta">Not available</div>
+        </div>
+
+        <div class="channel-card">
+          <div class="channel-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+            </svg>
+          </div>
+          <div class="channel-name">Phone</div>
+          <div class="channel-meta">Just shows number</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPOSED MESSAGE -->
+    <div class="drafter-section">
+      <div class="section-label">
+        <span>Your email</span>
+        <span class="section-label-meta">Edit anything before sending</span>
+      </div>
+
+      <div class="message-preview">
+        <div class="message-fields">
+          <div class="message-field-row">
+            <div class="field-label">To</div>
+            <div class="field-value"><em>Sarah Mitchell</em> &lt;sarah@aubreyallen.co.uk&gt;</div>
+          </div>
+          <div class="message-field-row">
+            <div class="field-label">From</div>
+            <div class="field-value">Jack Harrison &lt;jack@berberandq.com&gt;</div>
+          </div>
+          <div class="message-field-row">
+            <div class="field-label">Subject</div>
+            <div class="field-value">Berber &amp; Q order — Saturday 17 May delivery</div>
+          </div>
+        </div>
+
+        <div class="message-body"><span class="greeting">Hi Sarah,</span>
+
+Hope you're well. Order for Saturday 17 May delivery please:
+
+<ul><li><strong>Chicken thigh, boneless, free range skin on</strong> — 8kg</li><li><strong>Beef mince, 15% fat, Aberdeen Angus</strong> — 5kg</li><li><strong>Lamb merguez, house-spec recipe</strong> — 3kg</li></ul>
+
+Usual delivery slot around 08:00 works for us.
+
+Thanks,
+Jack
+<span style="color: var(--muted-soft); font-size: 12px;">Berber &amp; Q · 07735 401 228</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER ACTIONS -->
+  <div class="drafter-foot">
+    <div class="foot-meta">
+      Order will log as <strong>Expected</strong> delivery on <strong>Sat 17 May</strong>.
+    </div>
+    <div class="foot-actions">
+      <button class="btn secondary">Save as draft</button>
+      <button class="btn primary">
+        Open in mail
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div class="mockup-footnote">
+  <div class="footnote-label">Order Drafter v1 — Design Notes</div>
+  <div class="footnote-body">
+    <strong>Modal/sheet surface, not a page.</strong> Launches over the current surface (Deliveries scheduled row clicked "Draft order", or Suppliers detail page "Place order"). Dark scrim, drafter card centred with shadow. Closes back to the surface that launched it.<br><br>
+    <strong>Three sections, vertical flow:</strong> Order Items (the what), How to Send (the channel), Your Email (the composed message). Each section labelled in Cinzel with an italic meta line giving context — "Suggested from your Saturday pattern" / "Sarah prefers WhatsApp · email for record" / "Edit anything before sending".<br><br>
+    <strong>Items table with editable quantities.</strong> Each row: item · qty input (+/− buttons) · unit · estimated value · remove. Estimated value pulled live from The Bank. Total at the bottom shows £162.90 with the system's "£175 ± 10% based on last 4 weeks" range as context — chef knows if their order is unusual.<br><br>
+    <strong>Suggestion row inline.</strong> Gold-bg strip mid-table: "Friday's looking heavy — 168 covers booked. Last time your Saturday top-up included chicken wings for the weekend special. Worth adding?" + Add 4kg button. System suggesting based on Friday's covers + past Saturday patterns. One click adds the line.<br><br>
+    <strong>Four-channel selector.</strong> Email selected (gold border, gold top bar), WhatsApp available, Portal disabled because Aubrey doesn't have one, Phone available (would just show the number with a "remember to log the order" reminder). Each card shows the channel-specific destination (email address, phone number, etc).<br><br>
+    <strong>Composed message preview, fully editable.</strong> To/From/Subject in stacked fields with gold-bordered field labels. Body in Cormorant Garamond — reads like a chef writing to a supplier they know, not auto-generated. Greeting, the order as a clean bulleted list with item specs in bold, delivery slot reference, signature with phone number in muted text.<br><br>
+    <strong>Footer commits the action.</strong> "Order will log as Expected delivery on Sat 17 May" tells the chef what happens next — the Deliveries row that previously said "not yet ordered" updates the moment they send. Primary action "Open in mail" launches the mailto: link with the composed message pre-filled. Save as draft for later.<br><br>
+    <strong>The cross-surface loop:</strong> Deliveries shows scheduled order → click Draft order → drafter opens → chef edits + sends via Email → returns to Deliveries → row now reads "Expected · sent via email to Sarah" with a small email icon. Order logged, expected delivery tracked, paper trail intact.
+  </div>
+</div>
+
+</body>
+</html>

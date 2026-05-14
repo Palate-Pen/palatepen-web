@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Stock &amp; Suppliers · Invoices — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink); color: var(--paper); padding: 12px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--paper); opacity: 0.7;
+  }
+  .app {
+    display: grid; grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease;
+  }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar {
+    background: var(--paper-warm); border-right: 1px solid var(--rule);
+    position: sticky; top: 0; height: calc(100vh - 44px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-brand {
+    height: var(--header-row-height); padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    flex-shrink: 0; transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase;
+    display: flex; align-items: center; transition: opacity 0.2s, width 0.25s;
+  }
+  .brand-mark .brand-dot-inline {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px; vertical-align: middle;
+    position: relative; top: -4px;
+  }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; pointer-events: none; position: absolute; }
+  .brand-mark-collapsed {
+    display: none; align-items: center;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px;
+    letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+  }
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); margin-left: 4px; position: relative; top: -7px;
+  }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row {
+    padding: 12px 24px 0; transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase;
+    padding: 14px 24px 6px; white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+  }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer; border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); transition: color 0.15s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500;
+    letter-spacing: 0.03em; flex: 1; transition: opacity 0.2s;
+  }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.05em; color: var(--paper); background: var(--gold);
+    padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px;
+  }
+  .nav-badge.subtle {
+    background: transparent; color: var(--muted-soft); border: 1px solid var(--rule);
+  }
+  .app.collapsed .nav-badge {
+    position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px;
+    padding: 0; font-size: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip {
+    display: none; position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 7px 14px; white-space: nowrap; z-index: 30; pointer-events: none;
+  }
+  .nav-tooltip::before {
+    content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-style: solid;
+    border-width: 4px 4px 4px 0; border-color: transparent var(--ink) transparent transparent;
+  }
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row {
+    padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .user-role {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px;
+  }
+  .surface-switcher {
+    width: 100%; padding: 8px 12px; background: transparent;
+    border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher {
+    width: 36px; height: 36px; padding: 0; justify-content: center;
+  }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar {
+    height: var(--header-row-height);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule);
+    background: var(--paper); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle {
+    width: 36px; height: 36px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; transition: transform 0.25s ease; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px;
+    color: var(--ink); letter-spacing: 0.04em; padding-left: 12px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .breadcrumb-sep {
+    color: var(--muted-soft);
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 0.3em;
+  }
+  .breadcrumb-current {
+    color: var(--gold);
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .date-display {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .page { padding: 48px 56px 80px; max-width: 1400px; }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 40px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 32px; flex-wrap: wrap;
+  }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px;
+    line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
+  }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px;
+    color: var(--muted); margin-top: 12px; letter-spacing: 0.01em;
+  }
+
+  /* Scan invoice quick action */
+  .scan-card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 20px 24px; min-width: 300px;
+    display: flex; align-items: center; gap: 18px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .scan-card:hover {
+    border-color: var(--rule-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .scan-icon {
+    width: 48px; height: 48px;
+    border: 1px solid var(--gold); border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); flex-shrink: 0;
+    background: var(--gold-bg);
+  }
+  .scan-icon svg { width: 26px; height: 26px; }
+  .scan-text { flex: 1; }
+  .scan-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 18px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 4px;
+  }
+  .scan-sub {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .device-hint {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-radius: 1px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase;
+  }
+  .device-hint svg { width: 10px; height: 10px; }
+
+  /* KPIs */
+  .flow-overview {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); margin-bottom: 48px;
+  }
+  .flow-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .overview-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .overview-value.attention { color: var(--attention); }
+  .overview-value.urgent { color: var(--urgent); }
+  .overview-value.healthy { color: var(--healthy); }
+  .overview-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 8px;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Attention cards */
+  .attention-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .attention-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 26px 28px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .attention-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--attention);
+  }
+  .attention-card.urgent::before { background: var(--urgent); }
+  .attention-card.attention::before { background: var(--attention); }
+  .attention-card.info::before { background: var(--info); }
+  .attention-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .attention-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .attention-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .attention-severity {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--attention);
+  }
+  .attention-card.urgent .attention-severity { color: var(--urgent); }
+  .attention-card.info .attention-severity { color: var(--info); }
+  .attention-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .attention-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .attention-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .attention-body strong {
+    font-style: normal; color: var(--ink); font-weight: 600;
+  }
+  .attention-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .attention-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .attention-card:hover .attention-action-link { color: var(--gold-dark); }
+  .attention-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* List controls */
+  .list-controls {
+    display: flex; gap: 14px; align-items: center;
+    margin-bottom: 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .control-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase;
+  }
+  .control-pill {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 6px 14px; background: transparent; border: 1px solid var(--rule);
+    color: var(--ink-soft); cursor: pointer; transition: all 0.15s;
+  }
+  .control-pill:hover { border-color: var(--gold); color: var(--ink); }
+  .control-pill.active { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .control-pill .count {
+    color: var(--muted-soft);
+    margin-left: 4px;
+    font-size: 8px;
+  }
+  .control-pill.active .count {
+    color: rgba(248,244,237,0.7);
+  }
+  .list-controls-spacer { flex: 1; }
+  .search-mini {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 6px 14px;
+    min-width: 280px;
+  }
+  .search-mini svg { width: 14px; height: 14px; color: var(--gold); flex-shrink: 0; }
+  .search-mini input {
+    border: none; background: transparent; outline: none;
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink); flex: 1;
+  }
+  .search-mini input::placeholder { color: var(--muted); }
+
+  /* Invoice list */
+  .invoice-list {
+    background: var(--card);
+    border: 1px solid var(--rule);
+  }
+  .invoice-head {
+    display: grid;
+    grid-template-columns: minmax(200px, 1.3fr) 110px 110px minmax(180px, 1.4fr) 130px 60px;
+    gap: 24px;
+    padding: 14px 28px;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+  }
+  .invoice-head-cell {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase;
+  }
+  .invoice-head-cell.right { text-align: right; }
+
+  .invoice-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 1.3fr) 110px 110px minmax(180px, 1.4fr) 130px 60px;
+    gap: 24px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .invoice-row:last-child { border-bottom: none; }
+  .invoice-row:hover { background: var(--card-warm); }
+
+  /* Row state indicators via left border */
+  .invoice-row {
+    position: relative;
+  }
+  .invoice-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: transparent;
+  }
+  .invoice-row.discrepancy::before { background: var(--urgent); }
+  .invoice-row.review::before { background: var(--attention); }
+  .invoice-row.credit-flight::before { background: var(--gold); }
+  .invoice-row.reconciled::before { background: var(--healthy); opacity: 0.5; }
+  .invoice-row.paid::before { background: var(--healthy); opacity: 0.3; }
+
+  /* Cell 1: Supplier */
+  .invoice-supplier {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .invoice-supplier-name {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 17px;
+    color: var(--ink); letter-spacing: -0.005em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .invoice-supplier-name em {
+    color: var(--gold); font-style: italic;
+  }
+  .invoice-ref {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.03em;
+  }
+
+  /* Cell 2: Invoice date */
+  .invoice-date {
+    font-family: 'Cormorant Garamond', serif; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.3;
+  }
+  .invoice-date-sub {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 10px;
+    color: var(--muted-soft); letter-spacing: 0.03em;
+    margin-top: 2px;
+  }
+
+  /* Cell 3: Total */
+  .invoice-total {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 17px;
+    color: var(--ink); letter-spacing: -0.005em;
+  }
+  .invoice-lines {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 10px;
+    color: var(--muted); letter-spacing: 0.03em;
+    margin-top: 2px;
+  }
+
+  /* Cell 4: Status with context */
+  .invoice-status {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    width: fit-content;
+  }
+  .status-pill.discrepancy { color: var(--urgent); }
+  .status-pill.review { color: var(--attention); }
+  .status-pill.credit-flight { color: var(--gold-dark); }
+  .status-pill.reconciled { color: var(--healthy); }
+  .status-pill.paid { color: var(--muted); }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-dot.discrepancy { background: var(--urgent); }
+  .status-dot.review { background: var(--attention); }
+  .status-dot.credit-flight { background: var(--gold); }
+  .status-dot.reconciled { background: var(--healthy); }
+  .status-dot.paid { background: var(--muted-soft); }
+  .status-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--ink-soft); line-height: 1.4;
+  }
+  .status-context strong {
+    font-style: normal; font-weight: 600; color: var(--ink);
+  }
+  .status-context.attention strong { color: var(--attention); }
+  .status-context.urgent strong { color: var(--urgent); }
+
+  /* Cell 5: Action */
+  .invoice-action {
+    display: flex; justify-content: flex-end;
+  }
+  .row-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold); text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .invoice-row:hover .row-action-link {
+    background: var(--gold); color: var(--paper);
+  }
+  .row-action-link.subtle {
+    border-color: var(--rule);
+    color: var(--ink-soft);
+  }
+  .invoice-row:hover .row-action-link.subtle {
+    border-color: var(--gold);
+    background: transparent;
+    color: var(--gold);
+  }
+
+  /* Cell 6: Arrow */
+  .row-arrow {
+    color: var(--muted-soft);
+    transition: color 0.15s, transform 0.15s;
+    display: flex; justify-content: flex-end;
+  }
+  .invoice-row:hover .row-arrow {
+    color: var(--gold);
+    transform: translateX(2px);
+  }
+  .row-arrow svg { width: 16px; height: 16px; }
+
+  /* View all */
+  .invoice-view-all {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 28px;
+    background: var(--paper-warm);
+    border-top: 1px solid var(--rule);
+  }
+  .view-all-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.01em;
+  }
+  .view-all-button {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gold); text-decoration: none;
+    padding: 10px 20px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .view-all-button:hover {
+    background: var(--gold); color: var(--paper);
+  }
+  .view-all-button svg { width: 14px; height: 14px; }
+
+  /* Looking Ahead */
+  .looking-ahead-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .ahead-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 28px 32px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .ahead-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--info);
+  }
+  .ahead-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .ahead-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .ahead-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .ahead-tag {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--info);
+  }
+  .ahead-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 24px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .ahead-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .ahead-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .ahead-body strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .ahead-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ahead-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .ahead-card:hover .ahead-action-link { color: var(--gold-dark); }
+  .ahead-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Footnote */
+  .mockup-footnote {
+    margin: 0 56px 60px; padding: 32px 32px;
+    background: var(--paper-warm); border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px;
+    color: var(--ink-soft); line-height: 1.7; max-width: 800px;
+  }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Stock &amp; Suppliers · Invoices</div>
+  <div class="mockup-banner-meta">Discrepancy detection · credit note workflow · paperwork inbox</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/><path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span><span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">
+          <span>Stock &amp; Suppliers</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Invoices</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">The Paper Trail</div>
+          <div class="page-title">Your <em>invoices</em></div>
+          <div class="page-sub">One discrepancy needs your eye. Two credit notes in flight. The rest is moving as it should.</div>
+        </div>
+
+        <div class="scan-card">
+          <div class="scan-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h3l1.5-2h7L17 7h3v12H4V7z"/>
+              <circle cx="12" cy="13" r="3.5"/>
+            </svg>
+          </div>
+          <div class="scan-text">
+            <div class="scan-label">Scan an invoice</div>
+            <div class="scan-sub">
+              <span class="device-hint">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="6" y="2" width="12" height="20" rx="2"/>
+                  <path d="M12 18h.01"/>
+                </svg>
+                Use Phone
+              </span>
+              <span>or upload PDF</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="flow-overview">
+        <div class="flow-overview-card">
+          <div class="overview-label">In The Inbox</div>
+          <div class="overview-value">14</div>
+          <div class="overview-sub">received this month</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Discrepancies</div>
+          <div class="overview-value urgent">1</div>
+          <div class="overview-sub">Aubrey short delivery</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Credit Notes In Flight</div>
+          <div class="overview-value attention">2</div>
+          <div class="overview-sub">£86 owed back, average 4 days</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Reconciled This Month</div>
+          <div class="overview-value">11</div>
+          <div class="overview-sub">£4,820 across 8 suppliers</div>
+        </div>
+      </div>
+
+      <!-- ATTENTION CARDS -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Worth Sorting</div>
+          <div class="section-meta">three flags across the paperwork</div>
+        </div>
+
+        <div class="attention-grid">
+
+          <div class="attention-card urgent">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Aubrey · Inv #4827</div>
+              <div class="attention-severity">Discrepancy</div>
+            </div>
+            <div class="attention-headline">Lamb shoulder <em>short</em> by 4.2kg.</div>
+            <div class="attention-body">
+              <strong>Invoice billed for 18kg, delivery note showed 13.8kg.</strong> Photo of the docket is attached to the scan. Worth raising a credit note before today's payment run — that's about £60 if Aubrey's at £14.20.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Draft credit note →</a>
+              <div class="attention-action-context">received 07:14 today</div>
+            </div>
+          </div>
+
+          <div class="attention-card attention">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Reza · Inv #R-2284</div>
+              <div class="attention-severity">In Flight</div>
+            </div>
+            <div class="attention-headline">Credit note with Reza for <em>4 days</em>.</div>
+            <div class="attention-body">
+              <strong>Saffron quality issue raised Friday — £52 credit pending.</strong> Mo usually turns these around in 2-3 days. Worth a WhatsApp nudge if it's not back by tomorrow morning.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Nudge Mo →</a>
+              <div class="attention-action-context">raised Fri 9 May</div>
+            </div>
+          </div>
+
+          <div class="attention-card info">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Auto-banking</div>
+              <div class="attention-severity">Working</div>
+            </div>
+            <div class="attention-headline">23 prices auto-banked this month.</div>
+            <div class="attention-body">
+              <strong>From four invoices scanned this week alone.</strong> Three new ingredients flagged for your confirmation — they're sitting in the inbox. No duplicates, all matched to existing suppliers.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open The Bank →</a>
+              <div class="attention-action-context">last update 07:14 today</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- FILTERS -->
+      <div class="list-controls">
+        <span class="control-label">Show</span>
+        <button class="control-pill active">All<span class="count">14</span></button>
+        <button class="control-pill">Needs action<span class="count">3</span></button>
+        <button class="control-pill">In flight<span class="count">2</span></button>
+        <button class="control-pill">Reconciled<span class="count">9</span></button>
+        <div class="list-controls-spacer"></div>
+        <div class="search-mini">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M21 21l-4.5-4.5"/>
+          </svg>
+          <input type="text" placeholder="Search by supplier or invoice ref...">
+        </div>
+      </div>
+
+      <!-- INVOICE LIST -->
+      <div class="invoice-list">
+        <div class="invoice-head">
+          <div class="invoice-head-cell">Supplier</div>
+          <div class="invoice-head-cell">Date</div>
+          <div class="invoice-head-cell right">Total</div>
+          <div class="invoice-head-cell">Status</div>
+          <div class="invoice-head-cell"></div>
+          <div class="invoice-head-cell"></div>
+        </div>
+
+        <!-- 1. DISCREPANCY — Aubrey lamb short -->
+        <div class="invoice-row discrepancy">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Aubrey</em></div>
+            <div class="invoice-ref">Inv #AA-4827</div>
+          </div>
+          <div>
+            <div class="invoice-date">Thu 14 May</div>
+            <div class="invoice-date-sub">received 07:14</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £286.40
+            <div class="invoice-lines">8 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill discrepancy">
+              <span class="status-dot discrepancy"></span>
+              Discrepancy
+            </div>
+            <div class="status-context urgent">
+              Lamb shoulder <strong>short 4.2kg</strong> · ~£60 owed
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link" href="#">Draft credit note</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 2. CREDIT IN FLIGHT — Reza saffron -->
+        <div class="invoice-row credit-flight">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Reza</em></div>
+            <div class="invoice-ref">Inv #R-2284</div>
+          </div>
+          <div>
+            <div class="invoice-date">Fri 9 May</div>
+            <div class="invoice-date-sub">received 11:32</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £198.50
+            <div class="invoice-lines">12 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill credit-flight">
+              <span class="status-dot credit-flight"></span>
+              Credit Note In Flight
+            </div>
+            <div class="status-context attention">
+              Saffron quality · <strong>£52 pending 4 days</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View credit note</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 3. CREDIT IN FLIGHT — Mediterranean -->
+        <div class="invoice-row credit-flight">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Mediterranean Direct</em></div>
+            <div class="invoice-ref">Inv #MD-9912</div>
+          </div>
+          <div>
+            <div class="invoice-date">Mon 12 May</div>
+            <div class="invoice-date-sub">received 22:14</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £142.20
+            <div class="invoice-lines">22 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill credit-flight">
+              <span class="status-dot credit-flight"></span>
+              Credit Note In Flight
+            </div>
+            <div class="status-context">
+              Tomatoes substitution · <strong>£34 pending 2 days</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View credit note</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 4. RECONCILED — Wright Brothers fish -->
+        <div class="invoice-row reconciled">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Wright Brothers</em></div>
+            <div class="invoice-ref">Inv #WB-3781</div>
+          </div>
+          <div>
+            <div class="invoice-date">Tue 13 May</div>
+            <div class="invoice-date-sub">received 08:42</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £342.80
+            <div class="invoice-lines">6 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill reconciled">
+              <span class="status-dot reconciled"></span>
+              Reconciled
+            </div>
+            <div class="status-context">
+              Net 14 · <strong>due Mon 27 May</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 5. RECONCILED — Aubrey earlier in week -->
+        <div class="invoice-row reconciled">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Aubrey</em></div>
+            <div class="invoice-ref">Inv #AA-4811</div>
+          </div>
+          <div>
+            <div class="invoice-date">Mon 12 May</div>
+            <div class="invoice-date-sub">received 07:08</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £318.60
+            <div class="invoice-lines">9 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill reconciled">
+              <span class="status-dot reconciled"></span>
+              Reconciled
+            </div>
+            <div class="status-context">
+              Net 14 · <strong>due Mon 26 May</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 6. RECONCILED — Mediterranean Direct earlier -->
+        <div class="invoice-row reconciled">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Mediterranean Direct</em></div>
+            <div class="invoice-ref">Inv #MD-9891</div>
+          </div>
+          <div>
+            <div class="invoice-date">Wed 7 May</div>
+            <div class="invoice-date-sub">received 22:08</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £164.50
+            <div class="invoice-lines">19 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill reconciled">
+              <span class="status-dot reconciled"></span>
+              Reconciled
+            </div>
+            <div class="status-context">
+              Net 30 · <strong>due Sat 6 Jun</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 7. PAID — Ginger Pig from last week -->
+        <div class="invoice-row paid">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>The Ginger Pig</em></div>
+            <div class="invoice-ref">Inv #GP-7714</div>
+          </div>
+          <div>
+            <div class="invoice-date">Fri 9 May</div>
+            <div class="invoice-date-sub">received 09:14</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £124.80
+            <div class="invoice-lines">4 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill paid">
+              <span class="status-dot paid"></span>
+              Paid
+            </div>
+            <div class="status-context">
+              Paid Wed 14 May · <strong>£124.80</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 8. PAID — Neal's Yard -->
+        <div class="invoice-row paid">
+          <div class="invoice-supplier">
+            <div class="invoice-supplier-name"><em>Neal's Yard</em></div>
+            <div class="invoice-ref">Inv #NY-1228</div>
+          </div>
+          <div>
+            <div class="invoice-date">Wed 7 May</div>
+            <div class="invoice-date-sub">received 14:22</div>
+          </div>
+          <div class="invoice-total" style="text-align: right;">
+            £98.20
+            <div class="invoice-lines">3 lines</div>
+          </div>
+          <div class="invoice-status">
+            <div class="status-pill paid">
+              <span class="status-dot paid"></span>
+              Paid
+            </div>
+            <div class="status-context">
+              Paid Tue 13 May · <strong>£98.20</strong>
+            </div>
+          </div>
+          <div class="invoice-action">
+            <a class="row-action-link subtle" href="#">View</a>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- View all -->
+        <div class="invoice-view-all">
+          <div class="view-all-meta">Showing the 8 most recent. 6 more this month, reconciled and paid.</div>
+          <a class="view-all-button" href="#">
+            View all 14 invoices
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- LOOKING AHEAD -->
+      <section class="section" style="margin-top: 48px;">
+        <div class="section-head">
+          <div class="section-title">Looking Ahead</div>
+          <div class="section-meta">two patterns across the paperwork</div>
+        </div>
+
+        <div class="looking-ahead-grid">
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Payment Run · Next Friday</div>
+              <div class="ahead-tag">Plan For It</div>
+            </div>
+            <div class="ahead-headline">Three invoices come due <em>next week</em>.</div>
+            <div class="ahead-body">
+              <strong>£862 across Aubrey, Wright Brothers and Mediterranean.</strong> Plus the Reza credit note should be back by then — knocks £52 off the run. Worth queuing the payment run for Friday afternoon once the credit lands.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">See payment schedule →</a>
+              <div class="ahead-action-context">due 19–24 May</div>
+            </div>
+          </div>
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Mediterranean · Pattern</div>
+              <div class="ahead-tag">Worth Knowing</div>
+            </div>
+            <div class="ahead-headline">Mediterranean's <em>substitutions</em> are creeping up.</div>
+            <div class="ahead-body">
+              <strong>Third credit note in six weeks for swapped products.</strong> Tomatoes today, herbs three weeks ago, courgettes before that. Yusef's reliable on availability — worth a call to understand what's changing on their side.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">See credit history →</a>
+              <div class="ahead-action-context">3 in 42 days</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">Invoices v1 — Design Notes</div>
+      <div class="footnote-body">
+        <strong>Write-and-workflow surface.</strong> Different again from Suppliers (write-and-reference) and The Bank (read-and-live). The chef opens this to <em>do paperwork</em>: review what came in, raise credit notes for discrepancies, track responses, reconcile against supplier accounts. Status is the primary mental axis — everything else is supporting context.<br><br>
+        <strong>Status-led row layout.</strong> Six columns: supplier, date, total, status (with inline context), action, arrow. Each row's left-edge carries a coloured bar matching its status — urgent for discrepancies, gold for credits in flight, healthy for reconciled, muted for paid. Status pills are dot+label in Cinzel, status context underneath in italic Cormorant. Reads at three levels: the colour bar tells you something needs sorting, the status pill tells you what kind, the context tells you the specifics.<br><br>
+        <strong>Inline credit note workflow.</strong> The discrepancy row's action button reads "Draft credit note" — one click into a guided draft flow with the discrepancy pre-filled. Once raised, status flips to Credit Note In Flight, the gold bar takes over, and the row tracks days-pending until reconciled. This is the chef-love feature.<br><br>
+        <strong>Filter pills carry their counts.</strong> All (14) / Needs action (3) / In flight (2) / Reconciled (9). The chef sees their workload structure at a glance.<br><br>
+        <strong>"Scan an invoice" quick action lives where it does on the hub.</strong> Top-right of the page header, same camera icon, mobile-first hint. The surface is also where the chef lands after scanning — closing the loop between capture and review.<br><br>
+        <strong>Looking Ahead does paperwork forward-intelligence.</strong> Payment run forecasting (three invoices due, plus a pending credit that offsets it) and supplier behaviour patterns (Mediterranean's substitutions are creeping up — third credit in six weeks). Not "did you get this invoice yet" — the system spots patterns the chef wouldn't catch invoice-by-invoice.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>

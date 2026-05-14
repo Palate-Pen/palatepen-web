@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Prep — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; align-items: center; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--paper); opacity: 0.7; }
+  .app { display: grid; grid-template-columns: var(--sidebar-expanded) 1fr; min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease; }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar { background: var(--paper-warm); border-right: 1px solid var(--rule); position: sticky; top: 0; height: calc(100vh - 44px); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-brand { height: var(--header-row-height); padding: 0 24px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; flex-shrink: 0; }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px; letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase; display: flex; align-items: center; }
+  .brand-mark .brand-dot-inline { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin: 0 4px; position: relative; top: -4px; }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; position: absolute; }
+  .brand-mark-collapsed { display: none; align-items: center; font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px; color: var(--ink); }
+  .brand-mark-collapsed .dot-inline { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); margin-left: 4px; position: relative; top: -7px; }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row { padding: 12px 24px 0; }
+  .brand-sub { font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; }
+  .nav-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase; padding: 14px 24px 6px; }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item { display: flex; align-items: center; gap: 14px; padding: 10px 24px; color: var(--ink-soft); border-left: 2px solid transparent; text-decoration: none; position: relative; white-space: nowrap; }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label { font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500; flex: 1; }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; color: var(--paper); background: var(--gold); padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px; }
+  .nav-badge.subtle { background: transparent; color: var(--muted-soft); border: 1px solid var(--rule); }
+  .app.collapsed .nav-badge { position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px; padding: 0; font-size: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip { display: none; position: absolute; left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%); background: var(--ink); color: var(--paper); font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; padding: 7px 14px; white-space: nowrap; z-index: 30; }
+  .app.collapsed .nav-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row { padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light)); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; color: var(--paper); flex-shrink: 0; }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+  .user-role { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px; }
+  .surface-switcher { width: 100%; padding: 8px 12px; background: transparent; border: 1px solid var(--rule); color: var(--ink-soft); font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher { width: 36px; height: 36px; padding: 0; justify-content: center; }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item { display: flex; align-items: center; gap: 14px; padding: 10px 24px; color: var(--ink-soft); text-decoration: none; position: relative; }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px; }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar { height: var(--header-row-height); display: flex; justify-content: space-between; align-items: center; padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule); background: var(--paper); position: sticky; top: 0; z-index: 10; }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle { width: 36px; height: 36px; background: transparent; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 4px; flex-shrink: 0; }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px; color: var(--ink); padding-left: 12px; }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .date-display { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--muted); }
+  .page { padding: 48px 56px 80px; max-width: 1400px; }
+
+  /* Header */
+  .page-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px; line-height: 1.05; color: var(--ink); letter-spacing: -0.015em; }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px; color: var(--muted); margin-top: 12px; }
+
+  /* Day tabs + add item */
+  .day-tabs { display: flex; gap: 8px; align-items: center; }
+  .day-tab { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; padding: 10px 18px; background: transparent; border: 1px solid var(--rule); color: var(--ink-soft); cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .day-tab:hover { border-color: var(--gold); color: var(--ink); }
+  .day-tab.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .day-tab .day-tab-date { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 12px; letter-spacing: 0.02em; text-transform: none; color: var(--muted); }
+  .day-tab.active .day-tab-date { color: rgba(248,244,237,0.7); }
+  .day-tab-nav { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--rule); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .day-tab-nav:hover { border-color: var(--gold); color: var(--gold); }
+  .day-tab-nav svg { width: 14px; height: 14px; }
+  .add-item-card { background: var(--card); border: 1px solid var(--rule); padding: 16px 22px; min-width: 240px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.15s; }
+  .add-item-card:hover { border-color: var(--rule-gold); transform: translateY(-1px); }
+  .add-icon { width: 40px; height: 40px; border: 1px solid var(--gold); border-radius: 2px; display: flex; align-items: center; justify-content: center; color: var(--gold); flex-shrink: 0; background: var(--gold-bg); }
+  .add-icon svg { width: 20px; height: 20px; }
+  .add-text { flex: 1; }
+  .add-label { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 16px; color: var(--ink); line-height: 1.2; }
+  .add-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* KPIs */
+  .flow-overview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 40px; }
+  .flow-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
+  .overview-value { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px; color: var(--ink); line-height: 1; letter-spacing: -0.015em; }
+  .overview-value.healthy { color: var(--healthy); }
+  .overview-value.attention { color: var(--attention); }
+  .overview-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+  /* Covers context strip */
+  .covers-strip { background: var(--card); border: 1px solid var(--rule); padding: 20px 28px; margin-bottom: 40px; display: flex; gap: 32px; align-items: center; }
+  .covers-block { display: flex; flex-direction: column; gap: 2px; }
+  .covers-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase; }
+  .covers-value { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 22px; color: var(--ink); letter-spacing: -0.005em; }
+  .covers-value em { color: var(--gold); font-style: italic; }
+  .covers-divider { width: 1px; background: var(--rule); align-self: stretch; }
+  .covers-context { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .covers-context strong { font-style: normal; font-weight: 600; color: var(--ink); }
+
+  /* Section heads */
+  .section { margin-bottom: 48px; }
+  .station-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; padding: 14px 24px; background: var(--paper-warm); border: 1px solid var(--rule); border-bottom: 2px solid var(--gold); }
+  .station-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold); text-transform: uppercase; display: flex; align-items: center; gap: 12px; }
+  .station-progress { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--muted); }
+  .station-progress strong { font-style: normal; font-weight: 600; color: var(--ink); }
+  .station-progress strong.attention { color: var(--attention); }
+  .station-progress strong.healthy { color: var(--healthy); }
+
+  /* Prep list */
+  .prep-list { background: var(--card); border: 1px solid var(--rule); border-top: none; margin-bottom: 24px; }
+  .prep-head { display: grid; grid-template-columns: minmax(220px, 1.4fr) 130px 110px 140px minmax(140px, 1fr) 60px; gap: 20px; padding: 14px 28px; background: var(--paper-warm); border-bottom: 1px solid var(--rule); }
+  .prep-head-cell { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase; }
+  .prep-row { display: grid; grid-template-columns: minmax(220px, 1.4fr) 130px 110px 140px minmax(140px, 1fr) 60px; gap: 20px; padding: 18px 28px; border-bottom: 1px solid var(--rule-soft); align-items: center; position: relative; cursor: pointer; transition: background 0.15s; }
+  .prep-row:last-child { border-bottom: none; }
+  .prep-row:hover { background: var(--card-warm); }
+  .prep-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: transparent; }
+  .prep-row.in-progress::before { background: var(--gold); }
+  .prep-row.done::before { background: var(--healthy); opacity: 0.5; }
+  .prep-row.over-prepped::before { background: var(--attention); }
+  .prep-row.short::before { background: var(--urgent); }
+  .prep-row.not-started::before { background: var(--muted-soft); opacity: 0.4; }
+
+  /* Item cell */
+  .prep-item-name { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 16px; color: var(--ink); line-height: 1.3; letter-spacing: -0.005em; }
+  .prep-item-name em { color: var(--gold); font-style: italic; }
+  .prep-item-meta { font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px; color: var(--muted); letter-spacing: 0.02em; margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+  .recipe-link { color: var(--gold); }
+  .recipe-link::before { content: '↗'; margin-right: 3px; }
+
+  /* Quantity cell */
+  .qty-display { display: flex; flex-direction: column; gap: 2px; }
+  .qty-value { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 18px; color: var(--ink); letter-spacing: -0.005em; }
+  .qty-value em { color: var(--gold); font-style: italic; }
+  .qty-suggested { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 11px; color: var(--muted); }
+  .qty-suggested.flag { color: var(--attention); }
+
+  /* Assigned cell */
+  .assigned-display { display: flex; align-items: center; gap: 8px; }
+  .assigned-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-dark), var(--gold-light)); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0; }
+  .assigned-avatar.tom { background: linear-gradient(135deg, #5D4A6E, #7E6A8E); }
+  .assigned-avatar.maria { background: linear-gradient(135deg, #5D7F4F, #7E9F6F); }
+  .assigned-avatar.sam { background: linear-gradient(135deg, #B86A2E, #D08A4E); }
+  .assigned-avatar.unassigned { background: var(--paper-warm); color: var(--muted-soft); border: 1px dashed var(--muted-soft); }
+  .assigned-name { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: var(--ink); }
+  .assigned-name.unassigned { color: var(--muted-soft); font-style: italic; }
+
+  /* Status pill */
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; width: fit-content; }
+  .status-pill.not-started { color: var(--muted); }
+  .status-pill.in-progress { color: var(--gold-dark); }
+  .status-pill.done { color: var(--healthy); }
+  .status-pill.over-prepped { color: var(--attention); }
+  .status-pill.short { color: var(--urgent); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .status-dot.not-started { background: var(--muted-soft); }
+  .status-dot.in-progress { background: var(--gold); }
+  .status-dot.done { background: var(--healthy); }
+  .status-dot.over-prepped { background: var(--attention); }
+  .status-dot.short { background: var(--urgent); }
+
+  /* Notes cell */
+  .prep-notes { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: var(--ink-soft); line-height: 1.4; }
+  .prep-notes-empty { color: var(--muted-soft); }
+  .prep-notes-empty::before { content: '+ '; }
+
+  /* Arrow */
+  .row-arrow { color: var(--muted-soft); display: flex; justify-content: flex-end; }
+  .prep-row:hover .row-arrow { color: var(--gold); }
+  .row-arrow svg { width: 16px; height: 16px; }
+
+  /* Looking Ahead */
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+  .section-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; }
+  .section-meta { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px; color: var(--muted); }
+
+  .looking-ahead-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .ahead-card { background: var(--card); border: 1px solid var(--rule); padding: 28px 32px; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .ahead-card::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: var(--info); }
+  .ahead-card:hover { border-color: var(--rule-gold); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(26,22,18,0.06); }
+  .ahead-card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .ahead-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase; }
+  .ahead-tag { font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px; letter-spacing: 0.35em; text-transform: uppercase; color: var(--info); }
+  .ahead-headline { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 24px; color: var(--ink); line-height: 1.2; margin-bottom: 14px; }
+  .ahead-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .ahead-body { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); line-height: 1.55; flex: 1; }
+  .ahead-body strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .ahead-action { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft); display: flex; justify-content: space-between; align-items: center; }
+  .ahead-action-link { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.3em; color: var(--gold); text-decoration: none; text-transform: uppercase; }
+  .ahead-action-context { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; color: var(--muted); }
+
+  .mockup-footnote { margin: 0 56px 60px; padding: 32px 32px; background: var(--paper-warm); border: 1px solid var(--rule); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px; color: var(--ink-soft); line-height: 1.7; max-width: 800px; }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef Prep · New Top-Level Tab</div>
+  <div class="mockup-banner-meta">Day-anchored · station-grouped · chef-controlled quantities</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"><span>P</span><span class="brand-dot-inline"></span><span>alatable</span></div>
+      <div class="brand-mark-collapsed"><span>P</span><span class="dot-inline"></span></div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="1"/>
+          <path d="M8 7h8M8 11h8M8 15h5"/>
+          <circle cx="20" cy="7" r="1.5" fill="currentColor"/>
+          <circle cx="20" cy="11" r="1.5" fill="currentColor" opacity="0.6"/>
+        </svg>
+        <span class="nav-label">Prep</span><span class="nav-badge">12</span><span class="nav-tooltip">Prep</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/></svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/></svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/></svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/></svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h13v18H6z"/><path d="M6 3v18"/><circle cx="4" cy="7" r="0.7" fill="currentColor"/><circle cx="4" cy="12" r="0.7" fill="currentColor"/><circle cx="4" cy="17" r="0.7" fill="currentColor"/><path d="M10 8h5M10 12h5M10 16h3"/></svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/></svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          <span class="settings-label">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="breadcrumb">Prep</div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">What's Getting Made Today</div>
+          <div class="page-title">Today's <em>prep</em></div>
+          <div class="page-sub">Twelve items across four stations. Four done, three in progress, five to go.</div>
+        </div>
+
+        <div class="add-item-card">
+          <div class="add-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <div class="add-text">
+            <div class="add-label">Add prep item</div>
+            <div class="add-sub">recipe-linked or one-off</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAY NAVIGATION -->
+      <div class="day-tabs" style="margin-bottom: 32px;">
+        <button class="day-tab-nav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="day-tab">
+          Yesterday
+          <span class="day-tab-date">Wed 13 May</span>
+        </button>
+        <button class="day-tab active">
+          Today
+          <span class="day-tab-date">Thu 14 May</span>
+        </button>
+        <button class="day-tab">
+          Tomorrow
+          <span class="day-tab-date">Fri 15 May</span>
+        </button>
+        <button class="day-tab">
+          Saturday
+          <span class="day-tab-date">Sat 16 May</span>
+        </button>
+        <button class="day-tab">
+          Sunday
+          <span class="day-tab-date">Sun 17 May</span>
+        </button>
+        <button class="day-tab-nav">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="flow-overview">
+        <div class="flow-overview-card">
+          <div class="overview-label">Items Today</div>
+          <div class="overview-value">12</div>
+          <div class="overview-sub">across 4 stations</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Done</div>
+          <div class="overview-value healthy">4</div>
+          <div class="overview-sub">33% complete</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">In Progress</div>
+          <div class="overview-value">3</div>
+          <div class="overview-sub">Tom · Maria · Sam</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">To Start</div>
+          <div class="overview-value attention">5</div>
+          <div class="overview-sub">2 unassigned · service in 7 hrs</div>
+        </div>
+      </div>
+
+      <!-- COVERS CONTEXT -->
+      <div class="covers-strip">
+        <div class="covers-block">
+          <div class="covers-label">Tonight's covers</div>
+          <div class="covers-value">142 <em>booked</em></div>
+        </div>
+        <div class="covers-divider"></div>
+        <div class="covers-block">
+          <div class="covers-label">Forecast</div>
+          <div class="covers-value">156–168</div>
+        </div>
+        <div class="covers-divider"></div>
+        <div class="covers-context">
+          <strong>Tracking 18% above last Thursday.</strong> Hummus and shawarma scaled accordingly · pastry left at standard since dessert orders flat this week.
+        </div>
+      </div>
+
+      <!-- STATION 1: GARDE MANGER -->
+      <section class="section">
+        <div class="station-head">
+          <div class="station-name">
+            <span>Garde Manger</span>
+            <span style="color: var(--muted); font-size: 9px;">·</span>
+            <span style="color: var(--ink); font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; letter-spacing: 0; text-transform: none;">Tom Reilly</span>
+          </div>
+          <div class="station-progress"><strong class="healthy">3 of 5 done</strong> · 2 to go</div>
+        </div>
+
+        <div class="prep-list">
+          <div class="prep-head">
+            <div class="prep-head-cell">Item</div>
+            <div class="prep-head-cell">Quantity</div>
+            <div class="prep-head-cell">Assigned</div>
+            <div class="prep-head-cell">Status</div>
+            <div class="prep-head-cell">Notes</div>
+            <div class="prep-head-cell"></div>
+          </div>
+
+          <div class="prep-row done">
+            <div>
+              <div class="prep-item-name"><em>Hummus</em> base</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Hummus</span>
+                <span>·</span>
+                <span>finished 08:22</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">4.5 <em>kg</em></div>
+              <div class="qty-suggested">suggested 4.2kg</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar tom">TR</div>
+              <div class="assigned-name">Tom</div>
+            </div>
+            <div>
+              <div class="status-pill done"><span class="status-dot done"></span>Done</div>
+            </div>
+            <div class="prep-notes">Used labneh to thin per Tuesday's voice memo — rounder flavour, cuts cost.</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row done">
+            <div>
+              <div class="prep-item-name">Tahini sauce</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Tahini Sauce</span>
+                <span>·</span>
+                <span>finished 08:45</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">2 <em>L</em></div>
+              <div class="qty-suggested">at recipe scale</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar tom">TR</div>
+              <div class="assigned-name">Tom</div>
+            </div>
+            <div>
+              <div class="status-pill done"><span class="status-dot done"></span>Done</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row done">
+            <div>
+              <div class="prep-item-name">Baba ghanoush</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Baba Ghanoush</span>
+                <span>·</span>
+                <span>finished 09:10</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">3 <em>kg</em></div>
+              <div class="qty-suggested">suggested 2.8kg</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar tom">TR</div>
+              <div class="assigned-name">Tom</div>
+            </div>
+            <div>
+              <div class="status-pill done"><span class="status-dot done"></span>Done</div>
+            </div>
+            <div class="prep-notes">Aubergines properly smoked this morning — flavour deep.</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row in-progress">
+            <div>
+              <div class="prep-item-name">Pickled turnips</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Pink Pickle</span>
+                <span>·</span>
+                <span>started 09:25</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">1.5 <em>kg</em></div>
+              <div class="qty-suggested">at recipe scale</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar tom">TR</div>
+              <div class="assigned-name">Tom</div>
+            </div>
+            <div>
+              <div class="status-pill in-progress"><span class="status-dot in-progress"></span>In Progress</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row not-started">
+            <div>
+              <div class="prep-item-name">Parsley + coriander</div>
+              <div class="prep-item-meta">
+                <span>one-off · garnish</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">300 <em>g</em></div>
+              <div class="qty-suggested flag">cut back 20% — last 4 weeks binned £62</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar tom">TR</div>
+              <div class="assigned-name">Tom</div>
+            </div>
+            <div>
+              <div class="status-pill not-started"><span class="status-dot not-started"></span>Not Started</div>
+            </div>
+            <div class="prep-notes">Try smaller batches twice — fresher service, less waste.</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- STATION 2: GRILL -->
+      <section class="section">
+        <div class="station-head">
+          <div class="station-name">
+            <span>Grill</span>
+            <span style="color: var(--muted); font-size: 9px;">·</span>
+            <span style="color: var(--ink); font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; letter-spacing: 0; text-transform: none;">Maria Costa</span>
+          </div>
+          <div class="station-progress"><strong>1 of 4 done</strong> · 1 in progress · 2 to start</div>
+        </div>
+
+        <div class="prep-list">
+          <div class="prep-head">
+            <div class="prep-head-cell">Item</div>
+            <div class="prep-head-cell">Quantity</div>
+            <div class="prep-head-cell">Assigned</div>
+            <div class="prep-head-cell">Status</div>
+            <div class="prep-head-cell">Notes</div>
+            <div class="prep-head-cell"></div>
+          </div>
+
+          <div class="prep-row done">
+            <div>
+              <div class="prep-item-name">Lamb shawarma marinade</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Shawarma Marinade</span>
+                <span>·</span>
+                <span>finished 09:00 · resting</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">8 <em>kg</em></div>
+              <div class="qty-suggested">suggested 7.6kg</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar maria">MC</div>
+              <div class="assigned-name">Maria</div>
+            </div>
+            <div>
+              <div class="status-pill done"><span class="status-dot done"></span>Done</div>
+            </div>
+            <div class="prep-notes">2% brine this time — not 3%. Resting til 12:00.</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row in-progress">
+            <div>
+              <div class="prep-item-name">Beef short rib</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Short Rib Braise</span>
+                <span>·</span>
+                <span>in oven · started 08:30</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">12 <em>portions</em></div>
+              <div class="qty-suggested">covers-driven</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar maria">MC</div>
+              <div class="assigned-name">Maria</div>
+            </div>
+            <div>
+              <div class="status-pill in-progress"><span class="status-dot in-progress"></span>In Progress</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row not-started">
+            <div>
+              <div class="prep-item-name">Chicken thigh skewers</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Chicken Skewers</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">24 <em>skewers</em></div>
+              <div class="qty-suggested">covers-driven · +18%</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar maria">MC</div>
+              <div class="assigned-name">Maria</div>
+            </div>
+            <div>
+              <div class="status-pill not-started"><span class="status-dot not-started"></span>Not Started</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row not-started">
+            <div>
+              <div class="prep-item-name">Sea bream — scaled &amp; gutted</div>
+              <div class="prep-item-meta">
+                <span>arriving Fri delivery</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">8 <em>fish</em></div>
+              <div class="qty-suggested">prep on arrival Fri</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar unassigned">?</div>
+              <div class="assigned-name unassigned">Unassigned</div>
+            </div>
+            <div>
+              <div class="status-pill not-started"><span class="status-dot not-started"></span>Not Started</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- STATION 3: PASS -->
+      <section class="section">
+        <div class="station-head">
+          <div class="station-name">
+            <span>Pass</span>
+            <span style="color: var(--muted); font-size: 9px;">·</span>
+            <span style="color: var(--ink); font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; letter-spacing: 0; text-transform: none;">Sam Ahmed</span>
+          </div>
+          <div class="station-progress"><strong>0 of 2 done</strong> · 1 in progress</div>
+        </div>
+
+        <div class="prep-list">
+          <div class="prep-head">
+            <div class="prep-head-cell">Item</div>
+            <div class="prep-head-cell">Quantity</div>
+            <div class="prep-head-cell">Assigned</div>
+            <div class="prep-head-cell">Status</div>
+            <div class="prep-head-cell">Notes</div>
+            <div class="prep-head-cell"></div>
+          </div>
+
+          <div class="prep-row in-progress">
+            <div>
+              <div class="prep-item-name">Şakşuka — aubergine base</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Şakşuka</span>
+                <span>·</span>
+                <span>started 09:00</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">3.5 <em>kg</em></div>
+              <div class="qty-suggested">covers-driven</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar sam">SA</div>
+              <div class="assigned-name">Sam</div>
+            </div>
+            <div>
+              <div class="status-pill in-progress"><span class="status-dot in-progress"></span>In Progress</div>
+            </div>
+            <div class="prep-notes">Tom's labneh-under plating today — let it cool fully.</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+          <div class="prep-row not-started">
+            <div>
+              <div class="prep-item-name">Mezze plating mise</div>
+              <div class="prep-item-meta">
+                <span>one-off · prep for service</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">—</div>
+              <div class="qty-suggested">station setup</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar sam">SA</div>
+              <div class="assigned-name">Sam</div>
+            </div>
+            <div>
+              <div class="status-pill not-started"><span class="status-dot not-started"></span>Not Started</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- STATION 4: PASTRY -->
+      <section class="section">
+        <div class="station-head">
+          <div class="station-name">
+            <span>Pastry</span>
+            <span style="color: var(--muted); font-size: 9px;">·</span>
+            <span style="color: var(--ink); font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; letter-spacing: 0; text-transform: none;">Unassigned today</span>
+          </div>
+          <div class="station-progress"><strong class="attention">0 of 1 done</strong> · 1 unassigned</div>
+        </div>
+
+        <div class="prep-list">
+          <div class="prep-head">
+            <div class="prep-head-cell">Item</div>
+            <div class="prep-head-cell">Quantity</div>
+            <div class="prep-head-cell">Assigned</div>
+            <div class="prep-head-cell">Status</div>
+            <div class="prep-head-cell">Notes</div>
+            <div class="prep-head-cell"></div>
+          </div>
+
+          <div class="prep-row not-started">
+            <div>
+              <div class="prep-item-name">Knafeh — kataifi assembly</div>
+              <div class="prep-item-meta">
+                <span class="recipe-link">Recipe · Knafeh</span>
+              </div>
+            </div>
+            <div class="qty-display">
+              <div class="qty-value">10 <em>portions</em></div>
+              <div class="qty-suggested flag">dessert orders flat this week</div>
+            </div>
+            <div class="assigned-display">
+              <div class="assigned-avatar unassigned">?</div>
+              <div class="assigned-name unassigned">Unassigned</div>
+            </div>
+            <div>
+              <div class="status-pill not-started"><span class="status-dot not-started"></span>Not Started</div>
+            </div>
+            <div class="prep-notes-empty">Add note</div>
+            <div class="row-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- LOOKING AHEAD -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Looking Ahead</div>
+          <div class="section-meta">two patterns shaping tomorrow's prep</div>
+        </div>
+
+        <div class="looking-ahead-grid">
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Friday Service</div>
+              <div class="ahead-tag">Get Ready</div>
+            </div>
+            <div class="ahead-headline">Friday's booking <em>tracking high</em>.</div>
+            <div class="ahead-body">
+              <strong>168 covers booked, forecast 180–195 with walk-ins.</strong> Bream arrives 09:00 — worth scaling shawarma marinade up 15% and prepping a second batch of tahini. Sea bream prep currently unassigned.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">Set Friday prep →</a>
+              <div class="ahead-action-context">Fri 15 May</div>
+            </div>
+          </div>
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Weekend Pattern</div>
+              <div class="ahead-tag">Worth Knowing</div>
+            </div>
+            <div class="ahead-headline">Sunday over-prep <em>creeping back</em>.</div>
+            <div class="ahead-body">
+              <strong>Last four Sundays binned £38 on average — mostly Saturday over-prep that didn't carry.</strong> Worth scaling Saturday batches down 15% this week and seeing if Sunday improves.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">Set Saturday prep →</a>
+              <div class="ahead-action-context">4-week pattern</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">Prep v1 — Design Notes</div>
+      <div class="footnote-body">
+        <strong>New top-level chef tab — the missing kitchen-floor surface.</strong> Prep is what kitchen-floor chefs actually live in day-to-day: what's getting made, by whom, in what quantity, status now. Without this, every other surface's references to prep (waste analysis, margin attribution, delivery planning) are hollow.<br><br>
+        <strong>Day-anchored, station-grouped.</strong> Today is the default view, with horizontal day-tabs to navigate forward/back. Each station gets its own header with assigned chef name and progress summary. Tom's Garde Manger, Maria's Grill, Sam's Pass, Pastry unassigned today.<br><br>
+        <strong>Covers context strip sits above the stations.</strong> Tonight's 142 booked + 156-168 forecast, with the system's read: "tracking 18% above last Thursday, hummus and shawarma scaled accordingly." This is how covers data informs prep — not by auto-setting quantities, but by giving the chef context to set them well.<br><br>
+        <strong>Each prep row: item · quantity · assigned · status · notes.</strong> The quantity column shows chef-set value with a muted "suggested" hint beneath — system suggests, chef decides. Suggested can flag attention (e.g. "cut back 20% — last 4 weeks binned £62") but never overrides. Status pills follow the design system pattern (Done healthy, In Progress gold, Not Started muted, Over-Prepped attention, Short urgent).<br><br>
+        <strong>Recipe-linked items show a recipe pill.</strong> Click-through to the recipe to scale, adjust, view ingredients. One-off items (parsley garnish, mezze plating mise) are tagged as one-off.<br><br>
+        <strong>Notes column captures the chef's running thoughts</strong> — "2% brine this time, not 3%" / "Used labneh to thin per Tuesday's voice memo". These are the prep-day equivalent of notebook entries — quick text, sometimes referencing other surfaces.<br><br>
+        <strong>Looking Ahead does forward-prep intelligence.</strong> Friday's covers tracking high (scale shawarma + tahini, sea bream needs assignment) and weekend over-prep pattern (scale Saturday down 15%). Connects covers forecasting + waste patterns into actionable prep planning — exactly what prep needs to be informed by.<br><br>
+        <strong>Critically: the chef sets the prep.</strong> System suggests based on covers × recipes × past patterns. System flags when something looks off vs history. System never auto-overrides. Prep is chef work, and the surface reflects that.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) { if (collapsed) app.classList.add('collapsed'); else app.classList.remove('collapsed'); }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+</script>
+
+</body>
+</html>

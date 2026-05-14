@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Stock &amp; Suppliers · Seasonal — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    /* Seasonal-specific tokens */
+    --in-season:    #5D7F4F;
+    --in-season-bg: rgba(93,127,79,0.08);
+    --peak:         #B8923C;
+    --peak-bg:      rgba(184,146,60,0.12);
+    --ending:       #B86A2E;
+    --ending-bg:    rgba(184,106,46,0.08);
+    --out:          rgba(26,22,18,0.04);
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink); color: var(--paper); padding: 12px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--paper); opacity: 0.7;
+  }
+  .app {
+    display: grid; grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease;
+  }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar {
+    background: var(--paper-warm); border-right: 1px solid var(--rule);
+    position: sticky; top: 0; height: calc(100vh - 44px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-brand {
+    height: var(--header-row-height); padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    flex-shrink: 0; transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase;
+    display: flex; align-items: center; transition: opacity 0.2s, width 0.25s;
+  }
+  .brand-mark .brand-dot-inline {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px; vertical-align: middle;
+    position: relative; top: -4px;
+  }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; pointer-events: none; position: absolute; }
+  .brand-mark-collapsed {
+    display: none; align-items: center;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px;
+    letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+  }
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); margin-left: 4px; position: relative; top: -7px;
+  }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row {
+    padding: 12px 24px 0; transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase;
+    padding: 14px 24px 6px; white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+  }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer; border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); transition: color 0.15s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500;
+    letter-spacing: 0.03em; flex: 1; transition: opacity 0.2s;
+  }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.05em; color: var(--paper); background: var(--gold);
+    padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px;
+  }
+  .nav-badge.subtle {
+    background: transparent; color: var(--muted-soft); border: 1px solid var(--rule);
+  }
+  .app.collapsed .nav-badge {
+    position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px;
+    padding: 0; font-size: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip {
+    display: none; position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 7px 14px; white-space: nowrap; z-index: 30; pointer-events: none;
+  }
+  .nav-tooltip::before {
+    content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-style: solid;
+    border-width: 4px 4px 4px 0; border-color: transparent var(--ink) transparent transparent;
+  }
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row {
+    padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .user-role {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px;
+  }
+  .surface-switcher {
+    width: 100%; padding: 8px 12px; background: transparent;
+    border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher {
+    width: 36px; height: 36px; padding: 0; justify-content: center;
+  }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar {
+    height: var(--header-row-height);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule);
+    background: var(--paper); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle {
+    width: 36px; height: 36px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; transition: transform 0.25s ease; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px;
+    color: var(--ink); letter-spacing: 0.04em; padding-left: 12px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .breadcrumb-sep {
+    color: var(--muted-soft);
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 0.3em;
+  }
+  .breadcrumb-current {
+    color: var(--gold);
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .date-display {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .page { padding: 48px 56px 80px; max-width: 1400px; }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 40px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 32px; flex-wrap: wrap;
+  }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px;
+    line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
+  }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px;
+    color: var(--muted); margin-top: 12px; letter-spacing: 0.01em;
+  }
+
+  /* Search bar */
+  .search-card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 16px 20px; min-width: 320px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .search-icon { color: var(--gold); flex-shrink: 0; }
+  .search-icon svg { width: 18px; height: 18px; }
+  .search-input {
+    border: none; background: transparent; outline: none;
+    font-family: 'Cormorant Garamond', serif; font-size: 16px;
+    color: var(--ink); flex: 1;
+  }
+  .search-input::placeholder {
+    color: var(--muted); font-style: italic;
+  }
+
+  /* This month KPI strip */
+  .month-overview {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); margin-bottom: 48px;
+  }
+  .month-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .overview-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .overview-value.in-season { color: var(--in-season); }
+  .overview-value.peak { color: var(--peak); }
+  .overview-value.ending { color: var(--ending); }
+  .overview-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 8px;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Category filter bar */
+  .category-filters {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .filter-pill {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 6px 14px; background: transparent; border: 1px solid var(--rule);
+    color: var(--ink-soft); cursor: pointer; transition: all 0.15s;
+  }
+  .filter-pill:hover { border-color: var(--gold); color: var(--ink); }
+  .filter-pill.active { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+
+  /* CALENDAR TIMELINE — the main attraction */
+  .calendar-card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .calendar-head {
+    display: grid;
+    grid-template-columns: 180px repeat(12, 1fr);
+    align-items: center;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+  }
+  .calendar-head-cell {
+    padding: 14px 8px 12px;
+    text-align: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.25em; color: var(--muted);
+    text-transform: uppercase;
+    border-left: 1px solid var(--rule-soft);
+    position: relative;
+  }
+  .calendar-head-cell:first-child { border-left: none; }
+  .calendar-head-cell.label-cell {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold);
+    text-align: left;
+    padding-left: 24px;
+  }
+  .calendar-head-cell.current-month {
+    color: var(--gold);
+    background: var(--gold-bg);
+  }
+  .calendar-head-cell.current-month::after {
+    content: ''; position: absolute;
+    bottom: -1px; left: 0; right: 0; height: 2px;
+    background: var(--gold);
+  }
+
+  .calendar-row {
+    display: grid;
+    grid-template-columns: 180px repeat(12, 1fr);
+    align-items: center;
+    border-bottom: 1px solid var(--rule-soft);
+    min-height: 48px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .calendar-row:last-child { border-bottom: none; }
+  .calendar-row:hover { background: var(--card-warm); }
+
+  .calendar-row-label {
+    padding: 12px 24px;
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 500;
+    color: var(--ink); letter-spacing: 0.01em;
+    border-right: 1px solid var(--rule-soft);
+    display: flex; flex-direction: column;
+    gap: 2px;
+  }
+  .calendar-row-label-sub {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 10px;
+    color: var(--muted-soft); letter-spacing: 0.05em;
+  }
+
+  .calendar-row-noted {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 7px;
+    letter-spacing: 0.25em; color: var(--gold);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .calendar-row-noted svg { width: 8px; height: 8px; }
+
+  .calendar-cell {
+    border-left: 1px solid var(--rule-soft);
+    height: 48px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .calendar-cell.current-month {
+    background: var(--gold-bg);
+  }
+
+  /* The season bars themselves */
+  .season-bar {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    height: 14px;
+    background: var(--in-season-bg);
+    border-top: 1px solid var(--in-season);
+    border-bottom: 1px solid var(--in-season);
+    z-index: 1;
+  }
+  .season-bar.peak {
+    background: var(--peak-bg);
+    border-top-color: var(--peak);
+    border-bottom-color: var(--peak);
+    height: 20px;
+  }
+  .season-bar.ending {
+    background: var(--ending-bg);
+    border-top-color: var(--ending);
+    border-bottom-color: var(--ending);
+  }
+
+  /* Status dot on label */
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .status-dot.in-season { background: var(--in-season); }
+  .status-dot.peak { background: var(--peak); }
+  .status-dot.ending { background: var(--ending); }
+  .status-dot.out { background: var(--muted-soft); }
+
+  /* Legend */
+  .legend-bar {
+    display: flex; gap: 28px; align-items: center;
+    padding: 16px 24px;
+    background: var(--paper-warm);
+    border-top: 1px solid var(--rule);
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-swatch {
+    width: 24px; height: 12px;
+    border: 1px solid;
+  }
+  .legend-swatch.in-season {
+    background: var(--in-season-bg); border-color: var(--in-season);
+  }
+  .legend-swatch.peak {
+    background: var(--peak-bg); border-color: var(--peak);
+  }
+  .legend-swatch.ending {
+    background: var(--ending-bg); border-color: var(--ending);
+  }
+
+  /* Footnote */
+  .mockup-footnote {
+    margin: 0 56px 60px; padding: 32px 32px;
+    background: var(--paper-warm); border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px;
+    color: var(--ink-soft); line-height: 1.7; max-width: 800px;
+  }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Stock &amp; Suppliers · Seasonal sub-page</div>
+  <div class="mockup-banner-meta">UK seasonal produce calendar, timeline view, in-season-now</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/><path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span><span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">
+          <span>Stock &amp; Suppliers</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Seasonal</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">When To Cook What</div>
+          <div class="page-title"><em>Seasonal</em> calendar</div>
+          <div class="page-sub">UK produce at its best — when it arrives, when it peaks, when it leaves.</div>
+        </div>
+
+        <div class="search-card">
+          <span class="search-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="M21 21l-4.5-4.5"/>
+            </svg>
+          </span>
+          <input class="search-input" type="text" placeholder="Search ingredients...">
+        </div>
+      </div>
+
+      <!-- THIS MONTH KPI STRIP -->
+      <div class="month-overview">
+        <div class="month-overview-card">
+          <div class="overview-label">In Season Now</div>
+          <div class="overview-value in-season">37</div>
+          <div class="overview-sub">ingredients available in May</div>
+        </div>
+        <div class="month-overview-card">
+          <div class="overview-label">At Peak</div>
+          <div class="overview-value peak">8</div>
+          <div class="overview-sub">best they'll be all year</div>
+        </div>
+        <div class="month-overview-card">
+          <div class="overview-label">Ending Soon</div>
+          <div class="overview-value ending">3</div>
+          <div class="overview-sub">asparagus, wild garlic, rhubarb</div>
+        </div>
+        <div class="month-overview-card">
+          <div class="overview-label">Coming Next Month</div>
+          <div class="overview-value">11</div>
+          <div class="overview-sub">strawberries, sumac, broad beans...</div>
+        </div>
+      </div>
+
+      <!-- CATEGORY FILTERS -->
+      <div class="category-filters">
+        <button class="filter-pill active">All</button>
+        <button class="filter-pill">Vegetables</button>
+        <button class="filter-pill">Fruit</button>
+        <button class="filter-pill">Herbs &amp; aromatics</button>
+        <button class="filter-pill">Mushrooms</button>
+        <button class="filter-pill">Fish &amp; seafood</button>
+        <button class="filter-pill">Game</button>
+        <button class="filter-pill">In your notebook</button>
+      </div>
+
+      <!-- THE CALENDAR — main attraction -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">The Year At A Glance</div>
+          <div class="section-meta">in-season ingredients only · click any row for detail &amp; recipes</div>
+        </div>
+
+        <div class="calendar-card">
+          <!-- Column headers: months -->
+          <div class="calendar-head">
+            <div class="calendar-head-cell label-cell">Ingredient</div>
+            <div class="calendar-head-cell">Jan</div>
+            <div class="calendar-head-cell">Feb</div>
+            <div class="calendar-head-cell">Mar</div>
+            <div class="calendar-head-cell">Apr</div>
+            <div class="calendar-head-cell current-month">May</div>
+            <div class="calendar-head-cell">Jun</div>
+            <div class="calendar-head-cell">Jul</div>
+            <div class="calendar-head-cell">Aug</div>
+            <div class="calendar-head-cell">Sep</div>
+            <div class="calendar-head-cell">Oct</div>
+            <div class="calendar-head-cell">Nov</div>
+            <div class="calendar-head-cell">Dec</div>
+          </div>
+
+          <!-- VEGETABLES & HERBS — currently in-season -->
+
+          <!-- Asparagus (ending soon — ends June) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot ending"></span>Asparagus</span>
+              <span class="calendar-row-label-sub">British · ending soon</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 60%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar ending" style="left: -50%; right: 30%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Wild garlic (ending) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot ending"></span>Wild garlic</span>
+              <span class="calendar-row-label-sub">foraged · last two weeks</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 70%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar ending" style="left: -50%; right: 60%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Rhubarb (ending) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot ending"></span>Rhubarb</span>
+              <span class="calendar-row-label-sub">Yorkshire forced ending · outdoor still good</span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar ending" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar ending" style="left: -50%; right: 40%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Watercress (peak) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot peak"></span>Watercress</span>
+              <span class="calendar-row-label-sub">peak now</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 40%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 60%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Jersey Royals (peak) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot peak"></span>Jersey Royals</span>
+              <span class="calendar-row-label-sub">peak now · 4-week window</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 60%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: 50%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Sumac (coming next month - flagged because in notebook) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot out"></span>Sumac</span>
+              <span class="calendar-row-label-sub">arriving next week</span>
+              <span class="calendar-row-noted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 3h13v18H6z"/>
+                  <circle cx="4" cy="7" r="0.8" fill="currentColor"/>
+                </svg>
+                In your notebook
+              </span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar" style="left: 70%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 30%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Broad beans (in season just) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot in-season"></span>Broad beans</span>
+              <span class="calendar-row-label-sub">starting</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar" style="left: 60%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 40%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Strawberries (in season - peak end of May) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot in-season"></span>Strawberries</span>
+              <span class="calendar-row-label-sub">British starting</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar" style="left: 40%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 50%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Mackerel (peak — fish) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot peak"></span>Mackerel</span>
+              <span class="calendar-row-label-sub">peak through summer</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 40%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 50%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Sea bream (in-your-notebook) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot in-season"></span>Sea bream</span>
+              <span class="calendar-row-label-sub">UK waters</span>
+              <span class="calendar-row-noted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 3h13v18H6z"/>
+                  <circle cx="4" cy="7" r="0.8" fill="currentColor"/>
+                </svg>
+                In your notebook
+              </span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 40%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 40%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Stone fruit (coming next month) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot out"></span>Stone fruit</span>
+              <span class="calendar-row-label-sub">peaches, apricots · arriving June</span>
+              <span class="calendar-row-noted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 3h13v18H6z"/>
+                  <circle cx="4" cy="7" r="0.8" fill="currentColor"/>
+                </svg>
+                In your notebook
+              </span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 30%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 40%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Cherries (coming next month) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot out"></span>Cherries</span>
+              <span class="calendar-row-label-sub">English · arriving June</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 40%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 40%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Lamb (in-season grass-fed) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot peak"></span>Lamb</span>
+              <span class="calendar-row-label-sub">spring grass-fed</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 30%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell current-month">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 50%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Aubergine (in-your-notebook) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot out"></span>Aubergine</span>
+              <span class="calendar-row-label-sub">UK greenhouse · arriving July</span>
+              <span class="calendar-row-noted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 3h13v18H6z"/>
+                  <circle cx="4" cy="7" r="0.8" fill="currentColor"/>
+                </svg>
+                In your notebook
+              </span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 30%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 40%;"></span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+          </div>
+
+          <!-- Game birds (out of season) -->
+          <div class="calendar-row">
+            <div class="calendar-row-label">
+              <span><span class="status-dot out"></span>Grouse</span>
+              <span class="calendar-row-label-sub">opens 12 August</span>
+            </div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell current-month"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell"></div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: 50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar peak" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: -50%;"></span>
+            </div>
+            <div class="calendar-cell">
+              <span class="season-bar" style="left: -50%; right: 30%;"></span>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="legend-bar">
+            <div class="legend-item">
+              <span class="legend-swatch in-season"></span>
+              <span>In season</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch peak"></span>
+              <span>At peak</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch ending"></span>
+              <span>Ending soon</span>
+            </div>
+            <div class="legend-item">
+              <span style="font-style: italic; color: var(--muted);">Showing 15 of 82 ingredients · filter to refine</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">Seasonal Sub-page v1 — Design Notes</div>
+      <div class="footnote-body">
+        <strong>Lives as a sub-page of Stock &amp; Suppliers.</strong> Breadcrumb shows the path. Reference data, not authoring data — sits alongside The Bank and Suppliers as a lookup destination.<br><br>
+        <strong>Four KPI cards at the top tell the chef what to care about today:</strong> "In Season Now" (37), "At Peak" (8), "Ending Soon" (3), "Coming Next Month" (11). Each KPI sub-line names specific things — "asparagus, wild garlic, rhubarb" — so the chef knows what to look at without scrolling the calendar.<br><br>
+        <strong>The calendar itself is the main attraction.</strong> 12-month timeline across, ingredients down the left. Each row shows the ingredient's season as bars: light-gold for "in season", darker gold for "peak", warm amber for "ending soon". May (current month) is highlighted as a column with gold-bg tint and an underline.<br><br>
+        <strong>"In your notebook" indicator</strong> shows on rows the chef has notebook entries about — sumac, stone fruit, aubergine, sea bream all get the small Cinzel pill. This is the bridge to Notebook's Coming Into Season cards: the system knows what the chef has worked on and surfaces it in context.<br><br>
+        <strong>Status dot on the label tells the at-a-glance state:</strong> green for in-season, gold for peak, amber for ending soon, muted for out-of-season. Sub-line gives natural-language context ("Yorkshire forced ending · outdoor still good").<br><br>
+        <strong>Hand-curated UK-focused dataset.</strong> 82 ingredients in v1 covering vegetables, fruit, herbs &amp; aromatics, mushrooms, fish &amp; seafood, game. Grows over time. Becomes a moat — the more accurate it is, the more valuable.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>

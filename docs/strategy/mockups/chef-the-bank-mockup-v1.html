@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Stock &amp; Suppliers · The Bank — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    --price-up:    #A14424;
+    --price-up-bg: rgba(161,68,36,0.06);
+    --price-down:  #5D7F4F;
+    --price-down-bg: rgba(93,127,79,0.06);
+    --price-flat:  #A99B85;
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink); color: var(--paper); padding: 12px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--paper); opacity: 0.7;
+  }
+  .app {
+    display: grid; grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease;
+  }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar {
+    background: var(--paper-warm); border-right: 1px solid var(--rule);
+    position: sticky; top: 0; height: calc(100vh - 44px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-brand {
+    height: var(--header-row-height); padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    flex-shrink: 0; transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase;
+    display: flex; align-items: center; transition: opacity 0.2s, width 0.25s;
+  }
+  .brand-mark .brand-dot-inline {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px; vertical-align: middle;
+    position: relative; top: -4px;
+  }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; pointer-events: none; position: absolute; }
+  .brand-mark-collapsed {
+    display: none; align-items: center;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px;
+    letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+  }
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); margin-left: 4px; position: relative; top: -7px;
+  }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row {
+    padding: 12px 24px 0; transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase;
+    padding: 14px 24px 6px; white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+  }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer; border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); transition: color 0.15s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500;
+    letter-spacing: 0.03em; flex: 1; transition: opacity 0.2s;
+  }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.05em; color: var(--paper); background: var(--gold);
+    padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px;
+  }
+  .nav-badge.subtle {
+    background: transparent; color: var(--muted-soft); border: 1px solid var(--rule);
+  }
+  .app.collapsed .nav-badge {
+    position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px;
+    padding: 0; font-size: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip {
+    display: none; position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 7px 14px; white-space: nowrap; z-index: 30; pointer-events: none;
+  }
+  .nav-tooltip::before {
+    content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-style: solid;
+    border-width: 4px 4px 4px 0; border-color: transparent var(--ink) transparent transparent;
+  }
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row {
+    padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .user-role {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px;
+  }
+  .surface-switcher {
+    width: 100%; padding: 8px 12px; background: transparent;
+    border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher {
+    width: 36px; height: 36px; padding: 0; justify-content: center;
+  }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar {
+    height: var(--header-row-height);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule);
+    background: var(--paper); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle {
+    width: 36px; height: 36px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; transition: transform 0.25s ease; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px;
+    color: var(--ink); letter-spacing: 0.04em; padding-left: 12px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .breadcrumb-sep {
+    color: var(--muted-soft);
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 0.3em;
+  }
+  .breadcrumb-current {
+    color: var(--gold);
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .live-indicator {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--healthy); text-transform: uppercase;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--healthy);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  .date-display {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .page { padding: 48px 56px 80px; max-width: 1400px; }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 32px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 32px; flex-wrap: wrap;
+  }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header-live {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--healthy);
+  }
+  .header-live::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--healthy); animation: pulse 2.5s ease-in-out infinite;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px;
+    line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
+  }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px;
+    color: var(--muted); margin-top: 12px; letter-spacing: 0.01em;
+  }
+
+  /* Pending confirmation strip */
+  .pending-strip {
+    background: var(--gold-bg);
+    border: 1px solid var(--rule-gold);
+    border-left: 3px solid var(--gold);
+    padding: 16px 24px;
+    margin-bottom: 32px;
+    display: flex; align-items: center; gap: 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pending-strip:hover {
+    background: rgba(201,168,76,0.1);
+  }
+  .pending-icon {
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold);
+    background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .pending-icon svg { width: 18px; height: 18px; }
+  .pending-text { flex: 1; }
+  .pending-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 17px;
+    color: var(--ink); line-height: 1.3;
+  }
+  .pending-headline em { color: var(--gold-dark); font-style: italic; font-weight: 600; }
+  .pending-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 2px;
+  }
+  .pending-action {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase;
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 1px solid var(--gold);
+    transition: all 0.15s;
+  }
+  .pending-strip:hover .pending-action {
+    background: var(--gold); color: var(--paper);
+  }
+
+  /* KPIs */
+  .flow-overview {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); margin-bottom: 40px;
+  }
+  .flow-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .overview-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .overview-value.up { color: var(--price-up); }
+  .overview-value.down { color: var(--price-down); }
+  .overview-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 8px;
+  }
+
+  /* Controls bar */
+  .list-controls {
+    display: flex; gap: 14px; align-items: center;
+    margin-bottom: 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .control-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase;
+  }
+  .control-pill {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 6px 14px; background: transparent; border: 1px solid var(--rule);
+    color: var(--ink-soft); cursor: pointer; transition: all 0.15s;
+  }
+  .control-pill:hover { border-color: var(--gold); color: var(--ink); }
+  .control-pill.active { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .list-controls-spacer { flex: 1; }
+  .search-mini {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 6px 14px;
+    min-width: 280px;
+  }
+  .search-mini svg { width: 14px; height: 14px; color: var(--gold); flex-shrink: 0; }
+  .search-mini input {
+    border: none; background: transparent; outline: none;
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink); flex: 1;
+  }
+  .search-mini input::placeholder { color: var(--muted); }
+
+  /* THE BANK TABLE — header */
+  .bank-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    margin-bottom: 48px;
+  }
+  .bank-head {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.6fr) minmax(160px, 1fr) 140px 100px 120px 60px;
+    gap: 24px;
+    padding: 14px 28px;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+  }
+  .bank-head-cell {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted); text-transform: uppercase;
+  }
+  .bank-head-cell.right { text-align: right; }
+  .bank-head-cell.center { text-align: center; }
+
+  /* THE BANK TABLE — rows */
+  .bank-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.6fr) minmax(160px, 1fr) 140px 100px 120px 60px;
+    gap: 24px;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .bank-row:last-child { border-bottom: none; }
+  .bank-row:hover { background: var(--card-warm); }
+
+  /* Just-updated flash indicator on rows */
+  .bank-row.just-updated {
+    background: var(--gold-bg);
+    position: relative;
+  }
+  .bank-row.just-updated::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px; background: var(--gold);
+  }
+
+  /* Column 1: Ingredient */
+  .ingredient-cell {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .ingredient-name {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 17px;
+    color: var(--ink); letter-spacing: -0.005em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .ingredient-name em {
+    color: var(--gold); font-style: italic;
+  }
+  .ingredient-spec {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.02em;
+  }
+  .just-updated-pill {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 7px;
+    letter-spacing: 0.3em; color: var(--paper);
+    background: var(--gold);
+    padding: 2px 6px;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
+
+  /* Column 2: Supplier */
+  .supplier-cell {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .supplier-name {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 14px;
+    color: var(--ink); letter-spacing: 0.01em;
+  }
+  .supplier-name em {
+    font-style: italic; color: var(--gold);
+  }
+  .supplier-meta {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 10px;
+    color: var(--muted-soft); letter-spacing: 0.03em;
+  }
+  .multi-supplier-badge {
+    display: inline-block;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 7px;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--gold); background: var(--gold-bg);
+    padding: 2px 6px;
+    margin-top: 2px;
+  }
+
+  /* Column 3: Sparkline (30-day price line) */
+  .sparkline-cell {
+    height: 36px;
+    display: flex; align-items: center;
+  }
+  .sparkline-cell svg {
+    width: 100%; height: 36px;
+    overflow: visible;
+  }
+
+  /* Column 4: Current price */
+  .price-cell {
+    text-align: right;
+  }
+  .price-current {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 17px;
+    color: var(--ink); letter-spacing: -0.005em;
+  }
+  .price-unit {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.02em;
+    margin-top: 1px;
+  }
+
+  /* Column 5: Movement (% change) */
+  .movement-cell {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 6px;
+  }
+  .movement-arrow {
+    width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .movement-arrow svg { width: 14px; height: 14px; }
+  .movement-arrow.up { color: var(--price-up); }
+  .movement-arrow.down { color: var(--price-down); }
+  .movement-arrow.flat { color: var(--price-flat); }
+  .movement-value {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+  .movement-value.up { color: var(--price-up); }
+  .movement-value.down { color: var(--price-down); }
+  .movement-value.flat { color: var(--price-flat); }
+
+  /* Column 6: Arrow into detail */
+  .row-arrow {
+    color: var(--muted-soft);
+    transition: color 0.15s, transform 0.15s;
+    display: flex; justify-content: flex-end;
+  }
+  .bank-row:hover .row-arrow {
+    color: var(--gold);
+    transform: translateX(2px);
+  }
+  .row-arrow svg { width: 16px; height: 16px; }
+
+  /* View all footer */
+  .bank-view-all {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 28px;
+    background: var(--paper-warm);
+    border-top: 1px solid var(--rule);
+  }
+  .view-all-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.01em;
+  }
+  .view-all-button {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gold); text-decoration: none;
+    padding: 10px 20px;
+    border: 1px solid var(--gold);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .view-all-button:hover {
+    background: var(--gold); color: var(--paper);
+  }
+  .view-all-button svg { width: 14px; height: 14px; }
+
+  /* Looking Ahead */
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+
+  .looking-ahead-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .ahead-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 28px 32px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .ahead-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--info);
+  }
+  .ahead-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .ahead-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .ahead-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .ahead-tag {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--info);
+  }
+  .ahead-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 24px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .ahead-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .ahead-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .ahead-body strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .ahead-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ahead-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .ahead-card:hover .ahead-action-link { color: var(--gold-dark); }
+  .ahead-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Footnote */
+  .mockup-footnote {
+    margin: 0 56px 60px; padding: 32px 32px;
+    background: var(--paper-warm); border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px;
+    color: var(--ink-soft); line-height: 1.7; max-width: 800px;
+  }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Stock &amp; Suppliers · The Bank</div>
+  <div class="mockup-banner-meta">Live ingredient catalogue · price-movement focus · auto-populated from invoices</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/><path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span><span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">
+          <span>Stock &amp; Suppliers</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">The Bank</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="live-indicator">
+          <span class="live-dot"></span><span>Live</span>
+        </div>
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">
+            Every Ingredient, Every Price
+            <span class="header-live">Live · last update 07:14</span>
+          </div>
+          <div class="page-title"><em>The Bank</em></div>
+          <div class="page-sub">147 ingredients on file. Eleven moving this week. Tahini and lamb shoulder leading the charge.</div>
+        </div>
+      </div>
+
+      <!-- PENDING CONFIRMATION STRIP -->
+      <div class="pending-strip">
+        <div class="pending-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 8v4M12 16h.01"/>
+          </svg>
+        </div>
+        <div class="pending-text">
+          <div class="pending-headline">Three new ingredients waiting on your <em>confirmation</em>.</div>
+          <div class="pending-sub">Spotted on yesterday's Reza invoice — sumac powder, Aleppo pepper, and one the system isn't sure about. Clear them in your inbox.</div>
+        </div>
+        <a class="pending-action" href="#">Open Inbox →</a>
+      </div>
+
+      <!-- KPI STRIP -->
+      <div class="flow-overview">
+        <div class="flow-overview-card">
+          <div class="overview-label">Ingredients On File</div>
+          <div class="overview-value">147</div>
+          <div class="overview-sub">across 8 suppliers</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Prices On The Move</div>
+          <div class="overview-value up">11</div>
+          <div class="overview-sub">this week · 8 up · 3 down</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Auto-Updated This Week</div>
+          <div class="overview-value">23</div>
+          <div class="overview-sub">from 4 invoices scanned</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Multi-Sourced</div>
+          <div class="overview-value">18</div>
+          <div class="overview-sub">ingredients you buy from 2+</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="list-controls">
+        <span class="control-label">Sort by</span>
+        <button class="control-pill active">Movement</button>
+        <button class="control-pill">Category</button>
+        <button class="control-pill">A–Z</button>
+        <button class="control-pill">Last updated</button>
+        <div class="list-controls-spacer"></div>
+        <div class="search-mini">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M21 21l-4.5-4.5"/>
+          </svg>
+          <input type="text" placeholder="Search 147 ingredients or suppliers...">
+        </div>
+      </div>
+
+      <!-- THE BANK TABLE -->
+      <div class="bank-card">
+        <div class="bank-head">
+          <div class="bank-head-cell">Ingredient</div>
+          <div class="bank-head-cell">Supplier</div>
+          <div class="bank-head-cell">30-day shape</div>
+          <div class="bank-head-cell right">Price</div>
+          <div class="bank-head-cell right">Movement</div>
+          <div class="bank-head-cell"></div>
+        </div>
+
+        <!-- Row 1: Lamb shoulder — biggest up movement, just updated -->
+        <div class="bank-row just-updated">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">
+              Lamb shoulder
+              <span class="just-updated-pill">just in</span>
+            </div>
+            <div class="ingredient-spec">boneless · 2-3kg pieces</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Aubrey</em></div>
+            <div class="supplier-meta">updated 07:14 today</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,24 10,24 20,23 30,24 40,22 50,23 60,22 70,21 80,20 90,18 100,12 110,8 120,6"
+                        fill="none" stroke="#A14424" stroke-width="1.5"/>
+              <circle cx="120" cy="6" r="2.5" fill="#A14424"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£14.20</div>
+            <div class="price-unit">per kg</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 14l7-7 7 7"/>
+              </svg>
+            </div>
+            <div class="movement-value up">+11.8%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 2: Tahini — multi-supplier, up across both -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Tahini</div>
+            <div class="ingredient-spec">light · 3kg tubs</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Reza</em></div>
+            <div class="supplier-meta">also at Mediterranean</div>
+            <span class="multi-supplier-badge">2 suppliers</span>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,22 10,22 20,21 30,22 40,21 50,20 60,21 70,18 80,16 90,14 100,12 110,10 120,8"
+                        fill="none" stroke="#A14424" stroke-width="1.5"/>
+              <circle cx="120" cy="8" r="2.5" fill="#A14424"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£8.40</div>
+            <div class="price-unit">per kg</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 14l7-7 7 7"/>
+              </svg>
+            </div>
+            <div class="movement-value up">+8.0%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 3: Saffron — sharp spike -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Saffron threads</div>
+            <div class="ingredient-spec">Iranian · 5g packs</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Reza</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,22 10,22 20,21 30,22 40,22 50,21 60,22 70,22 80,21 90,20 100,18 110,14 120,7"
+                        fill="none" stroke="#A14424" stroke-width="1.5"/>
+              <circle cx="120" cy="7" r="2.5" fill="#A14424"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£14.80</div>
+            <div class="price-unit">per 5g</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 14l7-7 7 7"/>
+              </svg>
+            </div>
+            <div class="movement-value up">+6.5%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 4: Aubergine — steady creep up -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Aubergine</div>
+            <div class="ingredient-spec">large · 5kg boxes</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Mediterranean Direct</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,22 10,22 20,21 30,21 40,20 50,20 60,19 70,19 80,18 90,17 100,16 110,15 120,14"
+                        fill="none" stroke="#A14424" stroke-width="1.5"/>
+              <circle cx="120" cy="14" r="2.5" fill="#A14424"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£4.20</div>
+            <div class="price-unit">per kg</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow up">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 14l7-7 7 7"/>
+              </svg>
+            </div>
+            <div class="movement-value up">+4.3%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 5: Sea bream — flat / stable -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Sea bream</div>
+            <div class="ingredient-spec">whole · 400-600g</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Wright Brothers</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,18 10,18 20,17 30,18 40,18 50,17 60,18 70,17 80,18 90,18 100,17 110,18 120,18"
+                        fill="none" stroke="#A99B85" stroke-width="1.5"/>
+              <circle cx="120" cy="18" r="2.5" fill="#A99B85"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£18.50</div>
+            <div class="price-unit">per kg</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow flat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+              </svg>
+            </div>
+            <div class="movement-value flat">0.0%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 6: Pomegranate molasses — flat -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Pomegranate molasses</div>
+            <div class="ingredient-spec">650g bottles</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Reza</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,18 10,17 20,18 30,18 40,17 50,18 60,18 70,18 80,17 90,18 100,18 110,18 120,18"
+                        fill="none" stroke="#A99B85" stroke-width="1.5"/>
+              <circle cx="120" cy="18" r="2.5" fill="#A99B85"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£6.20</div>
+            <div class="price-unit">per bottle</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow flat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+              </svg>
+            </div>
+            <div class="movement-value flat">0.0%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 7: Tomatoes — down -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Tomatoes</div>
+            <div class="ingredient-spec">vine · 5kg boxes</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Mediterranean Direct</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,14 10,15 20,14 30,15 40,16 50,17 60,18 70,19 80,20 90,21 100,22 110,23 120,24"
+                        fill="none" stroke="#5D7F4F" stroke-width="1.5"/>
+              <circle cx="120" cy="24" r="2.5" fill="#5D7F4F"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£3.40</div>
+            <div class="price-unit">per kg</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow down">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 10l-7 7-7-7"/>
+              </svg>
+            </div>
+            <div class="movement-value down">−5.6%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 8: Cucumber — down -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Cucumber</div>
+            <div class="ingredient-spec">English · case of 12</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Mediterranean Direct</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,12 10,13 20,12 30,14 40,15 50,16 60,17 70,18 80,19 90,20 100,21 110,21 120,22"
+                        fill="none" stroke="#5D7F4F" stroke-width="1.5"/>
+              <circle cx="120" cy="22" r="2.5" fill="#5D7F4F"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£12.80</div>
+            <div class="price-unit">per case</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow down">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 10l-7 7-7-7"/>
+              </svg>
+            </div>
+            <div class="movement-value down">−3.8%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 9: Olive oil — flat -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Olive oil</div>
+            <div class="ingredient-spec">extra virgin · 5L tins</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Reza</em></div>
+            <div class="supplier-meta">also at Mediterranean</div>
+            <span class="multi-supplier-badge">2 suppliers</span>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,18 10,18 20,17 30,18 40,18 50,17 60,18 70,18 80,18 90,17 100,18 110,18 120,17"
+                        fill="none" stroke="#A99B85" stroke-width="1.5"/>
+              <circle cx="120" cy="17" r="2.5" fill="#A99B85"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£48.50</div>
+            <div class="price-unit">per 5L</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow flat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+              </svg>
+            </div>
+            <div class="movement-value flat">+0.4%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Row 10: Chickpeas — flat / minor up -->
+        <div class="bank-row">
+          <div class="ingredient-cell">
+            <div class="ingredient-name">Chickpeas</div>
+            <div class="ingredient-spec">dried · 25kg sacks</div>
+          </div>
+          <div class="supplier-cell">
+            <div class="supplier-name"><em>Reza</em></div>
+            <div class="supplier-meta">single source</div>
+          </div>
+          <div class="sparkline-cell">
+            <svg viewBox="0 0 120 36" preserveAspectRatio="none">
+              <polyline points="0,20 10,19 20,20 30,19 40,20 50,20 60,19 70,20 80,19 90,18 100,19 110,18 120,19"
+                        fill="none" stroke="#A99B85" stroke-width="1.5"/>
+              <circle cx="120" cy="19" r="2.5" fill="#A99B85"/>
+            </svg>
+          </div>
+          <div class="price-cell">
+            <div class="price-current">£32.00</div>
+            <div class="price-unit">per 25kg</div>
+          </div>
+          <div class="movement-cell">
+            <div class="movement-arrow flat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+              </svg>
+            </div>
+            <div class="movement-value flat">+0.6%</div>
+          </div>
+          <div class="row-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 6l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- View all footer row -->
+        <div class="bank-view-all">
+          <div class="view-all-meta">Showing the 10 most active. 137 more stable or unchanged.</div>
+          <a class="view-all-button" href="#">
+            View all 147 ingredients
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6"/>
+            </svg>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- LOOKING AHEAD -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Looking Ahead</div>
+          <div class="section-meta">two price patterns worth watching</div>
+        </div>
+
+        <div class="looking-ahead-grid">
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Tahini · Cross-Supplier</div>
+              <div class="ahead-tag">Market Move</div>
+            </div>
+            <div class="ahead-headline"><em>Tahini</em> moving up at both suppliers.</div>
+            <div class="ahead-body">
+              <strong>Reza up 8%, Mediterranean up 6% — both inside two weeks.</strong> When two suppliers move the same direction at the same time, it's the market, not the supplier. Likely to tick again in 2–3 weeks. Worth stocking what you'll need.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">See affected dishes →</a>
+              <div class="ahead-action-context">hummus, baba ghanoush</div>
+            </div>
+          </div>
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Tomatoes &amp; Cucumber</div>
+              <div class="ahead-tag">Worth Knowing</div>
+            </div>
+            <div class="ahead-headline">Salad veg <em>softening</em> as the season opens.</div>
+            <div class="ahead-body">
+              <strong>Tomatoes down 5.6%, cucumber down 3.8% across the last fortnight.</strong> British greenhouse stuff is hitting the market — quality and price both moving in your favour. Good moment to push a salad-led starter.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">See affected dishes →</a>
+              <div class="ahead-action-context">Mediterranean Direct</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">The Bank v1 — Design Notes</div>
+      <div class="footnote-body">
+        <strong>Live ingredient catalogue with price-movement as the story.</strong> Top-bar pulsing Live indicator, eyebrow "Live · last update 07:14" — the surface tells you immediately that it's a real-time view, not yesterday's snapshot. The page title is just <em>The Bank</em> — definite article, italic-gold, treating it as a place not a feature.<br><br>
+        <strong>Pending confirmation strip surfaces the auto-population intelligence.</strong> Three new ingredients waiting on chef confirmation, with the system's honest admission ("one the system isn't sure about"). Action lives in Inbox where the chef does other confirmation work — keeps The Bank focused on reading, not processing.<br><br>
+        <strong>Each row tells the price-movement story at three resolutions:</strong> the 30-day sparkline shows the shape (steady creep, sudden spike, flat), the price + unit shows the current absolute, the arrow + percentage shows direction and magnitude. Up movements in price-up burnt red, down in healthy green, flat in muted grey. The chef can read each row in under two seconds.<br><br>
+        <strong>Sort defaults to Movement</strong> — what's moved most, biggest changes first. Stable ingredients drop down the list. The chef opening The Bank most often wants to know what's changed, not browse alphabetically.<br><br>
+        <strong>"Just in" highlighting on freshly-updated rows.</strong> Gold-bg row with thin gold left bar plus a "JUST IN" pill near the ingredient name. Lamb shoulder in the mockup shows this — auto-banked from this morning's Aubrey invoice. The chef sees freshness without having to think about it.<br><br>
+        <strong>Multi-supplier badge surfaces sourcing optionality.</strong> Ingredients you buy from 2+ suppliers (tahini, olive oil) get the small "2 SUPPLIERS" badge. Clicking the row opens a comparison view (future v2) — where can you get this cheaper, where's the quality been better. 18 multi-sourced ingredients across the catalogue per the KPI strip.<br><br>
+        <strong>Looking Ahead surfaces cross-pattern intelligence.</strong> Tahini up at both suppliers = market move, prescriptive ("worth stocking what you'll need"). Tomato &amp; cucumber down together = seasonal opening, opportunistic ("good moment to push a salad-led starter"). The system reading patterns the chef wouldn't catch row-by-row.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>

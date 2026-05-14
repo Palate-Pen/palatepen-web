@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Stock &amp; Suppliers · Suppliers — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Cinzel:wght@400;500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #F8F4ED;
+    --paper-warm:  #F2EDE0;
+    --card:        #FFFFFF;
+    --card-warm:   #FDFAF2;
+    --ink:         #1A1612;
+    --ink-soft:    #3D362C;
+    --muted:       #7A6F5E;
+    --muted-soft:  #A99B85;
+    --rule:        rgba(26,22,18,0.08);
+    --rule-soft:   rgba(26,22,18,0.04);
+    --rule-gold:   rgba(201,168,76,0.25);
+    --gold:        #B8923C;
+    --gold-light:  #C9A84C;
+    --gold-dark:   #8B6914;
+    --gold-bg:     rgba(201,168,76,0.06);
+    --attention:   #B86A2E;
+    --urgent:      #A14424;
+    --healthy:     #5D7F4F;
+    --info:        #B8923C;
+    --sidebar-expanded: 252px;
+    --sidebar-collapsed: 72px;
+    --header-row-height: 76px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Jost', sans-serif; font-weight: 400; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .mockup-banner {
+    background: var(--ink); color: var(--paper); padding: 12px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--paper); opacity: 0.7;
+  }
+  .app {
+    display: grid; grid-template-columns: var(--sidebar-expanded) 1fr;
+    min-height: calc(100vh - 44px); transition: grid-template-columns 0.25s ease;
+  }
+  .app.collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
+  .sidebar {
+    background: var(--paper-warm); border-right: 1px solid var(--rule);
+    position: sticky; top: 0; height: calc(100vh - 44px);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-brand {
+    height: var(--header-row-height); padding: 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+    flex-shrink: 0; transition: padding 0.25s ease, justify-content 0.25s ease;
+  }
+  .app.collapsed .sidebar-brand { padding: 0; justify-content: center; }
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    letter-spacing: 0.16em; color: var(--ink); text-transform: uppercase;
+    display: flex; align-items: center; transition: opacity 0.2s, width 0.25s;
+  }
+  .brand-mark .brand-dot-inline {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold); margin: 0 4px; vertical-align: middle;
+    position: relative; top: -4px;
+  }
+  .app.collapsed .brand-mark { opacity: 0; width: 0; pointer-events: none; position: absolute; }
+  .brand-mark-collapsed {
+    display: none; align-items: center;
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 26px;
+    letter-spacing: 0.04em; color: var(--ink); line-height: 1;
+  }
+  .brand-mark-collapsed .dot-inline {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold); margin-left: 4px; position: relative; top: -7px;
+  }
+  .app.collapsed .brand-mark-collapsed { display: inline-flex; }
+  .brand-sub-row {
+    padding: 12px 24px 0; transition: opacity 0.2s, padding 0.2s, height 0.2s;
+    overflow: hidden;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif; font-weight: 500; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app.collapsed .brand-sub-row { opacity: 0; height: 0; padding: 0; }
+  .sidebar-nav { padding: 18px 0 8px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .nav-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted-soft); text-transform: uppercase;
+    padding: 14px 24px 6px; white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s, padding 0.2s, height 0.2s;
+  }
+  .app.collapsed .nav-section-label { opacity: 0; padding: 6px 0; height: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer; border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .nav-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .nav-item.active { color: var(--ink); border-left-color: var(--gold); background: var(--gold-bg); }
+  .app.collapsed .nav-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .nav-icon { width: 19px; height: 19px; flex-shrink: 0; color: var(--muted); transition: color 0.15s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: var(--gold); }
+  .nav-label {
+    font-family: 'Cormorant Garamond', serif; font-size: 17px; font-weight: 500;
+    letter-spacing: 0.03em; flex: 1; transition: opacity 0.2s;
+  }
+  .app.collapsed .nav-label { opacity: 0; width: 0; position: absolute; }
+  .nav-badge {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.05em; color: var(--paper); background: var(--gold);
+    padding: 2px 7px; min-width: 20px; text-align: center; border-radius: 1px;
+  }
+  .nav-badge.subtle {
+    background: transparent; color: var(--muted-soft); border: 1px solid var(--rule);
+  }
+  .app.collapsed .nav-badge {
+    position: absolute; top: 6px; right: 14px; min-width: 14px; height: 14px;
+    padding: 0; font-size: 8px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app.collapsed .nav-badge.subtle { display: none; }
+  .nav-tooltip {
+    display: none; position: absolute;
+    left: calc(var(--sidebar-collapsed) + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--ink); color: var(--paper);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    padding: 7px 14px; white-space: nowrap; z-index: 30; pointer-events: none;
+  }
+  .nav-tooltip::before {
+    content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-style: solid;
+    border-width: 4px 4px 4px 0; border-color: transparent var(--ink) transparent transparent;
+  }
+  .app.collapsed .nav-item:hover .nav-tooltip,
+  .app.collapsed .settings-item:hover .nav-tooltip { display: block; }
+  .sidebar-foot { border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .surface-row { padding: 14px 24px; border-bottom: 1px solid var(--rule); }
+  .app.collapsed .surface-row {
+    padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .sidebar-user { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .app.collapsed .sidebar-user { margin-bottom: 0; }
+  .user-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px;
+    color: var(--paper); letter-spacing: 0.05em; flex-shrink: 0;
+  }
+  .user-meta { flex: 1; min-width: 0; }
+  .app.collapsed .user-meta { display: none; }
+  .user-name {
+    font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
+    color: var(--ink); line-height: 1.2;
+  }
+  .user-role {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-top: 2px;
+  }
+  .surface-switcher {
+    width: 100%; padding: 8px 12px; background: transparent;
+    border: 1px solid var(--rule); color: var(--ink-soft);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: all 0.15s;
+  }
+  .surface-switcher:hover { border-color: var(--gold); color: var(--ink); }
+  .app.collapsed .surface-switcher {
+    width: 36px; height: 36px; padding: 0; justify-content: center;
+  }
+  .app.collapsed .surface-switcher span:first-child { display: none; }
+  .settings-row { padding: 8px 0; }
+  .settings-item {
+    display: flex; align-items: center; gap: 14px; padding: 10px 24px;
+    color: var(--ink-soft); cursor: pointer;
+    transition: background 0.15s, color 0.15s, padding 0.2s;
+    text-decoration: none; position: relative; white-space: nowrap;
+  }
+  .settings-item:hover { background: var(--gold-bg); color: var(--ink); }
+  .settings-item:hover .nav-icon { color: var(--gold); }
+  .app.collapsed .settings-item { padding: 12px 0; justify-content: center; gap: 0; }
+  .settings-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 16px;
+    letter-spacing: 0.03em;
+  }
+  .app.collapsed .settings-label { opacity: 0; width: 0; position: absolute; }
+  .main { min-width: 0; overflow-x: hidden; }
+  .topbar {
+    height: var(--header-row-height);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 56px 0 16px; border-bottom: 1px solid var(--rule);
+    background: var(--paper); position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 4px; }
+  .collapse-toggle {
+    width: 36px; height: 36px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; border-radius: 4px; flex-shrink: 0;
+  }
+  .collapse-toggle:hover { background: var(--gold-bg); color: var(--gold); }
+  .collapse-toggle svg { width: 18px; height: 18px; transition: transform 0.25s ease; }
+  .app.collapsed .collapse-toggle svg { transform: rotate(180deg); }
+  .breadcrumb {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 19px;
+    color: var(--ink); letter-spacing: 0.04em; padding-left: 12px;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .breadcrumb-sep {
+    color: var(--muted-soft);
+    font-family: 'Cinzel', serif; font-size: 11px;
+    letter-spacing: 0.3em;
+  }
+  .breadcrumb-current {
+    color: var(--gold);
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 28px; }
+  .date-display {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--muted); letter-spacing: 0.04em;
+  }
+  .page { padding: 48px 56px 80px; max-width: 1400px; }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 40px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 32px; flex-wrap: wrap;
+  }
+  .page-header-left { flex: 1; min-width: 280px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 48px;
+    line-height: 1.05; color: var(--ink); letter-spacing: -0.015em;
+  }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px;
+    color: var(--muted); margin-top: 12px; letter-spacing: 0.01em;
+  }
+
+  /* Add supplier quick action */
+  .add-supplier-card {
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 20px 24px; min-width: 280px;
+    display: flex; align-items: center; gap: 18px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-supplier-card:hover {
+    border-color: var(--rule-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .add-supplier-icon {
+    width: 48px; height: 48px;
+    border: 1px solid var(--gold); border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); flex-shrink: 0;
+    background: var(--gold-bg);
+  }
+  .add-supplier-icon svg { width: 24px; height: 24px; }
+  .add-supplier-text { flex: 1; }
+  .add-supplier-label {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 18px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 4px;
+  }
+  .add-supplier-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* KPI strip */
+  .flow-overview {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); margin-bottom: 48px;
+  }
+  .flow-overview-card { background: var(--card); padding: 28px 32px; }
+  .overview-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.4em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .overview-value {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 36px;
+    color: var(--ink); line-height: 1; letter-spacing: -0.015em;
+  }
+  .overview-value.attention { color: var(--attention); }
+  .overview-value.healthy { color: var(--healthy); }
+  .overview-sub {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); margin-top: 8px;
+  }
+
+  /* Sections */
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Attention cards row */
+  .attention-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  .attention-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 26px 28px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .attention-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--attention);
+  }
+  .attention-card.urgent::before { background: var(--urgent); }
+  .attention-card.attention::before { background: var(--attention); }
+  .attention-card.info::before { background: var(--info); }
+  .attention-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .attention-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .attention-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .attention-severity {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--attention);
+  }
+  .attention-card.urgent .attention-severity { color: var(--urgent); }
+  .attention-card.info .attention-severity { color: var(--info); }
+  .attention-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .attention-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .attention-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .attention-body strong {
+    font-style: normal; color: var(--ink); font-weight: 600;
+  }
+  .attention-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .attention-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .attention-card:hover .attention-action-link { color: var(--gold-dark); }
+  .attention-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Sort/group controls */
+  .list-controls {
+    display: flex; gap: 14px; align-items: center;
+    margin-bottom: 24px;
+  }
+  .control-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase;
+  }
+  .control-pill {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 6px 14px; background: transparent; border: 1px solid var(--rule);
+    color: var(--ink-soft); cursor: pointer; transition: all 0.15s;
+  }
+  .control-pill:hover { border-color: var(--gold); color: var(--ink); }
+  .control-pill.active { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .list-controls-spacer { flex: 1; }
+  .search-mini {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--rule);
+    padding: 6px 14px;
+    min-width: 240px;
+  }
+  .search-mini svg { width: 14px; height: 14px; color: var(--gold); }
+  .search-mini input {
+    border: none; background: transparent; outline: none;
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink); flex: 1;
+  }
+  .search-mini input::placeholder { color: var(--muted); }
+
+  /* Category groups */
+  .category-group { margin-bottom: 36px; }
+  .category-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 12px 24px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-bottom: 2px solid var(--gold);
+  }
+  .category-name {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px;
+    letter-spacing: 0.4em; color: var(--gold); text-transform: uppercase;
+  }
+  .category-meta {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Supplier rows */
+  .supplier-list {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-top: none;
+  }
+  .supplier-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.4fr) 1.2fr 1fr 1fr auto;
+    gap: 24px;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .supplier-row:last-child { border-bottom: none; }
+  .supplier-row:hover { background: var(--card-warm); }
+
+  /* Column 1: Identity */
+  .supplier-identity {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .supplier-casual {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 19px;
+    color: var(--ink); line-height: 1.2; letter-spacing: -0.005em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .supplier-casual em {
+    color: var(--gold); font-style: italic;
+  }
+  .supplier-legal {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 13px;
+    color: var(--muted); letter-spacing: 0.02em;
+  }
+
+  .supplier-tags {
+    display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+  }
+  .supplier-tag {
+    font-family: 'Jost', sans-serif; font-weight: 500; font-size: 9px;
+    letter-spacing: 0.08em; color: var(--muted);
+    padding: 2px 7px;
+    background: var(--paper-warm);
+    border-radius: 1px;
+  }
+  .supplier-tag.delivery { color: var(--gold-dark); background: var(--gold-bg); }
+
+  /* Column 2: Contact */
+  .supplier-contact {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .contact-name {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 14px;
+    color: var(--ink); letter-spacing: 0.01em;
+  }
+  .contact-meta {
+    font-family: 'Jost', sans-serif; font-weight: 400; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.02em;
+  }
+  .contact-meta-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .contact-meta-row svg {
+    width: 11px; height: 11px;
+    color: var(--muted-soft);
+  }
+
+  /* Column 3: Ordering pattern */
+  .supplier-pattern {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .pattern-line {
+    font-family: 'Cormorant Garamond', serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.4;
+  }
+  .pattern-line strong {
+    font-weight: 600; color: var(--ink);
+  }
+  .pattern-line em {
+    font-style: italic; color: var(--muted);
+  }
+
+  /* Column 4: Recent activity */
+  .supplier-activity {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .activity-line {
+    font-family: 'Cormorant Garamond', serif; font-size: 13px;
+    color: var(--ink-soft); line-height: 1.4;
+  }
+  .activity-line.healthy strong { color: var(--healthy); }
+  .activity-line.attention strong { color: var(--attention); }
+  .activity-line strong { font-weight: 600; color: var(--ink); }
+  .activity-line em { font-style: italic; color: var(--muted); font-size: 12px; }
+
+  /* Column 5: Action arrow */
+  .supplier-arrow {
+    color: var(--muted-soft);
+    transition: color 0.15s, transform 0.15s;
+  }
+  .supplier-row:hover .supplier-arrow {
+    color: var(--gold);
+    transform: translateX(2px);
+  }
+  .supplier-arrow svg { width: 18px; height: 18px; }
+
+  /* Looking Ahead */
+  .looking-ahead-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .ahead-card {
+    background: var(--card); border: 1px solid var(--rule); padding: 28px 32px;
+    cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .ahead-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0;
+    width: 3px; background: var(--info);
+  }
+  .ahead-card:hover {
+    border-color: var(--rule-gold); transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .ahead-card-head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;
+  }
+  .ahead-section-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; color: var(--muted-soft); text-transform: uppercase;
+  }
+  .ahead-tag {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 8px;
+    letter-spacing: 0.35em; text-transform: uppercase; color: var(--info);
+  }
+  .ahead-headline {
+    font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 24px;
+    color: var(--ink); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.005em;
+  }
+  .ahead-headline em { color: var(--gold); font-style: italic; font-weight: 600; }
+  .ahead-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px;
+    color: var(--ink-soft); line-height: 1.55;
+    flex: 1;
+  }
+  .ahead-body strong { font-style: normal; color: var(--ink); font-weight: 600; }
+  .ahead-action {
+    margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule-soft);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .ahead-action-link {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold);
+    text-decoration: none;
+  }
+  .ahead-card:hover .ahead-action-link { color: var(--gold-dark); }
+  .ahead-action-context {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* Footnote */
+  .mockup-footnote {
+    margin: 0 56px 60px; padding: 32px 32px;
+    background: var(--paper-warm); border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 0.5em; color: var(--gold); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px;
+    color: var(--ink-soft); line-height: 1.7; max-width: 800px;
+  }
+  .footnote-body strong { font-style: normal; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Stock &amp; Suppliers · Suppliers directory</div>
+  <div class="mockup-banner-meta">Write-and-reference surface · category-grouped · casual-name first</div>
+</div>
+
+<div class="app" id="app">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <span>P</span><span class="brand-dot-inline"></span><span>alatable</span>
+      </div>
+      <div class="brand-mark-collapsed">
+        <span>P</span><span class="dot-inline"></span>
+      </div>
+    </div>
+    <div class="brand-sub-row"><div class="brand-sub">Berber &amp; Q · London</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kitchen</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 11l9-8 9 8M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>
+        </svg>
+        <span class="nav-label">Home</span><span class="nav-tooltip">Home</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z"/><path d="M12 8v14"/>
+        </svg>
+        <span class="nav-label">Recipes</span><span class="nav-badge subtle">17</span><span class="nav-tooltip">Recipes</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="8" cy="8" r="1.5"/>
+        </svg>
+        <span class="nav-label">Costing</span><span class="nav-tooltip">Costing</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20h18"/><rect x="5" y="13" width="3" height="7"/><rect x="11" y="8" width="3" height="12"/><rect x="17" y="4" width="3" height="16"/>
+        </svg>
+        <span class="nav-label">Margins</span><span class="nav-badge">2</span><span class="nav-tooltip">Margins</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h10l4 4v14H6V3z"/><path d="M16 3v4h4"/><path d="M9 10h7M9 14h7M9 18h5"/>
+        </svg>
+        <span class="nav-label">Menus</span><span class="nav-tooltip">Menus</span>
+      </a>
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>
+        </svg>
+        <span class="nav-label">Stock &amp; Suppliers</span><span class="nav-badge">3</span><span class="nav-tooltip">Stock &amp; Suppliers</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 3h13v18H6z"/><path d="M6 3v18"/>
+          <circle cx="4" cy="7" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="12" r="0.7" fill="currentColor"/>
+          <circle cx="4" cy="17" r="0.7" fill="currentColor"/>
+          <path d="M10 8h5M10 12h5M10 16h3"/>
+        </svg>
+        <span class="nav-label">Notebook</span><span class="nav-tooltip">Notebook</span>
+      </a>
+      <div class="nav-section-label" style="margin-top: 4px;">Intelligence</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8l9 6 9-6"/><rect x="3" y="6" width="18" height="13"/><path d="M3 13h5l1 2h6l1-2h5"/>
+        </svg>
+        <span class="nav-label">Inbox</span><span class="nav-badge">4</span><span class="nav-tooltip">Inbox</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="surface-row">
+        <div class="sidebar-user">
+          <div class="user-avatar">JH</div>
+          <div class="user-meta">
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-role">Head Chef</div>
+          </div>
+        </div>
+        <button class="surface-switcher">
+          <span>Chef View</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5l3 3 3-3"/></svg>
+        </button>
+      </div>
+      <div class="settings-row">
+        <a class="settings-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+          </svg>
+          <span class="settings-label">Settings</span><span class="nav-tooltip">Settings</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="collapse-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 18l-6-6 6-6"/><path d="M11 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="breadcrumb">
+          <span>Stock &amp; Suppliers</span>
+          <span class="breadcrumb-sep">›</span>
+          <span class="breadcrumb-current">Suppliers</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-display">Thursday, 14 May 2026 · 09:42</div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-eyebrow">Who You Buy From</div>
+          <div class="page-title">Your <em>suppliers</em></div>
+          <div class="page-sub">Eight active. Three ordering today. Reza needs a price list refresh.</div>
+        </div>
+
+        <div class="add-supplier-card">
+          <div class="add-supplier-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <div class="add-supplier-text">
+            <div class="add-supplier-label">Add a supplier</div>
+            <div class="add-supplier-sub">contact, ordering pattern, price list</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI STRIP -->
+      <div class="flow-overview">
+        <div class="flow-overview-card">
+          <div class="overview-label">On The Books</div>
+          <div class="overview-value">8</div>
+          <div class="overview-sub">active suppliers across 6 categories</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Ordering Today</div>
+          <div class="overview-value">3</div>
+          <div class="overview-sub">Reza by 16:00 · Aubrey by 17:00</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Price Lists Current</div>
+          <div class="overview-value attention">7 of 8</div>
+          <div class="overview-sub">Reza last updated 3 months ago</div>
+        </div>
+        <div class="flow-overview-card">
+          <div class="overview-label">Spend This Month</div>
+          <div class="overview-value">£4,820</div>
+          <div class="overview-sub">tracking 4% above April</div>
+        </div>
+      </div>
+
+      <!-- ATTENTION CARDS -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Worth Sorting</div>
+          <div class="section-meta">three flags across your supplier graph</div>
+        </div>
+
+        <div class="attention-grid">
+
+          <div class="attention-card attention">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Reza Foods</div>
+              <div class="attention-severity">Stale</div>
+            </div>
+            <div class="attention-headline">Reza's price list hasn't moved in <em>three months</em>.</div>
+            <div class="attention-body">
+              <strong>Last refresh was 12 February.</strong> Your scanned invoices have been updating the Bank in the background — but the price list on file is stale, which is why three ingredient costings still look off. Worth asking Mo for an updated sheet.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open Reza →</a>
+              <div class="attention-action-context">12 Feb 2026</div>
+            </div>
+          </div>
+
+          <div class="attention-card urgent">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Henstings</div>
+              <div class="attention-severity">Dormant</div>
+            </div>
+            <div class="attention-headline">Haven't ordered from Henstings in <em>74 days</em>.</div>
+            <div class="attention-body">
+              <strong>Last order was 1 March</strong> — when asparagus was just starting. They've got the best English peas coming in next month if you want to pick the relationship back up. Or worth deciding if they stay on the books at all.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open Henstings →</a>
+              <div class="attention-action-context">1 Mar 2026</div>
+            </div>
+          </div>
+
+          <div class="attention-card info">
+            <div class="attention-card-head">
+              <div class="attention-section-label">Aubrey Allen</div>
+              <div class="attention-severity">Strong</div>
+            </div>
+            <div class="attention-headline">Aubrey's been your most reliable this quarter.</div>
+            <div class="attention-body">
+              <strong>23 deliveries, zero short-shipments, two credit notes raised and both resolved within 48 hours.</strong> Worth a phone call to Sarah at some point — relationships like this are built on the small things.
+            </div>
+            <div class="attention-action">
+              <a class="attention-action-link" href="#">Open Aubrey →</a>
+              <div class="attention-action-context">Q1 2026</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- LIST CONTROLS -->
+      <div class="list-controls">
+        <span class="control-label">Group by</span>
+        <button class="control-pill active">Category</button>
+        <button class="control-pill">Frequency</button>
+        <button class="control-pill">Urgency</button>
+        <div class="list-controls-spacer"></div>
+        <div class="search-mini">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="M21 21l-4.5-4.5"/>
+          </svg>
+          <input type="text" placeholder="Find a supplier...">
+        </div>
+      </div>
+
+      <!-- SUPPLIER LIST — grouped by category -->
+
+      <!-- MEAT -->
+      <div class="category-group">
+        <div class="category-head">
+          <div class="category-name">Meat</div>
+          <div class="category-meta">2 suppliers · 41% of spend this month</div>
+        </div>
+        <div class="supplier-list">
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Aubrey</em></div>
+              <div class="supplier-legal">Aubrey Allen Ltd · Coventry</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Mon · Thu · Sat</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Sarah Mitchell</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">07734 281 094</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <span class="contact-meta">WhatsApp preferred</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by 17:00</strong> day before</div>
+              <div class="pattern-line"><em>Min £150 · 24h lead time</em></div>
+              <div class="pattern-line">Net 14 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Last order:</strong> Wed 13 May</div>
+              <div class="activity-line"><strong>Last delivery:</strong> Thu 14 May</div>
+              <div class="activity-line healthy"><strong>23 deliveries Q1</strong> <em>· zero short-ships</em></div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>The Ginger Pig</em></div>
+              <div class="supplier-legal">Ginger Pig Ltd · Marylebone</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Fri only</span>
+                <span class="supplier-tag">Specialty</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">James Whittaker</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">020 7935 7788</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <path d="M22 6l-10 7L2 6"/>
+                </svg>
+                <span class="contact-meta">orders@gingerpig.co.uk</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by 14:00 Wed</strong></div>
+              <div class="pattern-line"><em>No minimum · 48h lead</em></div>
+              <div class="pattern-line">Net 7 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Last order:</strong> Wed 7 May</div>
+              <div class="activity-line"><strong>Last delivery:</strong> Fri 9 May</div>
+              <div class="activity-line"><strong>YTD spend:</strong> £2,140</div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FISH & SEAFOOD -->
+      <div class="category-group">
+        <div class="category-head">
+          <div class="category-name">Fish &amp; Seafood</div>
+          <div class="category-meta">1 supplier · 14% of spend this month</div>
+        </div>
+        <div class="supplier-list">
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Wright Brothers</em></div>
+              <div class="supplier-legal">Wright Brothers Ltd · Borough Market</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Tue · Fri</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Pete Lawson</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">020 7378 1612</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <span class="contact-meta">WhatsApp for day-of catch</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by 18:00</strong> day before</div>
+              <div class="pattern-line"><em>Min £200 · same-day cutoff</em></div>
+              <div class="pattern-line">Net 14 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Last order:</strong> Mon 12 May</div>
+              <div class="activity-line"><strong>Next delivery:</strong> Fri 15 May</div>
+              <div class="activity-line"><strong>YTD spend:</strong> £3,180</div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- PRODUCE -->
+      <div class="category-group">
+        <div class="category-head">
+          <div class="category-name">Produce</div>
+          <div class="category-meta">2 suppliers · 22% of spend this month</div>
+        </div>
+        <div class="supplier-list">
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Mediterranean Direct</em></div>
+              <div class="supplier-legal">Mediterranean Direct Ltd · Vauxhall</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Mon · Wed · Thu · Sat</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Yusef Karaca</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">020 7735 2244</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <path d="M22 6l-10 7L2 6"/>
+                </svg>
+                <span class="contact-meta">yusef@meddirect.co.uk</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by 22:00</strong> day before</div>
+              <div class="pattern-line"><em>Min £80 · same-day cutoff</em></div>
+              <div class="pattern-line">Net 30 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Last order:</strong> Wed 13 May</div>
+              <div class="activity-line"><strong>Next delivery:</strong> Thu 14 May</div>
+              <div class="activity-line"><strong>22 lines incoming</strong> <em>· this morning</em></div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Henstings</em></div>
+              <div class="supplier-legal">Henstings Farm Produce · Kent</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Tue · Fri</span>
+                <span class="supplier-tag">Seasonal</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Becca Henstings</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">07812 049 311</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <span class="contact-meta">WhatsApp · personal</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by 18:00</strong> day before</div>
+              <div class="pattern-line"><em>No min · personal arrangement</em></div>
+              <div class="pattern-line">Cash on delivery</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line attention"><strong>Last order:</strong> 1 Mar <em>· 74 days ago</em></div>
+              <div class="activity-line"><strong>YTD spend:</strong> £610</div>
+              <div class="activity-line"><em>English peas coming in June</em></div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DRY GOODS & SPICES -->
+      <div class="category-group">
+        <div class="category-head">
+          <div class="category-name">Dry goods &amp; spices</div>
+          <div class="category-meta">1 supplier · 13% of spend this month</div>
+        </div>
+        <div class="supplier-list">
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Reza</em></div>
+              <div class="supplier-legal">Reza Foods Ltd · Edgware</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Tue · Thu</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Mo Tehrani</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">020 8952 8811</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <path d="M22 6l-10 7L2 6"/>
+                </svg>
+                <span class="contact-meta">mo@rezafoods.co.uk</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by 16:00</strong> day before</div>
+              <div class="pattern-line"><em>Min £120 · 24h lead time</em></div>
+              <div class="pattern-line">Net 30 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Next delivery:</strong> Thu 14 May</div>
+              <div class="activity-line attention"><strong>Price list:</strong> 12 Feb <em>· stale</em></div>
+              <div class="activity-line"><strong>11 prices auto-updated</strong> <em>· from invoices</em></div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DAIRY -->
+      <div class="category-group">
+        <div class="category-head">
+          <div class="category-name">Dairy</div>
+          <div class="category-meta">1 supplier · 7% of spend this month</div>
+        </div>
+        <div class="supplier-list">
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Neal's Yard</em></div>
+              <div class="supplier-legal">Neal's Yard Dairy · Bermondsey</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Wed only</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Anya Sutherland</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">020 7500 7775</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <path d="M22 6l-10 7L2 6"/>
+                </svg>
+                <span class="contact-meta">trade@nealsyarddairy.co.uk</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by Mon 12:00</strong></div>
+              <div class="pattern-line"><em>No minimum · 48h lead</em></div>
+              <div class="pattern-line">Net 14 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Last order:</strong> Mon 12 May</div>
+              <div class="activity-line"><strong>Next delivery:</strong> Wed 14 May</div>
+              <div class="activity-line"><strong>YTD spend:</strong> £1,290</div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DRINKS / BEVERAGE -->
+      <div class="category-group">
+        <div class="category-head">
+          <div class="category-name">Drinks</div>
+          <div class="category-meta">1 supplier · 3% of spend this month</div>
+        </div>
+        <div class="supplier-list">
+
+          <div class="supplier-row">
+            <div class="supplier-identity">
+              <div class="supplier-casual"><em>Liberty Wines</em></div>
+              <div class="supplier-legal">Liberty Wines Ltd · Battersea</div>
+              <div class="supplier-tags">
+                <span class="supplier-tag delivery">Delivery</span>
+                <span class="supplier-tag">Wed</span>
+              </div>
+            </div>
+            <div class="supplier-contact">
+              <div class="contact-name">Ed Foley</div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span class="contact-meta">020 7720 5350</span>
+              </div>
+              <div class="contact-meta-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <path d="M22 6l-10 7L2 6"/>
+                </svg>
+                <span class="contact-meta">ed.foley@libertywines.co.uk</span>
+              </div>
+            </div>
+            <div class="supplier-pattern">
+              <div class="pattern-line"><strong>Order by Tue 14:00</strong></div>
+              <div class="pattern-line"><em>Min 6 bottles · 24h lead</em></div>
+              <div class="pattern-line">Net 30 days</div>
+            </div>
+            <div class="supplier-activity">
+              <div class="activity-line"><strong>Last order:</strong> Tue 6 May</div>
+              <div class="activity-line"><strong>YTD spend:</strong> £540</div>
+              <div class="activity-line"><em>For staff drinks only</em></div>
+            </div>
+            <div class="supplier-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 6l6 6-6 6"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- LOOKING AHEAD -->
+      <section class="section">
+        <div class="section-head">
+          <div class="section-title">Looking Ahead</div>
+          <div class="section-meta">two patterns across the supplier graph</div>
+        </div>
+
+        <div class="looking-ahead-grid">
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Reza · Tomorrow</div>
+              <div class="ahead-tag">Get Ready</div>
+            </div>
+            <div class="ahead-headline">Reza order goes in by <em>16:00 today</em>.</div>
+            <div class="ahead-body">
+              <strong>Tomorrow's delivery needs the order in by end of day.</strong> Tahini's been ticking up — worth getting the order in before the next price update. Mo usually answers WhatsApp quicker than the office line.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">Draft the order →</a>
+              <div class="ahead-action-context">cutoff: 16:00 today</div>
+            </div>
+          </div>
+
+          <div class="ahead-card">
+            <div class="ahead-card-head">
+              <div class="ahead-section-label">Henstings · Next Month</div>
+              <div class="ahead-tag">Worth Knowing</div>
+            </div>
+            <div class="ahead-headline"><em>English peas</em> coming back at Henstings in June.</div>
+            <div class="ahead-body">
+              <strong>Becca's farm is your only seasonal produce relationship.</strong> If you want them on this summer's menu — and the seasonal calendar agrees they're worth having — a call to pick the order pattern back up makes sense in the next two weeks.
+            </div>
+            <div class="ahead-action">
+              <a class="ahead-action-link" href="#">Open Henstings →</a>
+              <div class="ahead-action-context">last order 74 days ago</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mockup-footnote">
+      <div class="footnote-label">Suppliers Directory v1 — Design Notes</div>
+      <div class="footnote-body">
+        <strong>The first write-and-reference surface in the product.</strong> Casual-name authoring is the foundational data pattern — every supplier shows its casual name (Aubrey, Reza, Wright Brothers) in italic gold first, with the legal name as a sub-line. This is the schema decision that powers the voice across every other surface ("Aubrey hit you with £14.20").<br><br>
+        <strong>Category grouping is the default mental model.</strong> Meat / Fish / Produce / Dry goods / Dairy / Drinks. Chefs think in categories before they think in supplier names. The grouping headers show category-level metadata too — "2 suppliers · 41% of spend this month" — answering "where does my money actually go?"<br><br>
+        <strong>Each supplier row carries five columns of meaning:</strong> Identity (casual + legal + tags), Contact (who you call, how), Ordering pattern (when, how much, payment terms), Recent activity (last order, last delivery, spend), and the arrow to the detail page. Dense but readable — Cormorant for content, Jost for the micro-details.<br><br>
+        <strong>Attention cards work the same as the hub.</strong> Three severities visible: Stale (Reza's price list), Dormant (Henstings 74 days), Strong (Aubrey's Q1 performance). The Strong card is the Working/Celebrating pattern from the design system — appreciating reliability.<br><br>
+        <strong>Looking Ahead surfaces supplier-specific forward intelligence.</strong> Today's order cutoff (Reza by 16:00) and seasonal opportunity (Henstings peas in June with cross-link to the Seasonal calendar's mental model). Different from the hub's Looking Ahead — supplier-graph-specific signals.<br><br>
+        <strong>"Add a supplier" lives where "Scan an invoice" did on the hub.</strong> Top-right of the page header, same card pattern. Maintains the convention that page-level primary actions live in that position.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const STORAGE_KEY = 'palatable_sidebar_collapsed';
+  const app = document.getElementById('app');
+  function applyState(collapsed) {
+    if (collapsed) app.classList.add('collapsed');
+    else app.classList.remove('collapsed');
+  }
+  function toggleSidebar() {
+    const isCollapsed = app.classList.contains('collapsed');
+    const newState = !isCollapsed;
+    applyState(newState);
+    try { localStorage.setItem(STORAGE_KEY, newState ? '1' : '0'); } catch (e) {}
+  }
+  function autoState() {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === '1') return applyState(true);
+    if (userPref === '0') return applyState(false);
+    applyState(window.innerWidth < 980);
+  }
+  autoState();
+  window.addEventListener('resize', () => {
+    let userPref = null;
+    try { userPref = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    if (userPref === null) autoState();
+  });
+</script>
+
+</body>
+</html>
