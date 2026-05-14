@@ -1,133 +1,86 @@
+import { getShellContext } from '@/lib/shell/context';
+import { getRecipes, type Recipe } from '@/lib/recipes';
+import { LookingAhead } from '@/components/shell/LookingAhead';
+
 export const metadata = { title: 'Recipes — Palatable' };
 
-type Ingredient = { name: string; qty: string; cost: string };
-type Recipe = {
-  name: string;
-  serves: string;
-  portions: string;
-  costPerCover: string;
-  totalCost: string;
-  ingredients: Ingredient[];
-};
+const gbp = new Intl.NumberFormat('en-GB', {
+  style: 'currency',
+  currency: 'GBP',
+  minimumFractionDigits: 2,
+});
 
-const recipes: Recipe[] = [
-  {
-    name: 'Hummus',
-    serves: 'Serves 8',
-    portions: '4 portions per cover',
-    costPerCover: '£1.24',
-    totalCost: 'total dish £9.92',
-    ingredients: [
-      { name: 'Chickpea, tinned', qty: '1.2 kg', cost: '£2.16' },
-      { name: 'Tahini', qty: '240 ml', cost: '£2.88' },
-      { name: 'Lemon, juice', qty: '120 ml', cost: '£1.20' },
-      { name: 'Garlic', qty: '20 g', cost: '£0.40' },
-      { name: 'Olive oil, extra virgin', qty: '60 ml', cost: '£1.80' },
-      { name: 'Salt', qty: '8 g', cost: '£0.48' },
-    ],
-  },
-  {
-    name: 'Baba Ghanoush',
-    serves: 'Serves 6',
-    portions: '3 portions per cover',
-    costPerCover: '£1.68',
-    totalCost: 'total dish £10.08',
-    ingredients: [
-      { name: 'Aubergine', qty: '800 g', cost: '£2.40' },
-      { name: 'Tahini', qty: '180 ml', cost: '£2.16' },
-      { name: 'Lemon, juice', qty: '90 ml', cost: '£0.90' },
-      { name: 'Garlic', qty: '15 g', cost: '£0.30' },
-      { name: 'Olive oil', qty: '45 ml', cost: '£1.35' },
-    ],
-  },
-  {
-    name: 'Lamb Shawarma',
-    serves: 'Serves 12',
-    portions: '2 portions per cover',
-    costPerCover: '£4.92',
-    totalCost: 'total dish £29.52',
-    ingredients: [
-      { name: 'Lamb shoulder, diced', qty: '1.6 kg', cost: '£19.20' },
-      { name: 'Shawarma spice blend', qty: '40 g', cost: '£2.40' },
-      { name: 'Yogurt, plain', qty: '400 ml', cost: '£2.00' },
-      { name: 'Lemon', qty: '2', cost: '£0.80' },
-      { name: 'Garlic', qty: '30 g', cost: '£0.60' },
-      { name: 'Olive oil', qty: '80 ml', cost: '£2.40' },
-    ],
-  },
-  {
-    name: 'Şakşuka',
-    serves: 'Serves 8',
-    portions: '3 portions per cover',
-    costPerCover: '£1.04',
-    totalCost: 'total dish £8.32',
-    ingredients: [
-      { name: 'Aubergine', qty: '600 g', cost: '£1.80' },
-      { name: 'Tomato, fresh', qty: '500 g', cost: '£1.50' },
-      { name: 'Onion', qty: '400 g', cost: '£0.80' },
-      { name: 'Peppers, mixed', qty: '400 g', cost: '£1.60' },
-      { name: 'Olive oil', qty: '60 ml', cost: '£1.80' },
-      { name: 'Tomato paste', qty: '60 g', cost: '£0.90' },
-    ],
-  },
-  {
-    name: 'Beef Short Rib Braise',
-    serves: 'Serves 10',
-    portions: '1.2 portions per cover',
-    costPerCover: '£6.84',
-    totalCost: 'total dish £68.40',
-    ingredients: [
-      { name: 'Beef short rib', qty: '2.4 kg', cost: '£48.00' },
-      { name: 'Red wine', qty: '500 ml', cost: '£6.00' },
-      { name: 'Stock, beef', qty: '1 L', cost: '£2.00' },
-      { name: 'Carrot', qty: '400 g', cost: '£0.80' },
-      { name: 'Celery', qty: '300 g', cost: '£0.60' },
-      { name: 'Onion', qty: '400 g', cost: '£0.80' },
-    ],
-  },
-  {
-    name: 'Knafeh',
-    serves: 'Serves 10',
-    portions: '1 portion per cover',
-    costPerCover: '£2.18',
-    totalCost: 'total dish £21.80',
-    ingredients: [
-      { name: 'Kataifi dough', qty: '500 g', cost: '£4.50' },
-      { name: 'Mozzarella, fresh', qty: '400 g', cost: '£4.80' },
-      { name: 'Honey', qty: '200 ml', cost: '£3.00' },
-      { name: 'Pistachios, crushed', qty: '100 g', cost: '£3.00' },
-      { name: 'Butter', qty: '200 g', cost: '£2.40' },
-    ],
-  },
-];
+const qtyFmt = new Intl.NumberFormat('en-GB', {
+  maximumFractionDigits: 3,
+});
 
-export default function RecipesPage() {
+export default async function RecipesPage() {
+  const ctx = await getShellContext();
+  const recipes = await getRecipes(ctx.siteId);
+
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">Recipes</h1>
+      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+        Recipes
+      </h1>
       <p className="font-serif italic text-lg text-muted mb-8">
-        Seventeen dishes. Costing pulled live from The Bank. Edit · scale · print.
+        {recipes.length > 0 ? (
+          <>
+            {recipes.length} {recipes.length === 1 ? 'dish' : 'dishes'}. Costing pulled live from The Bank. Edit · scale · print.
+          </>
+        ) : (
+          <>No recipes yet. Costing will be live the moment you add one.</>
+        )}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {recipes.map((r) => (
-          <RecipeCard key={r.name} recipe={r} />
-        ))}
-      </div>
+      {recipes.length === 0 ? (
+        <div className="bg-card border border-rule px-10 py-16 text-center">
+          <div className="font-serif text-2xl text-ink mb-2">
+            Nothing in the recipe book yet.
+          </div>
+          <p className="font-serif italic text-muted">
+            Add a dish — link its ingredients to The Bank — and the cost-per-cover stays current as supplier prices move.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {recipes.map((r) => (
+            <RecipeCard key={r.id} recipe={r} />
+          ))}
+        </div>
+      )}
+
+      <LookingAhead siteId={ctx.siteId} surface="recipes" />
     </div>
   );
 }
 
 function RecipeCard({ recipe }: { recipe: Recipe }) {
+  const portionLabel =
+    recipe.portion_per_cover != null
+      ? `${recipe.portion_per_cover} ${recipe.portion_per_cover === 1 ? 'portion' : 'portions'} per cover`
+      : null;
+  const servesLabel = recipe.serves != null ? `Serves ${recipe.serves}` : null;
+  const meta = [servesLabel, portionLabel].filter(Boolean).join(' · ');
+
+  const allMatched =
+    recipe.ingredients.length > 0 &&
+    recipe.matched_ingredient_count === recipe.ingredients.length;
+  const partialMatch =
+    recipe.matched_ingredient_count > 0 &&
+    recipe.matched_ingredient_count < recipe.ingredients.length;
+
   return (
     <div className="bg-card border border-rule cursor-pointer transition-all hover:border-gold hover:shadow-[0_4px_16px_rgba(26,22,18,0.08)] flex flex-col">
       <div className="px-6 py-6 border-b border-rule">
         <div className="font-serif font-semibold text-2xl text-ink leading-tight">
           {recipe.name}
         </div>
-        <div className="text-xs text-muted mt-2 tracking-[0.02em]">
-          {recipe.serves} · {recipe.portions}
-        </div>
+        {meta && (
+          <div className="text-xs text-muted mt-2 tracking-[0.02em]">
+            {meta}
+          </div>
+        )}
       </div>
 
       <div className="px-6 py-4 border-b border-rule flex justify-between items-center bg-gradient-to-r from-[rgba(93,127,79,0.06)] to-transparent">
@@ -135,29 +88,70 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
           Cost per cover
         </div>
         <div className="text-right">
-          <div className="font-serif font-semibold text-xl text-healthy">
-            {recipe.costPerCover}
-          </div>
-          <div className="text-xs text-muted mt-0.5">{recipe.totalCost}</div>
+          {recipe.cost_per_cover != null ? (
+            <>
+              <div
+                className={
+                  'font-serif font-semibold text-xl ' +
+                  (allMatched ? 'text-healthy' : 'text-ink-soft')
+                }
+              >
+                {gbp.format(recipe.cost_per_cover)}
+              </div>
+              <div className="text-xs text-muted mt-0.5">
+                total dish {gbp.format(recipe.total_cost)}
+                {partialMatch && (
+                  <span className="text-muted-soft italic">
+                    {' '}· partial
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="font-serif italic text-sm text-muted">
+              cost pending
+            </div>
+          )}
         </div>
       </div>
 
       <div className="px-6 py-5 flex-1">
-        {recipe.ingredients.map((ing, i) => (
-          <div
-            key={ing.name}
-            className={
-              'flex justify-between items-baseline gap-3 py-2.5' +
-              (i < recipe.ingredients.length - 1 ? ' border-b border-rule' : '')
-            }
-          >
-            <div className="font-serif text-sm text-ink flex-1">{ing.name}</div>
-            <div className="text-xs text-muted w-20 text-right">{ing.qty}</div>
-            <div className="font-serif text-xs text-ink-soft w-16 text-right">
-              {ing.cost}
-            </div>
+        {recipe.ingredients.length === 0 ? (
+          <div className="font-serif italic text-sm text-muted-soft">
+            No ingredients yet.
           </div>
-        ))}
+        ) : (
+          recipe.ingredients.map((ing, i) => (
+            <div
+              key={ing.id}
+              className={
+                'flex justify-between items-baseline gap-3 py-2.5' +
+                (i < recipe.ingredients.length - 1
+                  ? ' border-b border-rule'
+                  : '')
+              }
+            >
+              <div className="font-serif text-sm text-ink flex-1">
+                {ing.name}
+              </div>
+              <div className="text-xs text-muted w-20 text-right whitespace-nowrap">
+                {qtyFmt.format(ing.qty)} {ing.unit}
+              </div>
+              <div
+                className={
+                  'font-serif text-xs w-16 text-right ' +
+                  (ing.line_cost != null
+                    ? 'text-ink-soft'
+                    : 'text-muted-soft italic')
+                }
+              >
+                {ing.line_cost != null
+                  ? gbp.format(ing.line_cost)
+                  : '—'}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="px-6 py-4 border-t border-rule bg-paper flex gap-2">

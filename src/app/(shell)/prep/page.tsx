@@ -1,230 +1,107 @@
+import { getShellContext } from '@/lib/shell/context';
+import {
+  getPrepBoard,
+  type PrepItem,
+  type PrepStation,
+  type PrepStatus,
+} from '@/lib/prep';
+import { LookingAhead } from '@/components/shell/LookingAhead';
+
 export const metadata = { title: 'Prep — Palatable' };
 
-type Status = 'done' | 'in-progress' | 'not-started';
-type Assignee = 'tom' | 'maria' | 'sam' | 'unassigned';
-
-type PrepItem = {
-  name: string;
-  emphasis?: string;
-  recipe?: string;
-  context?: string;
-  qty: string;
-  qtyUnit?: string;
-  suggested: string;
-  suggestedFlag?: boolean;
-  assignee: Assignee;
-  assigneeName: string;
-  status: Status;
-  notes?: string;
-};
-
-type Station = {
-  name: string;
-  chef: string;
-  progress: { done: number; total: number; rest: string; tone?: 'healthy' | 'attention' };
-  items: PrepItem[];
-};
-
-const stations: Station[] = [
-  {
-    name: 'Garde Manger',
-    chef: 'Tom Reilly',
-    progress: { done: 3, total: 5, rest: '2 to go', tone: 'healthy' },
-    items: [
-      {
-        name: 'base',
-        emphasis: 'Hummus',
-        recipe: 'Recipe · Hummus',
-        context: 'finished 08:22',
-        qty: '4.5',
-        qtyUnit: 'kg',
-        suggested: 'suggested 4.2kg',
-        assignee: 'tom',
-        assigneeName: 'Tom',
-        status: 'done',
-        notes:
-          "Used labneh to thin per Tuesday's voice memo — rounder flavour, cuts cost.",
-      },
-      {
-        name: 'Tahini sauce',
-        recipe: 'Recipe · Tahini Sauce',
-        context: 'finished 08:45',
-        qty: '2',
-        qtyUnit: 'L',
-        suggested: 'at recipe scale',
-        assignee: 'tom',
-        assigneeName: 'Tom',
-        status: 'done',
-      },
-      {
-        name: 'Baba ghanoush',
-        recipe: 'Recipe · Baba Ghanoush',
-        context: 'finished 09:10',
-        qty: '3',
-        qtyUnit: 'kg',
-        suggested: 'suggested 2.8kg',
-        assignee: 'tom',
-        assigneeName: 'Tom',
-        status: 'done',
-        notes: 'Aubergines properly smoked this morning — flavour deep.',
-      },
-      {
-        name: 'Pickled turnips',
-        recipe: 'Recipe · Pink Pickle',
-        context: 'started 09:25',
-        qty: '1.5',
-        qtyUnit: 'kg',
-        suggested: 'at recipe scale',
-        assignee: 'tom',
-        assigneeName: 'Tom',
-        status: 'in-progress',
-      },
-      {
-        name: 'Parsley + coriander',
-        context: 'one-off · garnish',
-        qty: '300',
-        qtyUnit: 'g',
-        suggested: 'cut back 20% — last 4 weeks binned £62',
-        suggestedFlag: true,
-        assignee: 'tom',
-        assigneeName: 'Tom',
-        status: 'not-started',
-        notes: 'Try smaller batches twice — fresher service, less waste.',
-      },
-    ],
-  },
-  {
-    name: 'Grill',
-    chef: 'Maria Costa',
-    progress: { done: 1, total: 4, rest: '1 in progress · 2 to start' },
-    items: [
-      {
-        name: 'Lamb shawarma marinade',
-        recipe: 'Recipe · Shawarma Marinade',
-        context: 'finished 09:00 · resting',
-        qty: '8',
-        qtyUnit: 'kg',
-        suggested: 'suggested 7.6kg',
-        assignee: 'maria',
-        assigneeName: 'Maria',
-        status: 'done',
-        notes: '2% brine this time — not 3%. Resting til 12:00.',
-      },
-      {
-        name: 'Beef short rib',
-        recipe: 'Recipe · Short Rib Braise',
-        context: 'in oven · started 08:30',
-        qty: '12',
-        qtyUnit: 'portions',
-        suggested: 'covers-driven',
-        assignee: 'maria',
-        assigneeName: 'Maria',
-        status: 'in-progress',
-      },
-      {
-        name: 'Chicken thigh skewers',
-        recipe: 'Recipe · Chicken Skewers',
-        qty: '24',
-        qtyUnit: 'skewers',
-        suggested: 'covers-driven · +18%',
-        assignee: 'maria',
-        assigneeName: 'Maria',
-        status: 'not-started',
-      },
-      {
-        name: 'Sea bream — scaled & gutted',
-        context: 'arriving Fri delivery',
-        qty: '8',
-        qtyUnit: 'fish',
-        suggested: 'prep on arrival Fri',
-        assignee: 'unassigned',
-        assigneeName: 'Unassigned',
-        status: 'not-started',
-      },
-    ],
-  },
-  {
-    name: 'Pass',
-    chef: 'Sam Ahmed',
-    progress: { done: 0, total: 2, rest: '1 in progress' },
-    items: [
-      {
-        name: 'Şakşuka — aubergine base',
-        recipe: 'Recipe · Şakşuka',
-        context: 'started 09:00',
-        qty: '3.5',
-        qtyUnit: 'kg',
-        suggested: 'covers-driven',
-        assignee: 'sam',
-        assigneeName: 'Sam',
-        status: 'in-progress',
-        notes: "Tom's labneh-under plating today — let it cool fully.",
-      },
-      {
-        name: 'Mezze plating mise',
-        context: 'one-off · prep for service',
-        qty: '—',
-        suggested: 'station setup',
-        assignee: 'sam',
-        assigneeName: 'Sam',
-        status: 'not-started',
-      },
-    ],
-  },
-  {
-    name: 'Pastry',
-    chef: 'Unassigned today',
-    progress: { done: 0, total: 1, rest: '1 unassigned', tone: 'attention' },
-    items: [
-      {
-        name: 'Knafeh — kataifi assembly',
-        recipe: 'Recipe · Knafeh',
-        qty: '10',
-        qtyUnit: 'portions',
-        suggested: 'dessert orders flat this week',
-        suggestedFlag: true,
-        assignee: 'unassigned',
-        assigneeName: 'Unassigned',
-        status: 'not-started',
-      },
-    ],
-  },
-];
-
-const days = [
-  { label: 'Yesterday', date: 'Wed 13 May', active: false },
-  { label: 'Today', date: 'Thu 14 May', active: true },
-  { label: 'Tomorrow', date: 'Fri 15 May', active: false },
-  { label: 'Saturday', date: 'Sat 16 May', active: false },
-  { label: 'Sunday', date: 'Sun 17 May', active: false },
-];
-
-const statusStripe: Record<Status, string> = {
+const statusStripe: Record<PrepStatus, string> = {
   done: 'before:bg-healthy before:opacity-50',
-  'in-progress': 'before:bg-gold',
-  'not-started': 'before:bg-muted-soft before:opacity-40',
+  in_progress: 'before:bg-gold',
+  not_started: 'before:bg-muted-soft before:opacity-40',
+  over_prepped: 'before:bg-attention',
+  short: 'before:bg-urgent',
 };
 
-const avatarBg: Record<Assignee, string> = {
+const statusPillColor: Record<PrepStatus, string> = {
+  done: 'text-healthy',
+  in_progress: 'text-gold',
+  not_started: 'text-muted',
+  over_prepped: 'text-attention',
+  short: 'text-urgent',
+};
+
+const statusDotColor: Record<PrepStatus, string> = {
+  done: 'bg-healthy',
+  in_progress: 'bg-gold',
+  not_started: 'bg-muted-soft',
+  over_prepped: 'bg-attention',
+  short: 'bg-urgent',
+};
+
+const statusLabel: Record<PrepStatus, string> = {
+  done: 'Done',
+  in_progress: 'In Progress',
+  not_started: 'Not Started',
+  over_prepped: 'Over-Prepped',
+  short: 'Short',
+};
+
+// Avatar gradients keyed by lowercased assigned_label. Anything else falls
+// back to the dashed-outline "unassigned" style.
+const avatarGradient: Record<string, string> = {
   tom: 'bg-gradient-to-br from-[#5D4A6E] to-[#7E6A8E]',
   maria: 'bg-gradient-to-br from-[#5D7F4F] to-[#7E9F6F]',
   sam: 'bg-gradient-to-br from-[#B86A2E] to-[#D08A4E]',
-  unassigned: 'bg-paper-warm text-muted-soft border border-dashed border-muted-soft',
 };
 
-const statusPillColor: Record<Status, string> = {
-  done: 'text-healthy',
-  'in-progress': 'text-gold',
-  'not-started': 'text-muted',
-};
+const dayShort = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
 
-const statusDotColor: Record<Status, string> = {
-  done: 'bg-healthy',
-  'in-progress': 'bg-gold',
-  'not-started': 'bg-muted-soft',
-};
+const qtyFmt = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 3 });
+const timeFmt = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
-export default function PrepPage() {
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function rollingDays(today: Date): { label: string; date: Date; iso: string; active: boolean }[] {
+  const labels = ['Yesterday', 'Today', 'Tomorrow', 'Saturday', 'Sunday'];
+  return labels.map((label, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + (i - 1));
+    return {
+      label,
+      date: d,
+      iso: isoDate(d),
+      active: i === 1,
+    };
+  });
+}
+
+function pctDone(board: { total_items: number; done: number }): string {
+  if (board.total_items === 0) return '—';
+  return `${Math.round((board.done / board.total_items) * 100)}% complete`;
+}
+
+export default async function PrepPage() {
+  const ctx = await getShellContext();
+  const today = new Date();
+  const board = await getPrepBoard(ctx.siteId, isoDate(today));
+
+  const days = rollingDays(today);
+  const stationCount = board.stations.length;
+
+  const inProgressChefs = Array.from(
+    new Set(
+      board.stations
+        .flatMap((s) => s.items)
+        .filter((i) => i.status === 'in_progress' && i.assigned_label)
+        .map((i) => i.assigned_label as string),
+    ),
+  );
+
   return (
     <div className="px-14 pt-12 pb-20 max-w-[1400px]">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
@@ -236,7 +113,15 @@ export default function PrepPage() {
             Today's <em className="text-gold font-semibold not-italic">prep</em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">
-            Twelve items across four stations. Four done, three in progress, five to go.
+            {board.total_items === 0 ? (
+              <>No prep set for today. Add the first item or let yesterday's board carry over.</>
+            ) : (
+              <>
+                {numberWord(board.total_items)} items across{' '}
+                {numberWord(stationCount)} {stationCount === 1 ? 'station' : 'stations'}.{' '}
+                {board.done} done, {board.in_progress} in progress, {board.not_started} to go.
+              </>
+            )}
           </p>
         </div>
 
@@ -260,18 +145,45 @@ export default function PrepPage() {
       <div className="flex gap-2 items-center mb-8 flex-wrap">
         <DayNav direction="prev" />
         {days.map((d) => (
-          <DayTab key={d.label} {...d} />
+          <DayTab key={d.iso} {...d} />
         ))}
         <DayNav direction="next" />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <KpiCard label="Items Today" value="12" sub="across 4 stations" />
-        <KpiCard label="Done" value="4" sub="33% complete" tone="healthy" />
-        <KpiCard label="In Progress" value="3" sub="Tom · Maria · Sam" />
-        <KpiCard label="To Start" value="5" sub="2 unassigned · service in 7 hrs" tone="attention" />
+        <KpiCard
+          label="Items Today"
+          value={String(board.total_items)}
+          sub={`across ${stationCount} ${stationCount === 1 ? 'station' : 'stations'}`}
+        />
+        <KpiCard
+          label="Done"
+          value={String(board.done)}
+          sub={pctDone(board)}
+          tone={board.done > 0 ? 'healthy' : undefined}
+        />
+        <KpiCard
+          label="In Progress"
+          value={String(board.in_progress)}
+          sub={
+            inProgressChefs.length > 0
+              ? inProgressChefs.join(' · ')
+              : 'nobody mid-task'
+          }
+        />
+        <KpiCard
+          label="To Start"
+          value={String(board.not_started)}
+          sub={
+            board.unassigned > 0
+              ? `${board.unassigned} unassigned`
+              : 'all assigned'
+          }
+          tone={board.not_started > 0 ? 'attention' : undefined}
+        />
       </div>
 
+      {/* Covers strip — hardcoded until v2.covers schema lands */}
       <div className="bg-card border border-rule px-7 py-5 mb-10 flex gap-8 items-center flex-wrap">
         <div>
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
@@ -293,63 +205,37 @@ export default function PrepPage() {
         <div className="w-px self-stretch bg-rule" />
         <div className="font-serif italic text-sm text-ink-soft leading-snug flex-1 min-w-[260px]">
           <strong className="not-italic font-semibold text-ink">
-            Tracking 18% above last Thursday.
+            Covers source pending.
           </strong>{' '}
-          Hummus and shawarma scaled accordingly · pastry left at standard since dessert orders flat this week.
+          The v2 covers schema isn't wired yet — this strip will fill in once the booking integration lands.
         </div>
       </div>
 
-      {stations.map((s) => (
-        <StationBlock key={s.name} station={s} />
-      ))}
-
-      <section className="mt-12">
-        <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
-          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
-            Looking Ahead
+      {board.stations.length === 0 ? (
+        <div className="bg-card border border-rule px-10 py-16 text-center">
+          <div className="font-serif text-2xl text-ink mb-2">
+            Prep board's empty.
           </div>
-          <div className="font-serif italic text-sm text-muted">
-            two patterns shaping tomorrow's prep
-          </div>
+          <p className="font-serif italic text-muted">
+            Add an item to today's board — the system tracks status, suggests quantities, and learns the rhythm from there.
+          </p>
         </div>
+      ) : (
+        board.stations.map((s) => <StationBlock key={s.name} station={s} />)
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AheadCard
-            sectionLabel="Friday Service"
-            tag="Get Ready"
-            headlinePre="Friday's booking"
-            headlineEm="tracking high"
-            body={
-              <>
-                <strong className="not-italic font-semibold text-ink">
-                  168 covers booked, forecast 180–195 with walk-ins.
-                </strong>{' '}
-                Bream arrives 09:00 — worth scaling shawarma marinade up 15% and prepping a second batch of tahini. Sea bream prep currently unassigned.
-              </>
-            }
-            actionLabel="Set Friday prep →"
-            actionContext="Fri 15 May"
-          />
-          <AheadCard
-            sectionLabel="Weekend Pattern"
-            tag="Worth Knowing"
-            headlinePre="Sunday over-prep"
-            headlineEm="creeping back"
-            body={
-              <>
-                <strong className="not-italic font-semibold text-ink">
-                  Last four Sundays binned £38 on average — mostly Saturday over-prep that didn't carry.
-                </strong>{' '}
-                Worth scaling Saturday batches down 15% this week and seeing if Sunday improves.
-              </>
-            }
-            actionLabel="Set Saturday prep →"
-            actionContext="4-week pattern"
-          />
-        </div>
-      </section>
+      <LookingAhead siteId={ctx.siteId} surface="prep" />
     </div>
   );
+}
+
+function numberWord(n: number): string {
+  const words = [
+    'Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
+    'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen',
+    'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen', 'Twenty',
+  ];
+  return n <= 20 ? words[n] : String(n);
 }
 
 function DayTab({
@@ -358,7 +244,7 @@ function DayTab({
   active,
 }: {
   label: string;
-  date: string;
+  date: Date;
   active: boolean;
 }) {
   return (
@@ -377,7 +263,7 @@ function DayTab({
           (active ? 'text-paper/70' : 'text-muted')
         }
       >
-        {date}
+        {dayShort.format(date)}
       </span>
     </button>
   );
@@ -426,57 +312,89 @@ function KpiCard({
   );
 }
 
-function StationBlock({ station }: { station: Station }) {
-  const progressTone =
-    station.progress.tone === 'healthy'
-      ? 'text-healthy'
-      : station.progress.tone === 'attention'
-        ? 'text-attention'
-        : 'text-ink';
+function StationBlock({ station }: { station: PrepStation }) {
+  const allDone = station.in_progress === 0 && station.not_started === 0 && station.done > 0;
+  const progressTone = allDone
+    ? 'text-healthy'
+    : station.not_started > 0 && station.done === 0
+      ? 'text-attention'
+      : 'text-ink';
+  const rest = [
+    station.in_progress > 0 ? `${station.in_progress} in progress` : null,
+    station.not_started > 0 ? `${station.not_started} to start` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const total = station.items.length;
 
   return (
     <section className="mb-10">
-      <div className="flex items-baseline justify-between mb-0 px-6 py-3.5 bg-paper-warm border border-rule border-b-2 border-b-gold">
+      <div className="flex items-baseline justify-between mb-0 px-6 py-3.5 bg-paper-warm border border-rule border-b-2 border-b-gold flex-wrap gap-3">
         <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold flex items-center gap-3">
           <span>{station.name}</span>
-          <span className="text-muted text-xs">·</span>
-          <span className="font-serif font-normal italic text-sm tracking-normal normal-case text-ink">
-            {station.chef}
-          </span>
+          {station.primary_chef && (
+            <>
+              <span className="text-muted text-xs">·</span>
+              <span className="font-serif font-normal italic text-sm tracking-normal normal-case text-ink">
+                {station.primary_chef}
+              </span>
+            </>
+          )}
         </div>
         <div className="font-serif italic text-sm text-muted">
           <strong className={'not-italic font-semibold ' + progressTone}>
-            {station.progress.done} of {station.progress.total} done
-          </strong>{' '}
-          · {station.progress.rest}
+            {station.done} of {total} done
+          </strong>
+          {rest && <> · {rest}</>}
         </div>
       </div>
 
       <div className="bg-card border border-rule border-t-0">
         <div className="hidden md:grid grid-cols-[minmax(220px,1.4fr)_130px_110px_140px_minmax(140px,1fr)_60px] gap-5 px-7 py-3.5 bg-paper-warm border-b border-rule">
-          {['Item', 'Quantity', 'Assigned', 'Status', 'Notes', ''].map((h, i) => (
-            <div
-              key={i}
-              className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted"
-            >
-              {h}
-            </div>
-          ))}
+          {['Item', 'Quantity', 'Assigned', 'Status', 'Notes', ''].map(
+            (h, i) => (
+              <div
+                key={i}
+                className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted"
+              >
+                {h}
+              </div>
+            ),
+          )}
         </div>
 
         {station.items.map((item, i) => (
-          <PrepRow
-            key={item.name + i}
-            item={item}
-            last={i === station.items.length - 1}
-          />
+          <PrepRow key={item.id} item={item} last={i === station.items.length - 1} />
         ))}
       </div>
     </section>
   );
 }
 
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
+  const assignedClass = item.assigned_label
+    ? avatarGradient[item.assigned_label.toLowerCase()] ??
+      'bg-gradient-to-br from-gold-dark to-gold-light'
+    : 'bg-paper-warm text-muted-soft border border-dashed border-muted-soft';
+
+  const contextParts: string[] = [];
+  if (item.finished_at) {
+    contextParts.push(`finished ${timeFmt.format(new Date(item.finished_at))}`);
+  } else if (item.started_at) {
+    contextParts.push(`started ${timeFmt.format(new Date(item.started_at))}`);
+  }
+  if (item.one_off && !item.recipe_name) contextParts.push('one-off');
+
   return (
     <div
       className={
@@ -487,66 +405,64 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
     >
       <div>
         <div className="font-serif font-semibold text-base text-ink leading-snug tracking-[-0.005em]">
-          {item.emphasis && (
-            <em className="text-gold not-italic font-semibold italic">
-              {item.emphasis}
-            </em>
-          )}
-          {item.emphasis && ' '}
           {item.name}
         </div>
-        <div className="text-xs text-muted mt-1 flex items-center gap-2 tracking-[0.02em]">
-          {item.recipe && (
+        <div className="text-xs text-muted mt-1 flex items-center gap-2 tracking-[0.02em] flex-wrap">
+          {item.recipe_name && (
             <span className="text-gold">
               <span className="mr-0.5">↗</span>
-              {item.recipe}
+              Recipe · {item.recipe_name}
             </span>
           )}
-          {item.recipe && item.context && <span>·</span>}
-          {item.context && <span>{item.context}</span>}
+          {item.recipe_name && contextParts.length > 0 && <span>·</span>}
+          {contextParts.length > 0 && <span>{contextParts.join(' · ')}</span>}
         </div>
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <div className="font-serif font-semibold text-lg text-ink tracking-[-0.005em]">
-          {item.qty}
-          {item.qtyUnit && (
-            <>
-              {' '}
-              <em className="text-gold not-italic font-medium italic">
-                {item.qtyUnit}
-              </em>
-            </>
-          )}
-        </div>
-        <div
-          className={
-            'font-serif italic text-xs ' +
-            (item.suggestedFlag ? 'text-attention' : 'text-muted')
-          }
-        >
-          {item.suggested}
-        </div>
+        {item.qty != null ? (
+          <div className="font-serif font-semibold text-lg text-ink tracking-[-0.005em]">
+            {qtyFmt.format(item.qty)}
+            {item.qty_unit && (
+              <>
+                {' '}
+                <em className="text-gold not-italic font-medium italic">
+                  {item.qty_unit}
+                </em>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="font-serif font-semibold text-lg text-muted-soft">—</div>
+        )}
+        {item.suggested_qty && (
+          <div
+            className={
+              'font-serif italic text-xs ' +
+              (item.suggested_flag ? 'text-attention' : 'text-muted')
+            }
+          >
+            {item.suggested_qty}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
         <div
           className={
             'w-7 h-7 rounded-full flex items-center justify-center font-display font-semibold text-xs tracking-[0.05em] text-paper flex-shrink-0 ' +
-            avatarBg[item.assignee]
+            assignedClass
           }
         >
-          {item.assignee === 'unassigned' ? '?' : initials(item.assigneeName)}
+          {item.assigned_label ? initials(item.assigned_label) : '?'}
         </div>
         <div
           className={
             'font-serif text-sm ' +
-            (item.assignee === 'unassigned'
-              ? 'text-muted-soft italic'
-              : 'text-ink')
+            (item.assigned_label ? 'text-ink' : 'text-muted-soft italic')
           }
         >
-          {item.assigneeName}
+          {item.assigned_label ?? 'Unassigned'}
         </div>
       </div>
 
@@ -559,11 +475,7 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
         <span
           className={'w-1.5 h-1.5 rounded-full ' + statusDotColor[item.status]}
         />
-        {item.status === 'in-progress'
-          ? 'In Progress'
-          : item.status === 'not-started'
-            ? 'Not Started'
-            : 'Done'}
+        {statusLabel[item.status]}
       </div>
 
       <div
@@ -579,61 +491,6 @@ function PrepRow({ item, last }: { item: PrepItem; last: boolean }) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <path d="M9 6l6 6-6 6" />
         </svg>
-      </div>
-    </div>
-  );
-}
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function AheadCard({
-  sectionLabel,
-  tag,
-  headlinePre,
-  headlineEm,
-  body,
-  actionLabel,
-  actionContext,
-}: {
-  sectionLabel: string;
-  tag: string;
-  headlinePre: string;
-  headlineEm: string;
-  body: React.ReactNode;
-  actionLabel: string;
-  actionContext: string;
-}) {
-  return (
-    <div className="bg-card border border-rule px-7 py-7">
-      <div className="flex items-baseline justify-between mb-4">
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
-          {sectionLabel}
-        </div>
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted px-2 py-1 border border-rule">
-          {tag}
-        </div>
-      </div>
-      <div className="font-serif text-xl text-ink mb-3">
-        {headlinePre}{' '}
-        <em className="text-gold not-italic font-medium italic">{headlineEm}</em>.
-      </div>
-      <div className="font-serif italic text-sm text-muted leading-relaxed mb-4">
-        {body}
-      </div>
-      <div className="flex items-center justify-between pt-3 border-t border-rule">
-        <a className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold cursor-pointer">
-          {actionLabel}
-        </a>
-        <div className="font-serif italic text-xs text-muted">
-          {actionContext}
-        </div>
       </div>
     </div>
   );
