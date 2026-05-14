@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Founder Admin — v1</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 252px 1fr;
+  }
+
+  .mockup-banner {
+    grid-column: 1 / -1;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 56px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--paper);
+    opacity: 0.7;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--paper-warm);
+    border-right: 1px solid var(--rule);
+    padding: 24px 0;
+    overflow-y: auto;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+  }
+  .sidebar-brand {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 18px;
+  }
+  .brand-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 22px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .brand-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    margin: 0 4px;
+    position: relative;
+    top: -4px;
+  }
+  .brand-sub {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .nav-section-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--muted-soft);
+    text-transform: uppercase;
+    padding: 14px 24px 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 24px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .nav-item:hover {
+    background: var(--gold-bg);
+    color: var(--ink);
+  }
+  .nav-item.active {
+    color: var(--ink);
+    border-left-color: var(--gold);
+    background: var(--gold-bg);
+  }
+  .nav-label {
+    font-family: 'Lora', serif;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  .nav-badge {
+    margin-left: auto;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 2px 8px;
+    background: var(--gold);
+    color: var(--paper);
+    border-radius: 1px;
+  }
+
+  /* Main content */
+  .main { min-width: 0; }
+
+  .topbar {
+    height: 76px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 56px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .breadcrumb {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 19px;
+    color: var(--ink);
+  }
+  .topbar-right {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+  .signed-in-as {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .signed-in-as strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .signout-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .signout-btn:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .page { padding: 48px 56px 80px; }
+  .page-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .page-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 1.05;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin-bottom: 12px;
+  }
+  .page-title em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .page-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+
+  /* Domain navigation tabs */
+  .domain-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 40px;
+  }
+  .domain-tab {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .domain-tab:hover { color: var(--ink); }
+  .domain-tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--gold);
+  }
+
+  /* KPIs grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 40px;
+  }
+  .kpi-card {
+    background: var(--card);
+    padding: 28px 32px;
+  }
+  .kpi-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .kpi-value {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 36px;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.015em;
+  }
+  .kpi-value.healthy { color: var(--healthy); }
+  .kpi-value.attention { color: var(--attention); }
+  .kpi-value.urgent { color: var(--urgent); }
+  .kpi-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Section heads */
+  .section { margin-bottom: 48px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Tables */
+  .data-table {
+    background: var(--card);
+    border: 1px solid var(--rule);
+  }
+  .table-head {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 100px 120px 100px 50px;
+    gap: 16px;
+    padding: 14px 24px;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+  }
+  .table-head-cell {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .table-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 100px 120px 100px 50px;
+    gap: 16px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .table-row:hover { background: var(--card-warm); }
+  .table-row:last-child { border-bottom: none; }
+
+  .user-name {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .user-email {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .user-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  /* Tier pill */
+  .tier-pill {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 1px;
+    width: fit-content;
+  }
+  .tier-pill.free {
+    background: var(--paper-warm);
+    color: var(--muted);
+  }
+  .tier-pill.kitchen {
+    background: var(--gold-bg);
+    color: var(--gold-dark);
+  }
+  .tier-pill.pro {
+    background: var(--gold);
+    color: var(--paper);
+  }
+
+  /* Activity pill */
+  .activity-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .activity-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .activity-dot.active { background: var(--healthy); }
+  .activity-dot.dormant { background: var(--muted-soft); }
+  .activity-dot.churned { background: var(--urgent); }
+
+  .row-arrow {
+    color: var(--muted-soft);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .table-row:hover .row-arrow { color: var(--gold); }
+
+  /* Search + filter bar */
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+  .search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    max-width: 320px;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+  .filter-pill {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-pill:hover { border-color: var(--gold); color: var(--gold); }
+  .filter-pill.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+
+  /* Two-column grids */
+  .two-col-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 28px 32px;
+  }
+  .panel-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 20px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .panel-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .panel-list {
+    list-style: none;
+    padding: 0;
+  }
+  .panel-list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: center;
+  }
+  .panel-list li:last-child { border-bottom: none; }
+  .panel-list-label {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .panel-list-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .panel-list-value.healthy { color: var(--healthy); }
+  .panel-list-value.attention { color: var(--attention); }
+  .panel-list-value.urgent { color: var(--urgent); }
+
+  /* Status indicators for system health */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-light {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-light.healthy { background: var(--healthy); box-shadow: 0 0 0 3px rgba(93,127,79,0.15); }
+  .status-light.attention { background: var(--attention); box-shadow: 0 0 0 3px rgba(184,106,46,0.15); }
+  .status-light.urgent { background: var(--urgent); box-shadow: 0 0 0 3px rgba(161,68,36,0.15); }
+  .status-info {
+    flex: 1;
+  }
+  .status-name {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .status-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .status-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  /* Quick actions */
+  .actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .action-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .action-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(26,22,18,0.06);
+  }
+  .action-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .action-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--ink);
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  .action-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Looking ahead card */
+  .ahead-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .ahead-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 28px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ahead-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--gold);
+  }
+  .ahead-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .ahead-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--muted-soft);
+    text-transform: uppercase;
+  }
+  .ahead-tag {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .ahead-headline {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1.25;
+    margin-bottom: 12px;
+  }
+  .ahead-headline em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 600;
+  }
+  .ahead-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .ahead-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .footnote {
+    margin: 0 56px 60px;
+    padding: 32px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .footnote-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .footnote-body strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Founder Admin · /admin</div>
+  <div class="mockup-banner-meta">Locked to jack@palateandpen.co.uk · v8 design system applied</div>
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">P<span class="brand-dot"></span>ALATABLE</div>
+    <div class="brand-sub">Founder Admin</div>
+  </div>
+
+  <div class="nav-section-label">Overview</div>
+  <a class="nav-item active" href="#">
+    <span class="nav-label">Home</span>
+  </a>
+
+  <div class="nav-section-label">Domains</div>
+  <a class="nav-item" href="#">
+    <span class="nav-label">Users &amp; Kitchens</span>
+    <span class="nav-badge">12</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-label">Business</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-label">System Health</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-label">Content &amp; Comms</span>
+  </a>
+  <a class="nav-item" href="#">
+    <span class="nav-label">Founder Ops</span>
+    <span class="nav-badge">3</span>
+  </a>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="breadcrumb">Founder Admin · Home</div>
+    <div class="topbar-right">
+      <div class="signed-in-as">Signed in as <strong>jack@palateandpen.co.uk</strong></div>
+      <button class="signout-btn">Sign out</button>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="page-eyebrow">The Business</div>
+    <div class="page-title">Founder <em>command centre</em></div>
+    <div class="page-sub">Twelve kitchens. Four on Pro. £294 MRR. One issue needs your eye.</div>
+
+    <!-- TOP KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">MRR</div>
+        <div class="kpi-value">£294</div>
+        <div class="kpi-sub">+£89 vs last month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Active Kitchens</div>
+        <div class="kpi-value">12</div>
+        <div class="kpi-sub">4 Pro · 3 Kitchen · 5 Free</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">DAU This Week</div>
+        <div class="kpi-value healthy">9</div>
+        <div class="kpi-sub">75% of active kitchens</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Open Issues</div>
+        <div class="kpi-value attention">3</div>
+        <div class="kpi-sub">1 urgent · 2 normal</div>
+      </div>
+    </div>
+
+    <!-- LOOKING AHEAD -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-title">Looking Ahead</div>
+        <div class="section-meta">two signals worth your attention</div>
+      </div>
+      <div class="ahead-grid">
+        <div class="ahead-card">
+          <div class="ahead-head">
+            <div class="ahead-label">Conversion Signal</div>
+            <div class="ahead-tag">Worth Knowing</div>
+          </div>
+          <div class="ahead-headline">Two Free kitchens <em>hitting limits</em>.</div>
+          <div class="ahead-body">
+            <strong>Salt Beef Bagel and The Smokehouse</strong> have both hit recipe limits this week. Both signed up 21+ days ago. Worth a personal outreach — Salt Beef Bagel especially (Marcus mentioned wanting GP tracking on signup).
+          </div>
+        </div>
+        <div class="ahead-card">
+          <div class="ahead-head">
+            <div class="ahead-label">Churn Risk</div>
+            <div class="ahead-tag">Plan For It</div>
+          </div>
+          <div class="ahead-headline">Berber &amp; Q usage <em>dropping</em>.</div>
+          <div class="ahead-body">
+            <strong>Last 14 days: 4 logins down from 11 the prior fortnight.</strong> No prep logged this week. Either they're on holiday or losing engagement — worth a quick check-in.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK ACTIONS -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-title">Quick Actions</div>
+        <div class="section-meta">jump straight in</div>
+      </div>
+      <div class="actions-grid">
+        <div class="action-card">
+          <div class="action-eyebrow">Users</div>
+          <div class="action-title">Find a user</div>
+          <div class="action-sub">search by email or kitchen</div>
+        </div>
+        <div class="action-card">
+          <div class="action-eyebrow">Comms</div>
+          <div class="action-title">Send announcement</div>
+          <div class="action-sub">target by tier or activity</div>
+        </div>
+        <div class="action-card">
+          <div class="action-eyebrow">Data</div>
+          <div class="action-title">Update seasonal calendar</div>
+          <div class="action-sub">82 ingredients · last update 8 May</div>
+        </div>
+        <div class="action-card">
+          <div class="action-eyebrow">Ops</div>
+          <div class="action-title">Toggle feature flag</div>
+          <div class="action-sub">3 features in beta</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECENT USERS -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-title">Recent Sign-ups</div>
+        <div class="section-meta">last 30 days · 5 new</div>
+      </div>
+
+      <div class="toolbar">
+        <input class="search-input" placeholder="Search users by name, email, or kitchen..." />
+        <button class="filter-pill active">All</button>
+        <button class="filter-pill">Pro</button>
+        <button class="filter-pill">Kitchen</button>
+        <button class="filter-pill">Free</button>
+        <button class="filter-pill">Dormant</button>
+      </div>
+
+      <div class="data-table">
+        <div class="table-head">
+          <div class="table-head-cell">User · Kitchen</div>
+          <div class="table-head-cell">Signed Up</div>
+          <div class="table-head-cell">Tier</div>
+          <div class="table-head-cell">Activity</div>
+          <div class="table-head-cell">MRR</div>
+          <div class="table-head-cell"></div>
+        </div>
+
+        <div class="table-row">
+          <div>
+            <div class="user-name">Jack Harrison</div>
+            <div class="user-email">jack@palateandpen.co.uk · Berber &amp; Q</div>
+          </div>
+          <div class="user-meta">8 Mar 2026</div>
+          <div><span class="tier-pill pro">Pro</span></div>
+          <div>
+            <div class="activity-pill">
+              <span class="activity-dot active"></span>
+              Active today
+            </div>
+          </div>
+          <div class="user-meta">£49</div>
+          <div class="row-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+
+        <div class="table-row">
+          <div>
+            <div class="user-name">Marcus Bevan</div>
+            <div class="user-email">marcus@saltbeefbagel.com · Salt Beef Bagel</div>
+          </div>
+          <div class="user-meta">23 Apr 2026</div>
+          <div><span class="tier-pill free">Free</span></div>
+          <div>
+            <div class="activity-pill">
+              <span class="activity-dot active"></span>
+              Active 2 days
+            </div>
+          </div>
+          <div class="user-meta">£0</div>
+          <div class="row-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+
+        <div class="table-row">
+          <div>
+            <div class="user-name">Sara Khan</div>
+            <div class="user-email">sara@dishoom-test.com · The Dishoom Test</div>
+          </div>
+          <div class="user-meta">19 Apr 2026</div>
+          <div><span class="tier-pill kitchen">Kitchen</span></div>
+          <div>
+            <div class="activity-pill">
+              <span class="activity-dot active"></span>
+              Active today
+            </div>
+          </div>
+          <div class="user-meta">£29</div>
+          <div class="row-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+
+        <div class="table-row">
+          <div>
+            <div class="user-name">Tom Whitfield</div>
+            <div class="user-email">tom@smokehouse.london · The Smokehouse</div>
+          </div>
+          <div class="user-meta">22 Apr 2026</div>
+          <div><span class="tier-pill free">Free</span></div>
+          <div>
+            <div class="activity-pill">
+              <span class="activity-dot dormant"></span>
+              Dormant 8 days
+            </div>
+          </div>
+          <div class="user-meta">£0</div>
+          <div class="row-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+
+        <div class="table-row">
+          <div>
+            <div class="user-name">Elena Vasquez</div>
+            <div class="user-email">elena@casacuba.uk · Casa Cuba</div>
+          </div>
+          <div class="user-meta">14 Apr 2026</div>
+          <div><span class="tier-pill pro">Pro</span></div>
+          <div>
+            <div class="activity-pill">
+              <span class="activity-dot active"></span>
+              Active yesterday
+            </div>
+          </div>
+          <div class="user-meta">£49</div>
+          <div class="row-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TWO COLUMN: BUSINESS + SYSTEM -->
+    <div class="two-col-grid">
+      <div class="panel">
+        <div class="panel-title">Business Snapshot</div>
+        <div class="panel-sub">this month vs last</div>
+        <ul class="panel-list">
+          <li>
+            <span class="panel-list-label">MRR</span>
+            <span class="panel-list-value healthy">£294 ↑ +43%</span>
+          </li>
+          <li>
+            <span class="panel-list-label">New sign-ups</span>
+            <span class="panel-list-value healthy">5 ↑ +2</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Conversions (Free → Paid)</span>
+            <span class="panel-list-value">2 of 7 free users</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Churn</span>
+            <span class="panel-list-value healthy">0 paid · 0%</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Stripe last sync</span>
+            <span class="panel-list-value">12 mins ago</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Pending tier upgrades</span>
+            <span class="panel-list-value attention">2 to confirm</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">System Health</div>
+        <div class="panel-sub">infrastructure status</div>
+
+        <div class="status-row">
+          <div class="status-light healthy"></div>
+          <div class="status-info">
+            <div class="status-name">Supabase</div>
+            <div class="status-meta">EU West London · 142ms avg query</div>
+          </div>
+          <div class="status-value">Healthy</div>
+        </div>
+
+        <div class="status-row">
+          <div class="status-light healthy"></div>
+          <div class="status-info">
+            <div class="status-name">Vercel Production</div>
+            <div class="status-meta">Deploy 7c23154 · 2 hrs ago</div>
+          </div>
+          <div class="status-value">Healthy</div>
+        </div>
+
+        <div class="status-row">
+          <div class="status-light attention"></div>
+          <div class="status-info">
+            <div class="status-name">Forward-intelligence engine</div>
+            <div class="status-meta">3 signals delayed · investigating</div>
+          </div>
+          <div class="status-value">Watching</div>
+        </div>
+
+        <div class="status-row">
+          <div class="status-light healthy"></div>
+          <div class="status-info">
+            <div class="status-name">Stripe</div>
+            <div class="status-meta">webhooks delivered · 100% past 24h</div>
+          </div>
+          <div class="status-value">Healthy</div>
+        </div>
+
+        <div class="status-row">
+          <div class="status-light healthy"></div>
+          <div class="status-info">
+            <div class="status-name">Cloudflare</div>
+            <div class="status-meta">CDN · 24hr uptime 100%</div>
+          </div>
+          <div class="status-value">Healthy</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TWO COLUMN: CONTENT + OPS -->
+    <div class="two-col-grid">
+      <div class="panel">
+        <div class="panel-title">Content &amp; Comms</div>
+        <div class="panel-sub">data + outreach</div>
+        <ul class="panel-list">
+          <li>
+            <span class="panel-list-label">Seasonal calendar (UK)</span>
+            <span class="panel-list-value">82 ingredients · 8 May</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Looking Ahead detectors</span>
+            <span class="panel-list-value">9 active · 0 paused</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Blog posts published</span>
+            <span class="panel-list-value">3 live</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Last announcement</span>
+            <span class="panel-list-value">2 May · Pro tier launch</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Email list size</span>
+            <span class="panel-list-value">47 waitlist + 12 active</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Founder Ops</div>
+        <div class="panel-sub">tasks &amp; flags</div>
+        <ul class="panel-list">
+          <li>
+            <span class="panel-list-label">Support inbox</span>
+            <span class="panel-list-value attention">3 unread · oldest 2 days</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Feature flags</span>
+            <span class="panel-list-value">3 beta · 1 ready to ship</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Beta testers</span>
+            <span class="panel-list-value">4 active</span>
+          </li>
+          <li>
+            <span class="panel-list-label">NSC Leicester pitch</span>
+            <span class="panel-list-value urgent">Mon 18 May · price fix needed</span>
+          </li>
+          <li>
+            <span class="panel-list-label">Stripe payouts</span>
+            <span class="panel-list-value">Next: 18 May · £247</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    <div class="footnote-label">Founder Admin v1 — Design Notes</div>
+    <div class="footnote-body">
+      <strong>Five domains, one command centre.</strong> Sidebar splits into Overview (Home) and Domains (Users &amp; Kitchens, Business, System Health, Content &amp; Comms, Founder Ops). Each domain is its own full page; Home is the dashboard view that surfaces what matters now across all five.<br><br>
+      <strong>Authentication: locked to jack@palateandpen.co.uk via Supabase auth.</strong> The page checks the current Supabase session and rejects anyone whose email doesn't match. No hardcoded password, no separate auth system — your real Supabase login gets you in. Sign out clears the Supabase session and redirects to the public site.<br><br>
+      <strong>Looking Ahead applies here too.</strong> Forward-intelligence detectors run against business + user data: free kitchens hitting limits (conversion signal), active kitchens dropping usage (churn risk), Stripe payment failures (revenue risk), feature flag rollouts ready to ship (release ready). Same pattern as chef shell — the system surfaces signals, you decide what to do.<br><br>
+      <strong>Recent sign-ups table is the v8 status-led row pattern</strong> with tier pills replacing status pills. Free / Kitchen / Pro tier pills carry visual hierarchy — Pro fills gold, Kitchen gold-tinted background, Free muted. Activity dots show engagement at a glance (healthy / dormant / churned). Click any row to drill into that user's full data + admin actions (impersonate, change tier, suspend, message).<br><br>
+      <strong>Quick actions surface frequent flows.</strong> Find a user / send announcement / update seasonal calendar / toggle feature flag — these are the four highest-frequency founder operations. Each lands on the relevant domain page pre-scoped.<br><br>
+      <strong>Two-column panels handle the rest.</strong> Business Snapshot (this month vs last) and System Health (infra status) on the first row. Content &amp; Comms and Founder Ops on the second. Each panel is glanceable in 5 seconds, deep-divable on click.<br><br>
+      <strong>The voice stays consistent with the chef shell.</strong> Day-not-time, casual-name first, italic gold accents, no SaaS jargon. "Twelve kitchens. Four on Pro. £294 MRR. One issue needs your eye." reads like a founder talking to themselves — direct, observational, no corporate fluff.
+    </div>
+  </div>
+</main>
+
+</body>
+</html>
