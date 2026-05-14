@@ -3,15 +3,25 @@ import { SignOutForm } from '@/components/shell/SignOutForm';
 import { AccessibilitySettings } from '@/components/shell/AccessibilitySettings';
 import { getShellContext } from '@/lib/shell/context';
 import { getUserPreferences, PREFERENCE_META } from '@/lib/preferences';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { PreferenceToggle } from './PreferenceToggle';
+import { InboxTokenPanel } from './InboxTokenPanel';
 
 export const metadata = { title: 'Settings — Palatable' };
 
 export default async function SettingsPage() {
   const ctx = await getShellContext();
   const prefs = await getUserPreferences(ctx.userId);
+  const supabase = await createSupabaseServerClient();
+  const { data: accountRow } = await supabase
+    .from('accounts')
+    .select('inbox_token')
+    .eq('id', ctx.accountId)
+    .single();
+  const inboxToken = (accountRow?.inbox_token as string | null) ?? null;
   const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
   const isFounder = ctx.email === 'jack@palateandpen.co.uk';
+  const isOwner = ctx.role === 'owner';
 
   return (
     <div className="px-14 pt-12 pb-20 max-w-[800px]">
@@ -73,6 +83,10 @@ export default async function SettingsPage() {
           description={PREFERENCE_META.team_view_notebook.description}
           initial={prefs.team_view_notebook}
         />
+      </Section>
+
+      <Section title="Invoice Email Forwarding">
+        <InboxTokenPanel initialToken={inboxToken} canRotate={isOwner} />
       </Section>
 
       <Section title="Connections">

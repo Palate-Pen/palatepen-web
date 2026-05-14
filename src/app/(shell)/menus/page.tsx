@@ -166,7 +166,7 @@ function MenuSectionCard({ section }: { section: MenuSection }) {
           <div
             key={d.name}
             className={
-              'py-3 cursor-pointer transition-colors hover:text-gold' +
+              'py-3 transition-colors' +
               (i < section.dishes.length - 1 ? ' border-b border-rule' : '')
             }
           >
@@ -180,9 +180,12 @@ function MenuSectionCard({ section }: { section: MenuSection }) {
         ))}
       </div>
       <div className="px-6 py-3 border-t border-rule bg-card-warm">
-        <button className="w-full py-2 font-sans font-semibold text-xs tracking-[0.08em] uppercase bg-transparent border border-dashed border-gold text-gold">
-          + Add Dish
-        </button>
+        <Link
+          href="/manager/menu-builder"
+          className="block text-center w-full py-2 font-sans font-semibold text-xs tracking-[0.08em] uppercase bg-transparent border border-dashed border-gold text-gold hover:bg-gold hover:text-paper transition-colors"
+        >
+          Edit in Menu Builder →
+        </Link>
       </div>
     </div>
   );

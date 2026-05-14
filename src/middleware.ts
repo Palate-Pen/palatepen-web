@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const PUBLIC_PREFIXES = ['/signin', '/signup', '/auth/callback'];
+const PUBLIC_PREFIXES = ['/signin', '/signup', '/auth/callback', '/m/'];
 
 // Routes that authenticate themselves (Bearer token, webhook secret, etc.)
 // and must not be redirected to /signin when there's no cookie session.
@@ -60,6 +60,12 @@ export async function middleware(request: NextRequest) {
   // /coming-soon is host-agnostic — keep it reachable on the app host
   // too (e.g. for QA without changing DNS).
   if (path === '/coming-soon') {
+    return NextResponse.next();
+  }
+
+  // Public menu reader — /m/{slug} is a guest-facing surface (no chef
+  // chrome, no auth). Skip session work entirely.
+  if (path.startsWith('/m/')) {
     return NextResponse.next();
   }
 
