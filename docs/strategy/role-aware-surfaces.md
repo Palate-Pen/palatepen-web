@@ -22,8 +22,16 @@ The chef opens Palatable in the morning. They get a coffee. They want to know wh
 - Open a recipe
 - Log waste
 
-### Available but not prominent
-- Recipe library, costings, menus, spec sheets, allergens, sub-recipes — all the depth that's already built, just not in your face when you open the app
+### The four chef tabs — each answers a different question
+Beneath the morning brief and quick actions, the chef surface is organised into four tabs. Each answers one of the questions a sous chef mentally separates — and never blends them:
+
+- **Recipes** — *what do we make?* The library of dishes. Authoring lives here. Inline costing happens during recipe write-up; the cost simulator runs from inside a recipe.
+- **Costing** — *what does it cost us?* A library overview of every costing in the kitchen — grid view with GP %, sale price, last-costed date, and drift flags. Click through to the recipe to edit.
+- **Margins** — *is the money behaving?* The analytical surface. GP trends, ingredient benchmarking, supplier performance, margin leakage alerts, inflation tracking.
+- **Reports** — *how is the kitchen running?* Operational reporting. Waste, stock value, menu engineering rollup.
+
+### Also available, but not prominent
+- Menus, spec sheets, allergens, sub-recipes, supplier admin. All the depth that's already built, just not in your face when the chef opens the app to read the morning brief.
 
 ### Hidden from chef view entirely
 - Financial reports, multi-site comparisons, P&L analytics, accounting integrations, billing/subscription management

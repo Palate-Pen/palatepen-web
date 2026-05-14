@@ -55,8 +55,7 @@ Complete. See docs/roadmap-archive.md for full checklist.
 
 ### Phase 3 — Kitchen and Group Tier
 
-> [in-flight 2026-05-14] Costing → Margins rename: recon complete, shape decision pending. See docs/strategy/working-notes/costing-margins-recon-2026-05-14.md.
-
+- [ ] Costing → Margins rename: shape (d) decided — four-tab chef surface. Strategy docs updated 2026-05-14. PR 1 (mechanical): pending. PR 2 (content migration): inside margin-leakage build window. Recon: docs/strategy/working-notes/costing-margins-recon-2026-05-14.md.
 - [x] Multi-user access with team permissions *(All 4 stages shipped — schema + contexts + Team UI + invite/accept + role gating + Stripe webhook to accounts.tier; legacy user_id RLS still in place pending cleanup, see Progress Log)*
 - [ ] Multiple outlets under one account
 - [ ] Central kitchen management
@@ -161,10 +160,18 @@ Palatable is the hospitality platform where chefs do their work in the kitchen, 
 
 ### The core architectural insight
 
-One system, three role-aware surfaces:
+Two layered ideas.
+
+**1. Role determines surface set.** One system, three role-aware surface sets:
 - **Chef surface** — the sous chef. Calm, mobile-first, hides finance.
 - **Manager surface** — site operational status. Exception management.
 - **Owner surface** — business pulse, multi-site intelligence, financial reports.
+
+**2. Within the chef set, four tabs answer four sous chef questions:**
+- **Recipes** — *what do we make?* Library, authoring, inline costing, cost simulator.
+- **Costing** — *what does it cost us?* Library overview of every costing — grid view with GP %, price, last-costed, drift flags. Click through to the recipe.
+- **Margins** — *is the money behaving?* GP trends, ingredient benchmarking, supplier performance, leakage alerts, inflation tracking.
+- **Reports** — *how is the kitchen running?* Waste, stock value, menu engineering rollup. Operational reporting only.
 
 Same underlying data. Role-aware experience. The chef's normal work feeds the manager and owner views automatically. **Nobody does work for anyone else.**
 

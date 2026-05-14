@@ -22,6 +22,9 @@ Every minute a chef spends on paperwork is a minute not spent on food. Our job i
 **Software should work like a good sous chef.**
 A good sous chef anticipates. Doesn't ask questions they should know the answer to. Handles the boring stuff without being asked. Knows their place. Makes the head chef look good. Palatable behaves the same way.
 
+**Each surface answers one sous chef question.**
+Recipes: *what do we make?* Costing: *what does it cost us?* Margins: *is the money behaving?* Reports: *how is the kitchen running?* Four questions, four surfaces, no blending. Chefs don't think in mixed buckets, so the system shouldn't either. Every new feature should answer one of these questions cleanly. If it answers more than one, or none, rethink it.
+
 **The kitchen is sacred.**
 We protect it from interruption. Managers and owners get their own way to find what they need, so they stop walking into the kitchen at stupid times asking questions.
 

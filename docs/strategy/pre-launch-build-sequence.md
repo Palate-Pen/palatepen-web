@@ -13,7 +13,7 @@ Estimated 10–12 weeks of focused work.
 Decisions and small jobs that unblock everything else. Do these first.
 
 ### Strategic decisions
-- **Costing tab decision.** Do not kill it — reframe it as part of the chef surface and confirm it's not duplicated elsewhere. The "is it redundant" instinct came from confusion, not from the feature being wrong.
+- **Four-tab chef surface decided.** The chef surface is now four tabs — Recipes, Costing, Margins, Reports — each answering a distinct sous chef question (see `palatable-way.md` and `role-aware-surfaces.md`). Costing changes role: it stops being an authoring workbench and becomes a **library overview surface** — a grid of every dish costed, with GP %, sale price, last-costed date, and drift flags, with click-through to the recipe. The current `CostingView` authoring workbench migrates inline into Recipes (where part of it already lives at `RecipesView.tsx:1379-1542`). PR 1 (foundation week): wire the four tabs in the sidebar; stub `MarginsView` and the new library-overview `CostingView`; update editing-key vocab. PR 2 (inside the margin-leakage build window): migrate authoring inline into Recipes, build the new Costing library grid, and move analytical sections (GP trends, benchmarking, supplier performance) from `ReportsView` into `MarginsView`. Reports shrinks to operational reporting only.
 - **Finalise role-aware surface design.** Sketch the three home screens properly (see `role-aware-surfaces.md`). This is the spec for everything that follows.
 - **Run the backfill migration in Supabase** to default-account existing users. Ten-minute job that closes a real risk before launch.
 
