@@ -3,13 +3,38 @@ import { signInWithPassword, signInWithMagicLink } from '@/lib/actions/auth';
 
 export const metadata = { title: 'Sign in — Palatable' };
 
-export default function SignInPage() {
+type SearchParams = {
+  error?: string;
+  magic_link?: string;
+  check_email?: string;
+  next?: string;
+};
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+
   return (
     <div className="pt-6">
       <h1 className="font-serif text-4xl mb-3">Welcome back</h1>
       <p className="font-serif italic text-sm text-muted mb-8">
         sign in to your kitchen
       </p>
+
+      {params.magic_link === 'sent' && (
+        <StatusBanner kind="info">
+          Magic link sent. Check your email to finish signing in.
+        </StatusBanner>
+      )}
+      {params.check_email === '1' && (
+        <StatusBanner kind="info">
+          Check your email to confirm your account, then come back to sign in.
+        </StatusBanner>
+      )}
+      {params.error && <StatusBanner kind="error">{params.error}</StatusBanner>}
 
       <form action={signInWithPassword} className="space-y-5">
         <Field name="email" label="Email" type="email" required />
@@ -82,6 +107,26 @@ function Field({
         required={required}
         className="w-full bg-card border border-rule px-3 py-3 text-sm focus:outline-none focus:border-gold transition-colors"
       />
+    </div>
+  );
+}
+
+function StatusBanner({
+  kind,
+  children,
+}: {
+  kind: 'info' | 'error';
+  children: React.ReactNode;
+}) {
+  const styles =
+    kind === 'error'
+      ? 'border-l-urgent text-urgent bg-urgent/5'
+      : 'border-l-gold text-ink bg-gold-bg';
+  return (
+    <div
+      className={`border-l-[3px] ${styles} px-4 py-3 mb-6 font-serif italic text-sm`}
+    >
+      {children}
     </div>
   );
 }

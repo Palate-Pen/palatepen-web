@@ -1,32 +1,72 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-// Stubs. The next commit wires these to Supabase auth via
-// @/lib/supabase/server. Forms in (flows)/signin/page.tsx and
-// (flows)/signup/page.tsx reference these action signatures.
+async function siteOrigin() {
+  const h = await headers();
+  const host = h.get('host') ?? 'localhost:3000';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
+  return `${proto}://${host}`;
+}
 
 export async function signInWithPassword(formData: FormData) {
-  const email = formData.get('email');
-  const password = formData.get('password');
-  console.log('[auth stub] signInWithPassword', { email, hasPassword: !!password });
+  const email = String(formData.get('email') ?? '').trim();
+  const password = String(formData.get('password') ?? '');
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    redirect(`/signin?error=${encodeURIComponent(error.message)}`);
+  }
   redirect('/');
 }
 
 export async function signUpWithPassword(formData: FormData) {
-  const email = formData.get('email');
-  const password = formData.get('password');
-  console.log('[auth stub] signUpWithPassword', { email, hasPassword: !!password });
-  redirect('/onboarding');
+  const email = String(formData.get('email') ?? '').trim();
+  const password = String(formData.get('password') ?? '');
+
+  const supabase = await createSupabaseServerClient();
+  const { error, data } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${await siteOrigin()}/auth/callback?next=/onboarding`,
+    },
+  });
+
+  if (error) {
+    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+  }
+  // Supabase returns a session immediately if email confirmation is disabled
+  // on the project. Otherwise the user must click the link first.
+  if (data.session) {
+    redirect('/onboarding');
+  }
+  redirect('/signin?check_email=1');
 }
 
 export async function signInWithMagicLink(formData: FormData) {
-  const email = formData.get('email');
-  console.log('[auth stub] signInWithMagicLink', { email });
+  const email = String(formData.get('email') ?? '').trim();
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${await siteOrigin()}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    redirect(`/signin?error=${encodeURIComponent(error.message)}`);
+  }
   redirect('/signin?magic_link=sent');
 }
 
 export async function signOut() {
-  console.log('[auth stub] signOut');
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
   redirect('/signin');
 }

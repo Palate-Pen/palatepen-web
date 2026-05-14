@@ -3,13 +3,23 @@ import { signUpWithPassword, signInWithMagicLink } from '@/lib/actions/auth';
 
 export const metadata = { title: 'Sign up — Palatable' };
 
-export default function SignUpPage() {
+type SearchParams = { error?: string };
+
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+
   return (
     <div className="pt-6">
       <h1 className="font-serif text-4xl mb-3">Welcome</h1>
       <p className="font-serif italic text-sm text-muted mb-8">
         let&apos;s get you set up
       </p>
+
+      {params.error && <StatusBanner kind="error">{params.error}</StatusBanner>}
 
       <form action={signUpWithPassword} className="space-y-5">
         <Field name="email" label="Email" type="email" required />
@@ -91,6 +101,26 @@ function Field({
         minLength={minLength}
         className="w-full bg-card border border-rule px-3 py-3 text-sm focus:outline-none focus:border-gold transition-colors"
       />
+    </div>
+  );
+}
+
+function StatusBanner({
+  kind,
+  children,
+}: {
+  kind: 'info' | 'error';
+  children: React.ReactNode;
+}) {
+  const styles =
+    kind === 'error'
+      ? 'border-l-urgent text-urgent bg-urgent/5'
+      : 'border-l-gold text-ink bg-gold-bg';
+  return (
+    <div
+      className={`border-l-[3px] ${styles} px-4 py-3 mb-6 font-serif italic text-sm`}
+    >
+      {children}
     </div>
   );
 }

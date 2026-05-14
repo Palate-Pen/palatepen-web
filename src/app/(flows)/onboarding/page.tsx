@@ -5,7 +5,24 @@ export const metadata = { title: 'Welcome — Palatable' };
 
 const PROGRESS_PCT = 20;
 
-export default function OnboardingPage() {
+type SearchParams = { error?: string };
+
+const ERROR_MESSAGES: Record<string, string> = {
+  name_required: 'Your kitchen needs a name to continue.',
+  no_owner_membership: "We couldn't find your kitchen. Try signing out and back in.",
+  site_lookup_failed: 'Something went wrong loading your kitchen. Please try again.',
+};
+
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const errorMessage = params.error
+    ? ERROR_MESSAGES[params.error] ?? params.error
+    : null;
+
   return (
     <div className="pt-6">
       <div className="h-1 bg-rule mb-10 overflow-hidden">
@@ -19,6 +36,12 @@ export default function OnboardingPage() {
       <p className="font-serif italic text-sm text-muted mb-8">
         Step 1 of 5 · what&apos;s your kitchen called?
       </p>
+
+      {errorMessage && (
+        <div className="border-l-[3px] border-l-urgent text-urgent bg-urgent/5 px-4 py-3 mb-6 font-serif italic text-sm">
+          {errorMessage}
+        </div>
+      )}
 
       <form action={saveKitchenName} className="space-y-5">
         <div>
