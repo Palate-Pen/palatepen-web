@@ -1,5 +1,6 @@
 -- Cleanup migration: drop the legacy public.handle_new_user signup trigger + fn
 -- Date: 2026-05-14
+-- Applied: 2026-05-14 (run via MCP apply_migration; MCP-verified post-run that public.handle_new_user and the on_auth_user_created trigger on auth.users are both gone, and v2_on_auth_user_created is still in place)
 --
 -- The v2 foundation migration (20260514_v2_foundation.sql) added a parallel
 -- signup hook (v2_on_auth_user_created → v2.handle_new_user) that creates the
