@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import {
   getMarginsData,
@@ -176,7 +177,10 @@ function SectionSummaryCard({ section }: { section: SectionRollup }) {
         ? 'attention'
         : 'healthy';
   return (
-    <div className="bg-card border border-rule px-5 py-5 cursor-pointer transition-colors hover:border-rule-gold">
+    <a
+      href={`#section-${section.name}`}
+      className="bg-card border border-rule px-5 py-5 cursor-pointer transition-colors hover:border-rule-gold no-underline"
+    >
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
         {section.display_name}
       </div>
@@ -198,13 +202,13 @@ function SectionSummaryCard({ section }: { section: SectionRollup }) {
             : `${section.flagged_count} flagged`}
         </span>
       </div>
-    </div>
+    </a>
   );
 }
 
 function MenuDetailBlock({ section }: { section: SectionRollup }) {
   return (
-    <div className="mb-8">
+    <div className="mb-8" id={`section-${section.name}`}>
       <div className="bg-paper-warm border border-rule px-6 py-4">
         <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold mb-1.5">
           {section.display_name}
@@ -260,7 +264,8 @@ function DishRowView({ row, last }: { row: DishRow; last: boolean }) {
             : 'text-muted';
 
   return (
-    <div
+    <Link
+      href={`/margins/${row.recipe.id}`}
       className={
         'grid grid-cols-1 md:grid-cols-[2fr_70px_70px_90px_2fr_30px] gap-4 px-6 py-4 items-center cursor-pointer hover:bg-card-warm transition-colors' +
         (last ? '' : ' border-b border-rule-soft')
@@ -304,6 +309,6 @@ function DishRowView({ row, last }: { row: DishRow; last: boolean }) {
           <path d="M5 3l4 4-4 4" />
         </svg>
       </div>
-    </div>
+    </Link>
   );
 }
