@@ -1,29 +1,28 @@
 import type { Metadata } from 'next';
-import { Lora, Cinzel, Inter } from 'next/font/google';
+import { Cormorant_Garamond, Cinzel, Jost } from 'next/font/google';
 import './globals.css';
 
-// Serif — Lora replaces Cormorant Garamond. Cormorant is a high-contrast
-// didone-style display face; its thin strokes go faint at body sizes. Lora
-// is a humanist serif designed for screens — warmer, rounder, with proper
-// italics so the gold-em chef's-notebook pattern still works.
-const lora = Lora({
+// Serif — Cormorant Garamond. v8 design-system canon. Weights extended
+// to 400/500/600/700 (vs original 400+600) so body weight 500 default
+// and font-bold render as real weights, not browser-synthesised.
+const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-serif',
 });
 
-// Display — Cinzel kept for the small uppercase tracking-wide labels;
-// that pattern works at 8-11px and the all-caps texture is the brand.
+// Display — Cinzel for small uppercase tracking-wide labels, plus the
+// sidebar nav and page-title headings.
 const cinzel = Cinzel({
   subsets: ['latin'],
   weight: ['500', '600', '700'],
   variable: '--font-display',
 });
 
-// Sans — Inter replaces Jost. Inter was designed for UI at small sizes
-// and reads substantially better on the paper background.
-const inter = Inter({
+// Sans — Jost. Weights extended to 400/500/600/700 to back up the body
+// weight 500 default.
+const jost = Jost({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
@@ -58,7 +57,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${lora.variable} ${cinzel.variable} ${inter.variable}`}
+      className={`${cormorant.variable} ${cinzel.variable} ${jost.variable}`}
       suppressHydrationWarning
     >
       <head>
