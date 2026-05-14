@@ -166,6 +166,7 @@ export default async function MarginDetailPage({
 
       {canRunWhatIf ? (
         <WhatIfPanel
+          recipeId={recipe.id}
           costPerCover={recipe.cost_per_cover!}
           initialSellPrice={recipe.sell_price!}
         />

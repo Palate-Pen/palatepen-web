@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { saveRecipeSellPrice } from './actions';
 
 const gbp = new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -11,9 +13,11 @@ const gbp = new Intl.NumberFormat('en-GB', {
 const TARGET_GP_PCT = 72;
 
 export function WhatIfPanel({
+  recipeId,
   costPerCover,
   initialSellPrice,
 }: {
+  recipeId: string;
   costPerCover: number;
   initialSellPrice: number;
 }) {
@@ -24,7 +28,11 @@ export function WhatIfPanel({
   const max =
     Math.ceil(Math.max(costPerCover, initialSellPrice) * 3 * 100) / 100;
 
+  const router = useRouter();
   const [price, setPrice] = useState<number>(initialSellPrice);
+  const [pending, startTransition] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
 
   const gp = useMemo(() => {
     if (price <= 0) return null;
@@ -46,6 +54,26 @@ export function WhatIfPanel({
     costPerCover > 0 ? costPerCover / (1 - TARGET_GP_PCT / 100) : null;
 
   const delta = price - initialSellPrice;
+  const dirty = Math.abs(delta) >= 0.005;
+
+  function save() {
+    if (pending || !dirty) return;
+    setSaveError(null);
+    setJustSaved(false);
+    startTransition(async () => {
+      const res = await saveRecipeSellPrice({
+        recipeId,
+        sellPrice: price,
+        costPerCoverNow: costPerCover,
+      });
+      if (!res.ok) {
+        setSaveError(humaniseError(res.error));
+        return;
+      }
+      setJustSaved(true);
+      router.refresh();
+    });
+  }
 
   return (
     <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-6 mb-10">
@@ -55,9 +83,13 @@ export function WhatIfPanel({
         </div>
         <button
           type="button"
-          onClick={() => setPrice(initialSellPrice)}
+          onClick={() => {
+            setPrice(initialSellPrice);
+            setSaveError(null);
+            setJustSaved(false);
+          }}
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-30"
-          disabled={Math.abs(delta) < 0.005}
+          disabled={!dirty || pending}
         >
           Reset
         </button>
@@ -126,13 +158,56 @@ export function WhatIfPanel({
             type="button"
             onClick={() => setPrice(Math.round(suggestedPrice * 4) / 4)}
             className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors bg-transparent border-0 p-0 cursor-pointer whitespace-nowrap"
+            disabled={pending}
           >
             Try it →
           </button>
         </div>
       )}
+
+      <div className="mt-5 pt-5 border-t border-rule flex items-center justify-between gap-4 flex-wrap">
+        <div className="font-serif italic text-sm text-muted flex-1 min-w-0">
+          {justSaved ? (
+            <span className="text-healthy not-italic font-semibold">
+              Saved. Menu price is now {gbp.format(price)} · baseline re-anchored.
+            </span>
+          ) : saveError ? (
+            <span className="text-urgent not-italic font-semibold">
+              {saveError}
+            </span>
+          ) : dirty ? (
+            <>
+              Saving updates the menu price + re-anchors the cost baseline. The
+              drift detector starts fresh from here.
+            </>
+          ) : (
+            <>Drag the slider to find a new price.</>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={save}
+          disabled={!dirty || pending}
+          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {pending ? 'Saving…' : 'Save this price'}
+        </button>
+      </div>
     </div>
   );
+}
+
+function humaniseError(code: string): string {
+  switch (code) {
+    case 'invalid_price':
+      return 'That price isn’t valid — set a positive number.';
+    case 'invalid_cost':
+      return 'The live cost is missing — can’t save against an unknown baseline.';
+    case 'price_below_cost':
+      return 'Price has to be above the cost. Drag the slider up.';
+    default:
+      return code;
+  }
 }
 
 function Tile({
