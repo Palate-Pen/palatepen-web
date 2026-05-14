@@ -573,3 +573,10 @@ When in doubt about a product or UX decision, read these first.
 - Repo: Palate-Pen/palatepen-web, branch main
 - Palatable web app lives at `Documents/palateandpen/web/`; mobile sibling at `Documents/palateandpen/app/`
 - Stack: Next.js 14.2.5, React 18, Supabase (EU West London, project `xbnsytrcvyayzdxezpha`), Stripe, Tailwind, Anthropic Sonnet 4.6 server-side
+
+## MCP Tooling
+
+- **GitHub MCP** — configured at project-local scope. Authenticated via a fine-grained PAT scoped to `Palate-Pen/palatepen-web` only. Used for reading repo files, viewing commits and PRs, and managing issues. **Token expires 90 days from generation — set a calendar reminder for rotation.**
+- **Supabase MCP** — configured at project-local scope. Read-only enforced at the Postgres transaction layer (`BEGIN READ ONLY` wrapping all queries — verified 2026-05-14 with a `CREATE TABLE _readonly_probe` that returned SQLSTATE `25006 read_only_sql_transaction`). Scoped to project `xbnsytrcvyayzdxezpha` only. Used for verifying schema, running `SELECT` queries, reading the migrations folder. Migrations still run manually in the Supabase SQL editor per the existing convention.
+- **Misleading tool list.** The Supabase MCP advertises write tools (`execute_sql`, `apply_migration`, `deploy_edge_function`, branch tools) regardless of the `--read-only` flag. They fail at the database layer, not at the MCP boundary. The actual safety boundary is the Postgres role / transaction mode, not tool availability — don't infer read-only-vs-not from which tools are listed.
+- **Future sessions.** Prefer MCP tools over filesystem-only or paste-based workflows when working with repo state or DB schema context. Use the GitHub MCP to verify file contents post-write — that catches the Windows file encoding issues that bit us during the strategy doc work.
