@@ -1,21 +1,29 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Cinzel, Jost } from 'next/font/google';
+import { Lora, Cinzel, Inter } from 'next/font/google';
 import './globals.css';
 
-const cormorant = Cormorant_Garamond({
+// Serif — Lora replaces Cormorant Garamond. Cormorant is a high-contrast
+// didone-style display face; its thin strokes go faint at body sizes. Lora
+// is a humanist serif designed for screens — warmer, rounder, with proper
+// italics so the gold-em chef's-notebook pattern still works.
+const lora = Lora({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-serif',
 });
 
+// Display — Cinzel kept for the small uppercase tracking-wide labels;
+// that pattern works at 8-11px and the all-caps texture is the brand.
 const cinzel = Cinzel({
   subsets: ['latin'],
   weight: ['500', '600', '700'],
   variable: '--font-display',
 });
 
-const jost = Jost({
+// Sans — Inter replaces Jost. Inter was designed for UI at small sizes
+// and reads substantially better on the paper background.
+const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
@@ -50,7 +58,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cormorant.variable} ${cinzel.variable} ${jost.variable}`}
+      className={`${lora.variable} ${cinzel.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
       <head>
