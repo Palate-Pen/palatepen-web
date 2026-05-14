@@ -1,12 +1,65 @@
-import { SignOutForm } from './SignOutForm';
+'use client';
 
-export function Topbar({ userEmail }: { userEmail: string }) {
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+const BREADCRUMBS: Record<string, string> = {
+  '/': 'Home',
+  '/prep': 'Prep',
+  '/recipes': 'Recipes',
+  '/menus': 'Menus',
+  '/margins': 'Margins',
+  '/stock-suppliers': 'Stock & Suppliers',
+  '/notebook': 'Notebook',
+  '/inbox': 'Inbox',
+  '/settings': 'Settings',
+  '/connections': 'Connections',
+};
+
+function formatDate(now: Date): string {
+  const day = now.toLocaleDateString('en-GB', { weekday: 'long' });
+  const date = now.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const time = now.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return `${day}, ${date} · ${time}`;
+}
+
+export function Topbar() {
+  const pathname = usePathname();
+  const breadcrumb = BREADCRUMBS[pathname] ?? 'Palatable';
+  const [dateLabel, setDateLabel] = useState('');
+
+  useEffect(() => {
+    const update = () => setDateLabel(formatDate(new Date()));
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <header className="h-[76px] border-b border-rule bg-paper flex items-center justify-end px-8 gap-6 flex-shrink-0">
-      <span className="font-serif italic text-sm text-muted hidden md:inline">
-        {userEmail}
-      </span>
-      <SignOutForm />
+    <header className="h-[76px] bg-paper border-b border-rule flex items-center justify-between px-14 sticky top-0 z-10 flex-shrink-0">
+      <div className="font-serif text-[19px] font-medium tracking-[0.04em] text-ink">
+        {breadcrumb}
+      </div>
+      <div className="flex items-center gap-7">
+        <div className="flex items-center gap-2 font-display text-[8px] font-semibold tracking-[0.3em] uppercase text-healthy">
+          <span className="w-1.5 h-1.5 rounded-full bg-healthy animate-pulse" />
+          Live
+        </div>
+        <div
+          suppressHydrationWarning
+          className="font-serif italic text-sm text-muted tracking-[0.04em]"
+        >
+          {dateLabel}
+        </div>
+      </div>
     </header>
   );
 }
