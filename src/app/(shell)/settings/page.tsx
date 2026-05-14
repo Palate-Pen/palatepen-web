@@ -27,6 +27,14 @@ export default async function SettingsPage() {
               body="Site command — menu builder, P&L, team, deliveries oversight."
             />
           )}
+          {ctx.role === 'owner' && (
+            <SurfaceLink
+              href="/owner"
+              eyebrow="Owner access"
+              title="Owner surface"
+              body="The whole business lens — cross-site rollup, revenue, cash, group reporting."
+            />
+          )}
           {isFounder && (
             <SurfaceLink
               href="/admin"
