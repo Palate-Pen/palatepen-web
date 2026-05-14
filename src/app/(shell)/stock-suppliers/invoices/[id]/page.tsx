@@ -54,9 +54,13 @@ export default async function InvoiceDetailPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { confirmed?: string; error?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ confirmed?: string; error?: string }>;
 }) {
+  const [{ id: invoiceId }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   const ctx = await getShellContext();
   const supabase = await createSupabaseServerClient();
 
@@ -65,7 +69,7 @@ export default async function InvoiceDetailPage({
     .select(
       'id, site_id, supplier_id, delivery_id, invoice_number, issued_at, received_at, subtotal, vat, total, status, source, delivery_confirmation, notes',
     )
-    .eq('id', params.id)
+    .eq('id', invoiceId)
     .single();
   if (!invoiceRaw) notFound();
   const invoice = invoiceRaw as unknown as InvoiceRow;
@@ -76,7 +80,7 @@ export default async function InvoiceDetailPage({
       .select(
         'id, ingredient_id, raw_name, qty, qty_unit, unit_price, line_total, vat_rate, discrepancy_qty, discrepancy_note, position, ingredients:ingredient_id (name, current_price)',
       )
-      .eq('invoice_id', params.id)
+      .eq('invoice_id', invoiceId)
       .order('position', { ascending: true }),
     invoice.supplier_id
       ? supabase
@@ -102,7 +106,7 @@ export default async function InvoiceDetailPage({
 
   const isReviewable =
     invoice.status === 'scanned' || invoice.status === 'flagged';
-  const justConfirmed = searchParams?.confirmed === '1';
+  const justConfirmed = resolvedSearchParams?.confirmed === '1';
   void ctx;
 
   return (

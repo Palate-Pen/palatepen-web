@@ -23,9 +23,10 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 export default async function MarginDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const recipe = await getRecipe(params.id);
+  const { id } = await params;
+  const recipe = await getRecipe(id);
   if (!recipe) notFound();
 
   const gpPct =
