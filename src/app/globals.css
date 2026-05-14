@@ -2,28 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------
+   Design tokens — RGB channel format so Tailwind can compose alpha
+   via `rgb(var(--foo) / <alpha-value>)`. The `:root` block is the
+   default light mode (the locked v8 design system look). The
+   `:root.dark` block overrides for dark mode.
+
+   Muted tones darkened from the original v8 spec to hit WCAG AA on
+   the light background:
+     muted       #7a6f5e → #6f6450
+     muted-soft  #a99b85 → #8a7d67  (was failing AA-Large at ~2.5:1)
+   --------------------------------------------------------------------- */
+
 @layer base {
   :root {
-    --ink: #1a1612;
-    --paper: #f8f4ed;
-    --card: #ffffff;
-    --muted: #7a6f5e;
-    --muted-soft: #a99b85;
-    --gold: #b8923c;
-    --gold-bg: rgba(201, 168, 76, 0.06);
-    --urgent: #a14424;
-    --attention: #b86a2e;
-    --healthy: #5d7f4f;
-    --rule: rgba(26, 22, 18, 0.08);
-    --price-up: var(--urgent);
-    --price-down: var(--healthy);
-    --price-flat: var(--muted-soft);
+    --ink: 26 22 18;
+    --ink-soft: 61 54 44;
+    --paper: 248 244 237;
+    --paper-warm: 242 237 224;
+    --card: 255 255 255;
+    --card-warm: 253 250 242;
+    --muted: 111 100 80;
+    --muted-soft: 138 125 103;
+    --gold: 184 146 60;
+    --gold-light: 201 168 76;
+    --gold-dark: 139 105 20;
+    --gold-bg: 201 168 76;
+    --gold-bg-alpha: 0.06;
+    --urgent: 161 68 36;
+    --attention: 184 106 46;
+    --healthy: 93 127 79;
+    --rule: 26 22 18;
+    --rule-alpha: 0.10;
+    --rule-soft-alpha: 0.05;
+    --rule-gold: 201 168 76;
+    --rule-gold-alpha: 0.25;
+
+    /* Font scale controls. Default 1 = "md" (medium). Settings UI
+       writes 0.94 (sm) or 1.12 (lg) here. */
+    --font-scale: 1;
+  }
+
+  :root.dark {
+    --ink: 240 232 220;
+    --ink-soft: 200 192 180;
+    --paper: 22 19 16;
+    --paper-warm: 30 26 22;
+    --card: 36 32 26;
+    --card-warm: 44 40 32;
+    --muted: 181 169 143;
+    --muted-soft: 149 137 122;
+    --gold: 201 168 76;
+    --gold-light: 232 174 32;
+    --gold-dark: 168 112 8;
+    --gold-bg: 201 168 76;
+    --gold-bg-alpha: 0.12;
+    --urgent: 200 96 96;
+    --attention: 208 138 78;
+    --healthy: 90 170 106;
+    --rule: 240 232 220;
+    --rule-alpha: 0.12;
+    --rule-soft-alpha: 0.06;
+    --rule-gold: 232 174 32;
+    --rule-gold-alpha: 0.30;
+  }
+
+  html {
+    /* Bumped from browser default 16px to 17px so default body text
+       reads larger; chefs scan this in motion. Scale multiplier above
+       lets the user push to sm/md/lg. */
+    font-size: calc(17px * var(--font-scale));
   }
 
   html,
   body {
-    background: var(--paper);
-    color: var(--ink);
+    background: rgb(var(--paper));
+    color: rgb(var(--ink));
   }
 
   body {

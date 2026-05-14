@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SignOutForm } from '@/components/shell/SignOutForm';
+import { AccessibilitySettings } from '@/components/shell/AccessibilitySettings';
 import { getShellContext } from '@/lib/shell/context';
 
 export const metadata = { title: 'Settings — Palatable' };
@@ -10,6 +11,8 @@ export default async function SettingsPage() {
   return (
     <div className="px-14 pt-12 pb-20 max-w-[800px]">
       <h1 className="font-serif text-5xl text-ink mb-8">Settings</h1>
+
+      <AccessibilitySettings />
 
       <Section title="Kitchen Info">
         <Row label="Kitchen name" value={ctx.kitchenName} />

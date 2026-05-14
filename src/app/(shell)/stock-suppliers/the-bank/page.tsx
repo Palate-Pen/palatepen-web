@@ -202,7 +202,6 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
     : down
       ? 'text-healthy'
       : 'text-muted-soft';
-  const movementStroke = up ? '#A14424' : down ? '#5D7F4F' : '#A99B85';
 
   const points = sparklinePoints(row.history);
   const last = sparklineLastPoint(row.history);
@@ -251,15 +250,15 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
           <svg
             viewBox="0 0 120 36"
             preserveAspectRatio="none"
-            className="w-full h-9"
+            className={'w-full h-9 ' + movementColor}
           >
             <polyline
               points={points}
               fill="none"
-              stroke={movementStroke}
+              stroke="currentColor"
               strokeWidth="1.5"
             />
-            <circle cx={last.x} cy={last.y} r="2.5" fill={movementStroke} />
+            <circle cx={last.x} cy={last.y} r="2.5" fill="currentColor" />
           </svg>
         ) : (
           <div className="text-[11px] text-muted-soft italic">
