@@ -184,7 +184,7 @@ export default async function BackBarHubPage() {
             tone={(pendingInvoices.count ?? 0) > 0 ? 'attention' : undefined}
           />
           <StateRow label="Shared with kitchen" value="yes" />
-          <StateRow label="Credit notes" value="see Stock & Suppliers" />
+          <StateRow label="Credit notes" value="see Back Bar" />
         </DestinationCard>
 
         <DestinationCard

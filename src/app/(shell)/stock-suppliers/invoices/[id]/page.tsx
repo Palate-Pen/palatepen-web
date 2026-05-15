@@ -126,7 +126,7 @@ export default async function InvoiceDetailPage({
       <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-            Stock & Suppliers · Invoice
+            The Walk-in · Invoice
           </div>
           <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
             {supplierName ? supplierName : 'Invoice'}
@@ -238,7 +238,7 @@ export default async function InvoiceDetailPage({
             href="/stock-suppliers"
             className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
           >
-            ← Back to Stock & Suppliers
+            ← Back to The Walk-in
           </Link>
         </div>
       )}
@@ -488,7 +488,7 @@ function ReviewActions({ invoiceId }: { invoiceId: string }) {
         href="/stock-suppliers"
         className="ml-auto font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
       >
-        ← Back to Stock & Suppliers
+        ← Back to The Walk-in
       </Link>
     </div>
   );

@@ -11,7 +11,7 @@ import {
 import { getBankSummary } from '@/lib/bank';
 import { countDraftCreditNotes } from '@/lib/credit-notes';
 
-export const metadata = { title: 'Stock & Suppliers — Palatable' };
+export const metadata = { title: 'The Walk-in — Palatable' };
 
 const gbp = new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -55,7 +55,7 @@ export default async function StockSuppliersPage() {
           </div>
           <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
             <em className="text-gold font-semibold not-italic">
-              Stock & Suppliers
+              The Walk-in
             </em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">

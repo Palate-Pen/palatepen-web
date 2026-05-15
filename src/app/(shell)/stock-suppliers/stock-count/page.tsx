@@ -11,7 +11,7 @@ export default async function ChefStockCountListPage() {
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Stock & Suppliers · The Honest Count
+        The Walk-in · The Honest Count
       </div>
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">
         Stock <em className="text-gold font-semibold not-italic">Count</em>

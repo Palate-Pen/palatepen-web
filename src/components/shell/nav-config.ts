@@ -11,7 +11,7 @@ export const CHEF_SECTIONS: NavSection[] = [
       { href: '/margins', label: 'Margins', icon: 'margins' },
       {
         href: '/stock-suppliers',
-        label: 'Stock & Suppliers',
+        label: 'The Walk-in',
         icon: 'stock-suppliers',
       },
       { href: '/notebook', label: 'Notebook', icon: 'notebook' },

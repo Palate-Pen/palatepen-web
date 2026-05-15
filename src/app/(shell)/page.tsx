@@ -54,7 +54,7 @@ export default async function HomePage() {
           >
             {rollup.todays_delivery_suppliers.length === 0 ? (
               <Empty>
-                No deliveries on the books for today. Add one from Stock & Suppliers when a supplier ETA lands.
+                No deliveries on the books for today. Add one from The Walk-in when a supplier ETA lands.
               </Empty>
             ) : (
               <div className="font-serif text-sm text-ink-soft leading-relaxed">

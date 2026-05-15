@@ -58,7 +58,7 @@ export default async function ManagerDeliveriesPage() {
           </h1>
           <p className="font-serif italic text-lg text-muted">
             Manager oversight of the next 7 days. Placing orders + full
-            delivery history live on the chef Stock & Suppliers surface.
+            delivery history live on the chef The Walk-in surface.
           </p>
         </div>
         <div className="print-hide">
@@ -98,7 +98,7 @@ export default async function ManagerDeliveriesPage() {
           <p className="font-serif italic text-muted">
             No deliveries scheduled for the next 7 days. Chefs place orders from{' '}
             <Link href="/stock-suppliers/deliveries" className="text-gold hover:text-gold-dark transition-colors">
-              Stock & Suppliers → Deliveries
+              The Walk-in → Deliveries
             </Link>
             .
           </p>

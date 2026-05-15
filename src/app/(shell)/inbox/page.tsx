@@ -10,7 +10,7 @@ const surfaceLabel: Record<string, string> = {
   recipes: 'Recipes',
   menus: 'Menus',
   margins: 'Margins',
-  'stock-suppliers': 'Stock & Suppliers',
+  'stock-suppliers': 'The Walk-in',
   notebook: 'Notebook',
   inbox: 'Inbox',
 };

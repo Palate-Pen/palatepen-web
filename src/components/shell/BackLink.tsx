@@ -8,8 +8,8 @@ import { usePathname } from 'next/navigation';
  *
  * Derives its destination from the current pathname — chops the last
  * segment off and uses that as the back href. The label maps the
- * resulting parent path to a friendly name ("Stock & Suppliers", "The
- * Bank", "Recipes", etc.).
+ * resulting parent path to a friendly name ("The Walk-in", "The Bank",
+ * "Recipes", etc.).
  *
  * Returns null on top-level tab landings (e.g. /recipes, /prep) since
  * the sidebar already handles that nav. Only renders when we're on a
@@ -25,7 +25,7 @@ const LABELS: Record<string, string> = {
   '/inbox': 'Inbox',
   '/settings': 'Settings',
   '/connections': 'Connections',
-  '/stock-suppliers': 'Stock & Suppliers',
+  '/stock-suppliers': 'The Walk-in',
   '/stock-suppliers/the-bank': 'The Bank',
   '/stock-suppliers/invoices': 'Invoices',
   '/stock-suppliers/deliveries': 'Deliveries',

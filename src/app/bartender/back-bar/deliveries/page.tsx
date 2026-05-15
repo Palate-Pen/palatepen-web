@@ -96,7 +96,7 @@ export default async function BarDeliveriesPage() {
       {allRows.length === 0 && (
         <div className="bg-card border border-rule px-10 py-16 text-center mb-10">
           <p className="font-serif italic text-muted">
-            No deliveries logged yet. Schedule one from chef Stock & Suppliers.
+            No deliveries logged yet. Schedule one from chef Back Bar.
           </p>
         </div>
       )}
@@ -106,7 +106,7 @@ export default async function BarDeliveriesPage() {
           Note
         </div>
         <p className="font-serif italic text-sm text-ink-soft leading-relaxed">
-          Deliveries are shared with the kitchen — what arrives gets logged once and feeds both surfaces. Scheduling new arrivals happens from chef Stock & Suppliers.
+          Deliveries are shared with the kitchen — what arrives gets logged once and feeds both surfaces. Scheduling new arrivals happens from chef Back Bar.
         </p>
         <Link
           href="/stock-suppliers/deliveries"

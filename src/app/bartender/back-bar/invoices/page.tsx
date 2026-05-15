@@ -79,7 +79,7 @@ export default async function BarInvoicesPage() {
         {data.recent.length === 0 ? (
           <div className="bg-card border border-rule px-10 py-16 text-center">
             <p className="font-serif italic text-muted">
-              No invoices processed yet. Scan one from chef Stock & Suppliers.
+              No invoices processed yet. Scan one from chef Back Bar.
             </p>
           </div>
         ) : (
@@ -92,7 +92,7 @@ export default async function BarInvoicesPage() {
           Scan a new invoice
         </div>
         <p className="font-serif italic text-sm text-ink-soft leading-relaxed">
-          Scanning happens once for both kitchen and bar — drop a PDF or photo on chef Stock & Suppliers → Invoices and Claude reads the line items. Bar-relevant ones populate this surface automatically.
+          Scanning happens once for both kitchen and bar — drop a PDF or photo on chef Back Bar → Invoices and Claude reads the line items. Bar-relevant ones populate this surface automatically.
         </p>
         <Link
           href="/stock-suppliers/invoices/scan"

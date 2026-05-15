@@ -49,7 +49,7 @@ const SURFACE_LABEL: Record<string, string> = {
   recipes: 'Recipes',
   menus: 'Menus',
   margins: 'Margins',
-  'stock-suppliers': 'Stock & Suppliers',
+  'stock-suppliers': 'The Walk-in',
   notebook: 'Notebook',
   inbox: 'Inbox',
   bar_home: 'Bar',

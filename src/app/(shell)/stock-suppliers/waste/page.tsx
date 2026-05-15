@@ -55,7 +55,7 @@ export default async function WastePage() {
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-            Stock & Suppliers · Waste
+            The Walk-in · Waste
           </div>
           <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
             <em className="text-gold font-semibold not-italic">Waste</em>

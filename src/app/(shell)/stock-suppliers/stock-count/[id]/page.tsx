@@ -35,7 +35,7 @@ export default async function ChefStockCountSessionPage({
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1300px] mx-auto">
       <div className="print-hide">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Stock & Suppliers · Count Session
+        The Walk-in · Count Session
       </div>
       <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
         <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
