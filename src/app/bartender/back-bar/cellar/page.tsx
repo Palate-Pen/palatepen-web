@@ -9,6 +9,8 @@ import {
 } from '@/lib/cellar';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { PrintButton } from '@/components/shell/PrintButton';
+import { CellarPrint } from './CellarPrint';
 
 export const metadata = { title: 'Cellar — Bar — Palatable' };
 
@@ -65,6 +67,7 @@ export default async function CellarPage({
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="print-hide">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -77,12 +80,15 @@ export default async function CellarPage({
             {subtitleFor(allRows.length, breachCount, totalValue)}
           </p>
         </div>
-        <Link
-          href="/stock-suppliers/the-bank/new"
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
-        >
-          + Add to Cellar
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          {allRows.length > 0 && <PrintButton label="Print Cellar list" />}
+          <Link
+            href="/stock-suppliers/the-bank/new"
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+          >
+            + Add to Cellar
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-8">
@@ -154,6 +160,9 @@ export default async function CellarPage({
       )}
 
       <LookingAhead siteId={ctx.siteId} surface="cellar" />
+      </div>
+
+      <CellarPrint rows={allRows} kitchenName={ctx.kitchenName} />
     </div>
   );
 }

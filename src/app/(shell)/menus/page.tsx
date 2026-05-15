@@ -12,6 +12,8 @@ import {
 } from '@/lib/dietary';
 import { PlannerView } from '@/components/menu-planner/PlannerView';
 import { ModeTabs } from '@/components/menu-planner/ModeTabs';
+import { PrintButton } from '@/components/shell/PrintButton';
+import { MenuPrint } from '@/components/menus/MenuPrint';
 
 export const metadata = { title: 'Menus — Palatable' };
 
@@ -90,6 +92,7 @@ export default async function MenusPage({
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="print-hide">
       <ModeTabs current="live" basePath="/menus" />
       <div className="flex justify-between items-start mb-8 gap-6 flex-wrap">
         <div className="flex-1 min-w-[280px]">
@@ -106,6 +109,7 @@ export default async function MenusPage({
           </p>
         </div>
         <div className="flex gap-3 items-center">
+          {totalDishes > 0 && <PrintButton label="Print menu" />}
           <Link
             href="/manager/menu-builder"
             className="font-sans font-semibold text-xs tracking-[0.08em] uppercase px-5 py-2.5 border border-gold bg-transparent text-gold hover:bg-gold hover:text-paper transition-colors"
@@ -177,6 +181,13 @@ export default async function MenusPage({
       )}
 
       <LookingAhead siteId={ctx.siteId} surface="menus" />
+      </div>
+
+      <MenuPrint
+        sections={sections}
+        kitchenName={ctx.kitchenName}
+        menuTitle="Today's menu"
+      />
     </div>
   );
 }
