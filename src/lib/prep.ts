@@ -154,3 +154,74 @@ export async function getPrepBoard(
     stations,
   };
 }
+
+export type SavedPrepItem = {
+  name: string;
+  station: string;
+  recipe_id: string | null;
+  recipe_name: string | null;
+  qty: number | null;
+  qty_unit: string | null;
+  last_prepped_on: string;
+  times_prepped: number;
+};
+
+/**
+ * Most-recently-prepped items for the site, distinct by
+ * (name, station). Drives the "Saved Prep" quick-add bank — chefs
+ * pick from things they've prepped before instead of retyping. The
+ * latest qty/unit/recipe_id is carried forward as a sensible default.
+ *
+ * Excludes the current `prepDate` so the bank shows past-week prep,
+ * not today's already-on-the-board items.
+ */
+export async function getSavedPrepItems(
+  siteId: string,
+  prepDate: string,
+  limit = 24,
+): Promise<SavedPrepItem[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('prep_items')
+    .select('name, station, recipe_id, qty, qty_unit, prep_date, recipes:recipe_id (name)')
+    .eq('site_id', siteId)
+    .neq('prep_date', prepDate)
+    .order('prep_date', { ascending: false })
+    .limit(200);
+
+  type Row = {
+    name: string;
+    station: string;
+    recipe_id: string | null;
+    qty: number | null;
+    qty_unit: string | null;
+    prep_date: string;
+    recipes: { name: string } | null;
+  };
+
+  const byKey = new Map<string, SavedPrepItem>();
+  for (const r of (data ?? []) as unknown as Row[]) {
+    const key = `${r.name.toLowerCase().trim()}|${r.station.toLowerCase().trim()}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.times_prepped += 1;
+      // Keep latest entry's qty as the suggested default (we ordered by
+      // prep_date desc, so first-seen wins).
+    } else {
+      byKey.set(key, {
+        name: r.name,
+        station: r.station,
+        recipe_id: r.recipe_id,
+        recipe_name: r.recipes?.name ?? null,
+        qty: r.qty,
+        qty_unit: r.qty_unit,
+        last_prepped_on: r.prep_date,
+        times_prepped: 1,
+      });
+    }
+  }
+
+  return Array.from(byKey.values())
+    .sort((a, b) => b.last_prepped_on.localeCompare(a.last_prepped_on))
+    .slice(0, limit);
+}

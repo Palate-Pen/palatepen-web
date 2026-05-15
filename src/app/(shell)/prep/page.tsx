@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import {
   getPrepBoard,
+  getSavedPrepItems,
   type PrepItem,
   type PrepStation,
   type PrepStatus,
@@ -48,18 +50,66 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function rollingDays(today: Date): { label: string; date: Date; iso: string; active: boolean }[] {
-  const labels = ['Yesterday', 'Today', 'Tomorrow', 'Saturday', 'Sunday'];
-  return labels.map((label, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + (i - 1));
-    return {
+function parseDateParam(raw: string | undefined): Date {
+  if (!raw) return new Date();
+  // Accept YYYY-MM-DD only; everything else falls back to today.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return new Date();
+  const d = new Date(`${raw}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return new Date();
+  return d;
+}
+
+/**
+ * Build the five-day strip around the *selected* day, with the
+ * relative-day label ("Yesterday", "Today", "Tomorrow") computed
+ * against actual today, not the selected day. So when the chef pages
+ * back to Monday, "Today" still highlights the real today and the
+ * selected day gets its own ring.
+ */
+function rollingDays(
+  selectedIso: string,
+  realToday: Date,
+): {
+  label: string;
+  date: Date;
+  iso: string;
+  selected: boolean;
+  isToday: boolean;
+}[] {
+  const realTodayIso = isoDate(realToday);
+  const center = new Date(`${selectedIso}T00:00:00Z`);
+  const days: typeof out = [];
+  const out: {
+    label: string;
+    date: Date;
+    iso: string;
+    selected: boolean;
+    isToday: boolean;
+  }[] = [];
+  // 2 days before, selected, 2 days after — five-day window
+  for (let offset = -2; offset <= 2; offset++) {
+    const d = new Date(center);
+    d.setUTCDate(d.getUTCDate() + offset);
+    const iso = isoDate(d);
+    const dayDiffFromToday = Math.round(
+      (d.getTime() - realToday.getTime()) / 86400_000,
+    );
+    let label: string;
+    if (dayDiffFromToday === 0) label = 'Today';
+    else if (dayDiffFromToday === -1) label = 'Yesterday';
+    else if (dayDiffFromToday === 1) label = 'Tomorrow';
+    else
+      label = d.toLocaleDateString('en-GB', { weekday: 'long' });
+    out.push({
       label,
       date: d,
-      iso: isoDate(d),
-      active: i === 1,
-    };
-  });
+      iso,
+      selected: iso === selectedIso,
+      isToday: iso === realTodayIso,
+    });
+  }
+  void days;
+  return out;
 }
 
 function pctDone(board: { total_items: number; done: number }): string {
@@ -67,19 +117,37 @@ function pctDone(board: { total_items: number; done: number }): string {
   return `${Math.round((board.done / board.total_items) * 100)}% complete`;
 }
 
-export default async function PrepPage() {
+export default async function PrepPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ date?: string }>;
+}) {
   const ctx = await getShellContext();
-  const today = new Date();
-  const todayIso = isoDate(today);
-  const [board, recipes] = await Promise.all([
-    getPrepBoard(ctx.siteId, todayIso),
+  const sp = searchParams ? await searchParams : {};
+  const realToday = new Date();
+  const selectedDate = parseDateParam(sp?.date);
+  const selectedIso = isoDate(selectedDate);
+  const realTodayIso = isoDate(realToday);
+
+  const [board, recipes, savedItems] = await Promise.all([
+    getPrepBoard(ctx.siteId, selectedIso),
     getRecipes(ctx.siteId, { dishTypes: FOOD_DISH_TYPES }),
+    getSavedPrepItems(ctx.siteId, selectedIso, 30),
   ]);
 
-  const days = rollingDays(today);
+  const days = rollingDays(selectedIso, realToday);
   const stationCount = board.stations.length;
   const recipeOptions = recipes.map((r) => ({ id: r.id, name: r.name }));
   const knownStations = board.stations.map((s) => s.name);
+
+  const prevIso = isoDate(
+    new Date(new Date(`${selectedIso}T00:00:00Z`).getTime() - 86400_000),
+  );
+  const nextIso = isoDate(
+    new Date(new Date(`${selectedIso}T00:00:00Z`).getTime() + 86400_000),
+  );
+  const isFuture = selectedIso > realTodayIso;
+  const isPast = selectedIso < realTodayIso;
 
   const inProgressChefs = Array.from(
     new Set(
@@ -98,11 +166,35 @@ export default async function PrepPage() {
             What's Getting Made Today
           </div>
           <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-            Today's <em className="text-gold font-semibold not-italic">prep</em>
+            {isPast ? (
+              <>
+                Prep on{' '}
+                <em className="text-gold font-semibold not-italic">
+                  {dayShort.format(selectedDate)}
+                </em>
+              </>
+            ) : isFuture ? (
+              <>
+                Prep for{' '}
+                <em className="text-gold font-semibold not-italic">
+                  {dayShort.format(selectedDate)}
+                </em>
+              </>
+            ) : (
+              <>
+                Today's <em className="text-gold font-semibold not-italic">prep</em>
+              </>
+            )}
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">
             {board.total_items === 0 ? (
-              <>No prep set for today. Add the first item or let yesterday's board carry over.</>
+              isPast ? (
+                <>Nothing on the board that day. The chef may have skipped logging.</>
+              ) : isFuture ? (
+                <>Board's empty for this day — get ahead by adding items now.</>
+              ) : (
+                <>No prep set for today. Add the first item or let yesterday's board carry over.</>
+              )
             ) : (
               <>
                 {numberWord(board.total_items)} items across{' '}
@@ -114,18 +206,34 @@ export default async function PrepPage() {
         </div>
 
         <AddPrepItemDialog
-          prepDate={todayIso}
+          prepDate={selectedIso}
           recipes={recipeOptions}
           knownStations={knownStations}
+          savedItems={savedItems.map((s) => ({
+            name: s.name,
+            station: s.station,
+            recipe_id: s.recipe_id,
+            qty: s.qty,
+            qty_unit: s.qty_unit,
+            last_prepped_on: s.last_prepped_on,
+          }))}
         />
       </div>
 
       <div className="flex gap-2 items-center mb-8 flex-wrap">
-        <DayNav direction="prev" />
+        <DayNav href={`/prep?date=${prevIso}`} direction="prev" />
         {days.map((d) => (
           <DayTab key={d.iso} {...d} />
         ))}
-        <DayNav direction="next" />
+        <DayNav href={`/prep?date=${nextIso}`} direction="next" />
+        {selectedIso !== realTodayIso && (
+          <Link
+            href="/prep"
+            className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors ml-2"
+          >
+            ← Jump to today
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
@@ -219,41 +327,55 @@ function numberWord(n: number): string {
 function DayTab({
   label,
   date,
-  active,
+  iso,
+  selected,
+  isToday,
 }: {
   label: string;
   date: Date;
-  active: boolean;
+  iso: string;
+  selected: boolean;
+  isToday: boolean;
 }) {
+  const base =
+    'font-sans font-semibold text-xs tracking-[0.08em] uppercase px-4 py-2.5 border flex flex-col items-center gap-0.5 transition-colors';
+  const cls = selected
+    ? 'bg-ink border-ink text-paper'
+    : isToday
+      ? 'bg-transparent border-gold text-gold hover:bg-gold/5'
+      : 'bg-transparent border-rule text-ink-soft hover:border-gold hover:text-ink';
   return (
-    <button
-      className={
-        'font-sans font-semibold text-xs tracking-[0.08em] uppercase px-4 py-2.5 border flex flex-col items-center gap-0.5 transition-colors ' +
-        (active
-          ? 'bg-ink border-ink text-paper'
-          : 'bg-transparent border-rule text-ink-soft hover:border-gold hover:text-ink')
-      }
-    >
+    <Link href={`/prep?date=${iso}`} className={`${base} ${cls}`}>
       <span>{label}</span>
       <span
         className={
           'font-serif font-medium text-xs tracking-normal normal-case ' +
-          (active ? 'text-paper/70' : 'text-muted')
+          (selected ? 'text-paper/70' : 'text-muted')
         }
       >
         {dayShort.format(date)}
       </span>
-    </button>
+    </Link>
   );
 }
 
-function DayNav({ direction }: { direction: 'prev' | 'next' }) {
+function DayNav({
+  href,
+  direction,
+}: {
+  href: string;
+  direction: 'prev' | 'next';
+}) {
   return (
-    <button className="w-9 h-9 flex items-center justify-center bg-transparent border border-rule text-muted transition-colors hover:border-gold hover:text-gold">
+    <Link
+      href={href}
+      className="w-9 h-9 flex items-center justify-center bg-transparent border border-rule text-muted transition-colors hover:border-gold hover:text-gold"
+      aria-label={direction === 'prev' ? 'Previous day' : 'Next day'}
+    >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         {direction === 'prev' ? <path d="M15 18l-6-6 6-6" /> : <path d="M9 18l6-6-6-6" />}
       </svg>
-    </button>
+    </Link>
   );
 }
 

@@ -151,3 +151,61 @@ export async function addPrepItem(
   revalidatePath('/');
   return { ok: true, id: data.id as string };
 }
+
+/**
+ * Bulk-add multiple prep items in one round-trip. Used by the new
+ * multi-line dialog + the "quick-add from saved bank" panel — chefs
+ * can build up a list of 5-10 items and submit once instead of
+ * opening the dialog repeatedly.
+ *
+ * Returns the count of inserted rows. Validates every line upfront
+ * (so a single bad row rejects the whole batch — atomic feel).
+ */
+export async function addPrepItems(
+  inputs: AddPrepItemInput[],
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  if (inputs.length === 0) return { ok: true, count: 0 };
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/signin');
+
+  const { data: memberships } = await supabase
+    .from('memberships')
+    .select('site_id, role')
+    .eq('user_id', user.id)
+    .limit(1);
+  const membership = memberships?.[0];
+  if (!membership) return { ok: false, error: 'no_membership' };
+
+  const rows = [];
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+    const trimmedName = input.name.trim();
+    if (!trimmedName) return { ok: false, error: `row_${i + 1}_name_required` };
+    const trimmedStation = input.station.trim();
+    if (!trimmedStation)
+      return { ok: false, error: `row_${i + 1}_station_required` };
+    rows.push({
+      site_id: membership.site_id as string,
+      prep_date: input.prep_date,
+      station: trimmedStation,
+      name: trimmedName,
+      recipe_id: input.recipe_id,
+      one_off: input.recipe_id == null,
+      qty: input.qty,
+      qty_unit: input.qty_unit,
+      notes: input.notes,
+      status: 'not_started' as const,
+    });
+  }
+
+  const { error } = await supabase.from('prep_items').insert(rows);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/prep');
+  revalidatePath('/');
+  return { ok: true, count: rows.length };
+}
