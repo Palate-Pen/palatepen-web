@@ -2,26 +2,26 @@ import { getShellContext } from '@/lib/shell/context';
 import { listStockTakes } from '@/lib/stock-takes';
 import { StockCountList } from '@/components/stock-count/StockCountList';
 
-export const metadata = { title: 'Stock Take — Bar — Palatable' };
+export const metadata = { title: 'Stock Count — Palatable' };
 
-export default async function BarStockTakeListPage() {
+export default async function ChefStockCountListPage() {
   const ctx = await getShellContext();
   const rows = await listStockTakes(ctx.siteId);
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Back Bar · The Honest Count
+        Stock & Suppliers · The Honest Count
       </div>
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">
-        Stock <em className="text-gold font-semibold not-italic">Take</em>
+        Stock <em className="text-gold font-semibold not-italic">Count</em>
       </h1>
 
       <StockCountList
         rows={rows}
-        defaultScope="bar"
-        basePath="/bartender/back-bar/stock-take"
-        detailHref={(id) => `/bartender/back-bar/stock-take/${id}`}
+        defaultScope="kitchen"
+        basePath="/stock-suppliers/stock-count"
+        detailHref={(id) => `/stock-suppliers/stock-count/${id}`}
       />
     </div>
   );

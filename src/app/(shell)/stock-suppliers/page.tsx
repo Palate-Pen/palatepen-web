@@ -365,6 +365,24 @@ export default async function StockSuppliersPage() {
             <StateRow label="Top category" value="—" />
             <StateRow label="Last logged" value="—" />
           </DestinationCard>
+
+          <DestinationCard
+            name="Stock Count"
+            tagline="reconcile reality · variance in £"
+            href="/stock-suppliers/stock-count"
+            iconPath={
+              <>
+                <path d="M9 4h6l2 4h3v12H4V8h3l2-4z" />
+                <path d="M9 12h6M9 16h6" />
+              </>
+            }
+            linkLabel="Open Stock Count →"
+            linkMeta="weekly cadence"
+          >
+            <StateRow label="Cadence" value="weekly" />
+            <StateRow label="Updates" value="current_stock on every line" />
+            <StateRow label="Variance" value="surfaced in £" />
+          </DestinationCard>
         </div>
       </section>
 
