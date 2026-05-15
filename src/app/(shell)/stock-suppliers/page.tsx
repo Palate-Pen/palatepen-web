@@ -10,6 +10,10 @@ import {
 } from '@/lib/hub';
 import { getBankSummary } from '@/lib/bank';
 import { countDraftCreditNotes } from '@/lib/credit-notes';
+import {
+  countOpenPurchaseOrders,
+  getReorderSuggestionsBySupplier,
+} from '@/lib/purchase-orders';
 
 export const metadata = { title: 'The Walk-in — Palatable' };
 
@@ -26,11 +30,18 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 
 export default async function StockSuppliersPage() {
   const ctx = await getShellContext();
-  const [summary, bank, creditNotesInFlight] = await Promise.all([
-    getHubSummary(ctx.siteId),
-    getBankSummary(ctx.siteId),
-    countDraftCreditNotes(ctx.siteId),
-  ]);
+  const [summary, bank, creditNotesInFlight, openPOs, reorderSuggestions] =
+    await Promise.all([
+      getHubSummary(ctx.siteId),
+      getBankSummary(ctx.siteId),
+      countDraftCreditNotes(ctx.siteId),
+      countOpenPurchaseOrders(ctx.siteId),
+      getReorderSuggestionsBySupplier(ctx.siteId),
+    ]);
+  const breachItemCount = reorderSuggestions.reduce(
+    (s, x) => s + x.rows.length,
+    0,
+  );
 
   const todaysSub =
     summary.todays_delivery_suppliers.length > 0
@@ -158,7 +169,7 @@ export default async function StockSuppliersPage() {
       <section className="mt-12">
         <SectionHead
           title="Open A Workspace"
-          meta="five places to go, each with their job"
+          meta="six places to go, each with their job"
         />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <DestinationCard
@@ -382,6 +393,46 @@ export default async function StockSuppliersPage() {
             <StateRow label="Cadence" value="weekly" />
             <StateRow label="Updates" value="current_stock on every line" />
             <StateRow label="Variance" value="surfaced in £" />
+          </DestinationCard>
+
+          <DestinationCard
+            name="Purchase Orders"
+            tagline="reorder from par · draft, send, receive"
+            href="/stock-suppliers/purchase-orders"
+            iconPath={
+              <>
+                <path d="M5 4h11l3 5-3 5H5" />
+                <path d="M5 4v17" />
+                <path d="M9 9h6M9 13h4" />
+              </>
+            }
+            linkLabel="Open Purchase Orders →"
+            linkMeta={
+              openPOs > 0
+                ? `${openPOs} in flight`
+                : breachItemCount > 0
+                  ? `${breachItemCount} suggested`
+                  : 'nothing pending'
+            }
+          >
+            <StateRow
+              label="In flight"
+              value={openPOs > 0 ? String(openPOs) : '—'}
+              tone={openPOs > 0 ? 'attention' : undefined}
+            />
+            <StateRow
+              label="Below par"
+              value={breachItemCount > 0 ? String(breachItemCount) : '—'}
+              tone={breachItemCount > 0 ? 'attention' : undefined}
+            />
+            <StateRow
+              label="Suppliers"
+              value={
+                reorderSuggestions.length > 0
+                  ? String(reorderSuggestions.length)
+                  : '—'
+              }
+            />
           </DestinationCard>
         </div>
       </section>

@@ -10,6 +10,7 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { PrintButton } from '@/components/shell/PrintButton';
 import { EditSupplierButton } from './EditSupplierButton';
+import { DraftPOFromSupplierButton } from '../../purchase-orders/DraftPOFromSupplierButton';
 
 export const metadata = { title: 'Supplier — Palatable' };
 
@@ -62,6 +63,10 @@ export default async function SupplierDetailPage({
           {supplier.name}
         </h1>
         <div className="flex items-center gap-3 flex-wrap print-hide">
+          <DraftPOFromSupplierButton
+            supplierId={supplier.id}
+            label="Draft PO"
+          />
           <PrintButton label="Print supplier card" />
           <EditSupplierButton
             supplier={{

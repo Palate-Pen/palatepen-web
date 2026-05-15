@@ -60,9 +60,9 @@ Complete. See docs/roadmap-archive.md for full checklist.
 - [x] Multi-user access with team permissions *(All 4 stages shipped — schema + contexts + Team UI + invite/accept + role gating + Stripe webhook to accounts.tier; legacy user_id RLS still in place pending cleanup, see Progress Log)*
 - [ ] Multiple outlets under one account
 - [ ] Central kitchen management
-- [ ] Supplier ordering from par levels
-- [ ] Purchase order tracking
-- [ ] Automated reorder suggestions
+- [x] Supplier ordering from par levels *(shipped 2026-05-15 — items below par grouped by supplier on /stock-suppliers/purchase-orders, one-click "Draft PO" from each suggestion card or from the per-supplier detail page)*
+- [x] Purchase order tracking *(shipped 2026-05-15 — `v2.purchase_orders` + `v2.purchase_order_lines`, full lifecycle draft→sent→confirmed→received with mailto: compose, inline line editor, expected-date, supplier notes, print)*
+- [x] Automated reorder suggestions *(shipped 2026-05-15 — Reorder Suggestions panel on the PO list groups every below-par Bank item by its primary supplier with estimated shortfall value; one-click drafts a PO with sensible qty defaults)*
 - [ ] Group-level reporting across all sites
 - [ ] Demand forecasting
 - [ ] Inter-site stock transfer
