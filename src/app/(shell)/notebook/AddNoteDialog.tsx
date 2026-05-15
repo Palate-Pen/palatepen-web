@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { addNoteEntry } from './actions';
+import { PhotoUpload } from '@/components/photo/PhotoUpload';
 
 export type RecipeOption = {
   id: string;
@@ -12,9 +13,11 @@ export type RecipeOption = {
 export function AddNoteDialog({
   defaultShared = true,
   recipeOptions = [],
+  siteId,
 }: {
   defaultShared?: boolean;
   recipeOptions?: RecipeOption[];
+  siteId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -22,6 +25,12 @@ export function AddNoteDialog({
   const [shared, setShared] = useState(defaultShared);
   const [linkedIds, setLinkedIds] = useState<string[]>([]);
   const [recipeSearch, setRecipeSearch] = useState('');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [draftEntryId] = useState(() =>
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2),
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -31,6 +40,7 @@ export function AddNoteDialog({
     setShared(defaultShared);
     setLinkedIds([]);
     setRecipeSearch('');
+    setPhotoUrl(null);
     setError(null);
   }
 
@@ -66,6 +76,7 @@ export function AddNoteDialog({
         body_md: body,
         shared,
         linkedRecipeIds: linkedIds,
+        attachmentUrl: photoUrl,
       });
       if (!res.ok) {
         setError(humaniseError(res.error));
@@ -204,6 +215,21 @@ export function AddNoteDialog({
                       </div>
                     )}
                   </div>
+                </Field>
+              )}
+
+              {siteId && (
+                <Field label="Photo (optional)">
+                  <PhotoUpload
+                    bucket="notebook-attachments"
+                    sitePath={siteId}
+                    contextId={draftEntryId}
+                    initialUrl={photoUrl}
+                    label=""
+                    hint="JPG, PNG or WebP · up to 10MB"
+                    onUploaded={(url) => setPhotoUrl(url)}
+                    onRemoved={() => setPhotoUrl(null)}
+                  />
                 </Field>
               )}
 

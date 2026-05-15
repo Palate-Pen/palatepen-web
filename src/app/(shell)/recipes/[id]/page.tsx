@@ -80,9 +80,19 @@ export default async function RecipeDetailPage({
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Recipes · Detail
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-        {recipe.name}
-      </h1>
+      <div className="flex flex-col md:flex-row gap-6 md:items-start mb-3">
+        {recipe.photo_url && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={recipe.photo_url}
+            alt={recipe.name}
+            className="w-full md:w-[240px] aspect-square object-cover border border-rule flex-shrink-0"
+          />
+        )}
+        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+          {recipe.name}
+        </h1>
+      </div>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
         {subtitle(recipe, drifting, driftPct, matched, partial, unmatched)}
       </p>

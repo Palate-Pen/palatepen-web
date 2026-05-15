@@ -90,6 +90,7 @@ export type RecipeFormInput = {
   locked: boolean;
   method: string[];
   tags: string[];
+  photo_url: string | null;
   dish_type: DishType;
   glass_type: string | null;
   ice_type: string | null;
@@ -198,6 +199,7 @@ export async function createRecipe(
       tags: (Array.isArray(input.tags) ? input.tags : [])
         .map((t) => t.trim())
         .filter((t) => t.length > 0) as unknown as object,
+      photo_url: input.photo_url,
       dish_type: input.dish_type,
       glass_type: input.glass_type?.trim() || null,
       ice_type: input.ice_type?.trim() || null,
@@ -275,6 +277,7 @@ export async function updateRecipe(
       tags: (Array.isArray(input.tags) ? input.tags : [])
         .map((t) => t.trim())
         .filter((t) => t.length > 0) as unknown as object,
+      photo_url: input.photo_url,
       dish_type: input.dish_type,
       glass_type: input.glass_type?.trim() || null,
       ice_type: input.ice_type?.trim() || null,

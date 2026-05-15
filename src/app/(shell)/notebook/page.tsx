@@ -124,6 +124,7 @@ export default async function NotebookPage() {
           <AddNoteDialog
             defaultShared={prefs.team_view_notebook}
             recipeOptions={recipeOptions}
+            siteId={ctx.siteId}
           />
         </div>
       </div>

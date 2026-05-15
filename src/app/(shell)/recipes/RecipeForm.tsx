@@ -18,6 +18,7 @@ import {
 } from './actions';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
 import { AllergenPanel } from '@/components/allergens/AllergenPanel';
+import { PhotoUpload } from '@/components/photo/PhotoUpload';
 
 const DISH_TYPE_LABEL: Record<DishType, string> = {
   food: 'Food',
@@ -86,6 +87,7 @@ export function RecipeForm({
   recipeId,
   initial,
   bankIngredients,
+  siteId,
   defaultDishType = 'food',
   redirectOnSave,
 }: {
@@ -102,6 +104,7 @@ export function RecipeForm({
     locked: boolean;
     method: string[];
     tags?: string[];
+    photo_url?: string | null;
     dish_type?: DishType;
     glass_type?: string | null;
     ice_type?: string | null;
@@ -116,6 +119,8 @@ export function RecipeForm({
     }>;
   };
   bankIngredients: BankIngredientOption[];
+  /** Site id — required when photo upload is offered (edit mode). */
+  siteId?: string;
   /** Default dish type when creating a new recipe. Bar shell sets this
    *  to 'cocktail' so the bar fields show by default. */
   defaultDishType?: DishType;
@@ -163,6 +168,9 @@ export function RecipeForm({
   );
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [tagDraft, setTagDraft] = useState('');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(
+    initial?.photo_url ?? null,
+  );
   const [rows, setRows] = useState<IngredientRow[]>(
     initial && initial.ingredients.length > 0
       ? initial.ingredients.map((i) => ({
@@ -259,6 +267,7 @@ export function RecipeForm({
       locked,
       method: method.map((s) => s.trim()).filter((s) => s.length > 0),
       tags: tags.map((t) => t.trim()).filter((t) => t.length > 0),
+      photo_url: photoUrl,
       dish_type: dishType,
       glass_type: glassType.trim() || null,
       ice_type: iceType.trim() || null,
@@ -480,6 +489,23 @@ export function RecipeForm({
           </div>
         </Field>
       </Section>
+
+      {mode === 'edit' && recipeId && siteId && (
+        <Section
+          title="Photo"
+          sub="Surfaces on the detail page, the recipe card, and the public menu reader. Square-ish framing reads best — at least 800×800."
+        >
+          <PhotoUpload
+            bucket="recipe-photos"
+            sitePath={siteId}
+            contextId={recipeId}
+            initialUrl={photoUrl}
+            label={dishType === 'food' ? 'Dish photo' : 'Spec photo'}
+            onUploaded={(url) => setPhotoUrl(url)}
+            onRemoved={() => setPhotoUrl(null)}
+          />
+        </Section>
+      )}
 
       {dishType !== 'food' && (
         <Section

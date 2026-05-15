@@ -75,15 +75,27 @@ export default async function SpecDetailPage({
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Specs · Detail
       </div>
-      <div className="flex justify-between items-start gap-6 flex-wrap mb-3">
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-          {spec.name}
-        </h1>
-        {spec.menu_section && (
-          <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold mt-2">
-            {spec.menu_section}
-          </span>
+      <div className="flex flex-col md:flex-row gap-6 md:items-start mb-3">
+        {spec.photo_url && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={spec.photo_url}
+            alt={spec.name}
+            className="w-full md:w-[240px] aspect-square object-cover border border-rule flex-shrink-0"
+          />
         )}
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start gap-4 flex-wrap">
+            <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+              {spec.name}
+            </h1>
+            {spec.menu_section && (
+              <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold mt-2">
+                {spec.menu_section}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
         {subtitleFor(spec, pourCostPct, band, matched, unmatched)}

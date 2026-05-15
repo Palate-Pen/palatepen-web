@@ -164,8 +164,16 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
   return (
     <Link
       href={`/recipes/${recipe.id}`}
-      className="bg-card border border-rule cursor-pointer transition-all hover:border-gold hover:shadow-[0_4px_16px_rgba(26,22,18,0.08)] flex flex-col"
+      className="bg-card border border-rule cursor-pointer transition-all hover:border-gold hover:shadow-[0_4px_16px_rgba(26,22,18,0.08)] flex flex-col overflow-hidden"
     >
+      {recipe.photo_url && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={recipe.photo_url}
+          alt={recipe.name}
+          className="w-full aspect-[16/10] object-cover border-b border-rule"
+        />
+      )}
       <div className="px-6 py-6 border-b border-rule">
         <div className="font-serif font-semibold text-2xl text-ink leading-tight flex items-center gap-2">
           {recipe.name}

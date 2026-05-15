@@ -187,6 +187,15 @@ function EntryCardLive({ entry }: { entry: NotebookEntry }) {
         {entry.title}
       </div>
 
+      {entry.kind === 'photo' && entry.attachment_url && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={entry.attachment_url}
+          alt={entry.title ?? 'Notebook photo'}
+          className="w-full aspect-[4/3] object-cover border border-rule -mx-2"
+        />
+      )}
+
       {entry.kind === 'voice' && entry.voice_duration_seconds != null && (
         <div className="flex items-center gap-3 mt-1">
           <button

@@ -24,6 +24,7 @@ export async function addNoteEntry(input: {
   body_md: string;
   shared: boolean;
   linkedRecipeIds?: string[];
+  attachmentUrl?: string | null;
 }): Promise<ActionResult> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -49,16 +50,20 @@ export async function addNoteEntry(input: {
     .filter((s): s is string => typeof s === 'string' && s.length > 0)
     .slice(0, 12);
 
+  const attachment = input.attachmentUrl?.trim() || null;
+  const kind = attachment ? 'photo' : 'note';
+
   const { data, error } = await supabase
     .from('notebook_entries')
     .insert({
       site_id: membership.site_id as string,
       authored_by: user.id,
-      kind: 'note',
+      kind,
       title,
       body_md: body || null,
       tags: tags as unknown as object,
       linked_recipe_ids: linkedIds,
+      attachment_url: attachment,
       shared: input.shared,
     })
     .select('id')

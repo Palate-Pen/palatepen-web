@@ -43,6 +43,7 @@ export default async function EditRecipePage({
     locked: recipe.locked,
     method: recipe.method,
     tags: recipe.tags,
+    photo_url: recipe.photo_url,
     dish_type: recipe.dish_type,
     glass_type: recipe.glass_type,
     ice_type: recipe.ice_type,
@@ -74,6 +75,7 @@ export default async function EditRecipePage({
         recipeId={recipe.id}
         initial={initial}
         bankIngredients={bankIngredients}
+        siteId={ctx.siteId}
       />
     </div>
   );
