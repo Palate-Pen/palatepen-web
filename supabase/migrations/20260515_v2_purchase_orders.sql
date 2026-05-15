@@ -1,6 +1,6 @@
 -- v2 migration: purchase_orders + purchase_order_lines — Phase 3 ordering loop
 -- Date: 2026-05-15
--- Applied: pending
+-- Applied: 2026-05-15 (run via Supabase SQL editor; founder demo seeded immediately after with 3 sample POs across draft/sent/received states via docs/seed-founder-purchase-orders-2026-05-15.sql)
 --
 -- The Phase 3 deliverables on the roadmap include:
 --   - Supplier ordering from par levels
