@@ -154,7 +154,7 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
           </div>
         )}
       </div>
-      <div className="font-serif italic text-sm text-muted mb-4">
+      <div className="font-serif italic text-sm text-muted mb-3">
         {supplier.ingredient_count}{' '}
         {supplier.ingredient_count === 1 ? 'ingredient' : 'ingredients'} on file
         {supplier.last_seen_at && (
@@ -164,6 +164,36 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
           </>
         )}
       </div>
+
+      {(supplier.contact_person || supplier.phone || supplier.payment_terms) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 pb-3 border-b border-rule-soft">
+          {supplier.contact_person && (
+            <span className="font-serif text-xs text-ink-soft">
+              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mr-1">
+                Contact
+              </span>
+              {supplier.contact_person}
+            </span>
+          )}
+          {supplier.phone && (
+            <span className="font-serif text-xs text-ink-soft">
+              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mr-1">
+                Tel
+              </span>
+              {supplier.phone}
+            </span>
+          )}
+          {supplier.payment_terms && (
+            <span className="font-serif text-xs text-ink-soft">
+              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mr-1">
+                Terms
+              </span>
+              {supplier.payment_terms}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-px bg-rule border border-rule mt-auto">
         <Stat label="Confirmed" value={String(supplier.confirmed_count)} />
         <Stat

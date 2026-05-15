@@ -114,8 +114,8 @@ export default async function TheBankPage() {
         </div>
       ) : (
         <div className="bg-card border border-rule">
-          <div className="hidden md:grid grid-cols-[2fr_1.4fr_140px_110px_110px_40px] gap-4 px-6 py-4 border-b border-rule bg-paper-warm">
-            {['Ingredient', 'Supplier', '30-day shape', 'Price', 'Movement', ''].map(
+          <div className="hidden md:grid grid-cols-[2fr_1.4fr_140px_110px_110px_120px_40px] gap-4 px-6 py-4 border-b border-rule bg-paper-warm">
+            {['Ingredient', 'Supplier', '30-day shape', 'Price', 'Movement', 'Stock', ''].map(
               (h, i) => (
                 <div
                   key={i}
@@ -168,6 +168,54 @@ function unitLabel(unit: string | null): string {
   return `per ${unit}`;
 }
 
+function StockCell({ row }: { row: BankRow }) {
+  if (row.current_stock == null && row.par_level == null) {
+    return (
+      <span className="font-serif italic text-xs text-muted-soft">
+        not tracked
+      </span>
+    );
+  }
+  if (row.par_level == null || row.par_level === 0) {
+    return (
+      <span className="font-serif text-sm text-ink">
+        {row.current_stock ?? 0} {row.unit ?? ''}
+      </span>
+    );
+  }
+  const ratio = Math.max(
+    0,
+    Math.min(1.3, (row.current_stock ?? 0) / row.par_level),
+  );
+  const barColor =
+    row.par_status === 'breach'
+      ? 'bg-urgent'
+      : row.par_status === 'low'
+        ? 'bg-attention'
+        : 'bg-healthy';
+  const textColor =
+    row.par_status === 'breach'
+      ? 'text-urgent'
+      : row.par_status === 'low'
+        ? 'text-attention'
+        : 'text-ink';
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-1 mb-1">
+        <span className={'font-serif font-semibold text-sm ' + textColor}>
+          {row.current_stock ?? 0} / {row.par_level}
+        </span>
+      </div>
+      <div className="h-1 bg-paper-warm border border-rule rounded-sm overflow-hidden">
+        <div
+          className={`h-full ${barColor}`}
+          style={{ width: `${ratio * 76}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function BankRowView({ row, now }: { row: BankRow; now: Date }) {
   const flat = isFlatMovement(row.movement_pct);
   const up = !flat && row.movement_pct > 0;
@@ -190,7 +238,7 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
     <Link
       href={`/stock-suppliers/the-bank/${row.ingredient_id}`}
       className={
-        'grid grid-cols-1 md:grid-cols-[2fr_1.4fr_140px_110px_110px_40px] gap-4 px-6 py-4 items-center border-b border-rule-soft last:border-b-0 cursor-pointer hover:bg-card-warm transition-colors ' +
+        'grid grid-cols-1 md:grid-cols-[2fr_1.4fr_140px_110px_110px_120px_40px] gap-4 px-6 py-4 items-center border-b border-rule-soft last:border-b-0 cursor-pointer hover:bg-card-warm transition-colors ' +
         (justIn ? 'bg-gold-bg' : '')
       }
     >
@@ -284,6 +332,10 @@ function BankRowView({ row, now }: { row: BankRow; now: Date }) {
               row.movement_pct.toFixed(1) +
               '%'}
         </span>
+      </div>
+
+      <div className="hidden md:block">
+        <StockCell row={row} />
       </div>
 
       <div className="text-muted-soft justify-self-end hidden md:block">

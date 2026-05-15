@@ -6,6 +6,7 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { IngredientForm, type SupplierOption } from '../IngredientForm';
 import { PriceUpdateForm } from '../PriceUpdateForm';
+import { ParLevelForm } from '../ParLevelForm';
 import { parseAllergens } from '@/lib/allergens';
 import { parseNutrition } from '@/lib/nutrition';
 
@@ -42,7 +43,7 @@ export default async function BankIngredientDetailPage({
     supabase
       .from('ingredients')
       .select(
-        'id, site_id, supplier_id, name, spec, unit, category, current_price, last_seen_at, allergens, nutrition, suppliers:supplier_id (name)',
+        'id, site_id, supplier_id, name, spec, unit, category, current_price, last_seen_at, allergens, nutrition, par_level, reorder_point, current_stock, suppliers:supplier_id (name)',
       )
       .eq('id', id)
       .single(),
@@ -76,6 +77,9 @@ export default async function BankIngredientDetailPage({
     last_seen_at: string | null;
     allergens: unknown;
     nutrition: unknown;
+    par_level: number | null;
+    reorder_point: number | null;
+    current_stock: number | null;
     suppliers: { name: string } | null;
   };
   const allergens = parseAllergens(ing.allergens);
@@ -187,6 +191,26 @@ export default async function BankIngredientDetailPage({
         <PriceUpdateForm
           ingredientId={ing.id}
           currentPrice={ing.current_price}
+          unit={ing.unit}
+        />
+      </section>
+
+      <section className="mb-10">
+        <SectionHead
+          title="Set par + reorder + current stock"
+          meta="stock count writes back here"
+        />
+        <ParLevelForm
+          ingredientId={ing.id}
+          initialPar={
+            ing.par_level == null ? null : Number(ing.par_level)
+          }
+          initialReorder={
+            ing.reorder_point == null ? null : Number(ing.reorder_point)
+          }
+          initialStock={
+            ing.current_stock == null ? null : Number(ing.current_stock)
+          }
           unit={ing.unit}
         />
       </section>

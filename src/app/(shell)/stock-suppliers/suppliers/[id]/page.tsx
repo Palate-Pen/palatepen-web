@@ -8,6 +8,7 @@ import {
 } from '@/lib/suppliers';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { EditSupplierButton } from './EditSupplierButton';
 
 export const metadata = { title: 'Supplier — Palatable' };
 
@@ -55,9 +56,26 @@ export default async function SupplierDetailPage({
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Stock & Suppliers · Suppliers
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-        {supplier.name}
-      </h1>
+      <div className="flex justify-between items-start gap-4 flex-wrap mb-3">
+        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+          {supplier.name}
+        </h1>
+        <EditSupplierButton
+          supplier={{
+            id: supplier.id,
+            name: supplier.name,
+            contact_person: supplier.contact_person,
+            phone: supplier.phone,
+            email: supplier.email,
+            address: supplier.address,
+            website: supplier.website,
+            payment_terms: supplier.payment_terms,
+            credit_limit: supplier.credit_limit,
+            account_balance: supplier.account_balance,
+            notes_md: supplier.notes_md,
+          }}
+        />
+      </div>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
         {subtitle(supplier)}
       </p>
@@ -106,6 +124,92 @@ export default async function SupplierDetailPage({
           sub="on file from this supplier"
         />
       </div>
+
+      {(supplier.contact_person ||
+        supplier.phone ||
+        supplier.email ||
+        supplier.address ||
+        supplier.website ||
+        supplier.payment_terms ||
+        supplier.credit_limit != null ||
+        supplier.account_balance != null ||
+        supplier.notes_md) && (
+        <section className="mb-10">
+          <SectionHead
+            title="Contact & Terms"
+            meta={supplier.payment_terms ?? ''}
+          />
+          <div className="bg-card border border-rule">
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-rule">
+              <div className="px-7 py-5">
+                <ContactRow label="Contact" value={supplier.contact_person} />
+                <ContactRow label="Phone" value={supplier.phone} mono />
+                <ContactRow label="Email" value={supplier.email} mono />
+                <ContactRow
+                  label="Website"
+                  value={supplier.website}
+                  mono
+                  href={supplier.website ?? undefined}
+                />
+                <ContactRow
+                  label="Address"
+                  value={supplier.address}
+                  multiline
+                />
+              </div>
+              <div className="px-7 py-5">
+                <ContactRow
+                  label="Payment terms"
+                  value={supplier.payment_terms}
+                />
+                <ContactRow
+                  label="Credit limit"
+                  value={
+                    supplier.credit_limit != null
+                      ? gbp.format(supplier.credit_limit)
+                      : null
+                  }
+                />
+                <ContactRow
+                  label="Account balance"
+                  value={
+                    supplier.account_balance != null
+                      ? gbp.format(supplier.account_balance)
+                      : null
+                  }
+                  tone={
+                    supplier.credit_limit != null &&
+                    supplier.account_balance != null &&
+                    supplier.account_balance >= supplier.credit_limit * 0.85
+                      ? 'attention'
+                      : undefined
+                  }
+                />
+                {supplier.credit_limit != null &&
+                  supplier.account_balance != null &&
+                  supplier.credit_limit > 0 && (
+                    <div className="mt-2">
+                      <CreditBar
+                        used={Math.max(0, supplier.account_balance)}
+                        limit={supplier.credit_limit}
+                      />
+                    </div>
+                  )}
+              </div>
+            </div>
+            {supplier.notes_md && (
+              <div className="px-7 py-5 border-t border-rule bg-paper-warm/50">
+                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+                  Notes
+                </div>
+                <p className="font-serif italic text-base text-ink-soft leading-relaxed whitespace-pre-line">
+                  {supplier.notes_md}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="mb-10">
         <SectionHead
@@ -260,6 +364,93 @@ function InvoiceLineRow({
         <StatusPill status={inv.status} />
       </div>
     </Link>
+  );
+}
+
+function ContactRow({
+  label,
+  value,
+  mono,
+  multiline,
+  href,
+  tone,
+}: {
+  label: string;
+  value: string | null | undefined;
+  mono?: boolean;
+  multiline?: boolean;
+  href?: string;
+  tone?: 'attention';
+}) {
+  if (!value) {
+    return (
+      <div className="flex items-baseline justify-between gap-3 py-1.5">
+        <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted-soft">
+          {label}
+        </span>
+        <span className="font-serif italic text-xs text-muted-soft">—</span>
+      </div>
+    );
+  }
+  const valueClass =
+    (mono ? 'font-mono text-sm' : 'font-serif text-sm') +
+    ' ' +
+    (tone === 'attention' ? 'text-attention font-semibold' : 'text-ink') +
+    (multiline ? ' whitespace-pre-line text-right' : '');
+  return (
+    <div
+      className={
+        'flex ' +
+        (multiline ? 'flex-col gap-1' : 'items-baseline justify-between gap-3') +
+        ' py-1.5'
+      }
+    >
+      <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+        {label}
+      </span>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={valueClass + ' hover:text-gold transition-colors'}
+        >
+          {value}
+        </a>
+      ) : (
+        <span className={valueClass}>{value}</span>
+      )}
+    </div>
+  );
+}
+
+function CreditBar({ used, limit }: { used: number; limit: number }) {
+  const pct = Math.min(1, used / limit);
+  const tone =
+    pct >= 0.85 ? 'urgent' : pct >= 0.7 ? 'attention' : 'healthy';
+  const barColor =
+    tone === 'urgent'
+      ? 'bg-urgent'
+      : tone === 'attention'
+        ? 'bg-attention'
+        : 'bg-healthy';
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-1">
+        <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+          Credit used
+        </span>
+        <span className="font-serif font-semibold text-xs text-ink">
+          {(pct * 100).toFixed(0)}%
+        </span>
+      </div>
+      <div className="h-1.5 bg-paper-warm border border-rule rounded-sm overflow-hidden">
+        <div
+          className={`h-full transition-all ${barColor}`}
+          style={{ width: `${pct * 100}%` }}
+        />
+      </div>
+    </div>
   );
 }
 

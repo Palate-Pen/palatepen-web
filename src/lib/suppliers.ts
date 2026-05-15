@@ -1,6 +1,18 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export type SupplierRow = {
+export type SupplierContactBits = {
+  contact_person: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  website: string | null;
+  payment_terms: string | null;
+  credit_limit: number | null;
+  account_balance: number | null;
+  notes_md: string | null;
+};
+
+export type SupplierRow = SupplierContactBits & {
   id: string;
   name: string;
   ingredient_count: number;
@@ -27,7 +39,9 @@ export async function getSuppliers(siteId: string): Promise<SuppliersData> {
   ] = await Promise.all([
     supabase
       .from('suppliers')
-      .select('id, name')
+      .select(
+        'id, name, contact_person, phone, email, address, website, payment_terms, credit_limit, account_balance, notes_md',
+      )
       .eq('site_id', siteId)
       .order('name', { ascending: true }),
     supabase
@@ -89,6 +103,17 @@ export async function getSuppliers(siteId: string): Promise<SuppliersData> {
       reliability_score: reliability,
       confirmed_count: inv.confirmed,
       flagged_count: inv.flagged,
+      contact_person: (s.contact_person as string | null) ?? null,
+      phone: (s.phone as string | null) ?? null,
+      email: (s.email as string | null) ?? null,
+      address: (s.address as string | null) ?? null,
+      website: (s.website as string | null) ?? null,
+      payment_terms: (s.payment_terms as string | null) ?? null,
+      credit_limit:
+        s.credit_limit == null ? null : Number(s.credit_limit),
+      account_balance:
+        s.account_balance == null ? null : Number(s.account_balance),
+      notes_md: (s.notes_md as string | null) ?? null,
     };
   });
 
@@ -124,7 +149,7 @@ export type SupplierInvoiceRow = {
   flagged_lines: number;
 };
 
-export type SupplierDetail = {
+export type SupplierDetail = SupplierContactBits & {
   id: string;
   name: string;
   reliability_score: number | null;
@@ -157,7 +182,9 @@ export async function getSupplierDetail(
 
   const { data: supplier } = await supabase
     .from('suppliers')
-    .select('id, name, site_id')
+    .select(
+      'id, name, site_id, contact_person, phone, email, address, website, payment_terms, credit_limit, account_balance, notes_md',
+    )
     .eq('id', supplierId)
     .single();
   if (!supplier || supplier.site_id !== siteId) return null;
@@ -237,5 +264,18 @@ export async function getSupplierDetail(
     total_spend_90d: spend90d,
     ingredients,
     invoices,
+    contact_person: (supplier.contact_person as string | null) ?? null,
+    phone: (supplier.phone as string | null) ?? null,
+    email: (supplier.email as string | null) ?? null,
+    address: (supplier.address as string | null) ?? null,
+    website: (supplier.website as string | null) ?? null,
+    payment_terms: (supplier.payment_terms as string | null) ?? null,
+    credit_limit:
+      supplier.credit_limit == null ? null : Number(supplier.credit_limit),
+    account_balance:
+      supplier.account_balance == null
+        ? null
+        : Number(supplier.account_balance),
+    notes_md: (supplier.notes_md as string | null) ?? null,
   };
 }

@@ -18,6 +18,13 @@ export type BankRow = {
   history: BankPricePoint[];
   movement_pct: number;
   multi_supplier_count: number;
+  /** Par-tracking fields. Optional — null means the chef hasn't set
+   *  one up. Surfaced on The Bank list as a Stock column when any
+   *  ingredient has them set. */
+  par_level: number | null;
+  reorder_point: number | null;
+  current_stock: number | null;
+  par_status: 'breach' | 'low' | 'healthy' | 'unknown';
 };
 
 export type BankSummary = {
@@ -55,7 +62,7 @@ export async function getBankRows(siteId: string): Promise<BankRow[]> {
   const { data: ingredients, error: ingErr } = await supabase
     .from('ingredients')
     .select(
-      'id, name, spec, unit, category, supplier_id, current_price, last_seen_at',
+      'id, name, spec, unit, category, supplier_id, current_price, last_seen_at, par_level, reorder_point, current_stock',
     )
     .eq('site_id', siteId);
   if (ingErr) throw new Error(`bank.getBankRows ingredients: ${ingErr.message}`);
@@ -116,6 +123,17 @@ export async function getBankRows(siteId: string): Promise<BankRow[]> {
       const prior = pickPriceAt(ingHistory, fourteenDaysAgoIso);
       const movement_pct =
         prior && prior > 0 ? ((current - prior) / prior) * 100 : 0;
+      const stock =
+        i.current_stock != null ? Number(i.current_stock) : null;
+      const reorder =
+        i.reorder_point != null ? Number(i.reorder_point) : null;
+      const par = i.par_level != null ? Number(i.par_level) : null;
+      let parStatus: BankRow['par_status'] = 'unknown';
+      if (stock != null && reorder != null) {
+        if (stock <= reorder) parStatus = 'breach';
+        else if (par != null && stock < par * 0.75) parStatus = 'low';
+        else parStatus = 'healthy';
+      }
       return {
         ingredient_id: id,
         name: i.name as string,
@@ -131,6 +149,10 @@ export async function getBankRows(siteId: string): Promise<BankRow[]> {
         history: ingHistory,
         movement_pct,
         multi_supplier_count: nameCount.get((i.name as string).toLowerCase()) ?? 1,
+        par_level: par,
+        reorder_point: reorder,
+        current_stock: stock,
+        par_status: parStatus,
       };
     })
     .sort((a, b) => Math.abs(b.movement_pct) - Math.abs(a.movement_pct));

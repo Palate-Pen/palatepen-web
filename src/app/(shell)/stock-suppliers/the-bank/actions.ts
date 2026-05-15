@@ -195,3 +195,52 @@ export async function updateIngredientPrice(
   revalidatePath('/margins');
   return { ok: true, id: input.ingredientId };
 }
+
+export type ParLevelInput = {
+  ingredientId: string;
+  parLevel: number | null;
+  reorderPoint: number | null;
+  currentStock: number | null;
+};
+
+/**
+ * Set par-tracking fields on an ingredient — par_level (ideal stock),
+ * reorder_point (trigger to reorder), current_stock (latest count).
+ * Used from The Bank detail page. Null inputs clear the field.
+ */
+export async function updateIngredientPar(
+  input: ParLevelInput,
+): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/signin');
+
+  const check = (n: number | null, label: string) =>
+    n != null && (!Number.isFinite(n) || n < 0)
+      ? `invalid_${label}`
+      : null;
+  const err =
+    check(input.parLevel, 'par') ??
+    check(input.reorderPoint, 'reorder') ??
+    check(input.currentStock, 'stock');
+  if (err) return { ok: false, error: err };
+
+  const { error } = await supabase
+    .from('ingredients')
+    .update({
+      par_level: input.parLevel,
+      reorder_point: input.reorderPoint,
+      current_stock: input.currentStock,
+    })
+    .eq('id', input.ingredientId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/stock-suppliers/the-bank');
+  revalidatePath(`/stock-suppliers/the-bank/${input.ingredientId}`);
+  revalidatePath('/stock-suppliers');
+  revalidatePath('/bartender/back-bar/cellar');
+  revalidatePath('/bartender');
+  return { ok: true, id: input.ingredientId };
+}
