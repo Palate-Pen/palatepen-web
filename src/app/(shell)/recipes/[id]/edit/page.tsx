@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import { getShellContext } from '@/lib/shell/context';
 import { getRecipe } from '@/lib/recipes';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { RecipeForm, type BankIngredientOption } from '../../RecipeForm';
+import { RecipeForm, type BankIngredientOption, type SubRecipeOption } from '../../RecipeForm';
 import type { MenuSection } from '../../actions';
+import { FOOD_DISH_TYPES } from '@/lib/bar';
 
 export const metadata = { title: 'Edit recipe — Palatable' };
 
@@ -32,6 +33,20 @@ export default async function EditRecipePage({
       row.current_price == null ? null : Number(row.current_price),
   }));
 
+  const { data: subs } = await supabase
+    .from('recipes')
+    .select('id, name, menu_section')
+    .eq('site_id', ctx.siteId)
+    .is('archived_at', null)
+    .in('dish_type', FOOD_DISH_TYPES)
+    .neq('id', recipe.id)
+    .order('name', { ascending: true });
+  const subRecipeOptions: SubRecipeOption[] = (subs ?? []).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    menu_section: (r.menu_section as string | null) ?? null,
+  }));
+
   const initial = {
     name: recipe.name,
     menu_section: recipe.menu_section as MenuSection | null,
@@ -55,6 +70,7 @@ export default async function EditRecipePage({
       qty: i.qty,
       unit: i.unit,
       ingredient_id: i.ingredient_id,
+      sub_recipe_id: i.sub_recipe_id,
     })),
   };
 

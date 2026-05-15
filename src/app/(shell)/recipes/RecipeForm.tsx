@@ -45,12 +45,21 @@ export type BankIngredientOption = {
   current_price: number | null;
 };
 
+export type SubRecipeOption = {
+  id: string;
+  name: string;
+  menu_section: string | null;
+};
+
 type IngredientRow = {
   key: string; // local-only key for React list
   name: string;
   qty: string;
   unit: string;
   ingredient_id: string | null;
+  /** When set, this row is a sub-recipe reference, not a Bank ingredient.
+   *  name mirrors the sub-recipe's name for display. */
+  sub_recipe_id: string | null;
 };
 
 const UNIT_OPTIONS = [
@@ -72,6 +81,7 @@ function newRow(): IngredientRow {
     qty: '',
     unit: 'g',
     ingredient_id: null,
+    sub_recipe_id: null,
   };
 }
 
@@ -87,6 +97,7 @@ export function RecipeForm({
   recipeId,
   initial,
   bankIngredients,
+  subRecipeOptions = [],
   siteId,
   defaultDishType = 'food',
   defaultSyncToBank = false,
@@ -117,9 +128,15 @@ export function RecipeForm({
       qty: number;
       unit: string;
       ingredient_id: string | null;
+      sub_recipe_id?: string | null;
     }>;
   };
   bankIngredients: BankIngredientOption[];
+  /** Other recipes on this site (filtered to same dish-type space:
+   *  food for chef, bar dish types for bartender). Used to populate the
+   *  sub-recipe picker. The current recipe is excluded in edit mode so
+   *  it can't reference itself. */
+  subRecipeOptions?: SubRecipeOption[];
   /** Site id — required when photo upload is offered (edit mode). */
   siteId?: string;
   /** Default dish type when creating a new recipe. Bar shell sets this
@@ -184,6 +201,7 @@ export function RecipeForm({
           qty: String(i.qty),
           unit: i.unit,
           ingredient_id: i.ingredient_id,
+          sub_recipe_id: i.sub_recipe_id ?? null,
         }))
       : [newRow()],
   );
@@ -195,13 +213,32 @@ export function RecipeForm({
   const bankByName = new Map<string, BankIngredientOption>(
     bankIngredients.map((b) => [b.name.toLowerCase().trim(), b]),
   );
+  const subRecipeById = new Map<string, SubRecipeOption>(
+    subRecipeOptions.map((s) => [s.id, s]),
+  );
 
   function updateRow(key: string, patch: Partial<IngredientRow>) {
     setRows((cur) =>
       cur.map((r) => {
         if (r.key !== key) return r;
         const next = { ...r, ...patch };
-        if ('name' in patch) {
+        // Switching INTO sub-recipe mode: clear any Bank link + free-text
+        // name; pick the first sub-recipe by default so the row is valid.
+        if (patch.sub_recipe_id !== undefined) {
+          if (patch.sub_recipe_id) {
+            const sub = subRecipeById.get(patch.sub_recipe_id);
+            next.ingredient_id = null;
+            next.name = sub?.name ?? '';
+            if (next.unit === 'g' || next.unit === 'ml') {
+              next.unit = 'portions';
+            }
+          } else {
+            // Switching back to Bank mode: clear the sub-recipe-derived
+            // name so the chef can type fresh.
+            next.name = '';
+          }
+        } else if ('name' in patch && !next.sub_recipe_id) {
+          // Free-text name change in Bank mode: live-match against Bank.
           const match = bankByName.get(next.name.toLowerCase().trim());
           next.ingredient_id = match?.id ?? null;
           if (match?.unit && r.unit === 'g') {
@@ -239,14 +276,18 @@ export function RecipeForm({
     }
 
     const ingredients = rows
-      .filter((r) => r.name.trim() !== '' || r.qty.trim() !== '')
+      .filter(
+        (r) =>
+          r.name.trim() !== '' || r.qty.trim() !== '' || r.sub_recipe_id,
+      )
       .map((r) => {
         const qtyNum = Number(r.qty);
         return {
           name: r.name.trim(),
           qty: Number.isFinite(qtyNum) ? qtyNum : 0,
           unit: r.unit.trim() || 'each',
-          ingredient_id: r.ingredient_id,
+          ingredient_id: r.sub_recipe_id ? null : r.ingredient_id,
+          sub_recipe_id: r.sub_recipe_id,
         };
       });
     for (const ing of ingredients) {
@@ -666,6 +707,7 @@ export function RecipeForm({
                   ? bankIngredients.find((b) => b.id === r.ingredient_id)?.name ?? null
                   : null
               }
+              subRecipeOptions={subRecipeOptions}
               onChange={(patch) => updateRow(r.key, patch)}
               onRemove={() => removeRow(r.key)}
             />
@@ -763,32 +805,52 @@ function IngredientRowEditor({
   row,
   canRemove,
   matchedBankName,
+  subRecipeOptions,
   onChange,
   onRemove,
 }: {
   row: IngredientRow;
   canRemove: boolean;
   matchedBankName: string | null;
+  subRecipeOptions: SubRecipeOption[];
   onChange: (patch: Partial<IngredientRow>) => void;
   onRemove: () => void;
 }) {
   const linked = row.ingredient_id != null;
+  const isSub = row.sub_recipe_id != null;
+  const canToggleSub = subRecipeOptions.length > 0;
   return (
     <div className="grid grid-cols-[1fr_90px_100px_30px] gap-2 items-start">
       <div>
-        <input
-          type="text"
-          value={row.name}
-          onChange={(e) => onChange({ name: e.target.value })}
-          list="bank-ingredient-names"
-          placeholder="Ingredient name"
-          className={
-            'w-full px-3 py-2 border bg-card font-serif text-sm text-ink focus:outline-none focus:border-gold ' +
-            (linked ? 'border-healthy/40' : 'border-rule')
-          }
-        />
-        <div className="font-serif italic text-[11px] mt-0.5 min-h-[14px] truncate">
-          {linked ? (
+        {isSub ? (
+          <select
+            value={row.sub_recipe_id ?? ''}
+            onChange={(e) => onChange({ sub_recipe_id: e.target.value })}
+            className="w-full px-3 py-2 border border-gold/40 bg-gold-bg font-serif text-sm text-ink focus:outline-none focus:border-gold"
+          >
+            {subRecipeOptions.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={row.name}
+            onChange={(e) => onChange({ name: e.target.value })}
+            list="bank-ingredient-names"
+            placeholder="Ingredient name"
+            className={
+              'w-full px-3 py-2 border bg-card font-serif text-sm text-ink focus:outline-none focus:border-gold ' +
+              (linked ? 'border-healthy/40' : 'border-rule')
+            }
+          />
+        )}
+        <div className="font-serif italic text-[11px] mt-0.5 min-h-[14px] truncate flex items-center gap-2">
+          {isSub ? (
+            <span className="text-gold">◆ sub-recipe · cost flows from component</span>
+          ) : linked ? (
             <span className="text-healthy">
               ● linked to The Bank ·{' '}
               {matchedBankName && matchedBankName !== row.name
@@ -799,6 +861,24 @@ function IngredientRowEditor({
             <span className="text-muted-soft">○ free-text · no live cost</span>
           ) : (
             <span className="text-muted-soft">&nbsp;</span>
+          )}
+          {canToggleSub && (
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  sub_recipe_id: isSub ? null : subRecipeOptions[0].id,
+                })
+              }
+              className="ml-auto font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft hover:text-gold transition-colors bg-transparent border-0 p-0 cursor-pointer"
+              title={
+                isSub
+                  ? 'Switch this row back to a Bank ingredient'
+                  : 'Use another recipe as a component (sub-recipe)'
+              }
+            >
+              {isSub ? '→ ingredient' : '→ sub-recipe'}
+            </button>
           )}
         </div>
       </div>

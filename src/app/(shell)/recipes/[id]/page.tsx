@@ -469,6 +469,7 @@ function IngredientLine({
   last: boolean;
 }) {
   const linked = ing.ingredient_id != null;
+  const isSub = ing.sub_recipe_id != null;
   return (
     <div
       className={
@@ -477,7 +478,16 @@ function IngredientLine({
       }
     >
       <div className="font-serif font-semibold text-base text-ink">
-        {ing.name}
+        {isSub ? (
+          <Link
+            href={`/recipes/${ing.sub_recipe_id}`}
+            className="hover:text-gold transition-colors"
+          >
+            {ing.name}
+          </Link>
+        ) : (
+          ing.name
+        )}
       </div>
       <div className="font-serif text-sm text-ink">
         {qtyFmt.format(ing.qty)} {ing.unit}
@@ -489,7 +499,12 @@ function IngredientLine({
         {ing.line_cost != null ? gbp.format(ing.line_cost) : '—'}
       </div>
       <div>
-        {linked ? (
+        {isSub ? (
+          <span className="inline-flex items-center gap-1.5 font-display text-xs font-semibold tracking-[0.18em] uppercase text-gold">
+            <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+            Sub-recipe
+          </span>
+        ) : linked ? (
           <span className="inline-flex items-center gap-1.5 font-display text-xs font-semibold tracking-[0.18em] uppercase text-healthy">
             <span className="w-1.5 h-1.5 rounded-full bg-healthy" />
             Linked

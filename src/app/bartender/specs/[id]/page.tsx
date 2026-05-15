@@ -215,13 +215,27 @@ export default async function SpecDetailPage({
                 }
               >
                 <div className="font-serif font-semibold text-base text-ink">
-                  {ing.name}
+                  {ing.sub_recipe_id ? (
+                    <Link
+                      href={`/bartender/specs/${ing.sub_recipe_id}`}
+                      className="hover:text-gold transition-colors"
+                    >
+                      {ing.name}
+                    </Link>
+                  ) : (
+                    ing.name
+                  )}
                 </div>
                 <div className="font-serif text-sm text-ink">
                   {qtyFmt.format(ing.qty)} {ing.unit}
                 </div>
                 <div>
-                  {ing.ingredient_id ? (
+                  {ing.sub_recipe_id ? (
+                    <span className="inline-flex items-center gap-1.5 font-display text-xs font-semibold tracking-[0.18em] uppercase text-gold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+                      Sub-spec
+                    </span>
+                  ) : ing.ingredient_id ? (
                     <span className="inline-flex items-center gap-1.5 font-display text-xs font-semibold tracking-[0.18em] uppercase text-healthy">
                       <span className="w-1.5 h-1.5 rounded-full bg-healthy" />
                       Cellar

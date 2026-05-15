@@ -5,7 +5,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   RecipeForm,
   type BankIngredientOption,
+  type SubRecipeOption,
 } from '@/app/(shell)/recipes/RecipeForm';
+import { BAR_DISH_TYPES } from '@/lib/bar';
 
 export const metadata = { title: 'Edit spec — Bar — Palatable' };
 
@@ -34,6 +36,20 @@ export default async function EditSpecPage({
       row.current_price == null ? null : Number(row.current_price),
   }));
 
+  const { data: subs } = await supabase
+    .from('recipes')
+    .select('id, name, menu_section')
+    .eq('site_id', ctx.siteId)
+    .is('archived_at', null)
+    .in('dish_type', BAR_DISH_TYPES)
+    .neq('id', recipe.id)
+    .order('name', { ascending: true });
+  const subRecipeOptions: SubRecipeOption[] = (subs ?? []).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    menu_section: (r.menu_section as string | null) ?? null,
+  }));
+
   const initial = {
     name: recipe.name,
     menu_section: recipe.menu_section,
@@ -57,6 +73,7 @@ export default async function EditSpecPage({
       qty: i.qty,
       unit: i.unit,
       ingredient_id: i.ingredient_id,
+      sub_recipe_id: i.sub_recipe_id,
     })),
   };
 

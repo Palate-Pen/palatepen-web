@@ -1,7 +1,8 @@
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import type { BankIngredientOption } from '@/app/(shell)/recipes/RecipeForm';
+import type { BankIngredientOption, SubRecipeOption } from '@/app/(shell)/recipes/RecipeForm';
 import { NewRecipeClient } from '@/app/(shell)/recipes/new/NewRecipeClient';
+import { BAR_DISH_TYPES } from '@/lib/bar';
 
 export const metadata = { title: 'New spec — Bar — Palatable' };
 
@@ -22,6 +23,19 @@ export default async function NewSpecPage() {
       row.current_price == null ? null : Number(row.current_price),
   }));
 
+  const { data: subs } = await supabase
+    .from('recipes')
+    .select('id, name, menu_section')
+    .eq('site_id', ctx.siteId)
+    .is('archived_at', null)
+    .in('dish_type', BAR_DISH_TYPES)
+    .order('name', { ascending: true });
+  const subRecipeOptions: SubRecipeOption[] = (subs ?? []).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    menu_section: (r.menu_section as string | null) ?? null,
+  }));
+
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[900px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -36,6 +50,7 @@ export default async function NewSpecPage() {
 
       <NewRecipeClient
         bankIngredients={bankIngredients}
+        subRecipeOptions={subRecipeOptions}
         defaultDishType="cocktail"
         redirectOnSave={(id) => `/bartender/specs/${id}`}
         importLabel="Import a cocktail spec from a URL"

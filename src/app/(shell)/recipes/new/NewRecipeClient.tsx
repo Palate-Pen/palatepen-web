@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { RecipeForm, type BankIngredientOption } from '../RecipeForm';
+import { RecipeForm, type BankIngredientOption, type SubRecipeOption } from '../RecipeForm';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
 import type { DishType, MenuSection } from '../actions';
 
@@ -110,12 +110,16 @@ function composeNotes(r: ExtractedRecipe): string {
 
 export function NewRecipeClient({
   bankIngredients,
+  subRecipeOptions = [],
   defaultDishType = 'food',
   redirectOnSave,
   importLabel = 'Import from a URL',
   importBody = 'Paste any recipe page — Bon Appétit, NYT Cooking, BBC Good Food, your favourite blog. Haiku reads it and pre-fills the form below. Review every line before saving.',
 }: {
   bankIngredients: BankIngredientOption[];
+  /** Other recipes on this site (filtered to same dish-type space) that
+   *  can be referenced as sub-recipes. */
+  subRecipeOptions?: SubRecipeOption[];
   /** Default dish type when no recipe imported. Bar passes 'cocktail'. */
   defaultDishType?: DishType;
   /** Where to send the chef after a successful save. */
@@ -220,6 +224,7 @@ export function NewRecipeClient({
         mode="create"
         initial={initial}
         bankIngredients={bankIngredients}
+        subRecipeOptions={subRecipeOptions}
         defaultDishType={defaultDishType}
         defaultSyncToBank={!!prefill}
         redirectOnSave={redirectOnSave}

@@ -106,6 +106,11 @@ export type RecipeFormInput = {
     qty: number;
     unit: string;
     ingredient_id: string | null;
+    /** When set, this line is a sub-recipe (component / mother sauce /
+     *  stock base) rather than a Bank ingredient. ingredient_id stays
+     *  null in that case. Cost is computed at read time from the
+     *  sub-recipe's per-portion cost × this line's qty. */
+    sub_recipe_id?: string | null;
   }>;
 };
 
@@ -169,7 +174,7 @@ async function syncIngredientsToBank(
   ingredients: RecipeFormInput['ingredients'],
 ): Promise<{ created: number; matched: number }> {
   const unmatched = ingredients.filter(
-    (i) => !i.ingredient_id && i.name.trim() !== '',
+    (i) => !i.ingredient_id && !i.sub_recipe_id && i.name.trim() !== '',
   );
   if (unmatched.length === 0) return { created: 0, matched: 0 };
 
@@ -300,7 +305,8 @@ export async function createRecipe(
   if (input.ingredients.length > 0) {
     const rows = input.ingredients.map((ing, i) => ({
       recipe_id: recipeId,
-      ingredient_id: ing.ingredient_id,
+      ingredient_id: ing.sub_recipe_id ? null : ing.ingredient_id,
+      sub_recipe_id: ing.sub_recipe_id ?? null,
       name: ing.name.trim(),
       qty: ing.qty,
       unit: ing.unit.trim(),
@@ -392,7 +398,8 @@ export async function updateRecipe(
   if (input.ingredients.length > 0) {
     const rows = input.ingredients.map((ing, i) => ({
       recipe_id: recipeId,
-      ingredient_id: ing.ingredient_id,
+      ingredient_id: ing.sub_recipe_id ? null : ing.ingredient_id,
+      sub_recipe_id: ing.sub_recipe_id ?? null,
       name: ing.name.trim(),
       qty: ing.qty,
       unit: ing.unit.trim(),
