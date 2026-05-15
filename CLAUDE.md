@@ -56,7 +56,7 @@ Complete. See docs/roadmap-archive.md for full checklist.
 
 ### Phase 3 — Kitchen and Group Tier
 
-- [ ] Costing → Margins rename: complete in design — Costing folded entirely into Margins as part of 10-tab chef shell (2026-05-14 final lock). Build still pending. Recon: docs/strategy/working-notes/costing-margins-recon-2026-05-14.md.
+- [x] Costing → Margins rename *(superseded 2026-05-15 — chose a tighter path. Recipe tiles now surface dish GP + drift directly (commit 3ac496b), and a Margins tab already exists. The "rename Costing → Margins" rebuild is unnecessary because Costing-as-authoring stays inside the recipe edit form and Margins-as-analysis sits across the Recipes list, /margins, and the per-recipe detail. Original recon at docs/strategy/working-notes/costing-margins-recon-2026-05-14.md is now historical.)*
 - [x] Multi-user access with team permissions *(All 4 stages shipped — schema + contexts + Team UI + invite/accept + role gating + Stripe webhook to accounts.tier; legacy user_id RLS still in place pending cleanup, see Progress Log)*
 - [ ] Multiple outlets under one account
 - [ ] Central kitchen management
