@@ -4,6 +4,10 @@ import { getRecipe } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { POUR_COST_BANDS } from '@/lib/bar';
+import { GPCalculatorButton } from '@/components/gp/GPCalculatorButton';
+import { getShellContext } from '@/lib/shell/context';
+import { getAccountPreferences } from '@/lib/account-preferences';
+import { getNotesForRecipe } from '@/lib/notebook';
 
 export const metadata = { title: 'Spec — Bar — Palatable' };
 
@@ -31,6 +35,20 @@ export default async function SpecDetailPage({
   const { id } = await params;
   const spec = await getRecipe(id);
   if (!spec) notFound();
+  const ctx = await getShellContext();
+  const accountPrefs = await getAccountPreferences(ctx.accountId);
+  const gpTarget = accountPrefs.gp_target_pct ?? 70;
+  const linkedNotes = await getNotesForRecipe(spec.id, ctx.siteId);
+  const gpSeed = {
+    dishName: spec.name,
+    sellPrice: spec.sell_price,
+    lines: spec.ingredients.map((i) => ({
+      name: i.name,
+      qty: i.qty,
+      unit: i.unit,
+      unitPrice: i.current_price,
+    })),
+  };
 
   const band = POUR_COST_BANDS[spec.dish_type] ?? POUR_COST_BANDS.cocktail;
   const pourCostPct =
@@ -270,19 +288,64 @@ export default async function SpecDetailPage({
         </section>
       )}
 
-      <div className="flex items-center gap-3 mt-10">
+      {linkedNotes.length > 0 && (
+        <section className="mb-12">
+          <SectionHead
+            title="Linked Notes"
+            meta={`${linkedNotes.length} ${linkedNotes.length === 1 ? 'note' : 'notes'} reference this spec`}
+          />
+          <div className="bg-card border border-rule">
+            {linkedNotes.slice(0, 6).map((n, i) => (
+              <Link
+                key={n.id}
+                href="/bartender/notebook"
+                className={
+                  'block px-7 py-4 hover:bg-paper-warm transition-colors' +
+                  (i < Math.min(5, linkedNotes.length - 1)
+                    ? ' border-b border-rule-soft'
+                    : '')
+                }
+              >
+                <div className="font-serif font-semibold text-base text-ink">
+                  {n.title ?? 'Note'}
+                </div>
+                {n.body_md && (
+                  <div className="font-serif italic text-sm text-muted mt-1 line-clamp-2">
+                    {n.body_md}
+                  </div>
+                )}
+              </Link>
+            ))}
+            {linkedNotes.length > 6 && (
+              <div className="px-7 py-3 font-serif italic text-xs text-muted-soft border-t border-rule-soft">
+                +{linkedNotes.length - 6} more in Notebook
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      <div className="flex items-center justify-between gap-3 mt-10 flex-wrap">
         <Link
           href="/bartender/specs"
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
         >
           ← Back to Specs
         </Link>
-        <Link
-          href={`/bartender/specs/${spec.id}/edit`}
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
-        >
-          Edit this spec →
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          <GPCalculatorButton
+            seed={gpSeed}
+            targetGpPct={gpTarget}
+            label="Pour-cost calculator"
+            variant="subtle"
+          />
+          <Link
+            href={`/bartender/specs/${spec.id}/edit`}
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
+          >
+            Edit spec →
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -101,6 +101,7 @@ export function RecipeForm({
     allergens: AllergenState;
     locked: boolean;
     method: string[];
+    tags?: string[];
     dish_type?: DishType;
     glass_type?: string | null;
     ice_type?: string | null;
@@ -160,6 +161,8 @@ export function RecipeForm({
   const [method, setMethod] = useState<string[]>(
     initial?.method && initial.method.length > 0 ? initial.method : [''],
   );
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
+  const [tagDraft, setTagDraft] = useState('');
   const [rows, setRows] = useState<IngredientRow[]>(
     initial && initial.ingredients.length > 0
       ? initial.ingredients.map((i) => ({
@@ -255,6 +258,7 @@ export function RecipeForm({
       allergens,
       locked,
       method: method.map((s) => s.trim()).filter((s) => s.length > 0),
+      tags: tags.map((t) => t.trim()).filter((t) => t.length > 0),
       dish_type: dishType,
       glass_type: glassType.trim() || null,
       ice_type: iceType.trim() || null,
@@ -423,6 +427,57 @@ export function RecipeForm({
             className="w-full px-3 py-2 border border-rule bg-card font-serif italic text-sm text-ink-soft resize-y min-h-[80px] focus:outline-none focus:border-gold"
             maxLength={4000}
           />
+        </Field>
+
+        <Field label="Tags">
+          <div className="flex flex-wrap items-center gap-2">
+            {tags.map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-gold-bg text-gold-dark border border-gold/40 rounded-sm"
+              >
+                {t}
+                <button
+                  type="button"
+                  onClick={() => setTags((cur) => cur.filter((x) => x !== t))}
+                  className="font-display font-semibold text-[12px] text-gold-dark hover:text-urgent transition-colors leading-none"
+                  aria-label={`Remove tag ${t}`}
+                  title={`Remove ${t}`}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  (e.key === 'Enter' || e.key === ',') &&
+                  tagDraft.trim() !== ''
+                ) {
+                  e.preventDefault();
+                  const t = tagDraft.trim().toLowerCase();
+                  setTags((cur) => (cur.includes(t) ? cur : [...cur, t]));
+                  setTagDraft('');
+                }
+              }}
+              onBlur={() => {
+                if (tagDraft.trim() !== '') {
+                  const t = tagDraft.trim().toLowerCase();
+                  setTags((cur) => (cur.includes(t) ? cur : [...cur, t]));
+                  setTagDraft('');
+                }
+              }}
+              placeholder={
+                dishType === 'food'
+                  ? 'seasonal, signature, vegan… (press enter)'
+                  : 'classic, signature, lower-abv… (press enter)'
+              }
+              className="flex-1 min-w-[180px] px-3 py-1.5 border border-rule bg-card font-serif text-sm text-ink focus:outline-none focus:border-gold"
+            />
+          </div>
         </Field>
       </Section>
 

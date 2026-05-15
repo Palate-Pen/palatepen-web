@@ -78,6 +78,7 @@ export type RecipeFormInput = {
   allergens: AllergenState;
   locked: boolean;
   method: string[];
+  tags: string[];
   dish_type: DishType;
   glass_type: string | null;
   ice_type: string | null;
@@ -183,6 +184,9 @@ export async function createRecipe(
       method: input.method
         .map((s) => s.trim())
         .filter((s) => s.length > 0) as unknown as object,
+      tags: (Array.isArray(input.tags) ? input.tags : [])
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0) as unknown as object,
       dish_type: input.dish_type,
       glass_type: input.glass_type?.trim() || null,
       ice_type: input.ice_type?.trim() || null,
@@ -257,6 +261,9 @@ export async function updateRecipe(
       method: input.method
         .map((s) => s.trim())
         .filter((s) => s.length > 0) as unknown as object,
+      tags: (Array.isArray(input.tags) ? input.tags : [])
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0) as unknown as object,
       dish_type: input.dish_type,
       glass_type: input.glass_type?.trim() || null,
       ice_type: input.ice_type?.trim() || null,

@@ -7,6 +7,10 @@ import { ALLERGENS } from '@/lib/allergens';
 import { aggregateRecipeNutrition } from '@/lib/nutrition';
 import { NutritionDisplay } from '@/components/nutrition/NutritionDisplay';
 import { ComplianceCheck } from './ComplianceCheck';
+import { GPCalculatorButton } from '@/components/gp/GPCalculatorButton';
+import { getShellContext } from '@/lib/shell/context';
+import { getAccountPreferences } from '@/lib/account-preferences';
+import { getNotesForRecipe } from '@/lib/notebook';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -32,6 +36,20 @@ export default async function RecipeDetailPage({
   const { id } = await params;
   const recipe = await getRecipe(id);
   if (!recipe) notFound();
+  const ctx = await getShellContext();
+  const accountPrefs = await getAccountPreferences(ctx.accountId);
+  const gpTarget = accountPrefs.gp_target_pct ?? 70;
+  const linkedNotes = await getNotesForRecipe(recipe.id, ctx.siteId);
+  const gpSeed = {
+    dishName: recipe.name,
+    sellPrice: recipe.sell_price,
+    lines: recipe.ingredients.map((i) => ({
+      name: i.name,
+      qty: i.qty,
+      unit: i.unit,
+      unitPrice: i.current_price,
+    })),
+  };
 
   const driftPct =
     recipe.cost_baseline != null && recipe.cost_baseline > 0 && recipe.cost_per_cover != null
@@ -338,6 +356,43 @@ export default async function RecipeDetailPage({
         </section>
       )}
 
+      {linkedNotes.length > 0 && (
+        <section className="mb-12">
+          <SectionHead
+            title="Linked Notes"
+            meta={`${linkedNotes.length} ${linkedNotes.length === 1 ? 'note' : 'notes'} reference this dish`}
+          />
+          <div className="bg-card border border-rule">
+            {linkedNotes.slice(0, 6).map((n, i) => (
+              <Link
+                key={n.id}
+                href="/notebook"
+                className={
+                  'block px-7 py-4 hover:bg-paper-warm transition-colors' +
+                  (i < Math.min(5, linkedNotes.length - 1)
+                    ? ' border-b border-rule-soft'
+                    : '')
+                }
+              >
+                <div className="font-serif font-semibold text-base text-ink">
+                  {n.title ?? 'Note'}
+                </div>
+                {n.body_md && (
+                  <div className="font-serif italic text-sm text-muted mt-1 line-clamp-2">
+                    {n.body_md}
+                  </div>
+                )}
+              </Link>
+            ))}
+            {linkedNotes.length > 6 && (
+              <div className="px-7 py-3 font-serif italic text-xs text-muted-soft border-t border-rule-soft">
+                +{linkedNotes.length - 6} more in Notebook
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       <div className="mt-10 flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/recipes"
@@ -345,12 +400,20 @@ export default async function RecipeDetailPage({
         >
           ← Back to Recipes
         </Link>
-        <Link
-          href={`/recipes/${recipe.id}/edit`}
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
-        >
-          Edit recipe →
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          <GPCalculatorButton
+            seed={gpSeed}
+            targetGpPct={gpTarget}
+            label="GP calculator"
+            variant="subtle"
+          />
+          <Link
+            href={`/recipes/${recipe.id}/edit`}
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
+          >
+            Edit recipe →
+          </Link>
+        </div>
       </div>
     </div>
   );

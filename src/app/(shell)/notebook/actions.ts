@@ -23,6 +23,7 @@ export async function addNoteEntry(input: {
   title: string;
   body_md: string;
   shared: boolean;
+  linkedRecipeIds?: string[];
 }): Promise<ActionResult> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -44,6 +45,10 @@ export async function addNoteEntry(input: {
 
   const tags: NotebookTag[] = extractTags(`${title} ${body}`);
 
+  const linkedIds = (input.linkedRecipeIds ?? [])
+    .filter((s): s is string => typeof s === 'string' && s.length > 0)
+    .slice(0, 12);
+
   const { data, error } = await supabase
     .from('notebook_entries')
     .insert({
@@ -53,6 +58,7 @@ export async function addNoteEntry(input: {
       title,
       body_md: body || null,
       tags: tags as unknown as object,
+      linked_recipe_ids: linkedIds,
       shared: input.shared,
     })
     .select('id')
@@ -62,6 +68,11 @@ export async function addNoteEntry(input: {
   }
 
   revalidatePath('/notebook');
+  revalidatePath('/bartender/notebook');
+  for (const rid of linkedIds) {
+    revalidatePath(`/recipes/${rid}`);
+    revalidatePath(`/bartender/specs/${rid}`);
+  }
   return { ok: true, id: data.id as string };
 }
 

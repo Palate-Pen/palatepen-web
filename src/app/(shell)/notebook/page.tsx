@@ -1,9 +1,10 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getNotebookData } from '@/lib/notebook';
 import { getUserPreferences } from '@/lib/preferences';
+import { getRecipes } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
-import { AddNoteDialog } from './AddNoteDialog';
+import { AddNoteDialog, type RecipeOption } from './AddNoteDialog';
 import { CaptureSoonButton } from './CaptureSoonButton';
 import { NotebookFilters } from './NotebookFilters';
 
@@ -76,10 +77,16 @@ const seasonCards: Array<{
 
 export default async function NotebookPage() {
   const ctx = await getShellContext();
-  const [data, prefs] = await Promise.all([
+  const [data, prefs, recipes] = await Promise.all([
     getNotebookData(ctx.siteId),
     getUserPreferences(ctx.userId),
+    getRecipes(ctx.siteId),
   ]);
+  const recipeOptions: RecipeOption[] = recipes.map((r) => ({
+    id: r.id,
+    name: r.name,
+    dish_type: r.dish_type,
+  }));
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
@@ -114,7 +121,10 @@ export default async function NotebookPage() {
             <path d="M14 8h7v7" />
             <path d="M3 21h18" />
           </CaptureSoonButton>
-          <AddNoteDialog defaultShared={prefs.team_view_notebook} />
+          <AddNoteDialog
+            defaultShared={prefs.team_view_notebook}
+            recipeOptions={recipeOptions}
+          />
         </div>
       </div>
 

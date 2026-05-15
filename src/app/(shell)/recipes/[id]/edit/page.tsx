@@ -42,6 +42,7 @@ export default async function EditRecipePage({
     allergens: recipe.allergens,
     locked: recipe.locked,
     method: recipe.method,
+    tags: recipe.tags,
     dish_type: recipe.dish_type,
     glass_type: recipe.glass_type,
     ice_type: recipe.ice_type,

@@ -1,17 +1,27 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { addNoteEntry } from './actions';
+
+export type RecipeOption = {
+  id: string;
+  name: string;
+  dish_type: string;
+};
 
 export function AddNoteDialog({
   defaultShared = true,
+  recipeOptions = [],
 }: {
   defaultShared?: boolean;
+  recipeOptions?: RecipeOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [shared, setShared] = useState(defaultShared);
+  const [linkedIds, setLinkedIds] = useState<string[]>([]);
+  const [recipeSearch, setRecipeSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -19,8 +29,23 @@ export function AddNoteDialog({
     setTitle('');
     setBody('');
     setShared(defaultShared);
+    setLinkedIds([]);
+    setRecipeSearch('');
     setError(null);
   }
+
+  const optionsById = useMemo(
+    () => new Map(recipeOptions.map((r) => [r.id, r])),
+    [recipeOptions],
+  );
+
+  const filteredOptions = useMemo(() => {
+    const q = recipeSearch.trim().toLowerCase();
+    return recipeOptions
+      .filter((r) => !linkedIds.includes(r.id))
+      .filter((r) => (q ? r.name.toLowerCase().includes(q) : true))
+      .slice(0, 8);
+  }, [recipeOptions, linkedIds, recipeSearch]);
 
   function close() {
     setOpen(false);
@@ -40,6 +65,7 @@ export function AddNoteDialog({
         title: t,
         body_md: body,
         shared,
+        linkedRecipeIds: linkedIds,
       });
       if (!res.ok) {
         setError(humaniseError(res.error));
@@ -115,6 +141,71 @@ export function AddNoteDialog({
                   maxLength={4000}
                 />
               </Field>
+
+              {recipeOptions.length > 0 && (
+                <Field label="Link to recipes / specs (optional)">
+                  <div className="flex flex-col gap-2">
+                    {linkedIds.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {linkedIds.map((rid) => {
+                          const r = optionsById.get(rid);
+                          if (!r) return null;
+                          return (
+                            <span
+                              key={rid}
+                              className="inline-flex items-center gap-1.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-gold-bg text-gold-dark border border-gold/40 rounded-sm"
+                            >
+                              {r.name}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setLinkedIds((cur) =>
+                                    cur.filter((id) => id !== rid),
+                                  )
+                                }
+                                className="text-gold-dark hover:text-urgent transition-colors leading-none"
+                                aria-label={`Unlink ${r.name}`}
+                                title={`Unlink ${r.name}`}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      value={recipeSearch}
+                      onChange={(e) => setRecipeSearch(e.target.value)}
+                      placeholder="Search recipes and specs to link…"
+                      className="w-full px-3 py-2 border border-rule bg-card font-serif text-sm text-ink focus:outline-none focus:border-gold"
+                    />
+                    {recipeSearch && filteredOptions.length > 0 && (
+                      <div className="border border-rule bg-card max-h-[160px] overflow-y-auto">
+                        {filteredOptions.map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => {
+                              setLinkedIds((cur) =>
+                                cur.includes(r.id) ? cur : [...cur, r.id],
+                              );
+                              setRecipeSearch('');
+                            }}
+                            className="block w-full text-left px-3 py-2 font-serif text-sm text-ink hover:bg-paper-warm transition-colors border-b border-rule-soft last:border-b-0"
+                          >
+                            {r.name}
+                            <span className="ml-2 font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+                              {r.dish_type === 'food' ? 'dish' : r.dish_type}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Field>
+              )}
 
               <label className="flex items-center gap-3 cursor-pointer select-none">
                 <input

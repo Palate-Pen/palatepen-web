@@ -87,3 +87,35 @@ export async function getNotebookData(
     seasonal_count: entries.filter((e) => e.season_label != null).length,
   };
 }
+
+/**
+ * Reverse lookup: which notebook entries reference this recipe via
+ * linked_recipe_ids? Used by the chef Recipe detail + bar Spec detail
+ * "Linked notes" panel.
+ */
+export async function getNotesForRecipe(
+  recipeId: string,
+  siteId: string,
+): Promise<
+  Array<{
+    id: string;
+    title: string | null;
+    body_md: string | null;
+    created_at: string;
+  }>
+> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('notebook_entries')
+    .select('id, title, body_md, created_at')
+    .eq('site_id', siteId)
+    .is('archived_at', null)
+    .contains('linked_recipe_ids', [recipeId])
+    .order('created_at', { ascending: false });
+  return (data ?? []) as Array<{
+    id: string;
+    title: string | null;
+    body_md: string | null;
+    created_at: string;
+  }>;
+}

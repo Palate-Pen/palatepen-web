@@ -4,6 +4,7 @@ import { getRecipes, type Recipe } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { AllergenChips } from '@/components/allergens/AllergenPanel';
+import { TagCloud, buildTagCloud } from '@/components/shell/TagCloud';
 
 export const metadata = { title: 'Recipes — Palatable' };
 
@@ -19,9 +20,19 @@ const qtyFmt = new Intl.NumberFormat('en-GB', {
 
 const DRIFT_THRESHOLD = 0.03; // 3% drift = "needs a look"
 
-export default async function RecipesPage() {
+export default async function RecipesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tag?: string }>;
+}) {
   const ctx = await getShellContext();
-  const recipes = await getRecipes(ctx.siteId);
+  const sp = searchParams ? await searchParams : {};
+  const activeTag = sp?.tag?.toLowerCase().trim() || null;
+  const allRecipes = await getRecipes(ctx.siteId);
+  const recipes = activeTag
+    ? allRecipes.filter((r) => r.tags.includes(activeTag))
+    : allRecipes;
+  const tagCloud = buildTagCloud(allRecipes);
 
   const costed = recipes.filter((r) => r.cost_per_cover != null);
   const avgCpc =
@@ -101,10 +112,22 @@ export default async function RecipesPage() {
         </div>
       )}
 
+      {tagCloud.length > 0 && (
+        <div className="mb-8">
+          <TagCloud
+            cloud={tagCloud}
+            basePath="/recipes"
+            activeTag={activeTag}
+          />
+        </div>
+      )}
+
       {recipes.length === 0 ? (
         <div className="bg-card border border-rule px-10 py-16 text-center">
           <div className="font-serif text-2xl text-ink mb-2">
-            Nothing in the recipe book yet.
+            {activeTag
+              ? `No recipes tagged "${activeTag}" yet.`
+              : 'Nothing in the recipe book yet.'}
           </div>
           <p className="font-serif italic text-muted">
             Add a dish — link its ingredients to The Bank — and the cost-per-cover stays current as supplier prices move.
@@ -164,6 +187,23 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
           recipe.allergens.mayContain.length > 0) && (
           <div className="mt-3">
             <AllergenChips value={recipe.allergens} size="sm" />
+          </div>
+        )}
+        {recipe.tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {recipe.tags.slice(0, 4).map((t) => (
+              <span
+                key={t}
+                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
+              >
+                {t}
+              </span>
+            ))}
+            {recipe.tags.length > 4 && (
+              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+                +{recipe.tags.length - 4}
+              </span>
+            )}
           </div>
         )}
       </div>

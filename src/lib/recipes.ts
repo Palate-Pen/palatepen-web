@@ -50,6 +50,8 @@ export type Recipe = {
   locked: boolean;
   photo_url: string | null;
   method: string[];
+  /** Ad-hoc free-text tags. Filter on /recipes + /bartender/specs. */
+  tags: string[];
   /** Bar fields — meaningful when dish_type !== 'food'. */
   dish_type: DishType;
   glass_type: string | null;
@@ -69,9 +71,14 @@ export type Recipe = {
 };
 
 const RECIPE_COLUMNS =
-  'id, site_id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url, method, dish_type, glass_type, ice_type, technique, pour_ml, garnish';
+  'id, site_id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url, method, tags, dish_type, glass_type, ice_type, technique, pour_ml, garnish';
 const RECIPE_LIST_COLUMNS =
-  'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url, method, dish_type, glass_type, ice_type, technique, pour_ml, garnish';
+  'id, name, menu_section, serves, portion_per_cover, sell_price, notes, cost_baseline, costed_at, allergens, locked, photo_url, method, tags, dish_type, glass_type, ice_type, technique, pour_ml, garnish';
+
+function parseTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((t): t is string => typeof t === 'string' && t.length > 0);
+}
 
 /**
  * For unit-aware costing. When the recipe ingredient is measured in
@@ -187,6 +194,7 @@ export async function getRecipe(
     locked: Boolean(r.locked),
     photo_url: (r.photo_url as string | null) ?? null,
     method: parseMethod(r.method),
+    tags: parseTags(r.tags),
     dish_type: ((r.dish_type as string) ?? 'food') as DishType,
     glass_type: (r.glass_type as string | null) ?? null,
     ice_type: (r.ice_type as string | null) ?? null,
@@ -307,6 +315,7 @@ export async function getRecipes(
       locked: Boolean(r.locked),
       photo_url: (r.photo_url as string | null) ?? null,
       method: parseMethod(r.method),
+      tags: parseTags(r.tags),
       dish_type: ((r.dish_type as string) ?? 'food') as DishType,
       glass_type: (r.glass_type as string | null) ?? null,
       ice_type: (r.ice_type as string | null) ?? null,

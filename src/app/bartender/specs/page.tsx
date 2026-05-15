@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getRecipes, type Recipe } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { TagCloud, buildTagCloud } from '@/components/shell/TagCloud';
 import { BAR_DISH_TYPES, POUR_COST_BANDS } from '@/lib/bar';
 
 export const metadata = { title: 'Specs — Bar — Palatable' };
@@ -22,9 +23,21 @@ const TECHNIQUE_LABEL: Record<string, string> = {
   blended: 'Blended',
 };
 
-export default async function BarSpecsPage() {
+export default async function BarSpecsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tag?: string; type?: string }>;
+}) {
   const ctx = await getShellContext();
-  const specs = await getRecipes(ctx.siteId, { dishTypes: BAR_DISH_TYPES });
+  const sp = searchParams ? await searchParams : {};
+  const activeTag = sp?.tag?.toLowerCase().trim() || null;
+  const allSpecs = await getRecipes(ctx.siteId, {
+    dishTypes: BAR_DISH_TYPES,
+  });
+  const specs = activeTag
+    ? allSpecs.filter((r) => r.tags.includes(activeTag))
+    : allSpecs;
+  const tagCloud = buildTagCloud(allSpecs);
 
   const costed = specs.filter((s) => s.cost_per_cover != null);
   const avgCost =
@@ -100,10 +113,22 @@ export default async function BarSpecsPage() {
         </div>
       )}
 
+      {tagCloud.length > 0 && (
+        <div className="mb-8">
+          <TagCloud
+            cloud={tagCloud}
+            basePath="/bartender/specs"
+            activeTag={activeTag}
+          />
+        </div>
+      )}
+
       {specs.length === 0 ? (
         <div className="bg-card border border-rule px-10 py-16 text-center">
           <div className="font-serif text-2xl text-ink mb-2">
-            Nothing on the list yet.
+            {activeTag
+              ? `No specs tagged "${activeTag}" yet.`
+              : 'Nothing on the list yet.'}
           </div>
           <p className="font-serif italic text-muted">
             Add a spec — link its components to the Cellar — and the cost-per-pour stays current as bottle prices move.
@@ -189,6 +214,23 @@ function SpecCard({ spec }: { spec: Recipe }) {
         {spec.menu_section && (
           <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold mt-2">
             {spec.menu_section}
+          </div>
+        )}
+        {spec.tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {spec.tags.slice(0, 4).map((t) => (
+              <span
+                key={t}
+                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
+              >
+                {t}
+              </span>
+            ))}
+            {spec.tags.length > 4 && (
+              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+                +{spec.tags.length - 4}
+              </span>
+            )}
           </div>
         )}
       </div>
