@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { saveGPCalcAction } from './actions';
+import type { GPCalcRow } from '@/lib/gp-calculations';
 
 const gbp = new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -57,6 +59,7 @@ export function GPCalculatorModal({
   onClose,
   targetGpPct = 70,
   seed,
+  history = [],
 }: {
   open: boolean;
   onClose: () => void;
@@ -64,6 +67,8 @@ export function GPCalculatorModal({
   targetGpPct?: number;
   /** Pre-fill from an existing recipe / spec. */
   seed?: GPCalcSeed;
+  /** Past saved calcs for the current site (most recent first). */
+  history?: GPCalcRow[];
 }) {
   const [dishName, setDishName] = useState(seed?.dishName ?? '');
   const [sellPrice, setSellPrice] = useState<string>(
@@ -99,6 +104,10 @@ export function GPCalculatorModal({
       );
     }
   }, [open, seed]);
+
+  const [saving, startSave] = useTransition();
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const totals = useMemo(() => {
     const totalCost = lines.reduce((sum, l) => {
@@ -349,13 +358,106 @@ export function GPCalculatorModal({
             />
           </div>
 
-          <p className="font-serif italic text-sm text-muted mt-6">
-            Not saved — this is a calculator. To set a real margin baseline,{' '}
-            <span className="not-italic font-semibold text-ink">
-              edit the recipe directly
-            </span>{' '}
-            and update the sell price there.
-          </p>
+          <div className="mt-6 flex items-center gap-3 flex-wrap pt-6 border-t border-rule">
+            <button
+              type="button"
+              onClick={() => {
+                setSaveError(null);
+                if (!dishName.trim()) {
+                  setSaveError('Give the calc a dish name first.');
+                  return;
+                }
+                startSave(async () => {
+                  const res = await saveGPCalcAction({
+                    dishName,
+                    sellPrice: Number.isFinite(Number(sellPrice))
+                      ? Number(sellPrice)
+                      : null,
+                    totalCost: Math.round(totals.totalCost * 100) / 100,
+                    gpPct: totals.gpPct,
+                    pourCostPct: totals.pourCostPct,
+                    lines: lines.map((l) => ({
+                      name: l.name,
+                      qty: Number(l.qty) || 0,
+                      unit: l.unit,
+                      unit_price: Number.isFinite(Number(l.unitPrice))
+                        ? Number(l.unitPrice)
+                        : null,
+                    })),
+                  });
+                  if (!res.ok) {
+                    setSaveError(res.error);
+                    return;
+                  }
+                  setSavedId(res.data?.id ?? null);
+                });
+              }}
+              disabled={saving}
+              className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-gold text-paper border border-gold hover:bg-gold-dark disabled:opacity-50 transition-colors"
+            >
+              {saving ? 'Saving…' : 'Save calc'}
+            </button>
+            {savedId && !saving && (
+              <span className="font-serif italic text-sm text-healthy">
+                ✓ Saved — appears in history below.
+              </span>
+            )}
+            {saveError && (
+              <span className="font-serif italic text-sm text-urgent">
+                {saveError}
+              </span>
+            )}
+            <span className="font-serif italic text-sm text-muted ml-auto">
+              Calc only — doesn't change the recipe baseline.
+            </span>
+          </div>
+
+          {history.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-rule">
+              <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-muted mb-4">
+                History ({history.length} saved)
+              </div>
+              <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                {history.slice(0, 12).map((h) => (
+                  <div
+                    key={h.id}
+                    className="flex items-baseline justify-between gap-3 px-4 py-2 border border-rule bg-card hover:border-gold transition-colors"
+                  >
+                    <div>
+                      <div className="font-serif font-semibold text-sm text-ink">
+                        {h.dish_name}
+                      </div>
+                      <div className="font-serif italic text-xs text-muted">
+                        {new Date(h.created_at).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                        {h.notes ? ` · ${h.notes.slice(0, 60)}` : ''}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div
+                        className={
+                          'font-serif font-semibold text-sm ' +
+                          (h.gp_pct != null && h.gp_pct >= targetGpPct
+                            ? 'text-healthy'
+                            : h.gp_pct != null && h.gp_pct >= targetGpPct - 5
+                              ? 'text-attention'
+                              : 'text-urgent')
+                        }
+                      >
+                        {h.gp_pct != null ? `${h.gp_pct.toFixed(0)}% GP` : '—'}
+                      </div>
+                      <div className="font-serif italic text-xs text-muted">
+                        cost {gbp.format(h.total_cost)}
+                        {h.sell_price != null ? ` · sell ${gbp.format(h.sell_price)}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { GPCalculatorButton } from '@/components/gp/GPCalculatorButton';
 import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
+import { getGPHistory } from '@/lib/gp-calculations';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -40,6 +41,7 @@ export default async function RecipeDetailPage({
   const accountPrefs = await getAccountPreferences(ctx.accountId);
   const gpTarget = accountPrefs.gp_target_pct ?? 70;
   const linkedNotes = await getNotesForRecipe(recipe.id, ctx.siteId);
+  const gpHistory = await getGPHistory(ctx.siteId);
   const gpSeed = {
     dishName: recipe.name,
     sellPrice: recipe.sell_price,
@@ -416,6 +418,7 @@ export default async function RecipeDetailPage({
             targetGpPct={gpTarget}
             label="GP calculator"
             variant="subtle"
+            history={gpHistory}
           />
           <Link
             href={`/recipes/${recipe.id}/edit`}

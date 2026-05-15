@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { PreferenceToggle } from './PreferenceToggle';
 import { InboxTokenPanel } from './InboxTokenPanel';
 import { AccountPreferencesPanel } from './AccountPreferencesPanel';
+import { KpiCard } from '@/components/shell/KpiCard';
 
 export const metadata = { title: 'Settings — Palatable' };
 
@@ -25,6 +26,34 @@ export default async function SettingsPage() {
   const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
   const isFounder = ctx.email === 'jack@palateandpen.co.uk';
   const isOwner = ctx.role === 'owner';
+
+  // Profile stats — counts across the chef's site, mirrors legacy
+  // ProfileScreen dashboard ("Recipes / Ideas / In Bank / GP Calcs").
+  const [
+    recipesCount,
+    notesCount,
+    bankCount,
+    gpCalcsCount,
+  ] = await Promise.all([
+    supabase
+      .from('recipes')
+      .select('id', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
+      .is('archived_at', null),
+    supabase
+      .from('notebook_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
+      .is('archived_at', null),
+    supabase
+      .from('ingredients')
+      .select('id', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId),
+    supabase
+      .from('gp_calculations')
+      .select('id', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId),
+  ]);
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[800px] mx-auto">
@@ -58,6 +87,31 @@ export default async function SettingsPage() {
           )}
         </Section>
       )}
+
+      <Section title="At A Glance">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule">
+          <KpiCard
+            label="Recipes"
+            value={String(recipesCount.count ?? 0)}
+            sub="on the books"
+          />
+          <KpiCard
+            label="Notebook"
+            value={String(notesCount.count ?? 0)}
+            sub="entries"
+          />
+          <KpiCard
+            label="In The Bank"
+            value={String(bankCount.count ?? 0)}
+            sub="ingredients on file"
+          />
+          <KpiCard
+            label="GP Calcs"
+            value={String(gpCalcsCount.count ?? 0)}
+            sub="saved scratch pads"
+          />
+        </div>
+      </Section>
 
       <AccessibilitySettings />
 

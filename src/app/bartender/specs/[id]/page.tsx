@@ -8,6 +8,7 @@ import { GPCalculatorButton } from '@/components/gp/GPCalculatorButton';
 import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
+import { getGPHistory } from '@/lib/gp-calculations';
 
 export const metadata = { title: 'Spec — Bar — Palatable' };
 
@@ -39,6 +40,7 @@ export default async function SpecDetailPage({
   const accountPrefs = await getAccountPreferences(ctx.accountId);
   const gpTarget = accountPrefs.gp_target_pct ?? 70;
   const linkedNotes = await getNotesForRecipe(spec.id, ctx.siteId);
+  const gpHistory = await getGPHistory(ctx.siteId);
   const gpSeed = {
     dishName: spec.name,
     sellPrice: spec.sell_price,
@@ -350,6 +352,7 @@ export default async function SpecDetailPage({
             targetGpPct={gpTarget}
             label="Pour-cost calculator"
             variant="subtle"
+            history={gpHistory}
           />
           <Link
             href={`/bartender/specs/${spec.id}/edit`}

@@ -89,6 +89,7 @@ export function RecipeForm({
   bankIngredients,
   siteId,
   defaultDishType = 'food',
+  defaultSyncToBank = false,
   redirectOnSave,
 }: {
   mode: 'create' | 'edit';
@@ -124,6 +125,9 @@ export function RecipeForm({
   /** Default dish type when creating a new recipe. Bar shell sets this
    *  to 'cocktail' so the bar fields show by default. */
   defaultDishType?: DishType;
+  /** When true, the "Sync new ingredients to Bank" toggle starts on.
+   *  URL import flips this to true so chefs get the lazy path. */
+  defaultSyncToBank?: boolean;
   /** Where to send the chef after a successful save. Defaults to
    *  /recipes/[id]; bar uses /bartender/specs/[id]. */
   redirectOnSave?: (id: string) => string;
@@ -171,6 +175,7 @@ export function RecipeForm({
   const [photoUrl, setPhotoUrl] = useState<string | null>(
     initial?.photo_url ?? null,
   );
+  const [syncToBank, setSyncToBank] = useState<boolean>(defaultSyncToBank);
   const [rows, setRows] = useState<IngredientRow[]>(
     initial && initial.ingredients.length > 0
       ? initial.ingredients.map((i) => ({
@@ -268,6 +273,7 @@ export function RecipeForm({
       method: method.map((s) => s.trim()).filter((s) => s.length > 0),
       tags: tags.map((t) => t.trim()).filter((t) => t.length > 0),
       photo_url: photoUrl,
+      sync_to_bank: syncToBank,
       dish_type: dishType,
       glass_type: glassType.trim() || null,
       ice_type: iceType.trim() || null,
@@ -672,6 +678,25 @@ export function RecipeForm({
         >
           + Add ingredient
         </button>
+
+        <label className="flex items-start gap-3 cursor-pointer select-none mt-5 pt-4 border-t border-rule-soft">
+          <input
+            type="checkbox"
+            checked={syncToBank}
+            onChange={(e) => setSyncToBank(e.target.checked)}
+            className="accent-gold w-4 h-4 mt-0.5"
+          />
+          <div>
+            <div className="font-serif text-sm text-ink">
+              Sync new ingredients to The Bank on save
+            </div>
+            <div className="font-serif italic text-xs text-muted mt-0.5">
+              Any ingredient line not yet in The Bank gets created there
+              + linked back so future cost-updates flow through. Matches
+              existing Bank entries by name, case-insensitive.
+            </div>
+          </div>
+        </label>
       </Section>
 
       {error && (

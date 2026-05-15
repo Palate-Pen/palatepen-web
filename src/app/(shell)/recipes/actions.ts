@@ -97,6 +97,10 @@ export type RecipeFormInput = {
   technique: CocktailTechnique | null;
   pour_ml: number | null;
   garnish: string | null;
+  /** When true, any ingredient row WITHOUT an ingredient_id will also
+   *  be inserted into v2.ingredients on save and back-linked. Default
+   *  ON for URL-imported recipes (lazy path); chef can untick. */
+  sync_to_bank?: boolean;
   ingredients: Array<{
     name: string;
     qty: number;
@@ -150,6 +154,81 @@ function validate(input: RecipeFormInput): string | null {
     if (!ing.unit.trim()) return `ingredient_${i}_unit_required`;
   }
   return null;
+}
+
+/**
+ * For each ingredient line without an ingredient_id, try to find a
+ * Bank match by name (case-insensitive) first; if no match, insert a
+ * new Bank ingredient and back-fill the FK on the line. Mutates the
+ * input array in place. Used by both create + update flows when
+ * sync_to_bank is true on the form input.
+ */
+async function syncIngredientsToBank(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  siteId: string,
+  ingredients: RecipeFormInput['ingredients'],
+): Promise<{ created: number; matched: number }> {
+  const unmatched = ingredients.filter(
+    (i) => !i.ingredient_id && i.name.trim() !== '',
+  );
+  if (unmatched.length === 0) return { created: 0, matched: 0 };
+
+  // Try to match by name first (existing bank entries)
+  const names = unmatched.map((i) => i.name.trim().toLowerCase());
+  const { data: existing } = await supabase
+    .from('ingredients')
+    .select('id, name')
+    .eq('site_id', siteId)
+    .in('name', unmatched.map((i) => i.name.trim()));
+  // Case-insensitive lookup table
+  const byLower = new Map<string, string>();
+  for (const e of existing ?? []) {
+    byLower.set((e.name as string).toLowerCase(), e.id as string);
+  }
+
+  let matched = 0;
+  const toCreate: Array<{ idx: number; name: string; unit: string }> = [];
+  for (const ing of unmatched) {
+    const lower = ing.name.trim().toLowerCase();
+    const hit = byLower.get(lower);
+    if (hit) {
+      ing.ingredient_id = hit;
+      matched += 1;
+    } else {
+      toCreate.push({
+        idx: ingredients.indexOf(ing),
+        name: ing.name.trim(),
+        unit: ing.unit,
+      });
+    }
+  }
+
+  if (toCreate.length === 0) return { created: 0, matched };
+
+  // Bulk-insert the new bank entries
+  const { data: created } = await supabase
+    .from('ingredients')
+    .insert(
+      toCreate.map((c) => ({
+        site_id: siteId,
+        name: c.name,
+        unit: c.unit,
+      })),
+    )
+    .select('id, name');
+
+  // Back-fill ingredient_id on the form's lines
+  const createdByName = new Map<string, string>();
+  for (const row of created ?? []) {
+    createdByName.set((row.name as string).toLowerCase(), row.id as string);
+  }
+  for (const c of toCreate) {
+    const id = createdByName.get(c.name.toLowerCase());
+    if (id) ingredients[c.idx].ingredient_id = id;
+  }
+
+  void names; // silence unused
+  return { created: toCreate.length, matched };
 }
 
 /**
@@ -213,6 +292,10 @@ export async function createRecipe(
     return { ok: false, error: recipeErr?.message ?? 'insert_failed' };
   }
   const recipeId = newRow.id as string;
+
+  if (input.sync_to_bank) {
+    await syncIngredientsToBank(supabase, siteId, input.ingredients);
+  }
 
   if (input.ingredients.length > 0) {
     const rows = input.ingredients.map((ing, i) => ({
@@ -293,6 +376,18 @@ export async function updateRecipe(
     .delete()
     .eq('recipe_id', recipeId);
   if (delErr) return { ok: false, error: delErr.message };
+
+  if (input.sync_to_bank) {
+    const { data: recipeRow } = await supabase
+      .from('recipes')
+      .select('site_id')
+      .eq('id', recipeId)
+      .single();
+    const siteId = recipeRow?.site_id as string | undefined;
+    if (siteId) {
+      await syncIngredientsToBank(supabase, siteId, input.ingredients);
+    }
+  }
 
   if (input.ingredients.length > 0) {
     const rows = input.ingredients.map((ing, i) => ({

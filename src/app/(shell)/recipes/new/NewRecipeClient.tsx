@@ -221,6 +221,7 @@ export function NewRecipeClient({
         initial={initial}
         bankIngredients={bankIngredients}
         defaultDishType={defaultDishType}
+        defaultSyncToBank={!!prefill}
         redirectOnSave={redirectOnSave}
       />
     </>

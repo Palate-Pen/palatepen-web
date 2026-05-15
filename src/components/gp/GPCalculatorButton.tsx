@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { GPCalculatorModal, type GPCalcSeed } from './GPCalculatorModal';
+import type { GPCalcRow } from '@/lib/gp-calculations';
 
 /**
  * Tiny client wrapper that owns the open/close state and lets a server-
@@ -13,11 +14,13 @@ export function GPCalculatorButton({
   targetGpPct = 70,
   label = 'GP calculator',
   variant = 'subtle',
+  history = [],
 }: {
   seed?: GPCalcSeed;
   targetGpPct?: number;
   label?: string;
   variant?: 'subtle' | 'primary';
+  history?: GPCalcRow[];
 }) {
   const [open, setOpen] = useState(false);
   const buttonClass =
@@ -34,6 +37,7 @@ export function GPCalculatorButton({
         onClose={() => setOpen(false)}
         seed={seed}
         targetGpPct={targetGpPct}
+        history={history}
       />
     </>
   );
