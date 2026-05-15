@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
-const PUBLIC_PREFIXES = ['/signin', '/signup', '/auth/callback', '/m/'];
+const PUBLIC_PREFIXES = [
+  '/signin',
+  '/signup',
+  '/auth/callback',
+  '/m/',
+  '/landing',
+  '/coming-soon-feature',
+];
 
 // Routes that authenticate themselves (Bearer token, webhook secret, etc.)
 // and must not be redirected to /signin when there's no cookie session.
@@ -71,6 +78,13 @@ export async function middleware(request: NextRequest) {
 
   const { response, user } = await updateSession(request);
   const isPublic = PUBLIC_PREFIXES.some((p) => path.startsWith(p));
+
+  // Unauthenticated `/` on the app host renders the public Palatable
+  // landing page instead of bouncing to /signin. URL stays as `/`.
+  // Founder still has direct access by typing /signin.
+  if (!user && path === '/') {
+    return NextResponse.rewrite(new URL('/landing', request.url));
+  }
 
   if (!user && !isPublic) {
     const signinUrl = new URL('/signin', request.url);
