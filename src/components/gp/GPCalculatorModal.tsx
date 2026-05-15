@@ -60,6 +60,7 @@ export function GPCalculatorModal({
   targetGpPct = 70,
   seed,
   history = [],
+  costPctLabel = 'Food cost',
 }: {
   open: boolean;
   onClose: () => void;
@@ -69,6 +70,10 @@ export function GPCalculatorModal({
   seed?: GPCalcSeed;
   /** Past saved calcs for the current site (most recent first). */
   history?: GPCalcRow[];
+  /** Label for the cost-as-percentage tile. Chef "Food cost", bar
+   *  "Pour cost". The underlying number (cost ÷ sell × 100) is the
+   *  same — just different naming conventions per surface. */
+  costPctLabel?: string;
 }) {
   const [dishName, setDishName] = useState(seed?.dishName ?? '');
   const [sellPrice, setSellPrice] = useState<string>(
@@ -335,7 +340,7 @@ export function GPCalculatorModal({
               }
             />
             <Tile
-              label="Pour cost"
+              label={costPctLabel}
               value={
                 totals.pourCostPct != null
                   ? `${totals.pourCostPct.toFixed(0)}%`

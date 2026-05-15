@@ -15,12 +15,15 @@ export function GPCalculatorButton({
   label = 'GP calculator',
   variant = 'subtle',
   history = [],
+  costPctLabel,
 }: {
   seed?: GPCalcSeed;
   targetGpPct?: number;
   label?: string;
   variant?: 'subtle' | 'primary';
   history?: GPCalcRow[];
+  /** "Food cost" (chef, default) or "Pour cost" (bar). */
+  costPctLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const buttonClass =
@@ -38,6 +41,7 @@ export function GPCalculatorButton({
         seed={seed}
         targetGpPct={targetGpPct}
         history={history}
+        costPctLabel={costPctLabel}
       />
     </>
   );

@@ -389,6 +389,7 @@ export default async function SpecDetailPage({
             label="Pour-cost calculator"
             variant="subtle"
             history={gpHistory}
+            costPctLabel="Pour cost"
           />
           <Link
             href={`/bartender/specs/${spec.id}/edit`}
