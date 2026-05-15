@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
+import type { NotebookTag } from '@/lib/notebook-shared';
 
 export const metadata = { title: 'Notebook — Bar — Palatable' };
 
@@ -16,7 +18,7 @@ type NotebookEntry = {
   title: string | null;
   body_md: string | null;
   kind: string;
-  tags: string[] | null;
+  tags: NotebookTag[] | null;
   created_at: string;
 };
 
@@ -34,7 +36,7 @@ export default async function BarNotebookPage() {
   const entries = (data ?? []) as NotebookEntry[];
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -47,12 +49,15 @@ export default async function BarNotebookPage() {
             Spec ideas, customer feedback, supplier notes, cocktail experiments. Shared with the kitchen on cross-over ingredients.
           </p>
         </div>
-        <Link
-          href="/notebook"
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
-        >
-          + Add note
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap print-hide">
+          {entries.length > 0 && <PrintButton label="Print bar notebook" />}
+          <Link
+            href="/notebook"
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+          >
+            + Add note
+          </Link>
+        </div>
       </div>
 
       <SectionHead
@@ -95,12 +100,12 @@ function EntryCard({ entry }: { entry: NotebookEntry }) {
       )}
       {entry.tags && entry.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {entry.tags.map((t) => (
+          {entry.tags.map((t, i) => (
             <span
-              key={t}
+              key={`${t.kind}-${t.text}-${i}`}
               className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
             >
-              {t}
+              {t.text}
             </span>
           ))}
         </div>
