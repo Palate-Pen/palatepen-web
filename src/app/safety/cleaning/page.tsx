@@ -9,7 +9,7 @@ import {
 } from '@/components/safety/SafetyPageHeader';
 import { SafetyLookingAhead } from '@/components/safety/SafetyLookingAhead';
 import { CleaningTickRow } from './CleaningTickRow';
-import { seedDefaultCleaningTasksFormAction } from '@/lib/safety/actions';
+import { SeedScheduleButton } from './SeedScheduleButton';
 
 export const metadata = { title: 'Cleaning schedule · Safety · Palatable' };
 
@@ -87,16 +87,10 @@ export default async function CleaningPage() {
             No cleaning schedule yet
           </div>
           <p className="font-serif italic text-base text-ink-soft leading-relaxed mb-5">
-            Seed the default SFBB-aligned schedule (14 tasks across kitchen, FOH, bar, storage). Every row is editable afterwards.
+            Seed the default SFBB-aligned schedule (14 tasks across kitchen, FOH, bar, storage) for{' '}
+            <strong className="not-italic font-semibold text-ink">{ctx.kitchenName}</strong>. Every row is editable afterwards.
           </p>
-          <form action={seedDefaultCleaningTasksFormAction}>
-            <button
-              type="submit"
-              className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
-            >
-              Seed default schedule
-            </button>
-          </form>
+          <SeedScheduleButton siteId={ctx.siteId} />
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">

@@ -263,14 +263,20 @@ export async function signoffCleaningTaskAction(
   return { ok: true };
 }
 
-/** Form-compatible wrapper — returns void so `<form action={...}>` type-checks. */
-export async function seedDefaultCleaningTasksFormAction(): Promise<void> {
-  await seedDefaultCleaningTasksAction();
-}
-
-/** Seed the default SFBB-aligned cleaning schedule. Idempotent — if any
- *  tasks exist it does nothing. */
-export async function seedDefaultCleaningTasksAction(): Promise<ActionResult> {
+/**
+ * Seed the default SFBB-aligned cleaning schedule for a given site.
+ *
+ * Scoped to a specific `siteId` rather than the user's first
+ * membership — chefs with multi-site access (founder jack@, group
+ * tier owners) need the seed to land on the site they're currently
+ * looking at, not whichever site Postgres returns first.
+ *
+ * Idempotent — if any tasks already exist for that site we bail with
+ * a friendly error instead of duplicating the template.
+ */
+export async function seedDefaultCleaningTasksAction(input: {
+  siteId: string;
+}): Promise<ActionResult> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -279,26 +285,28 @@ export async function seedDefaultCleaningTasksAction(): Promise<ActionResult> {
 
   const { data: membership } = await supabase
     .from('memberships')
-    .select('site_id, role')
+    .select('role')
     .eq('user_id', user.id)
-    .limit(1)
+    .eq('site_id', input.siteId)
     .maybeSingle();
-  if (!membership) return { ok: false, error: 'No site membership' };
+  if (!membership) {
+    return { ok: false, error: 'No membership on this site' };
+  }
   if (!['owner', 'manager', 'chef'].includes(membership.role as string)) {
-    return { ok: false, error: 'Not authorised' };
+    return { ok: false, error: 'Not authorised — owner, manager or chef role required' };
   }
 
   const { count } = await supabase
     .from('safety_cleaning_tasks')
     .select('id', { count: 'exact', head: true })
-    .eq('site_id', membership.site_id);
+    .eq('site_id', input.siteId);
   if ((count ?? 0) > 0) {
-    return { ok: false, error: 'Tasks already exist' };
+    return { ok: false, error: 'A schedule already exists for this site' };
   }
 
   const { DEFAULT_CLEANING_TEMPLATE } = await import('@/lib/safety/standards');
   const rows = DEFAULT_CLEANING_TEMPLATE.map((t) => ({
-    site_id: membership.site_id,
+    site_id: input.siteId,
     area: t.area,
     task: t.task,
     frequency: t.frequency,
@@ -307,6 +315,7 @@ export async function seedDefaultCleaningTasksAction(): Promise<ActionResult> {
   if (error) return { ok: false, error: error.message };
 
   revalidatePath('/safety/cleaning');
+  revalidatePath('/safety');
   return { ok: true };
 }
 
