@@ -3,7 +3,7 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ensureActivePlan } from '@/lib/menu-plan-actions';
-import type { MenuPlanSurface } from '@/lib/menu-plan';
+import type { MenuPlanSurface } from '@/lib/menu-plan-shared';
 
 export function CreatePlanButton({
   siteId,

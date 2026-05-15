@@ -5,7 +5,7 @@ import { addPlanItem } from '@/lib/menu-plan-actions';
 import {
   ACTION_LABEL,
   type MenuPlanAction,
-} from '@/lib/menu-plan';
+} from '@/lib/menu-plan-shared';
 
 export type RecipeOption = {
   id: string;

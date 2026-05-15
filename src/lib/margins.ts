@@ -1,22 +1,7 @@
 import { getRecipes, type Recipe, type DishType } from './recipes';
+import { gpToneFor, DEFAULT_GP_TARGET, type GpTone } from './gp';
 
-export type GpTone = 'healthy' | 'attention' | 'urgent' | null;
-
-/** Target GP per CLAUDE.md profile.gpTarget default: 72%. The thresholds
- *  for tone classification are: ≥ target = healthy, target-7 to target-1
- *  = attention, < target-7 = urgent. */
-export const DEFAULT_GP_TARGET = 72;
-const ATTENTION_BAND = 7;
-
-export function gpToneFor(
-  gpPct: number | null,
-  target: number = DEFAULT_GP_TARGET,
-): GpTone {
-  if (gpPct == null) return null;
-  if (gpPct >= target) return 'healthy';
-  if (gpPct >= target - ATTENTION_BAND) return 'attention';
-  return 'urgent';
-}
+export { gpToneFor, DEFAULT_GP_TARGET, type GpTone };
 
 export type DishRow = {
   recipe: Recipe;

@@ -3,7 +3,7 @@ import {
   QUADRANT_DESCRIPTION,
   type MenuPlanItem,
   type Quadrant,
-} from '@/lib/menu-plan';
+} from '@/lib/menu-plan-shared';
 
 const QUADRANT_TONE: Record<
   Quadrant,

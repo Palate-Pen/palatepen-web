@@ -9,7 +9,7 @@ import {
   ACTION_LABEL,
   type MenuPlanAction,
   type MenuPlanItem,
-} from '@/lib/menu-plan';
+} from '@/lib/menu-plan-shared';
 
 const ACTIONS: MenuPlanAction[] = ['keep', 'add', 'revise', 'remove'];
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import type { MenuPlanSurface, MenuPlanAction } from '@/lib/menu-plan';
+import type { MenuPlanSurface, MenuPlanAction } from '@/lib/menu-plan-shared';
 
 /**
  * Get-or-create the active draft plan for a site/surface. Idempotent:
