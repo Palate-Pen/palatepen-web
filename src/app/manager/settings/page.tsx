@@ -41,6 +41,28 @@ export default async function ManagerSettingsPage() {
         )}
       </Section>
 
+      <Section title="Team & Permissions">
+        <Link
+          href="/manager/team"
+          className="px-7 py-5 flex items-center justify-between gap-4 hover:bg-paper-warm transition-colors group"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-1.5">
+              The brigade
+            </div>
+            <div className="font-serif font-semibold text-base text-ink leading-tight">
+              Manage the team at this site
+            </div>
+            <div className="font-serif italic text-sm text-muted mt-1">
+              Click any member to see their role, joined date, and per-feature permissions. Roles set the defaults — overrides where you need precision.
+            </div>
+          </div>
+          <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted group-hover:text-gold transition-colors">
+            Open →
+          </span>
+        </Link>
+      </Section>
+
       <AccessibilitySettings />
 
       <Section title="Site Info">

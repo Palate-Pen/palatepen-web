@@ -60,6 +60,30 @@ export default async function SettingsPage() {
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[800px] mx-auto">
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">Settings</h1>
 
+      {canSeeManager && (
+        <Section title="Team & Permissions">
+          <Link
+            href={ctx.role === 'owner' ? '/owner/team' : '/manager/team'}
+            className="px-7 py-5 flex items-center justify-between gap-4 hover:bg-paper-warm transition-colors group"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-1.5">
+                {ctx.role === 'owner' ? 'Across every site' : 'The brigade'}
+              </div>
+              <div className="font-serif font-semibold text-base text-ink leading-tight">
+                Manage roles + permissions
+              </div>
+              <div className="font-serif italic text-sm text-muted mt-1">
+                Click a member to see their info and per-feature permissions. Roles set defaults — overrides give you precision.
+              </div>
+            </div>
+            <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted group-hover:text-gold transition-colors">
+              Open →
+            </span>
+          </Link>
+        </Section>
+      )}
+
       {(canSeeManager || isFounder) && (
         <Section title="Switch Surface">
           {canSeeManager && (

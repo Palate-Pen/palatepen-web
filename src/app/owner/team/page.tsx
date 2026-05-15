@@ -3,15 +3,12 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { KpiCard } from '@/components/shell/KpiCard';
-import { TeamMatrix } from '@/components/team/TeamMatrix';
-import type { MatrixMember, FeatureColumn } from '@/components/team/TeamMatrix';
+import { TeamList, type TeamListMember } from '@/components/team/TeamList';
 import {
   FEATURE_REGISTRY,
   isFeatureAvailableAtTier,
   isFeatureOnByDefault,
-  type FeatureKey,
 } from '@/lib/features';
-import { toggleFeatureFlagAction, changeRoleAction } from './actions';
 
 export const metadata = { title: 'Team — Owner — Palatable' };
 
@@ -111,22 +108,22 @@ export default async function OwnerTeamPage() {
     overrideByMembership.get(mid)!.set(o.feature_key as string, Boolean(o.enabled));
   }
 
-  // Build the matrix.
-  const featureColumns: FeatureColumn[] = Object.values(FEATURE_REGISTRY)
-    .filter((f) => isFeatureAvailableAtTier(f.key, tier))
-    .map((f) => ({ key: f.key, label: f.label, group: f.group }));
+  // Precompute features-on counts for the list row.
+  const availableFeatures = Object.values(FEATURE_REGISTRY).filter((f) =>
+    isFeatureAvailableAtTier(f.key, tier),
+  );
 
-  const matrixMembers: MatrixMember[] = allMembers.map((m) => {
-    const features: Record<string, { enabled: boolean; source: 'role' | 'override' }> = {};
-    for (const col of featureColumns) {
-      const override = overrideByMembership.get(m.id)?.get(col.key);
+  const listMembers: TeamListMember[] = allMembers.map((m) => {
+    const overrides = overrideByMembership.get(m.id);
+    let on = 0;
+    let hasOverride = false;
+    for (const def of availableFeatures) {
+      const override = overrides?.get(def.key);
       if (override !== undefined) {
-        features[col.key] = { enabled: override, source: 'override' };
-      } else {
-        features[col.key] = {
-          enabled: isFeatureOnByDefault(col.key, m.role),
-          source: 'role',
-        };
+        hasOverride = true;
+        if (override) on++;
+      } else if (isFeatureOnByDefault(def.key, m.role)) {
+        on++;
       }
     }
     return {
@@ -136,7 +133,10 @@ export default async function OwnerTeamPage() {
       role: m.role,
       site_id: m.site_id,
       site_name: siteNameById.get(m.site_id) ?? 'Site',
-      features,
+      joined_at: m.created_at,
+      features_on: on,
+      features_total: availableFeatures.length,
+      has_override: hasOverride,
     };
   });
 
@@ -178,12 +178,9 @@ export default async function OwnerTeamPage() {
         <KpiCard label="Bar" value={String(barCount)} sub="head + bartender + back" />
       </div>
 
-      <TeamMatrix
-        members={matrixMembers}
-        featureColumns={featureColumns}
-        toggleAction={toggleFeatureFlagAction}
-        changeRoleAction={changeRoleAction}
-        canChangeRole={true}
+      <TeamList
+        members={listMembers}
+        basePath="/owner/team"
         showSiteColumn={siteIds.length > 1}
       />
     </div>

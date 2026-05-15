@@ -4,17 +4,12 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { getShellContext } from '@/lib/shell/context';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { KpiCard } from '@/components/shell/KpiCard';
-import { TeamMatrix } from '@/components/team/TeamMatrix';
-import type { MatrixMember, FeatureColumn } from '@/components/team/TeamMatrix';
+import { TeamList, type TeamListMember } from '@/components/team/TeamList';
 import {
   FEATURE_REGISTRY,
   isFeatureAvailableAtTier,
   isFeatureOnByDefault,
 } from '@/lib/features';
-import {
-  toggleFeatureFlagAction,
-  changeRoleAction,
-} from '@/app/owner/team/actions';
 
 export const metadata = { title: 'Team — Manager — Palatable' };
 
@@ -87,21 +82,21 @@ export default async function ManagerTeamPage() {
     overrideByMembership.get(mid)!.set(o.feature_key as string, Boolean(o.enabled));
   }
 
-  const featureColumns: FeatureColumn[] = Object.values(FEATURE_REGISTRY)
-    .filter((f) => isFeatureAvailableAtTier(f.key, tier))
-    .map((f) => ({ key: f.key, label: f.label, group: f.group }));
+  const availableFeatures = Object.values(FEATURE_REGISTRY).filter((f) =>
+    isFeatureAvailableAtTier(f.key, tier),
+  );
 
-  const matrixMembers: MatrixMember[] = allMembers.map((m) => {
-    const features: Record<string, { enabled: boolean; source: 'role' | 'override' }> = {};
-    for (const col of featureColumns) {
-      const override = overrideByMembership.get(m.id)?.get(col.key);
+  const listMembers: TeamListMember[] = allMembers.map((m) => {
+    const overrides = overrideByMembership.get(m.id);
+    let on = 0;
+    let hasOverride = false;
+    for (const def of availableFeatures) {
+      const override = overrides?.get(def.key);
       if (override !== undefined) {
-        features[col.key] = { enabled: override, source: 'override' };
-      } else {
-        features[col.key] = {
-          enabled: isFeatureOnByDefault(col.key, m.role),
-          source: 'role',
-        };
+        hasOverride = true;
+        if (override) on++;
+      } else if (isFeatureOnByDefault(def.key, m.role)) {
+        on++;
       }
     }
     return {
@@ -111,12 +106,14 @@ export default async function ManagerTeamPage() {
       role: m.role,
       site_id: m.site_id,
       site_name: (site?.name as string | undefined) ?? ctx.kitchenName,
-      features,
+      joined_at: m.created_at,
+      features_on: on,
+      features_total: availableFeatures.length,
+      has_override: hasOverride,
     };
   });
 
   const atOrOverCap = allMembers.length >= KITCHEN_USER_CAP;
-  const canChangeRole = ctx.role === 'owner';
 
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
@@ -184,8 +181,8 @@ export default async function ManagerTeamPage() {
       </div>
 
       <SectionHead
-        title="Feature matrix"
-        meta={'roles set defaults · ' + featureColumns.length + ' features'}
+        title="The brigade"
+        meta={'roles set defaults · ' + availableFeatures.length + ' features per role'}
       />
       {allMembers.length === 0 ? (
         <div className="bg-card border border-rule px-10 py-12 text-center">
@@ -194,12 +191,9 @@ export default async function ManagerTeamPage() {
           </p>
         </div>
       ) : (
-        <TeamMatrix
-          members={matrixMembers}
-          featureColumns={featureColumns}
-          toggleAction={toggleFeatureFlagAction}
-          changeRoleAction={changeRoleAction}
-          canChangeRole={canChangeRole}
+        <TeamList
+          members={listMembers}
+          basePath="/manager/team"
           showSiteColumn={false}
         />
       )}

@@ -55,14 +55,72 @@ export default async function OwnerSettingsPage() {
     ? await getAccountPreferences(primaryAccountId)
     : null;
 
+  const isFounder = user.email === 'jack@palateandpen.co.uk';
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1000px] mx-auto">
       <OwnerPageHeader
         eyebrow="The Business, Not The Kitchen"
         title="Settings"
-        subtitle="Account · tier · billing · users across the business. Personal preferences live in chef Settings."
+        subtitle="Account · tier · billing · team across the business. Personal preferences live in chef Settings."
         activeSlug="settings"
       />
+
+      <section className="mb-10">
+        <SectionHead title="Switch Surface" meta="every role this user can wear" />
+        <div className="bg-card border border-rule divide-y divide-rule">
+          <SurfaceLink
+            href="/"
+            eyebrow="Chef access"
+            title="Chef surface"
+            body="The kitchen view — recipes, prep, stock & suppliers."
+          />
+          <SurfaceLink
+            href="/bartender"
+            eyebrow="Bar access"
+            title="Bartender surface"
+            body="The bar view — specs, cellar, pour-cost margins."
+          />
+          <SurfaceLink
+            href="/manager"
+            eyebrow="Manager access"
+            title="Manager surface"
+            body="Site command — menu builder, P&L, team, deliveries oversight."
+          />
+          {isFounder && (
+            <SurfaceLink
+              href="/admin"
+              eyebrow="Founder only"
+              title="Founder admin"
+              body="Cross-account command centre. Users · business · system · ops."
+            />
+          )}
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <SectionHead title="Team & Permissions" meta="who can do what, where" />
+        <Link
+          href="/owner/team"
+          className="block bg-card border border-rule px-7 py-6 hover:bg-paper-warm transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-1.5">
+                Across every site
+              </div>
+              <div className="font-serif font-semibold text-base text-ink leading-tight mb-1">
+                Manage the brigade
+              </div>
+              <div className="font-serif italic text-sm text-muted">
+                Click any member to see their role, site, and per-feature permissions. Roles set defaults — overrides give you precision.
+              </div>
+            </div>
+            <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted group-hover:text-gold transition-colors">
+              Open →
+            </span>
+          </div>
+        </Link>
+      </section>
 
       <section className="mb-10">
         <SectionHead
@@ -106,19 +164,39 @@ export default async function OwnerSettingsPage() {
         </div>
       </section>
 
-      <section>
-        <SectionHead title="Users" meta="account-level user list pending" />
-        <div className="bg-card border border-rule px-7 py-6">
-          <p className="font-serif italic text-base text-ink-soft leading-relaxed">
-            Inviting / removing users across the business surfaces here once the multi-user flow lands. For now, single-site owner accounts manage themselves at{' '}
-            <Link href="/settings" className="text-gold hover:text-gold-dark transition-colors not-italic font-semibold">
-              chef Settings
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
     </div>
+  );
+}
+
+function SurfaceLink({
+  href,
+  eyebrow,
+  title,
+  body,
+}: {
+  href: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="px-7 py-5 flex items-center justify-between gap-4 hover:bg-paper-warm transition-colors group"
+    >
+      <div className="flex-1 min-w-0">
+        <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-1.5">
+          {eyebrow}
+        </div>
+        <div className="font-serif font-semibold text-base text-ink leading-tight">
+          {title}
+        </div>
+        <div className="font-serif italic text-sm text-muted mt-1">{body}</div>
+      </div>
+      <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted group-hover:text-gold transition-colors">
+        Open →
+      </span>
+    </Link>
   );
 }
 
