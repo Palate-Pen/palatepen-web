@@ -26,7 +26,7 @@ export default async function BartenderHomePage() {
   const tod = timeOfDay(new Date());
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
       <div className="mb-12">
         <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
           {tod.eyebrow}

@@ -60,7 +60,7 @@ export default async function MenusPage({
 
   if (mode === 'planning') {
     return (
-      <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
         <ModeTabs current="planning" basePath="/menus" />
         <PlannerView
           siteId={ctx.siteId}
@@ -91,7 +91,7 @@ export default async function MenusPage({
     blendedSell > 0 ? ((blendedSell - blendedCost) / blendedSell) * 100 : null;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
       <div className="print-hide">
       <ModeTabs current="live" basePath="/menus" />
       <div className="flex justify-between items-start mb-8 gap-6 flex-wrap">

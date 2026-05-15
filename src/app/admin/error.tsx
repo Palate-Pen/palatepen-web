@@ -15,7 +15,7 @@ export default function AdminShellError({
   }, [error]);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-12 pb-12 max-w-[800px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 pt-12 pb-12 max-w-[800px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-urgent mb-3.5">
         Founder Admin · something snagged
       </div>

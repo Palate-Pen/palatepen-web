@@ -82,7 +82,7 @@ export default async function InboxPage() {
   const actedCount = signals.filter((s) => s.acted_at).length;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
         Inbox
       </h1>

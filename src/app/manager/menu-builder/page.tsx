@@ -27,7 +27,7 @@ export default async function MenuBuilderPage({
 
   if (mode === 'planning') {
     return (
-      <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
         <ManagerModeTabs current="planning" />
         <div className="flex gap-1 mb-6">
           <Link
@@ -54,7 +54,7 @@ export default async function MenuBuilderPage({
 
   return (
     <div>
-      <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 max-w-[1400px] mx-auto">
+      <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 max-w-[1680px] mx-auto">
         <ManagerModeTabs current="build" />
       </div>
       <MenuBuilderClient />

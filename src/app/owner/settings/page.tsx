@@ -56,7 +56,7 @@ export default async function OwnerSettingsPage() {
     : null;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1000px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1000px] mx-auto">
       <OwnerPageHeader
         eyebrow="The Business, Not The Kitchen"
         title="Settings"

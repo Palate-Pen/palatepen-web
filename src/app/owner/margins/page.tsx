@@ -54,7 +54,7 @@ export default async function OwnerMarginsPage() {
     .slice(0, 8);
 
   return (
-    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
       <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
         <div className="flex-1 min-w-[280px]">
           <OwnerPageHeader
