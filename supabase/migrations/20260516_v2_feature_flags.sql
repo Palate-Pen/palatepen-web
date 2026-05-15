@@ -1,5 +1,6 @@
 -- v2 migration: feature_flags overlay
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- Per-membership feature flags. Each row is an override on top of the
 -- role-default for a given feature. Owners (Group tier) edit these from

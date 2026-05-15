@@ -1,5 +1,6 @@
 -- v2 migration: intelligence_events outbox queue
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- The transactional outbox for the intelligence layer. Postgres triggers
 -- on each significant write-path table insert a row here; a server-side

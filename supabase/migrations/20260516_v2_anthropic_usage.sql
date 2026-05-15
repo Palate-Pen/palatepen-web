@@ -1,5 +1,6 @@
 -- v2 migration: anthropic_usage
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- Per-call metering for Anthropic API spend. The legacy public.anthropic_usage
 -- table was moved to legacy_archive on 2026-05-14 because the v1 admin

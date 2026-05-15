@@ -1,5 +1,6 @@
 -- v2 migration: accounts.safety_enabled + safety_liability_acked_at
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- Tier gate for the Safety module. False by default; set true when the
 -- account ticks the £20/site upsell. The Stripe checkout webhook flips

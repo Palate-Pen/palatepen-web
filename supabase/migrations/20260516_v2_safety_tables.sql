@@ -1,5 +1,6 @@
 -- v2 migration: safety_* tables + menu_versions
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- The Palatable Safety v1 backbone. Eight tables that together replace
 -- the FSA paper SFBB diary every UK kitchen is legally obliged to keep,

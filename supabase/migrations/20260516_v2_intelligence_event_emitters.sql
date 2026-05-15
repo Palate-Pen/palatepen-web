@@ -1,5 +1,6 @@
 -- v2 migration: intelligence_event_emitters
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- One trigger function per write-path table that matters. Each function
 -- builds a small payload (row id + the fields the detector needs) and

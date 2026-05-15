@@ -1,5 +1,6 @@
 -- v2 migration: ai_cache
 -- Date: 2026-05-16
+-- Applied: 2026-05-16 (manual run via Supabase SQL editor)
 --
 -- Result cache for Anthropic API calls. Keyed by sha256 of the full
 -- request payload (model + system + messages + max_tokens). Re-running
