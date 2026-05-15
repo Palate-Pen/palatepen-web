@@ -209,12 +209,21 @@ export function RecipeForm({
   const [pending, startTransition] = useTransition();
   const [archiving, startArchive] = useTransition();
 
+  // Defensive: page-level fetch failures or hydration mismatches can
+  // land non-arrays here. Coerce so the form always mounts.
+  const safeBank: BankIngredientOption[] = Array.isArray(bankIngredients)
+    ? bankIngredients
+    : [];
+  const safeSubs: SubRecipeOption[] = Array.isArray(subRecipeOptions)
+    ? subRecipeOptions
+    : [];
+
   // Build a fast lookup: lowercase name → bank ingredient
   const bankByName = new Map<string, BankIngredientOption>(
-    bankIngredients.map((b) => [b.name.toLowerCase().trim(), b]),
+    safeBank.map((b) => [b.name.toLowerCase().trim(), b]),
   );
   const subRecipeById = new Map<string, SubRecipeOption>(
-    subRecipeOptions.map((s) => [s.id, s]),
+    safeSubs.map((s) => [s.id, s]),
   );
 
   function updateRow(key: string, patch: Partial<IngredientRow>) {
@@ -372,7 +381,7 @@ export function RecipeForm({
   return (
     <div className="flex flex-col gap-6">
       <datalist id="bank-ingredient-names">
-        {bankIngredients.map((b) => (
+        {safeBank.map((b) => (
           <option key={b.id} value={b.name} />
         ))}
       </datalist>
@@ -704,10 +713,10 @@ export function RecipeForm({
               canRemove={rows.length > 1}
               matchedBankName={
                 r.ingredient_id != null
-                  ? bankIngredients.find((b) => b.id === r.ingredient_id)?.name ?? null
+                  ? safeBank.find((b) => b.id === r.ingredient_id)?.name ?? null
                   : null
               }
-              subRecipeOptions={subRecipeOptions}
+              subRecipeOptions={safeSubs}
               onChange={(patch) => updateRow(r.key, patch)}
               onRemove={() => removeRow(r.key)}
             />
