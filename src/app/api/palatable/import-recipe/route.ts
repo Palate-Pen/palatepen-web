@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { cachedAnthropicCall, firstText } from '@/lib/anthropic-cache';
 import {
   ANTHROPIC_MODEL,
-  ANTHROPIC_VERSION,
   ANTHROPIC_MAX_TOKENS,
 } from '@/lib/anthropic';
 
@@ -209,14 +209,25 @@ export async function POST(req: Request) {
       ? `Structured recipe data (schema.org JSON-LD):\n${JSON.stringify(scraped.data).slice(0, 20000)}\n\nFor reference, page text excerpt:\n${scraped.pageText.slice(0, 4000)}`
       : `Page text:\n${scraped.pageText}`;
 
-  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': ANTHROPIC_VERSION,
-    },
-    body: JSON.stringify({
+  // Resolve account_id for usage attribution (best-effort).
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('site_id, sites:site_id (account_id)')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  const siteForUsage = (membership?.site_id as string | undefined) ?? null;
+  const accountForUsage =
+    ((membership?.sites as unknown as { account_id?: string } | null)
+      ?.account_id) ?? null;
+
+  let rawText: string;
+  try {
+    const res = await cachedAnthropicCall({
+      surface: 'import_recipe',
+      account_id: accountForUsage,
+      site_id: siteForUsage,
+      user_id: user.id,
       model: ANTHROPIC_MODEL,
       max_tokens: ANTHROPIC_MAX_TOKENS,
       messages: [
@@ -225,23 +236,15 @@ export async function POST(req: Request) {
           content: SCHEMA_PROMPT + '\n\nSource:\n' + sourceBlock,
         },
       ],
-    }),
-  });
-
-  if (!anthropicRes.ok) {
-    const detail = await anthropicRes.text();
-    console.error('[import-recipe] anthropic error:', anthropicRes.status, detail);
+    });
+    rawText = firstText(res.content);
+  } catch (e) {
+    console.error('[import-recipe] anthropic error:', (e as Error).message);
     return NextResponse.json(
-      { error: 'extraction_failed', status: anthropicRes.status, detail },
+      { error: 'extraction_failed', detail: (e as Error).message },
       { status: 502 },
     );
   }
-
-  const data = (await anthropicRes.json()) as {
-    content?: Array<{ type: string; text?: string }>;
-    stop_reason?: string;
-  };
-  const rawText = data.content?.[0]?.text ?? '';
   const jsonStr = extractFirstJson(rawText);
   if (!jsonStr) {
     return NextResponse.json(

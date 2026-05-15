@@ -187,12 +187,14 @@ export async function detectDeliveryGap(
 ): Promise<Array<Record<string, unknown>>> {
   const { data: deliveries } = await svc
     .from('deliveries')
-    .select('supplier_id, received_at, suppliers:supplier_id (name)')
+    .select('supplier_id, arrived_at, suppliers:supplier_id (name)')
     .eq('site_id', siteId)
-    .not('received_at', 'is', null)
+    .not('arrived_at', 'is', null)
     .gte(
-      'received_at',
-      new Date(Date.now() - 56 * 24 * 60 * 60 * 1000).toISOString(),
+      'arrived_at',
+      new Date(Date.now() - 56 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10),
     );
   if (!deliveries || deliveries.length === 0) return [];
 
@@ -203,7 +205,7 @@ export async function detectDeliveryGap(
   >();
   for (const row of deliveries as unknown as Array<{
     supplier_id: string | null;
-    received_at: string;
+    arrived_at: string;
     suppliers: { name: string } | null;
   }>) {
     if (!row.supplier_id) continue;
@@ -212,7 +214,7 @@ export async function detectDeliveryGap(
       name: row.suppliers?.name ?? 'Supplier',
       dates: [],
     };
-    cur.dates.push(new Date(row.received_at).toISOString().slice(0, 10));
+    cur.dates.push(new Date(row.arrived_at).toISOString().slice(0, 10));
     bySupplier.set(key, cur);
   }
 

@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
   ANTHROPIC_MODEL,
-  ANTHROPIC_VERSION,
   ANTHROPIC_MAX_TOKENS,
 } from '@/lib/anthropic';
+import { cachedAnthropicCall, firstText } from '@/lib/anthropic-cache';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -155,48 +155,63 @@ export async function POST(req: Request) {
           { type: 'text', text: EXTRACTION_PROMPT },
         ];
 
-  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': ANTHROPIC_VERSION,
-    },
-    body: JSON.stringify({
+  const { data: siteRow } = await supabaseUser
+    .from('sites')
+    .select('account_id')
+    .eq('id', membership.site_id as string)
+    .maybeSingle();
+  const accountId = (siteRow?.account_id as string | undefined) ?? null;
+
+  let extractedText: string;
+  try {
+    const res = await cachedAnthropicCall({
+      surface: 'scan_spec_sheet',
+      account_id: accountId,
+      site_id: membership.site_id as string,
+      user_id: user.id,
       model: ANTHROPIC_MODEL,
       max_tokens: ANTHROPIC_MAX_TOKENS,
-      messages: [{ role: 'user', content: contentBlocks }],
-    }),
-  });
-
-  if (!anthropicRes.ok) {
-    const detail = await anthropicRes.text();
-    console.error('[scan-spec-sheet] anthropic error:', anthropicRes.status, detail);
+      messages: [
+        {
+          role: 'user',
+          content: contentBlocks as Array<
+            | { type: 'text'; text: string }
+            | {
+                type: 'image';
+                source: { type: 'base64'; media_type: string; data: string };
+              }
+            | {
+                type: 'document';
+                source: { type: 'base64'; media_type: string; data: string };
+              }
+          >,
+        },
+      ],
+    });
+    extractedText = firstText(res.content);
+  } catch (e) {
+    console.error('[scan-spec-sheet] anthropic error:', (e as Error).message);
     return NextResponse.json(
-      { error: 'extraction_failed', status: anthropicRes.status, detail },
+      { error: 'extraction_failed', detail: (e as Error).message },
       { status: 502 },
     );
   }
 
-  const anthropicJson = (await anthropicRes.json()) as {
-    content: { type: string; text?: string }[];
-  };
-  const textBlock = anthropicJson.content?.find((b) => b.type === 'text');
-  if (!textBlock?.text) {
+  if (!extractedText) {
     return NextResponse.json({ error: 'extraction_empty' }, { status: 502 });
   }
 
   let extracted: Extracted;
   try {
-    const cleaned = textBlock.text
+    const cleaned = extractedText
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```\s*$/, '')
       .trim();
     extracted = JSON.parse(cleaned) as Extracted;
   } catch (e) {
-    console.error('[scan-spec-sheet] parse error:', e, textBlock.text);
+    console.error('[scan-spec-sheet] parse error:', e, extractedText);
     return NextResponse.json(
-      { error: 'extraction_parse_failed', detail: textBlock.text.slice(0, 500) },
+      { error: 'extraction_parse_failed', detail: extractedText.slice(0, 500) },
       { status: 502 },
     );
   }

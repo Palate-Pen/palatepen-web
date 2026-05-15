@@ -79,11 +79,11 @@ begin
       jsonb_build_object('delivery_id', new.id, 'supplier_id', new.supplier_id, 'expected_at', new.expected_at),
       'v2.deliveries', new.id
     );
-  elsif (new.received_at is not null and (old is null or old.received_at is null)) then
+  elsif (new.arrived_at is not null and (old is null or old.arrived_at is null)) then
     insert into v2.intelligence_events (site_id, kind, payload, source_table, source_id)
     values (
       new.site_id, 'delivery.received',
-      jsonb_build_object('delivery_id', new.id, 'supplier_id', new.supplier_id, 'received_at', new.received_at),
+      jsonb_build_object('delivery_id', new.id, 'supplier_id', new.supplier_id, 'arrived_at', new.arrived_at),
       'v2.deliveries', new.id
     );
   end if;
@@ -91,7 +91,7 @@ begin
 end$$;
 
 create trigger deliveries_emit_event
-  after insert or update of received_at on v2.deliveries
+  after insert or update of arrived_at on v2.deliveries
   for each row execute function v2.emit_delivery_event();
 
 -- ---------------------------------------------------------------------
