@@ -8,7 +8,15 @@ type TargetSurface =
   | 'margins'
   | 'stock-suppliers'
   | 'notebook'
-  | 'inbox';
+  | 'inbox'
+  // Bartender shell surfaces
+  | 'bar_home'
+  | 'mise'
+  | 'specs'
+  | 'bar_menus'
+  | 'bar_margins'
+  | 'back_bar'
+  | 'cellar';
 
 type SignalTag = 'plan_for_it' | 'get_ready' | 'worth_knowing' | 'market_move';
 type SignalSeverity = 'urgent' | 'attention' | 'healthy' | 'info';

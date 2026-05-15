@@ -6,6 +6,16 @@ import { useEffect, useState } from 'react';
 import { CollapseToggle } from './CollapseToggle';
 
 const BREADCRUMBS: Array<{ prefix: string; label: string }> = [
+  { prefix: '/bartender/mise', label: 'Mise' },
+  { prefix: '/bartender/specs', label: 'Specs' },
+  { prefix: '/bartender/menus', label: 'Menus' },
+  { prefix: '/bartender/margins', label: 'Margins' },
+  { prefix: '/bartender/back-bar', label: 'Back Bar' },
+  { prefix: '/bartender/notebook', label: 'Notebook' },
+  { prefix: '/bartender/inbox', label: 'Inbox' },
+  { prefix: '/bartender/settings', label: 'Settings' },
+  { prefix: '/bartender/connections', label: 'Connections' },
+  { prefix: '/bartender', label: 'Home' },
   { prefix: '/prep', label: 'Prep' },
   { prefix: '/recipes', label: 'Recipes' },
   { prefix: '/menus', label: 'Menus' },
@@ -35,11 +45,29 @@ const NAMED_PATHS: Record<string, string> = {
   '/stock-suppliers/deliveries': 'Deliveries',
   '/stock-suppliers/suppliers': 'Suppliers',
   '/stock-suppliers/waste': 'Waste',
+  '/stock-suppliers/credit-notes': 'Credit Notes',
+  '/bartender': 'Home',
+  '/bartender/mise': 'Mise',
+  '/bartender/specs': 'Specs',
+  '/bartender/menus': 'Menus',
+  '/bartender/margins': 'Margins',
+  '/bartender/notebook': 'Notebook',
+  '/bartender/inbox': 'Inbox',
+  '/bartender/settings': 'Settings',
+  '/bartender/connections': 'Connections',
+  '/bartender/back-bar': 'Back Bar',
+  '/bartender/back-bar/cellar': 'Cellar',
+  '/bartender/back-bar/deliveries': 'Deliveries',
+  '/bartender/back-bar/invoices': 'Invoices',
+  '/bartender/back-bar/suppliers': 'Suppliers',
+  '/bartender/back-bar/spillage': 'Spillage & Waste',
+  '/bartender/back-bar/stock-take': 'Stock Take',
 };
 const TAB_LANDINGS = new Set(['/', ...Object.keys(NAMED_PATHS)]);
 
 function resolveBreadcrumb(pathname: string): string {
   if (pathname === '/') return 'Home';
+  if (pathname === '/bartender') return 'Home';
   const match = BREADCRUMBS.find(
     (b) => pathname === b.prefix || pathname.startsWith(b.prefix + '/'),
   );
@@ -86,10 +114,13 @@ function formatDate(now: Date): string {
 
 const VIEW_LABEL: Record<string, string> = {
   chef: 'Chef view',
+  bartender: 'Bartender view',
   manager: 'Manager view',
   owner: 'Owner view',
   admin: 'Founder',
 };
+
+const BAR_ROLES = new Set(['bartender', 'head_bartender', 'bar_back']);
 
 function tierLabel(tier: string): string {
   if (!tier) return 'Free';
@@ -102,12 +133,23 @@ export function Topbar({
   isFounder = false,
   role = 'chef',
   email = '',
+  hasBarMembership = false,
 }: {
   tier?: string;
-  view?: 'chef' | 'manager' | 'owner' | 'admin';
+  view?: 'chef' | 'bartender' | 'manager' | 'owner' | 'admin';
   isFounder?: boolean;
-  role?: 'owner' | 'manager' | 'chef' | 'viewer';
+  role?:
+    | 'owner'
+    | 'manager'
+    | 'chef'
+    | 'sous_chef'
+    | 'commis'
+    | 'bartender'
+    | 'head_bartender'
+    | 'bar_back'
+    | 'viewer';
   email?: string;
+  hasBarMembership?: boolean;
 } = {}) {
   const pathname = usePathname();
   const breadcrumb = resolveBreadcrumb(pathname);
@@ -116,11 +158,26 @@ export function Topbar({
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
 
   const accessibleViews: Array<{
-    key: 'chef' | 'manager' | 'owner' | 'admin';
+    key: 'chef' | 'bartender' | 'manager' | 'owner' | 'admin';
     label: string;
     href: string;
-  }> = [{ key: 'chef', label: VIEW_LABEL.chef, href: '/' }];
-  if (role === 'manager' || role === 'owner') {
+  }> = [];
+
+  const isBarRole = BAR_ROLES.has(role);
+  const isKitchenRole = role === 'chef' || role === 'sous_chef' || role === 'commis';
+  const isManagerPlus = role === 'manager' || role === 'owner';
+
+  if (isKitchenRole || isManagerPlus) {
+    accessibleViews.push({ key: 'chef', label: VIEW_LABEL.chef, href: '/' });
+  }
+  if (isBarRole || isManagerPlus || hasBarMembership) {
+    accessibleViews.push({
+      key: 'bartender',
+      label: VIEW_LABEL.bartender,
+      href: '/bartender',
+    });
+  }
+  if (isManagerPlus) {
     accessibleViews.push({
       key: 'manager',
       label: VIEW_LABEL.manager,
@@ -140,6 +197,10 @@ export function Topbar({
       label: VIEW_LABEL.admin,
       href: '/admin',
     });
+  }
+  // If no roles at all (viewer / unknown), still show chef as default
+  if (accessibleViews.length === 0) {
+    accessibleViews.push({ key: 'chef', label: VIEW_LABEL.chef, href: '/' });
   }
   const canSwitchView = accessibleViews.length > 1;
 

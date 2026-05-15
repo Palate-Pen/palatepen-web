@@ -111,3 +111,35 @@ export const OWNER_SECTIONS: NavSection[] = [
 export const OWNER_ACCOUNT_ITEMS: NavItem[] = [
   { href: '/owner/settings', label: 'Settings', icon: 'settings' },
 ];
+
+export const BARTENDER_SECTIONS: NavSection[] = [
+  {
+    label: 'Bar',
+    items: [
+      { href: '/bartender', label: 'Home', icon: 'home' },
+      { href: '/bartender/mise', label: 'Mise', icon: 'prep' },
+      { href: '/bartender/specs', label: 'Specs', icon: 'recipes' },
+      { href: '/bartender/menus', label: 'Menus', icon: 'menus' },
+      { href: '/bartender/margins', label: 'Margins', icon: 'margins' },
+      {
+        href: '/bartender/back-bar',
+        label: 'Back Bar',
+        icon: 'stock-suppliers',
+      },
+      { href: '/bartender/notebook', label: 'Notebook', icon: 'notebook' },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    items: [{ href: '/bartender/inbox', label: 'Inbox', icon: 'inbox' }],
+  },
+];
+
+export const BARTENDER_ACCOUNT_ITEMS: NavItem[] = [
+  { href: '/bartender/settings', label: 'Settings', icon: 'settings' },
+  {
+    href: '/bartender/connections',
+    label: 'Connections',
+    icon: 'connections',
+  },
+];
