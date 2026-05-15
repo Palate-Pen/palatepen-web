@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef Menus (Edit-Light) — v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #EFE9DD;
+    --card: #FFFFFF;
+    --ink: #1A1612;
+    --ink-soft: #3E3528;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --gold: #B8923C;
+    --gold-bg: rgba(184, 146, 60, 0.08);
+    --gold-dark: #8E6E26;
+    --rule: rgba(26, 22, 18, 0.08);
+    --rule-soft: rgba(26, 22, 18, 0.04);
+    --healthy: #5D7F4F;
+    --attention: #B86A2E;
+    --urgent: #A14424;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Jost', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding-bottom: 96px; /* leave room for sticky save bar */
+  }
+  .mockup-banner {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 56px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .mockup-banner-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .mockup-banner-meta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--paper);
+    opacity: 0.7;
+  }
+
+  .page { padding: 48px 56px 80px; max-width: 1100px; }
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; gap: 24px; flex-wrap: wrap; }
+  .page-eyebrow {
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .page-title {
+    font-family: 'Cinzel', serif;
+    font-size: 36px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .page-title em { font-style: normal; color: var(--gold); }
+  .page-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 17px;
+    color: var(--muted);
+  }
+
+  /* Mode tabs (View / Edit) */
+  .mode-tabs {
+    display: inline-flex;
+    border: 1px solid var(--rule);
+    margin-bottom: 32px;
+  }
+  .mode-tab {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    cursor: pointer;
+  }
+  .mode-tab.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* KPI strip — slimmer than the view-mode one */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 28px;
+  }
+  .kpi {
+    background: var(--card);
+    padding: 16px 20px;
+  }
+  .kpi-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .kpi-value.healthy { color: var(--healthy); }
+  .kpi-value.attention { color: var(--attention); }
+
+  /* Section blocks */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    margin-bottom: 24px;
+  }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-head-left {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .section-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .section-count {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .section-head-meta {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .section-head-meta strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* Dish rows */
+  .dish-row {
+    display: grid;
+    grid-template-columns: 2fr 88px 130px 120px 36px;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .dish-row:last-child { border-bottom: none; }
+  .dish-row.staged { background: var(--gold-bg); }
+  .dish-row.eighty-sixed { opacity: 0.55; }
+  .dish-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .dish-meta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .price-input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    height: 36px;
+  }
+  .price-input-wrap.changed {
+    border-color: var(--gold);
+    background: var(--gold-bg);
+  }
+  .price-prefix {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    color: var(--muted);
+    padding-left: 10px;
+  }
+  .price-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    padding: 0 8px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .gp-cell {
+    text-align: right;
+  }
+  .gp-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .gp-value.healthy { color: var(--healthy); }
+  .gp-value.attention { color: var(--attention); }
+  .gp-value.urgent { color: var(--urgent); }
+  .gp-delta {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--gold);
+  }
+  .gp-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .toggle-cell { display: flex; flex-direction: column; gap: 4px; }
+  .toggle-chip {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid var(--rule);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .toggle-chip.on {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .toggle-chip.eighty-six.on {
+    background: var(--urgent);
+    border-color: var(--urgent);
+    color: var(--paper);
+  }
+  .drag-handle {
+    color: var(--muted-soft);
+    font-size: 18px;
+    cursor: grab;
+    user-select: none;
+    text-align: center;
+  }
+
+  .section-foot {
+    padding: 12px 24px;
+    border-top: 1px solid var(--rule-soft);
+    background: var(--paper-warm);
+  }
+  .add-dish-btn {
+    background: transparent;
+    border: 1px dashed var(--gold);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+
+  /* Sticky save bar */
+  .save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -4px 16px rgba(26, 22, 18, 0.12);
+    z-index: 10;
+  }
+  .save-bar-status {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+  }
+  .save-bar-status strong {
+    color: var(--gold);
+    font-style: normal;
+    font-weight: 600;
+  }
+  .save-bar-actions { display: flex; gap: 12px; }
+  .save-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 10px 24px;
+    border: 1px solid var(--paper);
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .save-btn.primary {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* Footnote */
+  .mockup-footnote {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 32px 56px;
+    margin: 56px -56px 0;
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .footnote-body {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--paper);
+    opacity: 0.85;
+    max-width: 800px;
+  }
+  .footnote-body strong { color: var(--gold); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v2 · Chef Menus · Edit-Light</div>
+  <div class="mockup-banner-meta">Inline price + 86 toggle · live GP · staged-then-saved · no structural ceremony</div>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-eyebrow">Today's Service · Edit Light</div>
+      <div class="page-title">Today's <em>Menu</em></div>
+      <div class="page-sub">8 dishes across 3 sections · 3 unsaved changes</div>
+    </div>
+    <div>
+      <button class="add-dish-btn" style="background: var(--gold); color: var(--paper); border-style: solid;">Open in Menu Builder →</button>
+    </div>
+  </div>
+
+  <div class="mode-tabs">
+    <button class="mode-tab">View</button>
+    <button class="mode-tab active">Edit</button>
+    <button class="mode-tab">Planning</button>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-label">Cost / cover</div>
+      <div class="kpi-value">£8.42</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Cover spend</div>
+      <div class="kpi-value">£26.50</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Menu GP</div>
+      <div class="kpi-value healthy">68%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Live tonight</div>
+      <div class="kpi-value">7<span style="font-size: 13px; color: var(--muted); font-style: italic; margin-left: 6px;">of 8 (1 × 86)</span></div>
+    </div>
+  </div>
+
+  <!-- Starters -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-head-left">
+        <span class="section-name">Starters</span>
+        <span class="section-count">3 dishes</span>
+      </div>
+      <div class="section-head-meta">avg GP <strong>74%</strong> · healthy</div>
+    </div>
+
+    <div class="dish-row">
+      <div>
+        <div class="dish-name">Hummus</div>
+        <div class="dish-meta">£1.24 cost · 4 per cover · V · GF</div>
+      </div>
+      <div class="price-input-wrap">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="6.00" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value healthy">79%</div>
+        <div class="gp-sub">target 70%</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="dish-row staged">
+      <div>
+        <div class="dish-name">Baba Ghanoush</div>
+        <div class="dish-meta">£1.68 cost · 3 per cover · V · GF</div>
+      </div>
+      <div class="price-input-wrap changed">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="8.50" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value healthy">80%</div>
+        <div class="gp-delta">+2pt vs saved</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="dish-row eighty-sixed">
+      <div>
+        <div class="dish-name">Şakşuka</div>
+        <div class="dish-meta">£1.04 cost · 3 per cover · V · GF</div>
+      </div>
+      <div class="price-input-wrap">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="7.50" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value">86%</div>
+        <div class="gp-sub">86'd tonight</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip eighty-six on">86 tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="section-foot">
+      <button class="add-dish-btn">+ Add an unpriced recipe to this section</button>
+    </div>
+  </div>
+
+  <!-- Mains -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-head-left">
+        <span class="section-name">Mains</span>
+        <span class="section-count">3 dishes</span>
+      </div>
+      <div class="section-head-meta">avg GP <strong>66%</strong> · healthy</div>
+    </div>
+
+    <div class="dish-row staged">
+      <div>
+        <div class="dish-name">Lamb Shawarma</div>
+        <div class="dish-meta">£4.92 cost · 2 per cover · GF · DF</div>
+      </div>
+      <div class="price-input-wrap changed">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="22.00" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value healthy">78%</div>
+        <div class="gp-delta">+£2 → +1pt</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="dish-row">
+      <div>
+        <div class="dish-name">Beef Short Rib Braise</div>
+        <div class="dish-meta">£6.84 cost · 1.2 per cover</div>
+      </div>
+      <div class="price-input-wrap">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="26.00" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value attention">68%</div>
+        <div class="gp-sub">cost spike Apr 12</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="dish-row staged">
+      <div>
+        <div class="dish-name">Chicken Thigh Skewers</div>
+        <div class="dish-meta">£3.60 cost · 2.4 per cover · GF · DF · NF</div>
+      </div>
+      <div class="price-input-wrap changed">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="19.50" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value healthy">82%</div>
+        <div class="gp-delta">+£0.50 → +0.5pt</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="section-foot">
+      <button class="add-dish-btn">+ Add an unpriced recipe to this section</button>
+    </div>
+  </div>
+
+  <!-- Desserts -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-head-left">
+        <span class="section-name">Desserts</span>
+        <span class="section-count">2 dishes</span>
+      </div>
+      <div class="section-head-meta">avg GP <strong>78%</strong> · healthy</div>
+    </div>
+
+    <div class="dish-row">
+      <div>
+        <div class="dish-name">Knafeh</div>
+        <div class="dish-meta">£2.18 cost · 1 per cover · V</div>
+      </div>
+      <div class="price-input-wrap">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="9.00" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value healthy">76%</div>
+        <div class="gp-sub">target 70%</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="dish-row">
+      <div>
+        <div class="dish-name">Lemon Posset</div>
+        <div class="dish-meta">£0.84 cost · 1 per cover · V · GF · NF</div>
+      </div>
+      <div class="price-input-wrap">
+        <span class="price-prefix">£</span>
+        <input class="price-input" value="6.50" type="number" step="0.25">
+      </div>
+      <div class="gp-cell">
+        <div class="gp-value healthy">87%</div>
+        <div class="gp-sub">target 70%</div>
+      </div>
+      <div class="toggle-cell">
+        <button class="toggle-chip on">Live tonight</button>
+      </div>
+      <div class="drag-handle">⋮⋮</div>
+    </div>
+
+    <div class="section-foot">
+      <button class="add-dish-btn">+ Add an unpriced recipe to this section</button>
+    </div>
+  </div>
+
+  <div class="mockup-footnote">
+    <div class="footnote-label">Menus v2 — Edit-Light Rationale</div>
+    <div class="footnote-body">
+      <strong>Why edit-light.</strong> The manager menu builder handles structural changes: section creation, layout templates, menu engineering overlays. The chef doesn't need that ceremony on a Tuesday afternoon. Edit-light covers the three operational moves a chef actually makes mid-service or on the day: <em>change a sell price</em>, <em>86 a dish for tonight</em>, <em>reorder within a section</em>. That's it. Structural work stays one click away via "Open in Menu Builder →".<br><br>
+
+      <strong>The mode toggle.</strong> View / Edit / Planning sits inline at the top. View is the existing read-only summary surface. Planning hosts the Kasavana &amp; Smith matrix and forward menu work — chef-led, but separate context. Edit is this surface. The toggle is a query param (<code>?mode=edit</code>) not a separate route, so the data + URL share state.<br><br>
+
+      <strong>Staging and saving.</strong> Edits stage immediately in local state — the row goes gold, GP recomputes live, the delta is shown ("+£2 → +1pt"). Nothing is written to Postgres until the chef hits <em>Save changes</em> on the sticky bar. Discard reverts the local diff. Save is per-batch — if a price moves twice, only the final value lands. The bar shows <em>"3 unsaved changes"</em> in the page subtitle and in the bar itself, so the chef can't accidentally leave staged work behind.<br><br>
+
+      <strong>86 tonight.</strong> Distinct from "remove from menu". 86 is for today's service — the dish stays on the structural menu, stays priced, but won't print on tonight's customer copy and is flagged for the POS as unavailable. Resets at midnight unless the chef extends it. This is the move chefs care about: <em>"we ran out of lamb shoulder, hide the shawarma until Thursday's delivery"</em>. The full "remove from menu" path is a manager builder action.<br><br>
+
+      <strong>Add dish flow.</strong> Adding a dish to a section is "promote an existing recipe", not "create a new dish". The dialog filters Recipes by section, shows un-priced ones first, and surfaces "no sell price yet" recipes. Chef picks one, adds a price, save. New dish creation still lives at /recipes/new — different mental task.<br><br>
+
+      <strong>Reorder.</strong> Drag handle (⋮⋮) at row right. Chef can reorder within a section. Cross-section moves go through Menu Builder.<br><br>
+
+      <strong>GP recompute.</strong> Live, per-row, against the recipe's current cost (from The Bank). If the chef adjusts a price upward, GP rises and the delta chip shows the impact. If The Bank's cost moved overnight, the GP already reflects that — no manual refresh.
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
