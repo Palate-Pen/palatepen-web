@@ -4,6 +4,10 @@ import { getBarHomeRollup } from '@/lib/bar';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
+import { getForwardCalendar } from '@/lib/safety/forward-calendar';
+import { HomePanel, HomePanelEmpty } from '@/components/home/HomePanel';
+import { QuickActions, QUICK_ICONS } from '@/components/home/QuickActions';
 
 export const metadata = { title: 'Bar — Palatable' };
 
@@ -22,7 +26,10 @@ function timeOfDay(now: Date): { eyebrow: string; greeting: string } {
 
 export default async function BartenderHomePage() {
   const ctx = await getShellContext();
-  const rollup = await getBarHomeRollup(ctx.siteId);
+  const [rollup, calendar] = await Promise.all([
+    getBarHomeRollup(ctx.siteId),
+    getForwardCalendar(ctx.siteId, 14),
+  ]);
   const tod = timeOfDay(new Date());
 
   return (
@@ -40,6 +47,77 @@ export default async function BartenderHomePage() {
           {summarySentence(rollup)}
         </p>
       </div>
+
+      <section className="mb-12">
+        <SectionHead title="Today & The Week Ahead" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <HomePanel
+            title="Tonight's Specs"
+            count={
+              rollup.specs_total === 0
+                ? 'specs not set'
+                : `${rollup.specs_total} on the list`
+            }
+            href="/bartender/specs"
+          >
+            {rollup.specs_total === 0 ? (
+              <HomePanelEmpty>
+                Add cocktail specs, wine BTG, and beer taps so service has the build sheet.
+              </HomePanelEmpty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                {specsSub(rollup.specs_by_type)}
+              </div>
+            )}
+          </HomePanel>
+          <HomePanel
+            title="Cellar Watch"
+            count={
+              rollup.par_breaches === 0
+                ? 'all above par'
+                : `${rollup.par_breaches} below`
+            }
+            href="/bartender/back-bar/cellar?filter=par-breach"
+          >
+            {rollup.par_breaches === 0 ? (
+              <HomePanelEmpty>
+                Every bottle's above its reorder point. Set par levels on cellar items so we flag low stock automatically.
+              </HomePanelEmpty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                Running low on{' '}
+                <strong className="not-italic font-semibold text-ink">
+                  {rollup.par_breach_names.slice(0, 3).join(', ')}
+                </strong>
+                {rollup.par_breach_names.length > 3 && (
+                  <span className="text-muted">
+                    {' '}+ {rollup.par_breach_names.length - 3} more
+                  </span>
+                )}
+                .
+              </div>
+            )}
+          </HomePanel>
+        </div>
+      </section>
+
+      <section className="mb-12">
+        <SectionHead title="Quick Actions" meta="tap to start" />
+        <QuickActions
+          actions={[
+            { href: '/bartender/back-bar/spillage', label: 'Log spillage', sub: 'over-pour, breakage, comp', iconPath: QUICK_ICONS.spillage },
+            { href: '/bartender/mise', label: "Tonight's prep", sub: 'syrups, batches, garnish', iconPath: QUICK_ICONS.prep },
+            { href: '/bartender/specs', label: 'New spec', sub: 'cocktail / wine / beer', iconPath: QUICK_ICONS.recipe },
+            { href: '/bartender/back-bar/stock-take', label: 'Stock take', sub: 'weekly bottle count', iconPath: QUICK_ICONS.cellar },
+            { href: '/bartender/back-bar', label: 'Back Bar', sub: 'cellar + suppliers hub', iconPath: QUICK_ICONS.bank },
+            { href: '/bartender/notebook', label: 'Open notebook', sub: 'capture a build', iconPath: QUICK_ICONS.notebook },
+            { href: '/bartender/menus', label: 'Drinks menu', sub: 'edit + publish', iconPath: QUICK_ICONS.menu },
+            { href: '/bartender/inbox', label: 'Inbox', sub: 'forward signals', iconPath: QUICK_ICONS.inbox },
+          ]}
+        />
+      </section>
+
+      <ForwardCalendar days={14} items={calendar} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-12">
         <KpiCard

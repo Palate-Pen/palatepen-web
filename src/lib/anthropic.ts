@@ -1,10 +1,10 @@
 /**
  * Central Anthropic model config. Swap once here when changing tiers.
  *
- * Currently: Haiku 4.5 — ~13× cheaper than Sonnet 4.6 on the
- * document-and-vision payloads we send (invoice scanning, recipe
- * import). Haiku handles structured-extraction-from-images well
- * enough that the quality cost is negligible for these use cases.
+ * Currently: Haiku 4.5. Handles structured extraction from invoice +
+ * spec-sheet images well enough that the chef-facing reliability we
+ * care about is met. Routed through the cache wrapper in
+ * src/lib/anthropic-cache.ts so identical inputs hit the cache.
  */
 export const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 export const ANTHROPIC_MODEL_FAMILY = 'haiku-4.5';

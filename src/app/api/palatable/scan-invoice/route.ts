@@ -18,10 +18,9 @@ import { cachedAnthropicCall, firstText } from '@/lib/anthropic-cache';
  * owner/manager/chef membership on the active site (resolved from the
  * first membership row for v1 — single-site assumption).
  *
- * Costs: fraction of a penny per call on Haiku 4.5 (~13× cheaper than
- * Sonnet 4.6 on the same payload shape). If ANTHROPIC_API_KEY is
- * missing or credits are exhausted, the call returns 4xx/5xx — no
- * silent fallback.
+ * Model: Haiku 4.5 via the cached client in src/lib/anthropic-cache.ts.
+ * If ANTHROPIC_API_KEY is missing or the call fails, returns 4xx/5xx —
+ * no silent fallback.
  */
 const ALLOWED_MIME = new Set([
   'image/jpeg',

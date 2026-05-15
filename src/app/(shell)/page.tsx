@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getShellContext } from '@/lib/shell/context';
 import { getHomeRollup } from '@/lib/home';
@@ -8,6 +7,8 @@ import { LookingAhead } from '@/components/shell/LookingAhead';
 import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
 import { getForwardCalendar } from '@/lib/safety/forward-calendar';
 import { defaultHomePath } from '@/lib/role-home';
+import { HomePanel, HomePanelEmpty } from '@/components/home/HomePanel';
+import { QuickActions, QUICK_ICONS } from '@/components/home/QuickActions';
 
 export const metadata = { title: 'Home — Palatable' };
 
@@ -57,18 +58,19 @@ export default async function HomePage() {
       <section className="mb-12">
         <SectionHead title="Today & The Week Ahead" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Panel
+          <HomePanel
             title="Today's Deliveries"
             count={
               rollup.todays_deliveries_due === 0
                 ? 'none expected'
-                : `${rollup.todays_deliveries_due} ${rollup.todays_deliveries_due === 1 ? 'expected' : 'expected'}`
+                : `${rollup.todays_deliveries_due} expected`
             }
+            href="/stock-suppliers/deliveries"
           >
             {rollup.todays_delivery_suppliers.length === 0 ? (
-              <Empty>
+              <HomePanelEmpty>
                 No deliveries on the books for today. Add one from The Walk-in when a supplier ETA lands.
-              </Empty>
+              </HomePanelEmpty>
             ) : (
               <div className="font-serif text-sm text-ink-soft leading-relaxed">
                 {rollup.todays_delivery_suppliers.slice(0, 4).join(' · ')}
@@ -79,20 +81,21 @@ export default async function HomePage() {
                 )}
               </div>
             )}
-          </Panel>
+          </HomePanel>
 
-          <Panel
+          <HomePanel
             title="Today's Prep"
             count={
               rollup.prep_total_today === 0
                 ? 'nothing scheduled'
                 : `${rollup.prep_done_today} of ${rollup.prep_total_today} done`
             }
+            href="/prep"
           >
             {rollup.prep_total_today === 0 ? (
-              <Empty>
+              <HomePanelEmpty>
                 No prep board set for today. Open Prep to start one or carry yesterday's forward.
-              </Empty>
+              </HomePanelEmpty>
             ) : (
               <div className="font-serif text-sm text-ink-soft leading-relaxed">
                 {rollup.prep_in_progress_today > 0 && (
@@ -109,8 +112,24 @@ export default async function HomePage() {
                 still to start.
               </div>
             )}
-          </Panel>
+          </HomePanel>
         </div>
+      </section>
+
+      <section className="mb-12">
+        <SectionHead title="Quick Actions" meta="tap to start" />
+        <QuickActions
+          actions={[
+            { href: '/stock-suppliers/invoices/scan', label: 'Scan invoice', sub: 'AI extract & reconcile', iconPath: QUICK_ICONS.scan },
+            { href: '/prep', label: "Today's prep", sub: rollup.prep_total_today === 0 ? 'set the board' : `${rollup.prep_done_today} of ${rollup.prep_total_today} done`, iconPath: QUICK_ICONS.prep },
+            { href: '/recipes', label: 'New recipe', sub: 'or open a draft', iconPath: QUICK_ICONS.recipe },
+            { href: '/stock-suppliers/waste', label: 'Log waste', sub: 'with photo evidence', iconPath: QUICK_ICONS.waste },
+            { href: '/stock-suppliers/the-bank', label: 'Update Bank', sub: 'price + par changes', iconPath: QUICK_ICONS.bank },
+            { href: '/notebook', label: 'Open notebook', sub: 'capture a thought', iconPath: QUICK_ICONS.notebook },
+            { href: '/safety', label: 'Safety diary', sub: 'opening checks + probes', iconPath: QUICK_ICONS.safety },
+            { href: '/margins', label: 'Margins', sub: 'GP drift watch', iconPath: QUICK_ICONS.margins },
+          ]}
+        />
       </section>
 
       <ForwardCalendar days={14} items={calendar} />
@@ -150,57 +169,6 @@ export default async function HomePage() {
       </section>
 
       <LookingAhead siteId={ctx.siteId} surface="home" />
-
-      <section className="mt-12">
-        <SectionHead title="Quick Actions" meta="tap to start" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction
-            href="/stock-suppliers"
-            label="Scan an invoice"
-            sub="AI extract & reconcile"
-            icon={
-              <>
-                <rect x="4" y="3" width="16" height="18" />
-                <path d="M8 8h8M8 12h8M8 16h5" />
-              </>
-            }
-          />
-          <QuickAction
-            href="/prep"
-            label="Open today's prep"
-            sub={
-              rollup.prep_total_today === 0
-                ? 'set the board'
-                : `${rollup.prep_done_today} done`
-            }
-            icon={
-              <>
-                <rect x="4" y="3" width="16" height="18" rx="1" />
-                <path d="M8 7h8M8 11h8M8 15h5" />
-              </>
-            }
-          />
-          <QuickAction
-            href="/recipes"
-            label="New recipe"
-            sub="Or open a draft"
-            icon={
-              <path d="M3 5c3 0 6 1 9 3 3-2 6-3 9-3v14c-3 0-6 1-9 3-3-2-6-3-9-3V5z" />
-            }
-          />
-          <QuickAction
-            href="/stock-suppliers"
-            label="Log waste"
-            sub="With photo evidence"
-            icon={
-              <>
-                <circle cx="12" cy="12" r="9" />
-                <path d="M9 9l6 6M15 9l-6 6" />
-              </>
-            }
-          />
-        </div>
-      </section>
     </div>
   );
 }
@@ -226,74 +194,6 @@ function summarySentence(rollup: Awaited<ReturnType<typeof getHomeRollup>>): str
   return parts.join(' ');
 }
 
-function Panel({
-  title,
-  count,
-  children,
-}: {
-  title: string;
-  count: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-card border border-rule px-8 py-7">
-      <div className="flex items-baseline justify-between mb-5">
-        <div className="font-display text-xs font-semibold tracking-[0.45em] uppercase text-gold">
-          {title}
-        </div>
-        <div className="font-serif italic text-sm text-muted">{count}</div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="font-serif italic text-sm text-muted leading-relaxed">
-      {children}
-    </div>
-  );
-}
-
-function QuickAction({
-  href,
-  label,
-  sub,
-  icon,
-}: {
-  href: string;
-  label: string;
-  sub: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="bg-card border border-rule px-6 py-5 flex items-center gap-4 hover:border-gold hover:bg-card-warm hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(26,22,18,0.04)] transition-all"
-    >
-      <div className="w-9 h-9 border border-gold text-gold flex items-center justify-center flex-shrink-0">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {icon}
-        </svg>
-      </div>
-      <div>
-        <div className="font-serif font-semibold text-lg tracking-[0.02em] text-ink">
-          {label}
-        </div>
-        <div className="text-xs text-muted tracking-[0.02em] mt-0.5">
-          {sub}
-        </div>
-      </div>
-    </Link>
-  );
-}
+/* Local Panel / Empty / QuickAction helpers removed — replaced by
+ * shared HomePanel + QuickActions components in src/components/home/.
+ */

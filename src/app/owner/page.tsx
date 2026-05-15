@@ -8,6 +8,8 @@ import { LookingAhead } from '@/components/shell/LookingAhead';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
 import { getForwardCalendar } from '@/lib/safety/forward-calendar';
+import { HomePanel, HomePanelEmpty } from '@/components/home/HomePanel';
+import { QuickActions, QUICK_ICONS } from '@/components/home/QuickActions';
 
 export const metadata = { title: 'Owner · Palatable' };
 
@@ -92,6 +94,70 @@ export default async function OwnerHomePage() {
         subtitle={subtitle(data)}
         activeSlug="home"
       />
+
+      <section className="mb-12">
+        <SectionHead title="Today & The Week Ahead" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <HomePanel
+            title="Outstanding"
+            count={
+              data.outstanding_invoices_count === 0
+                ? 'all caught up'
+                : gbp.format(data.outstanding_invoices_value)
+            }
+            href="/owner/cash"
+          >
+            {data.outstanding_invoices_count === 0 ? (
+              <HomePanelEmpty>
+                Nothing pending across the group. Bank is current; suppliers are paid up.
+              </HomePanelEmpty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                <strong className="not-italic font-semibold text-ink">
+                  {data.outstanding_invoices_count}
+                </strong>{' '}
+                {data.outstanding_invoices_count === 1 ? 'invoice' : 'invoices'} pending payment
+              </div>
+            )}
+          </HomePanel>
+          <HomePanel
+            title="Group Sites"
+            count={
+              siteCount === 1 ? 'single-site' : `${siteCount} addresses`
+            }
+            href="/owner/sites"
+          >
+            <div className="font-serif text-sm text-ink-soft leading-relaxed">
+              {siteCount === 1 ? (
+                <>One site rolling up to this dashboard.</>
+              ) : (
+                <>
+                  <strong className="not-italic font-semibold text-ink">
+                    {gbp.format(data.food_cost_7d)}
+                  </strong>{' '}
+                  banked food spend across the group last 7 days.
+                </>
+              )}
+            </div>
+          </HomePanel>
+        </div>
+      </section>
+
+      <section className="mb-12">
+        <SectionHead title="Quick Actions" meta="tap to start" />
+        <QuickActions
+          actions={[
+            { href: '/owner/sites', label: 'Sites', sub: 'per-site rollup', iconPath: QUICK_ICONS.sites },
+            { href: '/owner/reports', label: 'Group reports', sub: 'period exports', iconPath: QUICK_ICONS.report },
+            { href: '/owner/bank-comparison', label: 'Cross-site Bank', sub: 'price pivot', iconPath: QUICK_ICONS.bank },
+            { href: '/owner/cash', label: 'Cash', sub: 'supplier balance ledger', iconPath: QUICK_ICONS.cash },
+            { href: '/owner/team', label: 'Team', sub: 'roles + feature flags', iconPath: QUICK_ICONS.team },
+            { href: '/owner/alerts', label: 'Alerts', sub: 'group signals', iconPath: QUICK_ICONS.alerts, badge: data.outstanding_invoices_count > 0 ? 'live' : undefined, tone: 'attention' },
+            { href: '/owner/transfers', label: 'Transfers', sub: 'stock on the move', iconPath: QUICK_ICONS.transfer },
+            { href: '/owner/connections', label: 'Connections', sub: 'per-site integrations', iconPath: QUICK_ICONS.connections },
+          ]}
+        />
+      </section>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-12">
         <KpiCard

@@ -197,7 +197,7 @@ export default function ScanInvoicePage() {
         <ol className="font-serif italic text-sm text-muted leading-relaxed list-decimal pl-5 space-y-1.5">
           <li>You upload a clear photo or PDF of the invoice.</li>
           <li>
-            The system reads the supplier, line items, quantities and unit prices. Costs a fraction of a penny a call.
+            The system reads the supplier, line items, quantities and unit prices.
           </li>
           <li>
             You review the extracted lines on the next screen. Anything that didn't auto-match The Bank gets flagged so you can match it once.

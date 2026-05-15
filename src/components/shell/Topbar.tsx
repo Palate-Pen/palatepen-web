@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { CollapseToggle } from './CollapseToggle';
 
 const BREADCRUMBS: Array<{ prefix: string; label: string }> = [
-  { prefix: '/bartender/mise', label: 'Mise' },
+  { prefix: '/bartender/mise', label: 'Prep' },
   { prefix: '/bartender/specs', label: 'Specs' },
   { prefix: '/bartender/menus', label: 'Menus' },
   { prefix: '/bartender/margins', label: 'Margins' },
@@ -44,7 +44,7 @@ const NAMED_PATHS: Record<string, string> = {
   '/stock-suppliers/waste': 'Waste',
   '/stock-suppliers/credit-notes': 'Credit Notes',
   '/bartender': 'Home',
-  '/bartender/mise': 'Mise',
+  '/bartender/mise': 'Prep',
   '/bartender/specs': 'Specs',
   '/bartender/menus': 'Menus',
   '/bartender/margins': 'Margins',

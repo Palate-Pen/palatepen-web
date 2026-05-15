@@ -25,7 +25,8 @@ export type NavIconName =
   | 'sites'
   | 'revenue'
   | 'cash'
-  | 'menu-builder';
+  | 'menu-builder'
+  | 'cocktail-shaker';
 
 const PATHS: Record<NavIconName, React.ReactNode> = {
   home: (
@@ -35,10 +36,18 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
     </>
   ),
   prep: (
+    // Chef's knife — triangular blade pointing left, rectangular handle right
     <>
-      <rect x="4" y="3" width="16" height="18" rx="1" />
-      <path d="M8 7h8M8 11h8M8 15h5" />
-      <circle cx="20" cy="7" r="1.5" fill="currentColor" />
+      <path d="M3 17l14-8v4z" />
+      <path d="M17 11h5v2h-5z" />
+    </>
+  ),
+  'cocktail-shaker': (
+    // Boston shaker — cap + neck ring + tapered body
+    <>
+      <path d="M10 3h4v4h-4z" />
+      <path d="M9 7h6" />
+      <path d="M9 7l-1 13h8l-1-13" />
     </>
   ),
   recipes: (

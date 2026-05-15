@@ -6,7 +6,7 @@ import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { PrintButton } from '@/components/shell/PrintButton';
 
-export const metadata = { title: 'Mise — Bar — Palatable' };
+export const metadata = { title: 'Prep — Bar — Palatable' };
 
 type PrepRow = {
   id: string;
@@ -79,7 +79,7 @@ export default async function BarMisePage() {
             Bar Prep
           </div>
           <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-            <em className="text-gold font-semibold not-italic">Mise</em>
+            <em className="text-gold font-semibold not-italic">Prep</em>
           </h1>
           <p className="font-serif italic text-lg text-muted">
             {subtitleFor(todayItems.length, doneCount, shortCount, tomorrowItems.length)}
@@ -128,11 +128,11 @@ export default async function BarMisePage() {
       </div>
 
       <section className="mb-12">
-        <SectionHead title="Today's Mise" />
+        <SectionHead title="Today's Prep" />
         {todayItems.length === 0 ? (
           <div className="bg-card border border-rule px-10 py-12 text-center">
             <p className="font-serif italic text-muted">
-              Nothing on the board for today. Mise items will land here once they're added — syrups, peels, batched cocktails, garnishes.
+              Nothing on the board for today. Prep items will land here once they're added — syrups, peels, batched cocktails, garnishes.
             </p>
           </div>
         ) : (

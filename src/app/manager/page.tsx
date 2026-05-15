@@ -6,6 +6,8 @@ import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
 import { getForwardCalendar } from '@/lib/safety/forward-calendar';
+import { HomePanel, HomePanelEmpty } from '@/components/home/HomePanel';
+import { QuickActions, QUICK_ICONS } from '@/components/home/QuickActions';
 
 export const metadata = { title: 'Manager · Palatable' };
 
@@ -49,6 +51,79 @@ export default async function ManagerHomePage() {
           </p>
         </div>
       </div>
+
+      <section className="mb-12">
+        <SectionHead title="Today & The Week Ahead" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <HomePanel
+            title="Prep Today"
+            count={
+              data.prep_board.total_items === 0
+                ? 'nothing on the board'
+                : `${data.prep_board.done} of ${data.prep_board.total_items} done`
+            }
+            href="/prep"
+          >
+            {data.prep_board.total_items === 0 ? (
+              <HomePanelEmpty>
+                Prep board is empty for today. Chefs add items from /prep.
+              </HomePanelEmpty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                {data.prep_stations.length}{' '}
+                {data.prep_stations.length === 1 ? 'station' : 'stations'} active
+                {data.prep_board.total_items > data.prep_board.done && (
+                  <> · {data.prep_board.total_items - data.prep_board.done} still to clear</>
+                )}
+              </div>
+            )}
+          </HomePanel>
+          <HomePanel
+            title="Invoices Pending"
+            count={
+              data.outstanding_invoices_count === 0
+                ? 'all caught up'
+                : `${data.outstanding_invoices_count} waiting`
+            }
+            href="/stock-suppliers/invoices"
+          >
+            {data.outstanding_invoices_count === 0 ? (
+              <HomePanelEmpty>
+                No paperwork outstanding. Bank, suppliers and the accountant feed are current.
+              </HomePanelEmpty>
+            ) : (
+              <div className="font-serif text-sm text-ink-soft leading-relaxed">
+                <strong className="not-italic font-semibold text-ink">
+                  {gbp.format(data.outstanding_invoices_value)}
+                </strong>{' '}
+                across {data.outstanding_invoices_count}{' '}
+                {data.outstanding_invoices_count === 1 ? 'invoice' : 'invoices'}
+                {data.outstanding_oldest_days != null && data.outstanding_oldest_days > 7 && (
+                  <span className="text-attention">
+                    {' '}· oldest {data.outstanding_oldest_days}d
+                  </span>
+                )}
+              </div>
+            )}
+          </HomePanel>
+        </div>
+      </section>
+
+      <section className="mb-12">
+        <SectionHead title="Quick Actions" meta="tap to start" />
+        <QuickActions
+          actions={[
+            { href: '/stock-suppliers/invoices', label: 'Approve invoices', sub: 'review pending stack', iconPath: QUICK_ICONS.invoice, badge: data.outstanding_invoices_count > 0 ? String(data.outstanding_invoices_count) : undefined, tone: 'attention' },
+            { href: '/manager/menu-builder', label: 'Menu builder', sub: 'engineer the next menu', iconPath: QUICK_ICONS.menu },
+            { href: '/manager/team', label: 'Team matrix', sub: 'roles + feature flags', iconPath: QUICK_ICONS.team },
+            { href: '/manager/dishes', label: 'All dishes', sub: 'food + bar in one place', iconPath: QUICK_ICONS.recipe },
+            { href: '/manager/reports', label: 'Reports', sub: 'period rollup + exports', iconPath: QUICK_ICONS.report },
+            { href: '/manager/compliance', label: 'Compliance', sub: 'allergen + safety review', iconPath: QUICK_ICONS.safety },
+            { href: '/manager/connections', label: 'Connections', sub: 'POS · email · accountant', iconPath: QUICK_ICONS.connections },
+            { href: '/manager/inbox', label: 'Inbox', sub: 'forward signals', iconPath: QUICK_ICONS.inbox },
+          ]}
+        />
+      </section>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-12">
         <KpiCard

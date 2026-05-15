@@ -109,7 +109,7 @@ export const BARTENDER_SECTIONS: NavSection[] = [
     label: 'Bar',
     items: [
       { href: '/bartender', label: 'Home', icon: 'home' },
-      { href: '/bartender/mise', label: 'Mise', icon: 'prep' },
+      { href: '/bartender/mise', label: 'Prep', icon: 'cocktail-shaker' },
       { href: '/bartender/specs', label: 'Specs', icon: 'recipes' },
       { href: '/bartender/menus', label: 'Menus', icon: 'menus' },
       { href: '/bartender/margins', label: 'Margins', icon: 'margins' },
