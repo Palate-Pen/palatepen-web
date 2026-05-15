@@ -101,6 +101,29 @@
        font-semibold (600) or font-bold (700) override this. */
     font-weight: 500;
   }
+
+  /* Italic removed app-wide (2026-05-15 PM) — Cormorant Garamond
+     italic on warm paper at sub-paragraph sizes was straining to
+     read. The .italic Tailwind utility + <em> tag default italic
+     are both neutralised here. Components that need emphasis use
+     colour (text-gold), weight (font-semibold), or wrap with <em>
+     which the brand treatment already styles non-italic. */
+  em,
+  i,
+  cite,
+  dfn,
+  var,
+  address {
+    font-style: normal;
+  }
+}
+
+@layer utilities {
+  /* Override Tailwind's .italic utility so existing className="...italic..."
+     usage across ~570 occurrences keeps working but renders upright. */
+  .italic {
+    font-style: normal;
+  }
 }
 
 /* Print styles — chef-facing print output, deliberately clean.
