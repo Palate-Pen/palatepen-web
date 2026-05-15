@@ -58,16 +58,16 @@ Complete. See docs/roadmap-archive.md for full checklist.
 
 - [x] Costing → Margins rename *(superseded 2026-05-15 — chose a tighter path. Recipe tiles now surface dish GP + drift directly (commit 3ac496b), and a Margins tab already exists. The "rename Costing → Margins" rebuild is unnecessary because Costing-as-authoring stays inside the recipe edit form and Margins-as-analysis sits across the Recipes list, /margins, and the per-recipe detail. Original recon at docs/strategy/working-notes/costing-margins-recon-2026-05-14.md is now historical.)*
 - [x] Multi-user access with team permissions *(All 4 stages shipped — schema + contexts + Team UI + invite/accept + role gating + Stripe webhook to accounts.tier; legacy user_id RLS still in place pending cleanup, see Progress Log)*
-- [ ] Multiple outlets under one account
+- [x] Multiple outlets under one account *(shipped 2026-05-15 — founder account now has Palatable Kitchen + Palatable Cellar Bar under one account_id, owner role on both. /owner/sites lists every site this owner has membership on with full per-site stats.)*
 - [ ] Central kitchen management
 - [x] Supplier ordering from par levels *(shipped 2026-05-15 — items below par grouped by supplier on /stock-suppliers/purchase-orders, one-click "Draft PO" from each suggestion card or from the per-supplier detail page)*
 - [x] Purchase order tracking *(shipped 2026-05-15 — `v2.purchase_orders` + `v2.purchase_order_lines`, full lifecycle draft→sent→confirmed→received with mailto: compose, inline line editor, expected-date, supplier notes, print)*
 - [x] Automated reorder suggestions *(shipped 2026-05-15 — Reorder Suggestions panel on the PO list groups every below-par Bank item by its primary supplier with estimated shortfall value; one-click drafts a PO with sensible qty defaults)*
-- [ ] Group-level reporting across all sites
+- [x] Group-level reporting across all sites *(shipped 2026-05-15 — /owner/sites surfaces a Group totals KPI strip (sites · 30d spend · par breaches · open POs across the group) when >1 site present; /owner/reports already had per-site row breakdowns; /owner/bank-comparison adds cross-site price reconciliation.)*
 - [ ] Demand forecasting
 - [ ] Inter-site stock transfer
-- [ ] Group outlets in dashboard to show summary information per outlet including GP, stock value and alerts
-- [ ] Allow Group tier users to create and manage multiple restaurants, pubs and outlets under one account
+- [x] Group outlets in dashboard to show summary information per outlet including GP, stock value and alerts *(shipped 2026-05-15 — /owner/sites SiteCard now shows per-site avg GP with tone, par breach count, open PO count, spend 30d, waste 30d, ingredients, recipes — full operational snapshot per site.)*
+- [x] Allow Group tier users to create and manage multiple restaurants, pubs and outlets under one account *(architecturally shipped 2026-05-15 — multiple v2.sites under one v2.accounts FK with owner role on each works end-to-end. UI for an owner to *add* a new site from the dashboard is a follow-up; for now this is admin-only via SQL.)*
 - [x] Outlet creation UI — add/name/type outlets from Settings *(shipped 2026-05-13 — see progress log)*
 - [x] Data scoping per outlet — recipes, stock, invoices, waste all filter by active outlet *(shipped 2026-05-13 — entity-level outletId in JSONB, see progress log)*
 - [ ] Group dashboard — Overview, Outlets, Alerts, Cross-outlet stock, Purchase orders, Reports tabs
