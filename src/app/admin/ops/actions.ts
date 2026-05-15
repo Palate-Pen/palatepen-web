@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { ADMIN_EMAIL } from '@/lib/admin';
+import { regenerateSignalsForSite } from '@/lib/signal-detectors';
 
 export type ReseedResult =
   | {
@@ -13,6 +14,8 @@ export type ReseedResult =
       delta_seconds: number;
       delta_days: number;
       signals_refreshed: number;
+      signals_generated: number;
+      signal_breakdown: Record<string, number>;
       tables: Array<{ name: string; rows_shifted: number }>;
       timestamp: string;
     }
@@ -140,6 +143,14 @@ export async function reseedFounderDemoAction(): Promise<ReseedResult> {
     rows_shifted: Number(summary[name] ?? 0),
   }));
 
+  // Regenerate fresh detector-emitted signals based on the now-shifted
+  // state. Wipes existing detector_kind='auto' signals and re-inserts
+  // from 8 production detectors (par breach, allocations arriving,
+  // flagged invoices without credit notes, recipe drift, spillage
+  // patterns, stock-take variance, today's deliveries, tonight's prep).
+  // The previously-shifted manual signals stay in place.
+  const signalGen = await regenerateSignalsForSite(svc, siteId);
+
   // Revalidate everything that might display this data.
   revalidatePath('/');
   revalidatePath('/inbox');
@@ -178,6 +189,8 @@ export async function reseedFounderDemoAction(): Promise<ReseedResult> {
     delta_seconds: deltaSeconds,
     delta_days: deltaDays,
     signals_refreshed: Number(summary['forward_signals'] ?? 0),
+    signals_generated: signalGen.total,
+    signal_breakdown: signalGen.by_detector,
     tables: results,
     timestamp: new Date().toISOString(),
   };

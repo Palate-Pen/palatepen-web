@@ -45,18 +45,21 @@ export function ReseedDemoCard() {
       <div className="px-7 py-6">
         <p className="font-serif text-base text-ink-soft leading-relaxed mb-4">
           Shifts every time-sensitive table on the founder site forward by
-          the delta between the most-recent record and right now. The
-          demo internal cadence stays intact (Friday stock take 3 days
-          before today's signals, etc.) — everything just slides forward
-          as a block.
+          the delta between the most-recent record and right now, then
+          regenerates fresh forward signals from the new state by running
+          eight detectors (par breach, allocations arriving, flagged
+          invoices, recipe drift, spillage patterns, stock variance,
+          today's deliveries, tonight's prep).
         </p>
         <p className="font-serif italic text-sm text-muted leading-relaxed mb-2">
-          Also clears <code className="font-mono text-xs bg-paper-warm px-1.5 py-0.5 rounded">dismissed_at</code>{' '}
-          + <code className="font-mono text-xs bg-paper-warm px-1.5 py-0.5 rounded">acted_at</code>{' '}
-          on every signal so the Inbox demos full again.
+          Internal cadence stays intact (Friday stock take 3 days before
+          today's signals, etc.) — everything slides as a block. Manual
+          signals re-anchor via the shift; detector signals get wiped +
+          re-emitted from current state.
         </p>
         <p className="font-serif italic text-sm text-muted">
-          Safe to spam — second click has delta ≈ 0 and effectively no-ops.
+          Safe to spam — second click has delta ≈ 0 and only re-runs the
+          detectors against unchanged state.
         </p>
       </div>
 
@@ -71,8 +74,37 @@ export function ReseedDemoCard() {
               {result.site_name}
             </em>{' '}
             forward by {humaniseDelta(result.delta_seconds, result.delta_days)}
-            . {result.signals_refreshed}{' '}
-            {result.signals_refreshed === 1 ? 'signal' : 'signals'} refreshed.
+            .{' '}
+            <em className="text-gold not-italic font-medium italic">
+              {result.signals_generated}
+            </em>{' '}
+            fresh {result.signals_generated === 1 ? 'signal' : 'signals'}{' '}
+            emitted from current state.
+          </div>
+
+          <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+            Detector output
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-6">
+            {Object.entries(result.signal_breakdown).map(([k, n]) => (
+              <div key={k} className="bg-card px-4 py-3">
+                <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+                  {k.replace(/_/g, ' ')}
+                </div>
+                <div
+                  className={
+                    'font-serif font-semibold text-lg leading-none mt-1 ' +
+                    (n > 0 ? 'text-ink' : 'text-muted-soft')
+                  }
+                >
+                  {n > 0 ? n : '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+            Tables shifted
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-rule border border-rule">
             {result.tables.map((t) => (
