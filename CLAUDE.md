@@ -117,31 +117,28 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 
 ## Recent activity
 
-**Last shipped:**
-- Forward menu planner — nested Live | Planning toggle on chef Menus + bar Menus + parallel Planning tab on manager Menu Builder. Schema `v2.menu_plans` + `v2.menu_plan_items` (chef-entered popularity 1–5; POS replaces later). 3-layer Operational Intelligence: KPIs (planned GP%, net add/remove, days to launch), Kasavana & Smith 2×2 matrix (Stars / Plowhorses / Puzzles / Dogs), Looking Ahead surfacing plowhorses needing intervention, surviving dogs, unrated items, missing launch dates. Founder demo seeded with summer menu plans (kitchen + bar, 21 items across all four actions).
-- Bar/chef recipe leakage fix — `FOOD_DISH_TYPES` constant + applied on chef Recipes, Menus, Prep, Notebook, Margins. Bar surfaces stay filtered to `BAR_DISH_TYPES`. Manager-home aggregates both.
-- Contrast pass — globals.css ink-soft / muted / muted-soft pushed one step darker; light-mode body text now hits WCAG AAA at default font-scale. Dark-mode counterparts lifted in parallel.
-- Credit notes — v1 wedge piece #3 (`988e93c`). Schema `v2.credit_notes` + `v2.credit_note_lines` (1:1 with invoices, four-state lifecycle, five reasons). Draft button on flagged-invoice page pre-seeds lines from the invoice's discrepancies. Detail view has inline line editor, mailto: compose with body pre-filled, print-to-PDF, and state actions (Send / Resolved / Cancel / Re-open). Stock & Suppliers hub shows in-flight count. Seeded on jack@: one resolved (£27.54 Aubrey Allen lamb short), one sent (£2.77 Bookers damaged chicken), one draft (£21.04 Reza Foods wrong cut) + Inbox forward signal pointing at the draft.
-- Write-paths across every surface — Recipe CRUD with allergens + method + lock; Bank ingredient CRUD + manual price updates; Margins what-if slider saves new prices with cost-baseline re-anchor; Prep status cycle + inline notes + Add Prep Item dialog; Suppliers/Deliveries/Waste add dialogs; Inbox signal dismiss + acted-on.
-- Manager Home (real data over locked v1 mockup — KPIs, prep status, reporting grid) + Owner shell scaffold (8 tabs at `/owner/*`, Home + Sites live, 6 pending with OwnerComingSoon placeholders).
-- Legacy compliance + ops features merged: UK FIR 14-allergen tri-state on Recipes + Bank with nut/cereal sub-types; per-100g nutrition + UK DH 2013 FoP traffic lights; recipe method[] with numbered-step editor; public menu reader at `/m/[slug]`; inbox email token in Settings; AI recipe import from URL; per-line invoice discrepancy flagging; account-level preferences (currency/GP target/kitchen size+location/stock day); UK FIR Compliance Check modal; V/VG/GF/DF/NF dietary chips derived from allergen state; per-supplier detail view with reliability score; email source badge; notebook tag filter.
-- Topbar tier + view buttons — tier chip is a Link to /settings#tier; founder shows static gold chip. View chip is a dropdown listing every accessible surface (Chef + Manager + Owner + Founder) gated on role + email.
-- Responsive overhaul (`8474da4`) — Sidebar gained mobile drawer mode + hamburger trigger; generalised Sidebar component reused across chef/manager/owner; manager + owner shells now match the chef pattern (Sidebar + Topbar + scrollable main, eyebrow strips dropped); page padding responsive across 38 wrappers (`px-4 sm:px-8 lg:px-14`); content centred via `mx-auto`.
-- jack@'s founder account re-seeded as a full 3-month operating demo: 32 ingredients with allergens + nutrition, 6 recipes with method + cost baselines, 1,828 price history points across 90 days, 64 deliveries, 57 invoices + 228 lines, 228 waste entries, 16 forward signals across all 8 surfaces, account + user preferences set, inbox token live. Margins drift banner, Bank sparklines, Looking Ahead cards, supplier reliability — all rendering off real seeded state.
+**Last shipped (2026-05-16 evening session):**
+- Public marketing live — `palateandpen.co.uk` now serves the full Palate & Pen consulting site (hero · about · 6 services grid · Palatable showcase · 3-way approach · contact · footer). `app.palateandpen.co.uk` root for unauthenticated visitors renders the Palatable landing (hero with Looking Ahead mockup · problem grid · 8 modules · Margins showcase · dark Safety section with EHO mockup · 4-tier pricing · final CTA). All trial / sign-in / sign-up buttons route to `/coming-soon-feature` ("Trials open very soon" stub with mailto early-access CTA). `/signin` remains directly reachable for the founder. Middleware rewrites unauth `/` on app host to `/landing`. Commit `8180f6b`.
+- Safety as its own viewer — promoted from a chef tab to a first-class peer of Chef / Bar / Manager / Owner. New SAFETY_SECTIONS sidebar (Daily Diary: Home / Probe / Issues / Cleaning / Training, plus EHO: HACCP / EHO Export). Topbar viewer chip gained "Safety view". Route group moved from `(shell)/safety/*` to top-level `safety/*` so it gets its own layout. Mockup-matched home page: date strip · Looking Ahead bar · Opening Checks card grid with autosave · During Service auto-logged grid pulling deliveries / probe readings / waste · 12-week diary calendar (day-num + dot, today gold ring) · Quick Actions list · dark EHO Mode export card · full FSA reference strip. Commits `347ea74` + `e6b0f30`.
+- Safety sub-pages mockup-matched — Probe (form + today's-readings sidebar), Cleaning (frequency-grouped tasks + overdue detector + today's sign-offs feed), Training (per-staff cards with cert expiry-band colouring), Incidents (4-tile issue type picker · 3-tile severity · 14 UK FIR allergen pills · 7-item corrective-action checklist · severity encoded into body_md preamble), new EHO export page (evidence tile grid · dark hero · disabled PDF export), new HACCP wizard intro (9-step sidebar · step-1 pre-fill banner). Looking Ahead detectors on each surface. Commit `609a42b` for incidents.
+- Opening Checks attribution — `submitOpeningCheckAction` stamps per-question `{ by, at }` into `answers._meta` (diff-aware, autosaves don't overwrite original sign-off timestamps). Diary classifier + EHO rollup + behavioural-gap detector all filter `_meta` out before iterating. Surface meta as "✓ HH:MM · Jack" per tile.
+- Team UI refactor — TeamMatrix → TeamList + click-through detail at `/owner/team/[id]` + `/manager/team/[id]` (MemberHeader avatar + role selector over MemberPermissions grouped by domain with override badges). Switch Surface + Team & Permissions sections surfaced from owner/manager/chef/bar Settings. Commit `c028e03`.
+- Cleaning seed-schedule fix — action now takes a `siteId` arg (was picking arbitrary first membership, wrong site for multi-site users); new `SeedScheduleButton` client component surfaces errors so silent failures stop. Commit `41df10a`.
+- Sidebar icons refreshed — settings (aperture), connections (globe), compliance/safety (shield + check) match the chef-safety-mockup-v1.html glyphs.
 
 **In flight:**
-- Smoke-test the post-`8474da4` deploy in production at mobile + tablet + desktop widths.
-- The eight pending Manager tabs (Team, P&L, Deliveries, Suppliers, Service Notes, Compliance, Reports, Settings) and six pending Owner tabs (Revenue, Margins, Suppliers, Cash, Reports) remain mockup-pending; sidebar already shows them as "soon".
+- Pricing reconciliation — marketing landing shows Pro £49 / Kitchen £79 / Group £119; CLAUDE.md still says Pro £25 / Kitchen £59 / Group £129. Resolve before launch.
+- Apply migrations queued for Supabase SQL editor: `20260516_v2_safety_tables.sql`, `20260516_v2_accounts_stripe.sql`, `20260516_v2_intelligence_event_emitters.sql`, `20260516_v2_anthropic_usage.sql` (if not already done).
+- Vercel env vars + Stripe / inbound-email webhook configuration confirmed in place from legacy carry-over.
+- Smoke-test the new marketing pages post-deploy at mobile + tablet + desktop widths.
 
 **Next:**
+- Probe / Incident / Cleaning / Training pages have the data primitives wired but no live menu/recipe picker — currently free-form input. Wire the dish picker tabs (Today's Menu / Prep Items / Recipes Library) from the mockup as a follow-up batch.
+- HACCP wizard form fields (steps 1–9) — currently just the intro + step-1 stub. Auto-populate from settings, menu, recipes, suppliers, training.
+- EHO export PDF generation — page is a live preview of the bundle but the actual PDF export is disabled. Next batch.
 - Photo upload + Supabase Storage bucket (recipes + branding).
-- Cost simulator modal on recipes (drag-adjust % per ingredient).
-- Spec sheet OCR port from legacy.
-- Single-recipe print + recipe book PDF.
-- API key management in Settings (Kitchen+ tier feature).
 - Notebook captures pt 2 (voice/photo/sketch via Storage — task #50).
 - Manager and Owner pending tabs need mockups locked before scaffolding the rest.
-- **Safety module (v1 wedge piece #4)** — three-week build backlogged. Spec in `docs/CLAUDE-CODE-SAFETY-HANDOFF.md`; mockups land in `docs/strategy/mockups/` before Week 2. See new "Phase — Safety Module" in Roadmap above.
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.
 
