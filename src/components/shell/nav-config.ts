@@ -33,6 +33,7 @@ export const MANAGER_SECTIONS: NavSection[] = [
     label: 'Site',
     items: [
       { href: '/manager', label: 'Home', icon: 'home' },
+      { href: '/manager/dishes', label: 'Dishes', icon: 'recipes' },
       {
         href: '/manager/menu-builder',
         label: 'Menu Builder',

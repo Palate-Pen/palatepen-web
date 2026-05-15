@@ -404,6 +404,12 @@ const MANAGER_TABS: Array<{
 }> = [
   { name: 'Home', href: null, status: 'live', description: 'this page' },
   {
+    name: 'Dishes',
+    href: '/manager/dishes',
+    status: 'live',
+    description: 'every recipe + spec across food and bar in one library',
+  },
+  {
     name: 'Menu Builder',
     href: '/manager/menu-builder',
     status: 'live',
