@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getRecipes, type Recipe } from '@/lib/recipes';
+import { FOOD_DISH_TYPES } from '@/lib/bar';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import {
@@ -9,6 +10,8 @@ import {
   shouldRenderDietary,
   type DietaryTag,
 } from '@/lib/dietary';
+import { PlannerView } from '@/components/menu-planner/PlannerView';
+import { ModeTabs } from '@/components/menu-planner/ModeTabs';
 
 export const metadata = { title: 'Menus — Palatable' };
 
@@ -44,9 +47,29 @@ const DIETARY_CHIP_CLASS: Record<DietaryTag, string> = {
   NF: 'bg-paper-warm text-ink-soft border-rule',
 };
 
-export default async function MenusPage() {
+export default async function MenusPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mode?: string }>;
+}) {
   const ctx = await getShellContext();
-  const recipes = await getRecipes(ctx.siteId);
+  const sp = searchParams ? await searchParams : {};
+  const mode = sp?.mode === 'planning' ? 'planning' : 'live';
+
+  if (mode === 'planning') {
+    return (
+      <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+        <ModeTabs current="planning" basePath="/menus" />
+        <PlannerView
+          siteId={ctx.siteId}
+          surface="kitchen"
+          revalidatePathname="/menus"
+        />
+      </div>
+    );
+  }
+
+  const recipes = await getRecipes(ctx.siteId, { dishTypes: FOOD_DISH_TYPES });
 
   // Group by menu_section; only include recipes that have a sell price
   // (they're "on the menu" — others are kitchen-only prep).
@@ -67,6 +90,7 @@ export default async function MenusPage() {
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <ModeTabs current="live" basePath="/menus" />
       <div className="flex justify-between items-start mb-8 gap-6 flex-wrap">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">

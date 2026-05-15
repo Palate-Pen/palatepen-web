@@ -2,6 +2,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getNotebookData } from '@/lib/notebook';
 import { getUserPreferences } from '@/lib/preferences';
 import { getRecipes } from '@/lib/recipes';
+import { FOOD_DISH_TYPES } from '@/lib/bar';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { AddNoteDialog, type RecipeOption } from './AddNoteDialog';
@@ -80,7 +81,7 @@ export default async function NotebookPage() {
   const [data, prefs, recipes] = await Promise.all([
     getNotebookData(ctx.siteId),
     getUserPreferences(ctx.userId),
-    getRecipes(ctx.siteId),
+    getRecipes(ctx.siteId, { dishTypes: FOOD_DISH_TYPES }),
   ]);
   const recipeOptions: RecipeOption[] = recipes.map((r) => ({
     id: r.id,

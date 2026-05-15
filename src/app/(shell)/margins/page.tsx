@@ -13,6 +13,7 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { GPBenchmarkPanel } from '@/components/gp/GPBenchmarkPanel';
+import { FOOD_DISH_TYPES } from '@/lib/bar';
 
 export const metadata = { title: 'Margins — Palatable' };
 
@@ -40,7 +41,7 @@ const dotBg: Record<NonNullable<GpTone>, string> = {
 
 export default async function MarginsPage() {
   const ctx = await getShellContext();
-  const data = await getMarginsData(ctx.siteId);
+  const data = await getMarginsData(ctx.siteId, { dishTypes: FOOD_DISH_TYPES });
 
   const menuGpTone = gpToneFor(data.menu_gp_pct);
   const needsAttention = data.dishes_attention + data.dishes_urgent;

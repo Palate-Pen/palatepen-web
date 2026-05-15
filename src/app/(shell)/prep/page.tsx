@@ -6,6 +6,7 @@ import {
   type PrepStatus,
 } from '@/lib/prep';
 import { getRecipes } from '@/lib/recipes';
+import { FOOD_DISH_TYPES } from '@/lib/bar';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { PrepStatusButton } from './PrepStatusButton';
@@ -72,7 +73,7 @@ export default async function PrepPage() {
   const todayIso = isoDate(today);
   const [board, recipes] = await Promise.all([
     getPrepBoard(ctx.siteId, todayIso),
-    getRecipes(ctx.siteId),
+    getRecipes(ctx.siteId, { dishTypes: FOOD_DISH_TYPES }),
   ]);
 
   const days = rollingDays(today);

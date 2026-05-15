@@ -10,6 +10,13 @@ export const BAR_DISH_TYPES: DishType[] = [
   'spirit',
 ];
 
+/**
+ * Chef-shell surfaces filter recipes to food only — bar specs live
+ * exclusively in /bartender. Anywhere /recipes, /menus, /prep, /notebook,
+ * or /margins lists "recipes", scope with this set.
+ */
+export const FOOD_DISH_TYPES: DishType[] = ['food'];
+
 export type SpecListRow = {
   id: string;
   name: string;

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getRecipes, type Recipe } from '@/lib/recipes';
+import { FOOD_DISH_TYPES } from '@/lib/bar';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { AllergenChips } from '@/components/allergens/AllergenPanel';
@@ -28,7 +29,7 @@ export default async function RecipesPage({
   const ctx = await getShellContext();
   const sp = searchParams ? await searchParams : {};
   const activeTag = sp?.tag?.toLowerCase().trim() || null;
-  const allRecipes = await getRecipes(ctx.siteId);
+  const allRecipes = await getRecipes(ctx.siteId, { dishTypes: FOOD_DISH_TYPES });
   const recipes = activeTag
     ? allRecipes.filter((r) => r.tags.includes(activeTag))
     : allRecipes;

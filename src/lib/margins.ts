@@ -1,4 +1,4 @@
-import { getRecipes, type Recipe } from './recipes';
+import { getRecipes, type Recipe, type DishType } from './recipes';
 
 export type GpTone = 'healthy' | 'attention' | 'urgent' | null;
 
@@ -94,8 +94,11 @@ function driftPctFor(recipe: Recipe): number | null {
   return ((recipe.cost_per_cover - recipe.cost_baseline) / recipe.cost_baseline) * 100;
 }
 
-export async function getMarginsData(siteId: string): Promise<MarginsData> {
-  const recipes = await getRecipes(siteId);
+export async function getMarginsData(
+  siteId: string,
+  options: { dishTypes?: DishType[] } = {},
+): Promise<MarginsData> {
+  const recipes = await getRecipes(siteId, { dishTypes: options.dishTypes });
 
   const dishRows: DishRow[] = recipes.map((r) => {
     const gp = gpPctFor(r);

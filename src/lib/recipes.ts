@@ -21,14 +21,23 @@ export type CocktailTechnique =
 export type RecipeIngredient = {
   id: string;
   ingredient_id: string | null;
+  /** When set, this line is a sub-recipe (component / mother sauce /
+   *  stock base) rather than a Bank ingredient. ingredient_id is null
+   *  in that case. line_cost comes from the sub-recipe's per-portion
+   *  cost × this line's qty. */
+  sub_recipe_id: string | null;
+  /** Display name. For Bank lines it's the ingredient name; for
+   *  sub-recipe lines it's the sub-recipe's name. For free-text lines
+   *  it's whatever the chef typed. */
   name: string;
   qty: number;
   unit: string;
   position: number;
   current_price: number | null;
   /** Cost of this line. For ml/L/g/kg pours from packs, calculated as
-   *  qty × (current_price / pack_volume_ml). For everything else,
-   *  qty × current_price. Null when no FK / no price. */
+   *  qty × (current_price / pack_volume_ml). For sub-recipes, qty ×
+   *  per-portion cost. For everything else, qty × current_price.
+   *  Null when no FK / no price. */
   line_cost: number | null;
   /** Nutrition per 100g/ml, only populated when linked to The Bank. */
   nutrition: NutritionState | null;
@@ -103,6 +112,86 @@ function lineCostFor(
   return price * qty;
 }
 
+/**
+ * Recursive sub-recipe cost-per-portion computation. Walks the chain
+ * with a depth cap + visited-set so cycles can't blow the stack. When
+ * a cycle or depth-cap is hit, the offending node contributes 0.
+ *
+ * "Per portion" = sub-recipe.total_cost / sub-recipe.serves. The
+ * parent recipe's line qty is interpreted as a portion count (so
+ * "0.5 batches" or "2 portions" both work — the chef sets the unit
+ * field to whatever reads naturally).
+ */
+const SUB_RECIPE_MAX_DEPTH = 5;
+
+async function computeSubRecipeCostPerPortion(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  subRecipeId: string,
+  visited: Set<string>,
+  depth: number,
+): Promise<number> {
+  if (depth > SUB_RECIPE_MAX_DEPTH) return 0;
+  if (visited.has(subRecipeId)) return 0; // cycle guard
+  visited.add(subRecipeId);
+
+  const { data: r } = await supabase
+    .from('recipes')
+    .select('id, serves, recipe_ingredients (qty, unit, ingredient_id, sub_recipe_id)')
+    .eq('id', subRecipeId)
+    .is('archived_at', null)
+    .single();
+  if (!r) return 0;
+
+  const lines = (r.recipe_ingredients ?? []) as Array<{
+    qty: number;
+    unit: string;
+    ingredient_id: string | null;
+    sub_recipe_id: string | null;
+  }>;
+
+  const bankIds = Array.from(
+    new Set(lines.map((l) => l.ingredient_id).filter((id): id is string => !!id)),
+  );
+  const { data: bankRows } = await supabase
+    .from('ingredients')
+    .select('id, current_price, pack_volume_ml')
+    .in('id', bankIds.length ? bankIds : ['00000000-0000-0000-0000-000000000000']);
+  const priceById = new Map(
+    (bankRows ?? []).map((b) => [
+      b.id as string,
+      b.current_price == null ? null : Number(b.current_price),
+    ]),
+  );
+  const packVolumeById = new Map(
+    (bankRows ?? []).map((b) => [
+      b.id as string,
+      b.pack_volume_ml == null ? null : Number(b.pack_volume_ml),
+    ]),
+  );
+
+  const serves =
+    r.serves != null && Number(r.serves) > 0 ? Number(r.serves) : 1;
+  let total = 0;
+  for (const line of lines) {
+    const qty = Number(line.qty);
+    if (line.sub_recipe_id) {
+      const perPortion = await computeSubRecipeCostPerPortion(
+        supabase,
+        line.sub_recipe_id,
+        new Set(visited),
+        depth + 1,
+      );
+      total += perPortion * qty;
+    } else if (line.ingredient_id) {
+      const price = priceById.get(line.ingredient_id);
+      if (price == null) continue;
+      const pvml = packVolumeById.get(line.ingredient_id) ?? null;
+      total += lineCostFor(line.unit, qty, price, pvml);
+    }
+  }
+  return total / serves;
+}
+
 function parseMethod(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter((s): s is string => typeof s === 'string');
@@ -122,7 +211,7 @@ export async function getRecipe(
 
   const { data: ingredients } = await supabase
     .from('recipe_ingredients')
-    .select('id, ingredient_id, name, qty, unit, position')
+    .select('id, ingredient_id, sub_recipe_id, name, qty, unit, position')
     .eq('recipe_id', recipeId)
     .order('position', { ascending: true });
 
@@ -133,6 +222,14 @@ export async function getRecipe(
         .filter((id): id is string => !!id),
     ),
   );
+  const subRecipeIds = Array.from(
+    new Set(
+      (ingredients ?? [])
+        .map((i) => i.sub_recipe_id as string | null)
+        .filter((id): id is string => !!id),
+    ),
+  );
+
   const { data: bankRows } = await supabase
     .from('ingredients')
     .select('id, current_price, nutrition, pack_volume_ml')
@@ -153,22 +250,46 @@ export async function getRecipe(
     (bankRows ?? []).map((b) => [b.id as string, parseNutrition(b.nutrition)]),
   );
 
+  const subRecipePerPortion = new Map<string, number>();
+  for (const id of subRecipeIds) {
+    const cost = await computeSubRecipeCostPerPortion(
+      supabase,
+      id,
+      new Set<string>([recipeId]),
+      1,
+    );
+    subRecipePerPortion.set(id, cost);
+  }
+
   const rIngs: RecipeIngredient[] = (ingredients ?? []).map((i) => {
     const ingId = i.ingredient_id as string | null;
-    const price = ingId ? priceById.get(ingId) ?? null : null;
-    const pvml = ingId ? packVolumeById.get(ingId) ?? null : null;
+    const subId = i.sub_recipe_id as string | null;
     const qty = Number(i.qty);
     const unit = i.unit as string;
+    let price: number | null = null;
+    let lineCost: number | null = null;
+    let nutrition: NutritionState | null = null;
+    if (subId) {
+      const perPortion = subRecipePerPortion.get(subId) ?? 0;
+      price = perPortion;
+      lineCost = perPortion * qty;
+    } else if (ingId) {
+      price = priceById.get(ingId) ?? null;
+      const pvml = packVolumeById.get(ingId) ?? null;
+      lineCost = price != null ? lineCostFor(unit, qty, price, pvml) : null;
+      nutrition = nutritionById.get(ingId) ?? null;
+    }
     return {
       id: i.id as string,
       ingredient_id: ingId,
+      sub_recipe_id: subId,
       name: i.name as string,
       qty,
       unit,
       position: i.position as number,
       current_price: price,
-      line_cost: price != null ? lineCostFor(unit, qty, price, pvml) : null,
-      nutrition: ingId ? nutritionById.get(ingId) ?? null : null,
+      line_cost: lineCost,
+      nutrition,
     };
   });
 
@@ -204,7 +325,9 @@ export async function getRecipe(
     ingredients: rIngs,
     total_cost: totalCost,
     cost_per_cover: costPerCover,
-    matched_ingredient_count: rIngs.filter((i) => i.ingredient_id != null).length,
+    matched_ingredient_count: rIngs.filter(
+      (i) => i.ingredient_id != null || i.sub_recipe_id != null,
+    ).length,
   };
 }
 
@@ -232,7 +355,7 @@ export async function getRecipes(
 
   const { data: ingredients, error: ingErr } = await supabase
     .from('recipe_ingredients')
-    .select('id, recipe_id, ingredient_id, name, qty, unit, position')
+    .select('id, recipe_id, ingredient_id, sub_recipe_id, name, qty, unit, position')
     .in('recipe_id', recipeIds)
     .order('position', { ascending: true });
   if (ingErr) throw new Error(`recipes.getRecipes ingredients: ${ingErr.message}`);
@@ -241,6 +364,13 @@ export async function getRecipes(
     new Set(
       (ingredients ?? [])
         .map((i) => i.ingredient_id as string | null)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  const subRecipeIds = Array.from(
+    new Set(
+      (ingredients ?? [])
+        .map((i) => i.sub_recipe_id as string | null)
         .filter((id): id is string => !!id),
     ),
   );
@@ -266,26 +396,49 @@ export async function getRecipes(
     (bankRows ?? []).map((b) => [b.id as string, parseNutrition(b.nutrition)]),
   );
 
+  const subRecipePerPortion = new Map<string, number>();
+  for (const id of subRecipeIds) {
+    const cost = await computeSubRecipeCostPerPortion(
+      supabase,
+      id,
+      new Set<string>(),
+      1,
+    );
+    subRecipePerPortion.set(id, cost);
+  }
+
   return recipes.map((r): Recipe => {
     const rIngs = (ingredients ?? [])
       .filter((i) => i.recipe_id === r.id)
       .map((i): RecipeIngredient => {
         const ingId = i.ingredient_id as string | null;
-        const price = ingId ? priceById.get(ingId) ?? null : null;
-        const pvml = ingId ? packVolumeById.get(ingId) ?? null : null;
+        const subId = i.sub_recipe_id as string | null;
         const qty = Number(i.qty);
         const unit = i.unit as string;
-        const lineCost = price != null ? lineCostFor(unit, qty, price, pvml) : null;
+        let price: number | null = null;
+        let lineCost: number | null = null;
+        let nutrition: NutritionState | null = null;
+        if (subId) {
+          const perPortion = subRecipePerPortion.get(subId) ?? 0;
+          price = perPortion;
+          lineCost = perPortion * qty;
+        } else if (ingId) {
+          price = priceById.get(ingId) ?? null;
+          const pvml = packVolumeById.get(ingId) ?? null;
+          lineCost = price != null ? lineCostFor(unit, qty, price, pvml) : null;
+          nutrition = nutritionById.get(ingId) ?? null;
+        }
         return {
           id: i.id as string,
           ingredient_id: ingId,
+          sub_recipe_id: subId,
           name: i.name as string,
           qty,
           unit,
           position: i.position as number,
           current_price: price,
           line_cost: lineCost,
-          nutrition: ingId ? nutritionById.get(ingId) ?? null : null,
+          nutrition,
         };
       });
 
@@ -299,7 +452,9 @@ export async function getRecipes(
       serves != null && serves > 0 && portion != null
         ? (totalCost * portion) / serves
         : null;
-    const matched = rIngs.filter((i) => i.ingredient_id != null).length;
+    const matched = rIngs.filter(
+      (i) => i.ingredient_id != null || i.sub_recipe_id != null,
+    ).length;
 
     return {
       id: r.id as string,
