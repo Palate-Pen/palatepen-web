@@ -159,7 +159,7 @@ export default async function BarMenusPage({
         </div>
       )}
 
-      <LookingAhead siteId={ctx.siteId} surface="menus" />
+      <LookingAhead siteId={ctx.siteId} surface="bar_menus" />
       </div>
 
       <MenuPrint

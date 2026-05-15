@@ -1,5 +1,6 @@
 -- v2 migration: stock_transfers + stock_transfer_lines — Phase 3 transfer loop
 -- Date: 2026-05-15
+-- Applied: 2026-05-15 (manual run via Supabase SQL editor; founder demo seed deferred to a follow-up — feature ships live without seed data first)
 --
 -- Stock transfers between pools. Two flavours fall out of one schema:
 --   1. Intra-site:  kitchen <-> bar at the same site

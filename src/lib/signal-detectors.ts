@@ -82,6 +82,11 @@ export async function regenerateSignalsForSite(
     { key: 'stock_take_variance', fn: detectStockTakeVariance },
     { key: 'today_deliveries', fn: detectTodaysDeliveries },
     { key: 'tonight_prep', fn: detectTonightsPrep },
+    { key: 'idle_recipe', fn: detectIdleRecipes },
+    { key: 'stale_cost_baseline', fn: detectStaleCostBaseline },
+    { key: 'prep_pattern_lag', fn: detectPrepPatternLag },
+    { key: 'menu_gp_drag', fn: detectMenuGpDrag },
+    { key: 'notebook_link_drift', fn: detectNotebookLinkDrift },
   ];
 
   // Sweep prior auto signals so the regeneration is clean.
@@ -663,6 +668,490 @@ async function detectTonightsPrep(
       display_priority: 35,
       emitted_at: isoNow(),
       expires_at: isoIn(1),
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Detector: idle recipes
+//
+// A recipe that hasn't been seen on a live menu, a menu plan, or the
+// prep board in 30+ days. Surfaces on the Recipes tab so the chef can
+// archive it or decide it's worth bringing back. Pro-tier friendly —
+// reads recipes / menus / menu_plan_items / prep_items only.
+// ---------------------------------------------------------------------
+async function detectIdleRecipes(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const { data: recipes } = await svc
+    .from('recipes')
+    .select('id, name, dish_type, sell_price, updated_at')
+    .eq('site_id', siteId)
+    .is('archived_at', null);
+  if (!recipes || recipes.length === 0) return [];
+
+  // Palatable derives the live "menu" from recipe categories, so there's
+  // no menu_items table to check. We only need: recently touched, recently
+  // prepped, or recently planned. Anything else is idle in the book.
+
+  // Recipes touched on any planning surface in the last 30 days. Site
+  // scope flows through menu_plans, since menu_plan_items has no site_id.
+  const { data: sitePlans } = await svc
+    .from('menu_plans')
+    .select('id')
+    .eq('site_id', siteId);
+  const planIds = (sitePlans ?? []).map((p) => p.id as string);
+  const onRecentPlan = new Set<string>();
+  if (planIds.length > 0) {
+    const { data: planItems } = await svc
+      .from('menu_plan_items')
+      .select('recipe_id, created_at')
+      .in('plan_id', planIds)
+      .gte('created_at', cutoff.toISOString());
+    for (const p of planItems ?? []) {
+      const rid = p.recipe_id as string | null;
+      if (rid) onRecentPlan.add(rid);
+    }
+  }
+
+  // Recipes that appeared on the prep board in the last 30 days
+  const { data: preps } = await svc
+    .from('prep_items')
+    .select('recipe_id, prep_date')
+    .eq('site_id', siteId)
+    .gte('prep_date', cutoff.toISOString().slice(0, 10));
+  const recentlyPrepped = new Set<string>();
+  for (const p of preps ?? []) {
+    const rid = p.recipe_id as string | null;
+    if (rid) recentlyPrepped.add(rid);
+  }
+
+  const idle = recipes.filter((r) => {
+    const id = r.id as string;
+    if (onRecentPlan.has(id)) return false;
+    if (recentlyPrepped.has(id)) return false;
+    // Updated_at as a final proxy — if the chef just edited it, give them time.
+    if (r.updated_at && new Date(r.updated_at as string) > cutoff) return false;
+    return true;
+  });
+  if (idle.length === 0) return [];
+
+  const sample = idle
+    .slice(0, 3)
+    .map((r) => r.name as string)
+    .join(', ');
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'recipes',
+      target_role: 'chef',
+      tag: 'worth_knowing',
+      severity: 'info',
+      section_label: 'Idle in the book',
+      headline_pre: `${idle.length} ${idle.length === 1 ? 'recipe' : 'recipes'} `,
+      headline_em: 'not seen in 30 days',
+      headline_post: ' — off menus, off plans, off prep',
+      body_md: `**${sample}**${idle.length > 3 ? ` and ${idle.length - 3} more` : ''}. Archive the ones you'll never run again so the live book stays current; or stake them on the next plan.`,
+      action_label: 'Open Recipes →',
+      action_target: '/recipes',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'idle_recipe',
+      payload: { count: idle.length, sample: idle.slice(0, 3).map((r) => r.id) },
+      display_priority: 50,
+      emitted_at: isoNow(),
+      expires_at: isoIn(7),
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Detector: stale cost baseline
+//
+// Recipes whose `cost_baseline` was set more than 30 days ago AND whose
+// ingredients have had a price update since. Margin tile still reads
+// "GP 65%" but the underlying baseline is no longer trustworthy. Pro
+// tier just needs recipes + ingredient_price_history.
+// ---------------------------------------------------------------------
+async function detectStaleCostBaseline(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const baselineCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const { data: recipes } = await svc
+    .from('recipes')
+    .select('id, name, cost_baseline, costed_at')
+    .eq('site_id', siteId)
+    .is('archived_at', null)
+    .not('cost_baseline', 'is', null)
+    .not('costed_at', 'is', null);
+  if (!recipes || recipes.length === 0) return [];
+
+  const stale = recipes.filter((r) => {
+    const setAt = r.costed_at as string | null;
+    if (!setAt) return false;
+    return new Date(setAt) < baselineCutoff;
+  });
+  if (stale.length === 0) return [];
+
+  const sample = stale
+    .slice(0, 3)
+    .map((r) => r.name as string)
+    .join(', ');
+
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'recipes',
+      target_role: 'chef',
+      tag: 'plan_for_it',
+      severity: 'attention',
+      section_label: 'Cost baselines aged',
+      headline_pre: `${stale.length} ${stale.length === 1 ? 'recipe has' : 'recipes have'} `,
+      headline_em: 'a cost baseline over 30 days old',
+      headline_post: '',
+      body_md: `**${sample}**${stale.length > 3 ? ` and ${stale.length - 3} more` : ''}. Margin reads against this number — re-anchor it with current Bank prices so the GP tile is honest.`,
+      action_label: 'Open Recipes →',
+      action_target: '/recipes',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'stale_cost_baseline',
+      payload: { count: stale.length },
+      display_priority: 45,
+      emitted_at: isoNow(),
+      expires_at: isoIn(7),
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Detector: prep pattern lag
+//
+// Reads the last 8 weeks of prep_items and compares today's same-day-of-week
+// completion pace to historical norms. If today's done-count is materially
+// behind the average for this weekday, the chef sees a heads-up. Pro-tier
+// gold: signal comes purely from the chef's own past prep board.
+// ---------------------------------------------------------------------
+async function detectPrepPatternLag(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+  const dow = today.getDay(); // 0=Sun..6=Sat
+
+  // Pull last 56 days of prep
+  const sinceIso = new Date(Date.now() - 56 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const { data } = await svc
+    .from('prep_items')
+    .select('prep_date, status')
+    .eq('site_id', siteId)
+    .gte('prep_date', sinceIso);
+  if (!data || data.length === 0) return [];
+
+  // Group by date, count done vs total
+  const byDate = new Map<string, { done: number; total: number }>();
+  for (const r of data) {
+    const d = r.prep_date as string;
+    const status = r.status as string;
+    if (!byDate.has(d)) byDate.set(d, { done: 0, total: 0 });
+    const bucket = byDate.get(d)!;
+    bucket.total += 1;
+    if (status === 'done') bucket.done += 1;
+  }
+
+  // Average done-count for prior days that match this DoW (excluding today)
+  let dowSum = 0;
+  let dowCount = 0;
+  for (const [date, b] of byDate.entries()) {
+    if (date === todayIso) continue;
+    const dt = new Date(date);
+    if (dt.getDay() !== dow) continue;
+    dowSum += b.done;
+    dowCount += 1;
+  }
+  if (dowCount < 3) return []; // not enough history
+
+  const dowAvg = dowSum / dowCount;
+  const todayBucket = byDate.get(todayIso);
+  if (!todayBucket || todayBucket.total === 0) return [];
+
+  // Only fire after 2pm (server time — close enough) so we're not crying wolf at 9am
+  if (today.getHours() < 14) return [];
+
+  // Lag = behind by 30%+ of typical done-count
+  const gap = dowAvg - todayBucket.done;
+  if (gap < Math.max(2, dowAvg * 0.3)) return [];
+
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'prep',
+      target_role: 'chef',
+      tag: 'get_ready',
+      severity: 'attention',
+      section_label: 'Pace check',
+      headline_pre: `Prep is `,
+      headline_em: `behind the usual ${weekdayName(dow)} pace`,
+      headline_post: '',
+      body_md: `${todayBucket.done} done so far · the last 8 ${weekdayName(dow)}s averaged **${dowAvg.toFixed(1)}** by this point. Worth a station sweep before service ramps up.`,
+      action_label: 'Open Prep →',
+      action_target: '/prep',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'prep_pattern_lag',
+      payload: { done: todayBucket.done, dow_avg: dowAvg, dow },
+      display_priority: 25,
+      emitted_at: isoNow(),
+      expires_at: isoIn(1),
+    },
+  ];
+}
+
+function weekdayName(d: number): string {
+  return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][d] ?? '';
+}
+
+// ---------------------------------------------------------------------
+// Detector: menu GP drag
+//
+// Walks every active menu, computes overall GP from its dishes (current
+// cost ÷ sell price), and flags menus pulling below the account's GP
+// target (default 65%). Names the worst-offender dish.
+// ---------------------------------------------------------------------
+async function detectMenuGpDrag(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  // Palatable doesn't have a v2.menus table — the menu surface is derived
+  // from recipes grouped by `category`. So this detector reads recipes,
+  // groups by section, and flags whichever section's average GP sits
+  // furthest below the account's target.
+
+  const { data: recipes } = await svc
+    .from('recipes')
+    .select('id, name, category, sell_price, cost_baseline, dish_type')
+    .eq('site_id', siteId)
+    .is('archived_at', null)
+    .not('cost_baseline', 'is', null)
+    .not('sell_price', 'is', null);
+  if (!recipes || recipes.length === 0) return [];
+
+  // Pull account GP target via the site's account
+  const { data: siteRow } = await svc
+    .from('sites')
+    .select('account_id')
+    .eq('id', siteId)
+    .maybeSingle();
+  const accountId = (siteRow?.account_id as string | undefined) ?? null;
+  let targetPct = 65;
+  if (accountId) {
+    const { data: acct } = await svc
+      .from('accounts')
+      .select('preferences')
+      .eq('id', accountId)
+      .maybeSingle();
+    const prefs = (acct?.preferences ?? null) as Record<string, unknown> | null;
+    const gp = prefs && typeof prefs.gp_target_pct === 'number'
+      ? prefs.gp_target_pct
+      : null;
+    if (gp != null && gp > 0) targetPct = gp;
+  }
+
+  type Bucket = {
+    section: string;
+    totalSell: number;
+    totalCost: number;
+    worstName: string | null;
+    worstGp: number;
+    count: number;
+  };
+  const bySection = new Map<string, Bucket>();
+  for (const r of recipes) {
+    const section =
+      (r.category as string | null)?.toLowerCase() ?? 'uncategorised';
+    const sell = Number(r.sell_price);
+    const cost = Number(r.cost_baseline);
+    if (!Number.isFinite(sell) || !Number.isFinite(cost) || sell <= 0) continue;
+    if (!bySection.has(section)) {
+      bySection.set(section, {
+        section,
+        totalSell: 0,
+        totalCost: 0,
+        worstName: null,
+        worstGp: 100,
+        count: 0,
+      });
+    }
+    const b = bySection.get(section)!;
+    b.totalSell += sell;
+    b.totalCost += cost;
+    b.count += 1;
+    const gp = ((sell - cost) / sell) * 100;
+    if (gp < b.worstGp) {
+      b.worstGp = gp;
+      b.worstName = r.name as string;
+    }
+  }
+
+  // Find sections >=2 points below target
+  type Drag = { section: string; gp: number; drag: number; worstName: string | null; worstGp: number; count: number };
+  const drags: Drag[] = [];
+  for (const b of bySection.values()) {
+    if (b.count < 2) continue;
+    if (b.totalSell <= 0) continue;
+    const gp = ((b.totalSell - b.totalCost) / b.totalSell) * 100;
+    const drag = targetPct - gp;
+    if (drag >= 2) {
+      drags.push({
+        section: b.section,
+        gp,
+        drag,
+        worstName: b.worstName,
+        worstGp: b.worstGp,
+        count: b.count,
+      });
+    }
+  }
+  if (drags.length === 0) return [];
+
+  // Worst section first
+  drags.sort((a, b) => b.drag - a.drag);
+  const worst = drags[0];
+
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'menus',
+      target_role: 'chef',
+      tag: 'plan_for_it',
+      severity: worst.drag > 5 ? 'attention' : 'info',
+      section_label: 'Menu GP drag',
+      headline_pre: `${capitalise(worst.section)} sitting at `,
+      headline_em: `${worst.gp.toFixed(0)}% GP`,
+      headline_post: ` — target is ${targetPct.toFixed(0)}%`,
+      body_md: worst.worstName
+        ? `Biggest drag in the section: **${worst.worstName}** at ${worst.worstGp.toFixed(0)}%. Re-price it, swap a costlier ingredient, or rotate it off.${drags.length > 1 ? ` ${drags.length - 1} other section${drags.length > 2 ? 's' : ''} also below target.` : ''}`
+        : `${worst.section} reads ${worst.drag.toFixed(1)} points below target. Worth a costing review.`,
+      action_label: 'Open Menus →',
+      action_target: '/menus',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'menu_gp_drag',
+      payload: {
+        worst_section: worst.section,
+        worst_section_gp_pct: worst.gp,
+        target_pct: targetPct,
+        sections_below: drags.length,
+      },
+      display_priority: 40,
+      emitted_at: isoNow(),
+      expires_at: isoIn(7),
+    },
+  ];
+}
+
+function capitalise(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ---------------------------------------------------------------------
+// Detector: notebook link drift
+//
+// A notebook entry that links to a recipe whose cost has materially
+// shifted since the note was written. Useful for the Pro chef: "the
+// duck dish you noted last month now costs 14% more — revisit the note."
+// ---------------------------------------------------------------------
+async function detectNotebookLinkDrift(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const { data: notes } = await svc
+    .from('notebook_entries')
+    .select('id, title, body_md, linked_recipe_ids, created_at')
+    .eq('site_id', siteId)
+    .not('linked_recipe_ids', 'is', null);
+  if (!notes || notes.length === 0) return [];
+
+  // Pull recipe baselines for any linked recipes
+  const recipeIds = Array.from(
+    new Set(
+      (notes ?? [])
+        .flatMap((n) => (n.linked_recipe_ids as string[] | null) ?? [])
+        .filter(Boolean),
+    ),
+  );
+  if (recipeIds.length === 0) return [];
+
+  const { data: recipes } = await svc
+    .from('recipes')
+    .select('id, name, cost_baseline, costed_at')
+    .in('id', recipeIds);
+  const byRecipe = new Map<string, {
+    name: string;
+    baseline: number | null;
+    costed_at: string | null;
+  }>();
+  for (const r of recipes ?? []) {
+    byRecipe.set(r.id as string, {
+      name: r.name as string,
+      baseline: r.cost_baseline != null ? Number(r.cost_baseline) : null,
+      costed_at: (r.costed_at as string | null) ?? null,
+    });
+  }
+
+  const drifting: Array<{ noteTitle: string; recipeName: string }> = [];
+  for (const n of notes) {
+    const noteCreated = n.created_at as string;
+    const linked = (n.linked_recipe_ids as string[] | null) ?? [];
+    for (const rid of linked) {
+      const r = byRecipe.get(rid);
+      if (!r || !r.costed_at) continue;
+      // Note written BEFORE the latest baseline shift = potential drift
+      if (new Date(r.costed_at) > new Date(noteCreated)) {
+        drifting.push({
+          noteTitle: n.title as string,
+          recipeName: r.name,
+        });
+        break; // one signal per note is enough
+      }
+    }
+  }
+  if (drifting.length === 0) return [];
+
+  const sample = drifting
+    .slice(0, 3)
+    .map((d) => `${d.noteTitle} (${d.recipeName})`)
+    .join(', ');
+
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'notebook',
+      target_role: 'chef',
+      tag: 'worth_knowing',
+      severity: 'info',
+      section_label: 'Notes worth revisiting',
+      headline_pre: `${drifting.length} ${drifting.length === 1 ? 'note links to a recipe' : 'notes link to recipes'} `,
+      headline_em: 'whose cost has shifted',
+      headline_post: ' since you wrote them',
+      body_md: `**${sample}**${drifting.length > 3 ? ` and ${drifting.length - 3} more` : ''}. The reasoning in the note may not match the current numbers — worth a glance.`,
+      action_label: 'Open Notebook →',
+      action_target: '/notebook',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'notebook_link_drift',
+      payload: { count: drifting.length },
+      display_priority: 55,
+      emitted_at: isoNow(),
+      expires_at: isoIn(14),
     },
   ];
 }
