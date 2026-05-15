@@ -72,13 +72,14 @@ begin
   values (v_jack_user_id, v_bar_site_id, 'owner');
 
   -- ---- 3. Suppliers ---------------------------------------------
+  -- Multi-row insert can't use RETURNING INTO (Postgres P0003);
+  -- insert then re-query by name to pick up each id.
   insert into v2.suppliers (site_id, name, contact_person, phone, email, payment_terms)
   values
     (v_bar_site_id, 'Liberty Wines', 'Tom Reeves', '020 7720 5350', 'orders@libertywines.co.uk', '30 days'),
     (v_bar_site_id, 'Speciality Drinks', 'Hannah Patel', '020 8838 8845', 'trade@specialitydrinks.com', '14 days'),
-    (v_bar_site_id, 'Local Brew Co', 'Marcus Lin', NULL, 'orders@localbrewco.uk', '7 days')
-  returning id, name into v_sup_liberty;
-  -- Re-read by name (only one returns via RETURNING when multi-row inserts; safer to query)
+    (v_bar_site_id, 'Local Brew Co', 'Marcus Lin', NULL, 'orders@localbrewco.uk', '7 days');
+
   select id into v_sup_liberty from v2.suppliers
     where site_id = v_bar_site_id and name = 'Liberty Wines';
   select id into v_sup_speciality from v2.suppliers
