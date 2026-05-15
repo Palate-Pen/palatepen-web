@@ -84,7 +84,10 @@ export default async function BarNotebookPage() {
 
 function EntryCard({ entry }: { entry: NotebookEntry }) {
   return (
-    <div className="bg-card border border-rule px-7 py-5">
+    <Link
+      href={`/bartender/notebook/${entry.id}`}
+      className="bg-card border border-rule px-7 py-5 block hover:border-gold transition-colors"
+    >
       <div className="flex items-baseline justify-between mb-2 gap-3 flex-wrap">
         <div className="font-serif font-semibold text-lg text-ink">
           {entry.title ?? 'Note'}
@@ -110,6 +113,6 @@ function EntryCard({ entry }: { entry: NotebookEntry }) {
           ))}
         </div>
       )}
-    </div>
+    </Link>
   );
 }

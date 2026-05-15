@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { NotebookEntry } from '@/lib/notebook-shared';
 import { notebookDateLabel } from '@/lib/notebook-shared';
@@ -155,11 +156,12 @@ const ribbonClass: Record<'peak' | 'ending' | 'arriving', string> = {
   arriving: 'bg-gold text-paper',
 };
 
-const tagClass: Record<'dish' | 'detected' | 'plain', string> = {
+const tagClass: Record<'dish' | 'detected' | 'plain' | 'menu', string> = {
   dish: 'bg-gold-bg text-gold border-gold/30',
   detected:
     "bg-paper-warm text-ink-soft border-rule before:content-['•'] before:text-gold before:mr-1 before:font-bold",
   plain: 'bg-paper-warm text-ink-soft border-rule',
+  menu: 'bg-gold text-paper border-gold',
 };
 
 const kindLabel: Record<NotebookEntry['kind'], string> = {
@@ -173,7 +175,10 @@ function EntryCardLive({ entry }: { entry: NotebookEntry }) {
   const dateLabel = notebookDateLabel(entry.created_at);
 
   return (
-    <div className="bg-card border border-rule px-6 py-5 flex flex-col gap-3 hover:border-rule-gold transition-colors">
+    <Link
+      href={`/notebook/${entry.id}`}
+      className="bg-card border border-rule px-6 py-5 flex flex-col gap-3 hover:border-rule-gold transition-colors"
+    >
       <div className="flex items-baseline justify-between gap-2">
         <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold">
           {kindLabel[entry.kind]}
@@ -269,7 +274,7 @@ function EntryCardLive({ entry }: { entry: NotebookEntry }) {
           Private · just you
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 

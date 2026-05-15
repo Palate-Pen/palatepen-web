@@ -13,8 +13,11 @@
 export type NotebookKind = 'note' | 'voice' | 'photo' | 'sketch';
 
 export type NotebookTag = {
-  kind: 'dish' | 'detected' | 'plain';
+  kind: 'dish' | 'detected' | 'plain' | 'menu';
   text: string;
+  /** Optional plan_id when kind === 'menu' and the tag was picked from
+   *  an active v2.menu_plans row. Free-text menu tags omit this. */
+  plan_id?: string;
 };
 
 export type SeasonTone = 'peak' | 'ending' | 'arriving';
