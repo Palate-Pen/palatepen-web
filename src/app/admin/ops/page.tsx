@@ -1,3 +1,5 @@
+import { ReseedDemoCard } from './ReseedDemoCard';
+
 export const metadata = { title: 'Admin · Founder Ops — Palatable' };
 
 export default function AdminOpsPage() {
@@ -10,16 +12,12 @@ export default function AdminOpsPage() {
         Founder Ops
       </h1>
       <p className="font-serif italic text-lg text-muted mt-3 mb-10">
-        Support inbox, feature flags, beta testers, pitch tracker, Stripe payouts.
+        The tools you actually use. Demo reseed up top; support inbox,
+        feature flags, beta testers, pitch tracker, Stripe payouts come
+        in over the next build.
       </p>
-      <div className="bg-card border border-rule px-10 py-16 text-center">
-        <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-gold mb-3">
-          Coming Soon
-        </div>
-        <p className="font-serif italic text-muted">
-          Page scaffolded — full domain build in a follow-up commit.
-        </p>
-      </div>
+
+      <ReseedDemoCard />
     </div>
   );
 }

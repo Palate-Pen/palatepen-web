@@ -10,13 +10,13 @@ export const metadata = { title: 'Mise — Bar — Palatable' };
 type PrepRow = {
   id: string;
   name: string;
-  qty_target: number | null;
-  qty_target_unit: string | null;
+  qty: number | null;
+  qty_unit: string | null;
   status: 'not_started' | 'in_progress' | 'done' | 'over_prepped' | 'short';
   station: string | null;
   assigned_label: string | null;
-  notes_md: string | null;
-  due_at: string | null;
+  notes: string | null;
+  prep_date: string | null;
 };
 
 const STATUS_LABEL: Record<PrepRow['status'], string> = {
@@ -49,11 +49,11 @@ export default async function BarMisePage() {
   const { data: rows } = await supabase
     .from('prep_items')
     .select(
-      'id, name, qty_target, qty_target_unit, status, station, assigned_label, notes_md, due_at',
+      'id, name, qty, qty_unit, status, station, assigned_label, notes, prep_date',
     )
     .eq('site_id', ctx.siteId)
-    .gte('due_at', today)
-    .order('due_at', { ascending: true });
+    .gte('prep_date', today)
+    .order('prep_date', { ascending: true });
 
   const items = (rows ?? []) as PrepRow[];
 
@@ -62,10 +62,10 @@ export default async function BarMisePage() {
   // station once that field carries bar-specific values.
 
   const todayItems = items.filter(
-    (i) => i.due_at && i.due_at.slice(0, 10) === today,
+    (i) => i.prep_date && i.prep_date.slice(0, 10) === today,
   );
   const tomorrowItems = items.filter(
-    (i) => i.due_at && i.due_at.slice(0, 10) === tomorrow,
+    (i) => i.prep_date && i.prep_date.slice(0, 10) === tomorrow,
   );
   const doneCount = todayItems.filter((i) => i.status === 'done').length;
   const shortCount = todayItems.filter((i) => i.status === 'short').length;
@@ -229,9 +229,7 @@ function MiseRow({ row, last }: { row: PrepRow; last: boolean }) {
         )}
       </div>
       <div className="font-serif text-sm text-ink">
-        {row.qty_target != null
-          ? `${row.qty_target} ${row.qty_target_unit ?? ''}`
-          : '—'}
+        {row.qty != null ? `${row.qty} ${row.qty_unit ?? ''}` : '—'}
       </div>
       <div className="font-serif italic text-sm text-muted">
         {row.assigned_label ?? 'unassigned'}
