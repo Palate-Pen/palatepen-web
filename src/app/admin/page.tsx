@@ -1,5 +1,11 @@
 import Link from 'next/link';
-import { getAdminHomeData, tierPrice, type AdminTier, type RecentSignup } from '@/lib/admin';
+import {
+  getAdminHomeData,
+  getAdminOpsCounts,
+  tierPrice,
+  type AdminTier,
+  type RecentSignup,
+} from '@/lib/admin';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 
@@ -18,7 +24,14 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 });
 
 export default async function AdminHomePage() {
-  const data = await getAdminHomeData();
+  const [data, ops] = await Promise.all([
+    getAdminHomeData(),
+    getAdminOpsCounts(),
+  ]);
+  // Override the placeholder issue counts with live data when GitHub
+  // is reachable. Keeps the rest of the page resilient if GH errors.
+  data.open_issues = ops.open_issues;
+  data.roadmap = ops.roadmap;
 
   const issuesTone =
     data.open_issues.urgent > 0 ? 'attention' : undefined;
@@ -63,12 +76,27 @@ export default async function AdminHomePage() {
           sub={`${dauPct}% of active kitchens`}
           tone={dauTone}
         />
-        <KpiCard
-          label="Open Issues"
-          value={String(data.open_issues.count)}
-          sub={`${data.open_issues.urgent} urgent · ${data.open_issues.normal} normal`}
-          tone={issuesTone}
-        />
+        <Link
+          href="/admin/ops#issues"
+          className="block transition-colors hover:bg-paper-warm"
+        >
+          <KpiCard
+            label="Open Issues"
+            value={
+              data.open_issues.unavailable
+                ? '—'
+                : String(data.open_issues.count)
+            }
+            sub={
+              data.open_issues.unavailable
+                ? 'GitHub not connected'
+                : data.open_issues.count === 0
+                  ? 'all clear'
+                  : `${data.open_issues.urgent} urgent · ${data.open_issues.normal} normal`
+            }
+            tone={data.open_issues.unavailable ? undefined : issuesTone}
+          />
+        </Link>
       </div>
 
       {/* LOOKING AHEAD — mocked until admin forward_signals exist */}
@@ -132,9 +160,13 @@ export default async function AdminHomePage() {
           />
           <ActionCard
             href="/admin/ops"
-            eyebrow="Demo"
-            title="Reseed founder data"
-            sub="re-anchor every surface to today"
+            eyebrow="Ops"
+            title="Issues & roadmap"
+            sub={
+              data.open_issues.unavailable
+                ? `${data.roadmap.open} open todos · GitHub pending`
+                : `${data.open_issues.count} open · ${data.roadmap.open} todos · reseed`
+            }
           />
         </div>
       </section>

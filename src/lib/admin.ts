@@ -1,4 +1,5 @@
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
+import { getGitHubIssues, getRoadmapTodos } from '@/lib/admin-ops';
 
 export const ADMIN_EMAIL = 'jack@palateandpen.co.uk';
 
@@ -31,8 +32,16 @@ export type AdminHomeData = {
   dau_this_week: number;
   total_users: number;
   recent_signups: RecentSignup[];
-  /** Mock until a real source exists. */
-  open_issues: { count: number; urgent: number; normal: number };
+  /** Live from GitHub when GITHUB_TOKEN is set; falls back to zeros
+   *  with `unavailable: true` when the API is unreachable. */
+  open_issues: {
+    count: number;
+    urgent: number;
+    normal: number;
+    unavailable: boolean;
+  };
+  /** Roadmap todo counts parsed from CLAUDE.md. */
+  roadmap: { open: number; done: number };
 };
 
 function tierOf(value: unknown): AdminTier {
@@ -148,7 +157,34 @@ export async function getAdminHomeData(): Promise<AdminHomeData> {
     total_users: users.length,
     recent_signups: recent,
     // Pending wiring — no v2 source exists for support inbox / system health yet.
-    open_issues: { count: 3, urgent: 1, normal: 2 },
+    open_issues: { count: 0, urgent: 0, normal: 0, unavailable: true },
+    roadmap: { open: 0, done: 0 },
+  };
+}
+
+/** Augments the home data with live issue + roadmap counts. Kept
+ *  separate so a GitHub outage doesn't break the rest of the home
+ *  page render. */
+export async function getAdminOpsCounts(): Promise<{
+  open_issues: AdminHomeData['open_issues'];
+  roadmap: AdminHomeData['roadmap'];
+}> {
+  const [issues, roadmap] = await Promise.all([
+    getGitHubIssues(),
+    getRoadmapTodos(),
+  ]);
+  return {
+    open_issues: issues.ok
+      ? {
+          count: issues.total,
+          urgent: issues.issues.filter((i) => i.is_urgent).length,
+          normal: issues.issues.filter((i) => !i.is_urgent).length,
+          unavailable: false,
+        }
+      : { count: 0, urgent: 0, normal: 0, unavailable: true },
+    roadmap: roadmap.ok
+      ? { open: roadmap.totalOpen, done: roadmap.totalDone }
+      : { open: 0, done: 0 },
   };
 }
 
