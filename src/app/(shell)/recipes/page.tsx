@@ -237,37 +237,7 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         )}
       </div>
 
-      <div className="px-6 py-4 border-b border-rule flex justify-between items-center bg-gradient-to-r from-[rgba(93,127,79,0.06)] to-transparent">
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
-          Cost per cover
-        </div>
-        <div className="text-right">
-          {recipe.cost_per_cover != null ? (
-            <>
-              <div
-                className={
-                  'font-serif font-semibold text-xl ' +
-                  (allMatched ? 'text-healthy' : 'text-ink-soft')
-                }
-              >
-                {gbp.format(recipe.cost_per_cover)}
-              </div>
-              <div className="text-xs text-muted mt-0.5">
-                total dish {gbp.format(recipe.total_cost)}
-                {partialMatch && (
-                  <span className="text-muted-soft italic">
-                    {' '}· partial
-                  </span>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="font-serif italic text-sm text-muted">
-              cost pending
-            </div>
-          )}
-        </div>
-      </div>
+      <GpTile recipe={recipe} allMatched={allMatched} partialMatch={partialMatch} />
 
       <div className="px-6 py-5 flex-1">
         {recipe.ingredients.length === 0 ? (
@@ -317,5 +287,104 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         </span>
       </div>
     </Link>
+  );
+}
+
+/**
+ * Recipe-tile GP panel. Replaces the old "Cost per cover" tile.
+ *
+ * Surfaces what the chef actually cares about at a glance: today's GP
+ * (using live Bank prices) and how far it's drifted from the baseline
+ * GP at the time the sell price was last set. The cost per cover
+ * itself is one level deeper, on the recipe detail page.
+ *
+ * Empty states (priority order, top-to-bottom):
+ *   - no sell_price set        → "set a sell price"
+ *   - no cost_per_cover         → "cost pending"
+ *   - no baseline               → show GP only, no delta chip
+ *   - has both                  → GP + signed delta chip with tone
+ */
+function GpTile({
+  recipe,
+  allMatched,
+  partialMatch,
+}: {
+  recipe: Recipe;
+  allMatched: boolean;
+  partialMatch: boolean;
+}) {
+  const sell = recipe.sell_price;
+  const cost = recipe.cost_per_cover;
+  const baseline = recipe.cost_baseline;
+
+  const gpPct =
+    sell != null && sell > 0 && cost != null
+      ? ((sell - cost) / sell) * 100
+      : null;
+  const baselineGpPct =
+    sell != null && sell > 0 && baseline != null
+      ? ((sell - baseline) / sell) * 100
+      : null;
+  const deltaPt =
+    gpPct != null && baselineGpPct != null ? gpPct - baselineGpPct : null;
+
+  // Tone — driven by drift direction + magnitude. >8pt down is urgent,
+  // any other downward drift is attention, upward is healthy, flat is
+  // neutral. Falls back to match-state when there's no baseline.
+  let tone: 'healthy' | 'attention' | 'urgent' | 'muted' = 'muted';
+  if (deltaPt != null) {
+    if (deltaPt > 0.5) tone = 'healthy';
+    else if (deltaPt < -8) tone = 'urgent';
+    else if (deltaPt < -0.5) tone = 'attention';
+  } else if (gpPct != null) {
+    tone = allMatched ? 'healthy' : 'muted';
+  }
+  const toneText =
+    tone === 'healthy'
+      ? 'text-healthy'
+      : tone === 'attention'
+        ? 'text-attention'
+        : tone === 'urgent'
+          ? 'text-urgent'
+          : 'text-ink-soft';
+
+  return (
+    <div className="px-6 py-4 border-b border-rule flex justify-between items-center bg-gradient-to-r from-[rgba(93,127,79,0.06)] to-transparent">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
+        Dish GP
+      </div>
+      <div className="text-right">
+        {sell == null || sell === 0 ? (
+          <div className="font-serif italic text-sm text-muted">
+            set a sell price
+          </div>
+        ) : cost == null ? (
+          <div className="font-serif italic text-sm text-muted">
+            cost pending
+          </div>
+        ) : (
+          <>
+            <div className={'font-serif font-semibold text-xl ' + toneText}>
+              {gpPct!.toFixed(0)}%
+            </div>
+            <div className="text-xs text-muted mt-0.5">
+              {deltaPt != null && Math.abs(deltaPt) >= 0.5 ? (
+                <span className={toneText}>
+                  {deltaPt > 0 ? '+' : ''}
+                  {deltaPt.toFixed(1)}pt since costed
+                </span>
+              ) : deltaPt != null ? (
+                <span>at baseline</span>
+              ) : (
+                <span>{gbp.format(cost)}/cover</span>
+              )}
+              {partialMatch && (
+                <span className="text-muted-soft italic"> · partial</span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
