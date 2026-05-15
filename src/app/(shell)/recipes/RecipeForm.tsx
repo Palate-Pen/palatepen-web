@@ -7,6 +7,9 @@ import {
   createRecipe,
   updateRecipe,
   archiveRecipe,
+  type RecipeFormInput,
+} from './actions';
+import {
   FOOD_MENU_SECTIONS,
   BAR_MENU_SECTIONS,
   COCKTAIL_TECHNIQUES,
@@ -14,8 +17,7 @@ import {
   type CocktailTechnique,
   type DishType,
   type MenuSection,
-  type RecipeFormInput,
-} from './actions';
+} from './form-constants';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
 import { AllergenPanel } from '@/components/allergens/AllergenPanel';
 import { PhotoUpload } from '@/components/photo/PhotoUpload';

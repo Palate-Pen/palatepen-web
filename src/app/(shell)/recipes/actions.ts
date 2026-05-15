@@ -1,83 +1,22 @@
 'use server';
 
+// IMPORTANT: this is a 'use server' file. Next 15 strips non-function
+// exports from these modules when bundling for the client — the
+// constants (DISH_TYPES etc) used to live here and crashed `.map()` on
+// the client because they came through as non-array placeholders.
+// Constants + types now live in ./form-constants and are re-imported
+// here for the server actions that need them.
+
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { AllergenState } from '@/lib/allergens';
-
-export type DishType =
-  | 'food'
-  | 'cocktail'
-  | 'wine'
-  | 'beer'
-  | 'soft'
-  | 'spirit';
-
-export const DISH_TYPES: DishType[] = [
-  'food',
-  'cocktail',
-  'wine',
-  'beer',
-  'soft',
-  'spirit',
-];
-
-export type CocktailTechnique =
-  | 'build'
-  | 'stir'
-  | 'shake'
-  | 'throw'
-  | 'rolled'
-  | 'blended';
-
-export const COCKTAIL_TECHNIQUES: CocktailTechnique[] = [
-  'build',
-  'stir',
-  'shake',
-  'throw',
-  'rolled',
-  'blended',
-];
-
-/**
- * menu_section is free-text in v2 (the DB CHECK was dropped 2026-05-15).
- * These are the suggested values rendered as a dropdown for chefs +
- * bartenders. Free text input always wins.
- */
-export const FOOD_MENU_SECTIONS = [
-  'starters',
-  'mains',
-  'grill',
-  'sides',
-  'desserts',
-  'drinks',
-  // Legacy-parity additions — bread course, sauces, pastry, stocks etc.
-  // These render as suggestions only; menu_section is free-text post-
-  // 20260515_v2_drop_menu_section_check.
-  'snacks',
-  'sauces',
-  'breads',
-  'pastry',
-  'stocks',
-  'tasting menu',
-  'brunch',
-  'specials',
-];
-
-export const BAR_MENU_SECTIONS = [
-  'Classics',
-  'Signatures',
-  'Tonight Only',
-  'Lower-ABV',
-  'Non-Alc',
-  'Wines By Glass',
-  'On Draught',
-  'Bottled Beer',
-];
-
-/** Legacy alias kept for any chef-side imports still expecting this name. */
-export type MenuSection = string;
-export const MENU_SECTIONS: string[] = FOOD_MENU_SECTIONS;
+import {
+  DISH_TYPES,
+  COCKTAIL_TECHNIQUES,
+  type DishType,
+  type CocktailTechnique,
+} from './form-constants';
 
 export type RecipeFormInput = {
   name: string;

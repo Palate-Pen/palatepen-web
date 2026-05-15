@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { RecipeForm, type BankIngredientOption, type SubRecipeOption } from '../RecipeForm';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
-import type { DishType, MenuSection } from '../actions';
+import type { DishType, MenuSection } from '../form-constants';
 
 type ExtractedRecipe = {
   title?: string;

@@ -3,7 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getRecipe } from '@/lib/recipes';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { RecipeForm, type BankIngredientOption, type SubRecipeOption } from '../../RecipeForm';
-import type { MenuSection } from '../../actions';
+import type { MenuSection } from '../../form-constants';
 import { FOOD_DISH_TYPES } from '@/lib/bar';
 
 export const metadata = { title: 'Edit recipe — Palatable' };
