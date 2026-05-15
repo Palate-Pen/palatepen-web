@@ -7,7 +7,7 @@ import {
   flaggedInvoiceLinesToDrafts,
   generateCreditNoteReference,
   type CreditNoteLineReason,
-} from '@/lib/credit-notes';
+} from '@/lib/credit-notes-shared';
 
 type ActionResult<T = void> =
   | { ok: true; data?: T }

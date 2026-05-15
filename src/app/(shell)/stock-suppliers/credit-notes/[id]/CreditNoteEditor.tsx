@@ -8,7 +8,7 @@ import {
   type CreditNoteLine,
   type CreditNoteLineReason,
   type CreditNoteStatus,
-} from '@/lib/credit-notes';
+} from '@/lib/credit-notes-shared';
 
 const gbp = new Intl.NumberFormat('en-GB', {
   style: 'currency',

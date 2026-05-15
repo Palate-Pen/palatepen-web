@@ -11,7 +11,7 @@ import {
   CREDIT_NOTE_LINE_REASON_LABEL,
   type CreditNoteLineReason,
   type CreditNoteStatus,
-} from '@/lib/credit-notes';
+} from '@/lib/credit-notes-shared';
 
 /**
  * State-aware action bar for a single credit note. Shows the right set of
