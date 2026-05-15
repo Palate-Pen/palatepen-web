@@ -96,7 +96,11 @@ export function AdminSidebar({
     };
   }, [mobileOpen]);
 
-  const widthClass = collapsed ? 'lg:w-[72px]' : 'lg:w-[252px]';
+  // Sidebar widths scale with --font-scale so labels don't crush at
+  // Large → XL → XXL.
+  const widthClass = collapsed
+    ? 'lg:w-[calc(72px*var(--font-scale))]'
+    : 'lg:w-[calc(252px*var(--font-scale))]';
   const mobilePositioning = mobileOpen
     ? 'translate-x-0'
     : '-translate-x-full lg:translate-x-0';
@@ -117,7 +121,7 @@ export function AdminSidebar({
 
       <aside
         className={
-          'fixed lg:sticky top-0 left-0 z-40 h-screen w-[260px] ' +
+          'fixed lg:sticky top-0 left-0 z-40 h-screen w-[calc(260px*var(--font-scale))] ' +
           widthClass +
           ' ' +
           mobilePositioning +
@@ -131,7 +135,9 @@ export function AdminSidebar({
         >
           <Link
             href="/admin"
-            className="font-display text-xl font-semibold tracking-[0.16em] uppercase text-ink"
+            // Logo locked at 24px — does NOT scale with --font-scale.
+            className="font-display font-semibold tracking-[0.16em] uppercase text-ink"
+            style={{ fontSize: '24px' }}
             aria-label="Palatable Founder Admin"
           >
             <span>P</span>
