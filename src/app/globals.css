@@ -16,6 +16,13 @@
      muted      #5F5544  (6.4:1) → #4E4434  (8.5:1) — AAA
      muted-soft #786C58  (4.8:1) → #645846  (6.3:1) — AA Large + body
    Dark-mode counterparts lifted in parallel.
+
+   Second pass (2026-05-15 evening): bumped html base 16px → 17px
+   (≈6% larger everywhere via rem-relative tokens) and darkened
+   muted + muted-soft another step so secondary copy reads closer to
+   the main ink without collapsing the hierarchy. Light-mode now:
+     muted      #4E4434 → #3E3628 (10.1:1, AAA)
+     muted-soft #645846 → #524735 (8.4:1, AAA)
    --------------------------------------------------------------------- */
 
 @layer base {
@@ -26,8 +33,8 @@
     --paper-warm: 242 237 224;
     --card: 255 255 255;
     --card-warm: 253 250 242;
-    --muted: 78 68 52;
-    --muted-soft: 100 88 70;
+    --muted: 62 54 40;
+    --muted-soft: 82 71 53;
     --gold: 184 146 60;
     --gold-light: 201 168 76;
     --gold-dark: 139 105 20;
@@ -54,8 +61,8 @@
     --paper-warm: 30 26 22;
     --card: 36 32 26;
     --card-warm: 44 40 32;
-    --muted: 200 188 162;
-    --muted-soft: 170 158 142;
+    --muted: 220 210 188;
+    --muted-soft: 195 184 165;
     --gold: 201 168 76;
     --gold-light: 232 174 32;
     --gold-dark: 168 112 8;
@@ -72,11 +79,13 @@
   }
 
   html {
-    /* 16px base — the standard for screen UI and what the rem-based
-       type scale in tailwind.config.ts is calibrated against. The
-       font-scale multiplier (sm 0.94 / md 1 / lg 1.12) scales every
-       text in the app proportionally. */
-    font-size: calc(16px * var(--font-scale));
+    /* 17px base (bumped from 16px on 2026-05-15 PM for readability —
+       Cormorant Garamond body italics felt thin at 16px on the warm
+       paper). All rem-based tokens in tailwind.config.ts compose
+       against this, so every text size scales together. The
+       font-scale multiplier (sm 0.94 / md 1 / lg 1.12) still
+       proportional on top. */
+    font-size: calc(17px * var(--font-scale));
   }
 
   html,
