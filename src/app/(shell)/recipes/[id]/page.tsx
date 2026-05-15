@@ -14,6 +14,7 @@ import { getNotesForRecipe } from '@/lib/notebook';
 import { getGPHistory } from '@/lib/gp-calculations';
 import { PrintButton } from '@/components/shell/PrintButton';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { RecipePrintPage } from '../RecipePrintPage';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -81,7 +82,8 @@ export default async function RecipeDetailPage({
   );
 
   return (
-    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+    <>
+    <div className="print-hide px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5 print-hide">
         Recipes · Detail
       </div>
@@ -464,6 +466,13 @@ export default async function RecipeDetailPage({
         </div>
       </div>
     </div>
+    {/* Print-only payload — shares the exact same RecipePrintPage that
+     *  the recipe book uses, so single-recipe print and the book look
+     *  identical. Hidden on screen via globals.css `.printable-book`. */}
+    <div className="printable-book">
+      <RecipePrintPage recipe={recipe} />
+    </div>
+    </>
   );
 }
 

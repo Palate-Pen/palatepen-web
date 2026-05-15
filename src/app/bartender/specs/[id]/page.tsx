@@ -10,6 +10,7 @@ import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
 import { getGPHistory } from '@/lib/gp-calculations';
 import { PrintButton } from '@/components/shell/PrintButton';
+import { RecipePrintPage } from '@/app/(shell)/recipes/RecipePrintPage';
 
 export const metadata = { title: 'Spec — Bar — Palatable' };
 
@@ -74,7 +75,8 @@ export default async function SpecDetailPage({
   const unmatched = spec.ingredients.length - spec.matched_ingredient_count;
 
   return (
-    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
+    <>
+    <div className="print-hide px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5 print-hide">
         Specs · Detail
       </div>
@@ -379,6 +381,10 @@ export default async function SpecDetailPage({
         </div>
       </div>
     </div>
+    <div className="printable-book">
+      <RecipePrintPage recipe={spec} />
+    </div>
+    </>
   );
 }
 
