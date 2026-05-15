@@ -3,16 +3,34 @@
 import { useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
-type FontSize = 'sm' | 'md' | 'lg';
+type FontSize = 'lg' | 'xl' | 'xxl';
 
 const THEME_KEY = 'palatable_theme';
 const FONT_KEY = 'palatable_font_size';
 
+// Three-step accessibility scale. "Large" is the new floor (was the
+// previous top end before the 2026-05-15 readability push); xl + xxl
+// keep adding ~12.5% each, useful for service-floor reading at
+// arm's length or older eyes. The html base is 17px, so effective
+// pixel sizes are lg≈19px / xl≈21px / xxl≈24px for body copy.
 const SCALE: Record<FontSize, string> = {
-  sm: '0.94',
-  md: '1',
   lg: '1.12',
+  xl: '1.26',
+  xxl: '1.4',
 };
+
+const LEGACY_FONT_SIZE_MAP: Record<string, FontSize> = {
+  sm: 'lg',
+  md: 'lg',
+  lg: 'lg',
+  xl: 'xl',
+  xxl: 'xxl',
+};
+
+function migrateFontSize(raw: string | null): FontSize {
+  if (!raw) return 'lg';
+  return LEGACY_FONT_SIZE_MAP[raw] ?? 'lg';
+}
 
 function resolveTheme(t: Theme): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light';
@@ -37,17 +55,21 @@ function applyFontSize(f: FontSize) {
 
 export function AccessibilitySettings() {
   const [theme, setTheme] = useState<Theme>('light');
-  const [fontSize, setFontSize] = useState<FontSize>('md');
+  const [fontSize, setFontSize] = useState<FontSize>('lg');
   const [ready, setReady] = useState(false);
 
   // Read persisted values on mount (the boot script already applied them
-  // pre-hydration; this just syncs our React state).
+  // pre-hydration; this just syncs our React state). Legacy 'sm' / 'md'
+  // values from before the 2026-05-15 readability floor migrate to 'lg'.
   useEffect(() => {
     try {
       const t = (localStorage.getItem(THEME_KEY) as Theme) || 'light';
-      const f = (localStorage.getItem(FONT_KEY) as FontSize) || 'md';
+      const f = migrateFontSize(localStorage.getItem(FONT_KEY));
       setTheme(t);
       setFontSize(f);
+      // Persist migration if the stored value was legacy
+      const stored = localStorage.getItem(FONT_KEY);
+      if (stored !== f) localStorage.setItem(FONT_KEY, f);
     } catch {
       // localStorage unavailable; defaults stay
     }
@@ -85,10 +107,10 @@ export function AccessibilitySettings() {
     { id: 'system', label: 'System' },
   ];
 
-  const sizes: { id: FontSize; label: string; sample: string }[] = [
-    { id: 'sm', label: 'Small', sample: '0.94×' },
-    { id: 'md', label: 'Medium', sample: '1×' },
-    { id: 'lg', label: 'Large', sample: '1.12×' },
+  const sizes: { id: FontSize; label: string; previewPx: number }[] = [
+    { id: 'lg', label: 'Large', previewPx: 19 },
+    { id: 'xl', label: 'XL', previewPx: 22 },
+    { id: 'xxl', label: 'XXL', previewPx: 26 },
   ];
 
   return (
@@ -144,14 +166,7 @@ export function AccessibilitySettings() {
             >
               <span
                 className="font-serif"
-                style={{
-                  fontSize:
-                    s.id === 'sm'
-                      ? '13px'
-                      : s.id === 'lg'
-                        ? '19px'
-                        : '16px',
-                }}
+                style={{ fontSize: `${s.previewPx}px` }}
               >
                 Aa
               </span>

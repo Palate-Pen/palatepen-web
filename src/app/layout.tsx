@@ -39,12 +39,14 @@ export const metadata: Metadata = {
 const themeBootScript = `
 try {
   var t = localStorage.getItem('palatable_theme') || 'light';
-  var f = localStorage.getItem('palatable_font_size') || 'md';
+  var f = localStorage.getItem('palatable_font_size') || 'lg';
+  // Legacy values from before the 2026-05-15 readability floor map to 'lg'.
+  if (f === 'sm' || f === 'md') f = 'lg';
   var resolved = t === 'system'
     ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : t;
   if (resolved === 'dark') document.documentElement.classList.add('dark');
-  var scale = f === 'sm' ? '0.94' : f === 'lg' ? '1.12' : '1';
+  var scale = f === 'xxl' ? '1.4' : f === 'xl' ? '1.26' : '1.12';
   document.documentElement.style.setProperty('--font-scale', scale);
 } catch (e) {}
 `;
