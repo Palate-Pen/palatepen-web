@@ -51,6 +51,17 @@ export const FOOD_MENU_SECTIONS = [
   'sides',
   'desserts',
   'drinks',
+  // Legacy-parity additions — bread course, sauces, pastry, stocks etc.
+  // These render as suggestions only; menu_section is free-text post-
+  // 20260515_v2_drop_menu_section_check.
+  'snacks',
+  'sauces',
+  'breads',
+  'pastry',
+  'stocks',
+  'tasting menu',
+  'brunch',
+  'specials',
 ];
 
 export const BAR_MENU_SECTIONS = [

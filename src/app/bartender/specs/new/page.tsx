@@ -1,9 +1,7 @@
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import {
-  RecipeForm,
-  type BankIngredientOption,
-} from '@/app/(shell)/recipes/RecipeForm';
+import type { BankIngredientOption } from '@/app/(shell)/recipes/RecipeForm';
+import { NewRecipeClient } from '@/app/(shell)/recipes/new/NewRecipeClient';
 
 export const metadata = { title: 'New spec — Bar — Palatable' };
 
@@ -36,11 +34,12 @@ export default async function NewSpecPage() {
         Pour-cost flows the moment build components link to the Cellar. You can leave the sell price blank and set it later.
       </p>
 
-      <RecipeForm
-        mode="create"
+      <NewRecipeClient
         bankIngredients={bankIngredients}
         defaultDishType="cocktail"
         redirectOnSave={(id) => `/bartender/specs/${id}`}
+        importLabel="Import a cocktail spec from a URL"
+        importBody="Paste any cocktail recipe page — Diffords Guide, Imbibe, Punch, a blog. Haiku reads it and pre-fills the spec form below. Review the pour sizes and the glass before saving."
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { BAR_DISH_TYPES, POUR_COST_BANDS } from '@/lib/bar';
+import { GPBenchmarkPanel } from '@/components/gp/GPBenchmarkPanel';
 
 export const metadata = { title: 'Margins — Bar — Palatable' };
 
@@ -131,6 +132,10 @@ export default async function BarMarginsPage() {
           </section>
         ))
       )}
+
+      <section className="mt-12 mb-12">
+        <GPBenchmarkPanel flavour="bar" />
+      </section>
 
       <LookingAhead siteId={ctx.siteId} surface="bar_margins" />
     </div>

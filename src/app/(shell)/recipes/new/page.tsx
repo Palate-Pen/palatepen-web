@@ -1,6 +1,7 @@
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { RecipeForm, type BankIngredientOption } from '../RecipeForm';
+import type { BankIngredientOption } from '../RecipeForm';
+import { NewRecipeClient } from './NewRecipeClient';
 
 export const metadata = { title: 'New recipe — Palatable' };
 
@@ -33,7 +34,7 @@ export default async function NewRecipePage() {
         Costing flows the moment ingredients link to The Bank. You can leave the sell price blank and set it later.
       </p>
 
-      <RecipeForm mode="create" bankIngredients={bankIngredients} />
+      <NewRecipeClient bankIngredients={bankIngredients} />
     </div>
   );
 }

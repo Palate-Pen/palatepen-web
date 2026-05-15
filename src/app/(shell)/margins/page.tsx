@@ -12,6 +12,7 @@ import {
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { GPBenchmarkPanel } from '@/components/gp/GPBenchmarkPanel';
 
 export const metadata = { title: 'Margins — Palatable' };
 
@@ -113,6 +114,14 @@ export default async function MarginsPage() {
       </div>
 
       <LookingAhead siteId={ctx.siteId} surface="margins" />
+
+      <section className="mt-12">
+        <SectionHead
+          title="Benchmark — Where The Industry Sits"
+          meta="reference"
+        />
+        <GPBenchmarkPanel flavour="food" />
+      </section>
 
       <section className="mt-12">
         <SectionHead

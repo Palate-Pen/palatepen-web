@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { RecipeForm, type BankIngredientOption } from '../RecipeForm';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
-import type { MenuSection } from '../actions';
+import type { DishType, MenuSection } from '../actions';
 
 type ExtractedRecipe = {
   title?: string;
@@ -17,23 +17,18 @@ type ExtractedRecipe = {
   menu_section?: string;
 };
 
-const MENU_SECTION_VALUES: MenuSection[] = [
-  'starters',
-  'mains',
-  'grill',
-  'sides',
-  'desserts',
-  'drinks',
-];
-
-function normaliseMenuSection(
+/**
+ * menu_section is free-text in v2 (the DB CHECK was dropped). Just
+ * trim + lowercase whatever the AI returned and pass it through. The
+ * RecipeForm's datalist surfaces curated suggestions but the chef can
+ * override.
+ */
+function cleanMenuSection(
   v: string | undefined | null,
 ): MenuSection | null {
   if (!v) return null;
-  const lc = v.toLowerCase().trim();
-  return MENU_SECTION_VALUES.includes(lc as MenuSection)
-    ? (lc as MenuSection)
-    : null;
+  const trimmed = v.trim();
+  return trimmed.length > 0 ? trimmed.toLowerCase() : null;
 }
 
 function parseServings(v: string | undefined): number | null {
@@ -70,7 +65,7 @@ function buildInitial(
   );
   return {
     name: extracted.title ?? '',
-    menu_section: normaliseMenuSection(extracted.menu_section),
+    menu_section: cleanMenuSection(extracted.menu_section),
     serves: parseServings(extracted.servings),
     portion_per_cover: 1,
     sell_price: null,
@@ -115,8 +110,19 @@ function composeNotes(r: ExtractedRecipe): string {
 
 export function NewRecipeClient({
   bankIngredients,
+  defaultDishType = 'food',
+  redirectOnSave,
+  importLabel = 'Import from a URL',
+  importBody = 'Paste any recipe page — Bon Appétit, NYT Cooking, BBC Good Food, your favourite blog. Haiku reads it and pre-fills the form below. Review every line before saving.',
 }: {
   bankIngredients: BankIngredientOption[];
+  /** Default dish type when no recipe imported. Bar passes 'cocktail'. */
+  defaultDishType?: DishType;
+  /** Where to send the chef after a successful save. */
+  redirectOnSave?: (id: string) => string;
+  /** Copy override for the import panel — bar uses "Import a cocktail spec". */
+  importLabel?: string;
+  importBody?: string;
 }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -169,10 +175,10 @@ export function NewRecipeClient({
     <>
       <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-6 mb-6">
         <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-2">
-          Import from a URL
+          {importLabel}
         </div>
         <p className="font-serif italic text-sm text-muted mb-4 leading-relaxed">
-          Paste any recipe page — Bon Appétit, NYT Cooking, BBC Good Food, your favourite blog. Haiku reads it and pre-fills the form below. Review every line before saving.
+          {importBody}
         </p>
         <div className="flex gap-2 flex-wrap">
           <input
@@ -214,6 +220,8 @@ export function NewRecipeClient({
         mode="create"
         initial={initial}
         bankIngredients={bankIngredients}
+        defaultDishType={defaultDishType}
+        redirectOnSave={redirectOnSave}
       />
     </>
   );
