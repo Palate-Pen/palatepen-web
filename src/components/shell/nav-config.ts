@@ -85,6 +85,7 @@ export const OWNER_SECTIONS: NavSection[] = [
       { href: '/owner/suppliers', label: 'Suppliers', icon: 'suppliers' },
       { href: '/owner/cash', label: 'Cash', icon: 'cash' },
       { href: '/owner/transfers', label: 'Transfers', icon: 'prep' },
+      { href: '/owner/team', label: 'Team', icon: 'team' },
       { href: '/owner/reports', label: 'Reports', icon: 'reports' },
     ],
   },

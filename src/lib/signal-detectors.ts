@@ -119,7 +119,7 @@ export async function regenerateSignalsForSite(
 // ---------------------------------------------------------------------
 // Detector: par breaches
 // ---------------------------------------------------------------------
-async function detectParBreaches(
+export async function detectParBreaches(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -213,7 +213,7 @@ async function detectParBreaches(
 // ---------------------------------------------------------------------
 // Detector: allocations arriving in next 14 days
 // ---------------------------------------------------------------------
-async function detectAllocationsArriving(
+export async function detectAllocationsArriving(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -271,7 +271,7 @@ async function detectAllocationsArriving(
 // ---------------------------------------------------------------------
 // Detector: flagged invoices that don't yet have a credit note drafted
 // ---------------------------------------------------------------------
-async function detectFlaggedInvoicesNeedingCreditNotes(
+export async function detectFlaggedInvoicesNeedingCreditNotes(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -329,7 +329,7 @@ async function detectFlaggedInvoicesNeedingCreditNotes(
 // ---------------------------------------------------------------------
 // Detector: recipe cost drift vs baseline
 // ---------------------------------------------------------------------
-async function detectRecipeCostDrift(
+export async function detectRecipeCostDrift(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -463,7 +463,7 @@ async function detectRecipeCostDrift(
 // ---------------------------------------------------------------------
 // Detector: spillage patterns (same ingredient 3+ times in 14 days)
 // ---------------------------------------------------------------------
-async function detectSpillagePatterns(
+export async function detectSpillagePatterns(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -524,7 +524,7 @@ async function detectSpillagePatterns(
 // ---------------------------------------------------------------------
 // Detector: stock take variance worth a look
 // ---------------------------------------------------------------------
-async function detectStockTakeVariance(
+export async function detectStockTakeVariance(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -573,7 +573,7 @@ async function detectStockTakeVariance(
 // ---------------------------------------------------------------------
 // Detector: today's deliveries
 // ---------------------------------------------------------------------
-async function detectTodaysDeliveries(
+export async function detectTodaysDeliveries(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -622,7 +622,7 @@ async function detectTodaysDeliveries(
 // ---------------------------------------------------------------------
 // Detector: prep board for today still outstanding
 // ---------------------------------------------------------------------
-async function detectTonightsPrep(
+export async function detectTonightsPrep(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -680,7 +680,7 @@ async function detectTonightsPrep(
 // archive it or decide it's worth bringing back. Pro-tier friendly —
 // reads recipes / menus / menu_plan_items / prep_items only.
 // ---------------------------------------------------------------------
-async function detectIdleRecipes(
+export async function detectIdleRecipes(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -776,7 +776,7 @@ async function detectIdleRecipes(
 // "GP 65%" but the underlying baseline is no longer trustworthy. Pro
 // tier just needs recipes + ingredient_price_history.
 // ---------------------------------------------------------------------
-async function detectStaleCostBaseline(
+export async function detectStaleCostBaseline(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -836,7 +836,7 @@ async function detectStaleCostBaseline(
 // behind the average for this weekday, the chef sees a heads-up. Pro-tier
 // gold: signal comes purely from the chef's own past prep board.
 // ---------------------------------------------------------------------
-async function detectPrepPatternLag(
+export async function detectPrepPatternLag(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -925,7 +925,7 @@ function weekdayName(d: number): string {
 // cost ÷ sell price), and flags menus pulling below the account's GP
 // target (default 65%). Names the worst-offender dish.
 // ---------------------------------------------------------------------
-async function detectMenuGpDrag(
+export async function detectMenuGpDrag(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {
@@ -1069,7 +1069,7 @@ function capitalise(s: string): string {
 // shifted since the note was written. Useful for the Pro chef: "the
 // duck dish you noted last month now costs 14% more — revisit the note."
 // ---------------------------------------------------------------------
-async function detectNotebookLinkDrift(
+export async function detectNotebookLinkDrift(
   svc: SupaClient,
   siteId: string,
 ): Promise<SignalInsert[]> {

@@ -78,6 +78,13 @@ export const OWNER_TABS: Array<{
     status: 'live',
   },
   {
+    slug: 'team',
+    href: '/owner/team',
+    name: 'Team',
+    description: 'Members across every owned site · roles · per-feature flags',
+    status: 'live',
+  },
+  {
     slug: 'settings',
     href: '/owner/settings',
     name: 'Settings',

@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { LookingAheadLive } from './LookingAheadLive';
 
 type TargetSurface =
   | 'home'
@@ -89,6 +90,7 @@ export async function LookingAhead({
 
   return (
     <section className="mt-12">
+      <LookingAheadLive siteId={siteId} />
       <div className="flex items-baseline justify-between mb-6 pb-3 border-b border-rule">
         <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold">
           Looking Ahead

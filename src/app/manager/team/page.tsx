@@ -1,47 +1,125 @@
+import { redirect } from 'next/navigation';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { getShellContext } from '@/lib/shell/context';
-import { getTeam } from '@/lib/oversight';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { KpiCard } from '@/components/shell/KpiCard';
-import { PrintButton } from '@/components/shell/PrintButton';
+import { TeamMatrix } from '@/components/team/TeamMatrix';
+import type { MatrixMember, FeatureColumn } from '@/components/team/TeamMatrix';
+import {
+  FEATURE_REGISTRY,
+  isFeatureAvailableAtTier,
+  isFeatureOnByDefault,
+} from '@/lib/features';
+import {
+  toggleFeatureFlagAction,
+  changeRoleAction,
+} from '@/app/owner/team/actions';
 
 export const metadata = { title: 'Team — Manager — Palatable' };
 
-const dateFmt = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
+type ShellRole =
+  | 'owner'
+  | 'manager'
+  | 'chef'
+  | 'sous_chef'
+  | 'commis'
+  | 'bartender'
+  | 'head_bartender'
+  | 'bar_back'
+  | 'viewer';
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Owner',
-  manager: 'Manager',
-  chef: 'Head Chef',
-  sous_chef: 'Sous Chef',
-  commis: 'Commis',
-  bartender: 'Bartender',
-  head_bartender: 'Head Bartender',
-  bar_back: 'Bar Back',
-  viewer: 'Viewer',
-};
+const KITCHEN_USER_CAP = 5;
 
 export default async function ManagerTeamPage() {
   const ctx = await getShellContext();
-  const team = await getTeam(ctx.siteId);
+  if (!ctx.userId) redirect('/signin');
 
-  const owners = team.filter((m) => m.role === 'owner').length;
-  const kitchen = team.filter(
-    (m) => m.role === 'chef' || m.role === 'sous_chef' || m.role === 'commis',
-  ).length;
-  const bar = team.filter(
-    (m) =>
-      m.role === 'bartender' ||
-      m.role === 'head_bartender' ||
-      m.role === 'bar_back',
-  ).length;
-  const managers = team.filter((m) => m.role === 'manager').length;
+  const supabase = await createSupabaseServerClient();
+  const { data: site } = await supabase
+    .from('sites')
+    .select('account_id, name')
+    .eq('id', ctx.siteId)
+    .maybeSingle();
+  let tier = 'free';
+  if (site?.account_id) {
+    const { data: acct } = await supabase
+      .from('accounts')
+      .select('tier')
+      .eq('id', site.account_id)
+      .maybeSingle();
+    tier = (acct?.tier as string | undefined) ?? 'free';
+  }
+
+  const svc = createSupabaseServiceClient();
+  const { data: members } = await svc
+    .from('memberships')
+    .select('id, user_id, role, site_id, created_at')
+    .eq('site_id', ctx.siteId)
+    .order('created_at', { ascending: true });
+  const allMembers = ((members ?? []) as unknown as Array<{
+    id: string;
+    user_id: string;
+    role: ShellRole;
+    site_id: string;
+    created_at: string;
+  }>);
+
+  const userIds = Array.from(new Set(allMembers.map((m) => m.user_id)));
+  const { data: authUsers } = await svc.auth.admin.listUsers({
+    page: 1,
+    perPage: 200,
+  });
+  const emailById = new Map<string, string>();
+  for (const u of authUsers.users ?? []) {
+    if (u.email && userIds.includes(u.id)) emailById.set(u.id, u.email);
+  }
+
+  const membershipIds = allMembers.map((m) => m.id);
+  const { data: overrides } = await svc
+    .from('feature_flags')
+    .select('membership_id, feature_key, enabled')
+    .in('membership_id', membershipIds);
+  const overrideByMembership = new Map<string, Map<string, boolean>>();
+  for (const o of overrides ?? []) {
+    const mid = o.membership_id as string;
+    if (!overrideByMembership.has(mid)) overrideByMembership.set(mid, new Map());
+    overrideByMembership.get(mid)!.set(o.feature_key as string, Boolean(o.enabled));
+  }
+
+  const featureColumns: FeatureColumn[] = Object.values(FEATURE_REGISTRY)
+    .filter((f) => isFeatureAvailableAtTier(f.key, tier))
+    .map((f) => ({ key: f.key, label: f.label, group: f.group }));
+
+  const matrixMembers: MatrixMember[] = allMembers.map((m) => {
+    const features: Record<string, { enabled: boolean; source: 'role' | 'override' }> = {};
+    for (const col of featureColumns) {
+      const override = overrideByMembership.get(m.id)?.get(col.key);
+      if (override !== undefined) {
+        features[col.key] = { enabled: override, source: 'override' };
+      } else {
+        features[col.key] = {
+          enabled: isFeatureOnByDefault(col.key, m.role),
+          source: 'role',
+        };
+      }
+    }
+    return {
+      membership_id: m.id,
+      user_id: m.user_id,
+      email: emailById.get(m.user_id) ?? m.user_id.slice(0, 8),
+      role: m.role,
+      site_id: m.site_id,
+      site_name: (site?.name as string | undefined) ?? ctx.kitchenName,
+      features,
+    };
+  });
+
+  const atOrOverCap = allMembers.length >= KITCHEN_USER_CAP;
+  const canChangeRole = ctx.role === 'owner';
 
   return (
-    <div className="printable px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
+    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
       <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -51,71 +129,83 @@ export default async function ManagerTeamPage() {
             <em className="text-gold font-semibold not-italic">Team</em>
           </h1>
           <p className="font-serif italic text-lg text-muted">
-            {team.length === 0
+            {allMembers.length === 0
               ? 'No memberships on this site yet.'
-              : `${team.length} on the books — ${kitchen} kitchen, ${bar} bar, ${managers + owners} management.`}
+              : allMembers.length +
+                ' on the books at ' +
+                ((site?.name as string | undefined) ?? ctx.kitchenName) +
+                '. Kitchen tier caps at ' +
+                KITCHEN_USER_CAP +
+                ' users.'}
           </p>
-        </div>
-        <div className="print-hide">
-          {team.length > 0 && <PrintButton label="Print team list" />}
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <KpiCard label="Total" value={String(team.length)} sub="members" />
-        <KpiCard label="Kitchen" value={String(kitchen)} sub="chef + sous + commis" />
-        <KpiCard label="Bar" value={String(bar)} sub="head + bartender + back" />
-        <KpiCard label="Management" value={String(managers + owners)} sub="manager + owner" />
+        <KpiCard
+          label="On the books"
+          value={String(allMembers.length) + ' / ' + KITCHEN_USER_CAP}
+          sub={atOrOverCap ? 'cap reached' : 'seats free'}
+          tone={atOrOverCap ? 'attention' : undefined}
+        />
+        <KpiCard
+          label="Kitchen"
+          value={String(
+            allMembers.filter(
+              (m) =>
+                m.role === 'chef' ||
+                m.role === 'sous_chef' ||
+                m.role === 'commis',
+            ).length,
+          )}
+          sub="chef + sous + commis"
+        />
+        <KpiCard
+          label="Bar"
+          value={String(
+            allMembers.filter(
+              (m) =>
+                m.role === 'bartender' ||
+                m.role === 'head_bartender' ||
+                m.role === 'bar_back',
+            ).length,
+          )}
+          sub="head + bartender + back"
+        />
+        <KpiCard
+          label="Management"
+          value={String(
+            allMembers.filter(
+              (m) => m.role === 'owner' || m.role === 'manager',
+            ).length,
+          )}
+          sub="owner + manager"
+        />
       </div>
 
       <SectionHead
-        title="On The Books"
-        meta={team.length === 0 ? 'invite to start' : `${team.length} members`}
+        title="Feature matrix"
+        meta={'roles set defaults · ' + featureColumns.length + ' features'}
       />
-      {team.length === 0 ? (
+      {allMembers.length === 0 ? (
         <div className="bg-card border border-rule px-10 py-12 text-center">
           <p className="font-serif italic text-muted">
             No team on file. Invite kitchen + bar staff from Settings to start tracking the brigade.
           </p>
         </div>
       ) : (
-        <div className="bg-card border border-rule">
-          <div className="hidden md:grid grid-cols-[1.4fr_1fr_140px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
-            {['User', 'Role', 'Joined'].map((h) => (
-              <div
-                key={h}
-                className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted"
-              >
-                {h}
-              </div>
-            ))}
-          </div>
-          {team.map((m, i) => (
-            <div
-              key={m.user_id}
-              className={
-                'grid grid-cols-1 md:grid-cols-[1.4fr_1fr_140px] gap-4 px-7 py-4 items-center' +
-                (i < team.length - 1 ? ' border-b border-rule-soft' : '')
-              }
-            >
-              <div>
-                <div className="font-serif font-semibold text-base text-ink">
-                  {m.email ?? `user · ${m.user_id.slice(0, 8)}`}
-                </div>
-              </div>
-              <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
-                {ROLE_LABEL[m.role] ?? m.role}
-              </div>
-              <div className="font-serif italic text-sm text-muted">
-                {dateFmt.format(new Date(m.created_at))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <TeamMatrix
+          members={matrixMembers}
+          featureColumns={featureColumns}
+          toggleAction={toggleFeatureFlagAction}
+          changeRoleAction={changeRoleAction}
+          canChangeRole={canChangeRole}
+          showSiteColumn={false}
+        />
       )}
 
       <p className="font-serif italic text-sm text-muted mt-6">
-        Invite + remove flow lands with the multi-user signup batch.
+        Invite + remove flow lands with the multi-user signup batch. Until then, memberships can be added by Founder Admin.
       </p>
     </div>
   );
