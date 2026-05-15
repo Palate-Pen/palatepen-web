@@ -6,6 +6,8 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { AllergenChips } from '@/components/allergens/AllergenPanel';
 import { TagCloud, buildTagCloud } from '@/components/shell/TagCloud';
+import { PrintButton } from '@/components/shell/PrintButton';
+import { RecipeBookPrint } from './RecipeBookPrint';
 
 export const metadata = { title: 'Recipes — Palatable' };
 
@@ -60,6 +62,7 @@ export default async function RecipesPage({
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="print-hide">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -78,12 +81,19 @@ export default async function RecipesPage({
             )}
           </p>
         </div>
-        <Link
-          href="/recipes/new"
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
-        >
-          + Add recipe
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {recipes.length > 0 && (
+            <PrintButton
+              label={activeTag ? `Print ${activeTag} book` : 'Print recipe book'}
+            />
+          )}
+          <Link
+            href="/recipes/new"
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+          >
+            + Add recipe
+          </Link>
+        </div>
       </div>
 
       {recipes.length > 0 && (
@@ -143,6 +153,16 @@ export default async function RecipesPage({
       )}
 
       <LookingAhead siteId={ctx.siteId} surface="recipes" />
+      </div>
+
+      {/* Print-only payload — hidden on screen, revealed by globals.css
+       *  `@media print`. Rendering it here avoids a separate /print
+       *  route and keeps the chef on the same page when they hit Print. */}
+      <RecipeBookPrint
+        recipes={recipes}
+        kitchenName={ctx.kitchenName}
+        filterLabel={activeTag ? `Tagged "${activeTag}"` : null}
+      />
     </div>
   );
 }

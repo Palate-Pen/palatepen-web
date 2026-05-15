@@ -94,11 +94,22 @@
   }
 }
 
-/* Print styles — recipe + spec detail pages print as a clean A4 card.
-   Browser native print dialog handles save-as-PDF.
-   Pages opt in by wrapping content in class="printable" + tagging chrome
-   with class="print-hide". */
+/* Print styles — chef-facing print output, deliberately clean.
+ *
+ * Three opt-in classes:
+ *   .printable       — single-surface print (recipe detail, spec detail).
+ *                      The page itself is the entire print job.
+ *   .printable-book  — multi-page document. Every direct child gets a
+ *                      page-break after it, so each recipe lands on its
+ *                      own sheet. Hidden until print runs.
+ *   .print-hide      — anywhere we put this, the element drops from print.
+ *
+ * Default is white background, ink-black text, ~10.5pt body, generous
+ * margins, gold accents flattened to black for ink economy + readability.
+ * Photos cap at ~half-page so they never push prep notes off.
+ */
 @media print {
+  /* Drop chrome (Sidebar, Topbar, anything tagged with .print-hide). */
   aside,
   header,
   nav,
@@ -106,61 +117,194 @@
     display: none !important;
   }
 
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 16mm 14mm 14mm 14mm;
+  }
+
   body {
     background: white !important;
-    color: black !important;
-    font-size: 11pt;
+    color: #111 !important;
+    font-family: var(--font-serif), 'Cormorant Garamond', Georgia, serif;
+    font-size: 10.5pt;
+    line-height: 1.4;
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
   }
 
   main,
-  .printable {
+  .printable,
+  .printable-book {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
     background: white !important;
   }
 
-  .printable h1 {
-    font-size: 24pt;
-    margin-bottom: 8pt;
+  /* `.printable-book` is rendered to the DOM but hidden on screen.
+   * On print, it becomes the entire document. Single-surface
+   * `.printable` content is also visible only on print where it'd be
+   * the recipe detail page wrapper. */
+  .printable-book {
+    display: block !important;
+  }
+
+  /* Each direct .recipe-card child of a recipe book starts a new page. */
+  .printable-book > .recipe-card {
+    page-break-after: always;
+    break-after: page;
+  }
+  .printable-book > .recipe-card:last-child {
+    page-break-after: auto;
+  }
+
+  /* Typography reset for print — generous heading scale, tighter body. */
+  .printable h1,
+  .printable-book h1 {
+    font-family: var(--font-display), 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+    font-size: 22pt;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0 0 10pt 0;
     page-break-after: avoid;
+    color: #111 !important;
   }
 
   .printable h2,
-  .printable h3 {
+  .printable-book h2 {
+    font-family: var(--font-display), 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+    font-size: 13pt;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 14pt 0 6pt 0;
+    page-break-after: avoid;
+    border-bottom: 0.5pt solid #111;
+    padding-bottom: 3pt;
+  }
+
+  .printable h3,
+  .printable-book h3 {
+    font-family: var(--font-display), 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+    font-size: 10pt;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 8pt 0 4pt 0;
     page-break-after: avoid;
   }
 
-  .printable .bg-card,
-  .printable .bg-paper-warm {
-    background: white !important;
-    border: 1px solid #1a1612 !important;
+  /* Italic subtitle / chef voice — keep the italic, mute the grey. */
+  .printable .font-serif.italic,
+  .printable-book .font-serif.italic {
+    color: #444 !important;
   }
 
+  /* Drop every card chrome — print should read like a typed document, not
+   * the screen UI. Borders only where they semantically separate sections. */
+  .printable .bg-card,
+  .printable .bg-paper-warm,
+  .printable .bg-paper,
+  .printable-book .bg-card,
+  .printable-book .bg-paper-warm,
+  .printable-book .bg-paper {
+    background: white !important;
+    border-color: #111 !important;
+  }
+
+  /* Flatten gold / attention / urgent to black + bold for ink-economy printing. */
   .printable .text-gold,
-  .printable .text-gold-dark {
-    color: black !important;
+  .printable .text-gold-dark,
+  .printable .text-attention,
+  .printable .text-urgent,
+  .printable .text-healthy,
+  .printable-book .text-gold,
+  .printable-book .text-gold-dark,
+  .printable-book .text-attention,
+  .printable-book .text-urgent,
+  .printable-book .text-healthy {
+    color: #111 !important;
+    font-weight: 600;
   }
   .printable .border-gold,
   .printable .border-l-gold,
-  .printable .border-rule-gold {
-    border-color: #1a1612 !important;
+  .printable .border-l-attention,
+  .printable .border-l-urgent,
+  .printable .border-l-healthy,
+  .printable .border-rule-gold,
+  .printable .border-rule,
+  .printable .border-rule-soft,
+  .printable-book .border-gold,
+  .printable-book .border-l-gold,
+  .printable-book .border-l-attention,
+  .printable-book .border-l-urgent,
+  .printable-book .border-l-healthy,
+  .printable-book .border-rule-gold,
+  .printable-book .border-rule,
+  .printable-book .border-rule-soft {
+    border-color: #111 !important;
   }
-  .printable .bg-gold-bg {
+  .printable .bg-gold-bg,
+  .printable .bg-gold,
+  .printable-book .bg-gold-bg,
+  .printable-book .bg-gold {
     background: white !important;
+    color: #111 !important;
   }
 
-  .printable img {
-    max-height: 220pt !important;
+  /* Photos: cap at one-third of A4 height so prep notes always make
+   * the page. Keep aspect ratio. Never break across pages. */
+  .printable img,
+  .printable-book img {
+    max-height: 90mm !important;
     object-fit: cover;
     page-break-inside: avoid;
+    break-inside: avoid;
   }
 
-  .printable section {
+  /* Sections shouldn't split awkwardly. Lists hold together. */
+  .printable section,
+  .printable-book section,
+  .printable ul,
+  .printable-book ul,
+  .printable ol,
+  .printable-book ol {
     page-break-inside: avoid;
+    break-inside: avoid;
   }
 
+  /* Tables — borders default to ink hairlines, no zebra. */
+  .printable table,
+  .printable-book table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .printable th,
+  .printable td,
+  .printable-book th,
+  .printable-book td {
+    border: 0.5pt solid #111;
+    padding: 3pt 5pt;
+    vertical-align: top;
+  }
+
+  /* No sticky positioning at all in print. */
   .sticky {
     position: static !important;
   }
+
+  /* Anchor links: render as plain ink — no underline noise. */
+  .printable a,
+  .printable-book a {
+    color: #111 !important;
+    text-decoration: none !important;
+  }
+}
+
+/* Recipe-book content is rendered to the DOM but hidden on screen.
+ * Only shows up during print. */
+.printable-book {
+  display: none;
 }
