@@ -5,6 +5,7 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { POUR_COST_BANDS } from '@/lib/bar';
 import { GPCalculatorButton } from '@/components/gp/GPCalculatorButton';
+import { CostSimulatorButton } from '@/components/cost-simulator/CostSimulatorButton';
 import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
@@ -51,6 +52,18 @@ export default async function SpecDetailPage({
       qty: i.qty,
       unit: i.unit,
       unitPrice: i.current_price,
+    })),
+  };
+  const simSeed = {
+    dishName: spec.name,
+    sellPrice: spec.sell_price,
+    serves: spec.serves ?? 1,
+    lines: spec.ingredients.map((i) => ({
+      id: i.id,
+      name: i.name,
+      qty: i.qty,
+      unit: i.unit,
+      lineCost: i.line_cost,
     })),
   };
 
@@ -365,6 +378,11 @@ export default async function SpecDetailPage({
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
           <PrintButton label="Print spec" />
+          <CostSimulatorButton
+            seed={simSeed}
+            targetGpPct={gpTarget}
+            label="Cost simulator"
+          />
           <GPCalculatorButton
             seed={gpSeed}
             targetGpPct={gpTarget}

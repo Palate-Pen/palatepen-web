@@ -8,6 +8,7 @@ import { aggregateRecipeNutrition } from '@/lib/nutrition';
 import { NutritionDisplay } from '@/components/nutrition/NutritionDisplay';
 import { ComplianceCheck } from './ComplianceCheck';
 import { GPCalculatorButton } from '@/components/gp/GPCalculatorButton';
+import { CostSimulatorButton } from '@/components/cost-simulator/CostSimulatorButton';
 import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
@@ -54,6 +55,18 @@ export default async function RecipeDetailPage({
       qty: i.qty,
       unit: i.unit,
       unitPrice: i.current_price,
+    })),
+  };
+  const simSeed = {
+    dishName: recipe.name,
+    sellPrice: recipe.sell_price,
+    serves: recipe.serves ?? 1,
+    lines: recipe.ingredients.map((i) => ({
+      id: i.id,
+      name: i.name,
+      qty: i.qty,
+      unit: i.unit,
+      lineCost: i.line_cost,
     })),
   };
 
@@ -450,6 +463,11 @@ export default async function RecipeDetailPage({
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
           <PrintButton label="Print recipe" />
+          <CostSimulatorButton
+            seed={simSeed}
+            targetGpPct={gpTarget}
+            label="Cost simulator"
+          />
           <GPCalculatorButton
             seed={gpSeed}
             targetGpPct={gpTarget}
