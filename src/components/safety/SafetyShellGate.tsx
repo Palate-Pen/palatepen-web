@@ -10,7 +10,7 @@ import { SafetyOnboardingModal } from './SafetyOnboardingModal';
  *   2. tier upsell card — account does not have safety_enabled = true.
  *   3. onboarding modal — owner has not acked liability yet.
  *
- * Used by src/app/(shell)/safety/layout.tsx to gate every safety route.
+ * Used by src/app/safety/layout.tsx to gate every safety route.
  */
 export async function SafetyShellGate({
   children,

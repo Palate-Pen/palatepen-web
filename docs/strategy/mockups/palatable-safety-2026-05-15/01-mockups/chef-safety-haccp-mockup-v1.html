@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety · HACCP Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --healthy-bg: rgba(93,127,79,0.08);
+    --attention-bg: rgba(184,106,46,0.06);
+    --urgent-bg: rgba(161,68,36,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--paper-warm); border-right: 1px solid var(--rule); padding: 28px 0; flex-shrink: 0; }
+  .sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .brand-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase; }
+  .brand-sub { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .nav-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.25em; color: var(--muted-soft); text-transform: uppercase; padding: 0 24px 8px; }
+  .nav-item { display: flex; align-items: center; padding: 10px 24px; font-family: 'Lora', serif; font-size: 15px; color: var(--ink-soft); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; gap: 10px; }
+  .nav-item:hover { background: rgba(0,0,0,0.02); }
+  .nav-item.active { background: var(--card); border-left-color: var(--gold); color: var(--ink); font-weight: 600; }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; color: var(--gold); }
+
+  .main { flex: 1; padding: 32px 48px 64px; max-width: 1280px; }
+
+  .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; }
+  .breadcrumb a { color: var(--muted); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { color: var(--gold); }
+  .breadcrumb-sep { color: var(--muted-soft); font-size: 10px; }
+  .breadcrumb-current { color: var(--gold); }
+
+  .page-title { font-family: 'Lora', serif; font-weight: 400; font-size: 36px; line-height: 1.1; color: var(--ink); letter-spacing: -0.015em; margin-bottom: 6px; }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub { font-family: 'Lora', serif; font-style: italic; font-size: 16px; color: var(--muted); margin-bottom: 28px; max-width: 720px; }
+
+  /* Wizard intro card */
+  .wizard-intro {
+    background: var(--paper-warm);
+    border-left: 3px solid var(--gold);
+    padding: 22px 26px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+  }
+  .intro-content {
+    max-width: 580px;
+  }
+  .intro-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .intro-title {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .intro-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .intro-body strong {
+    font-style: normal;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .intro-time {
+    text-align: right;
+    padding-left: 24px;
+    border-left: 1px solid var(--rule);
+  }
+  .intro-time-num {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .intro-time-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 36px;
+    margin-bottom: 36px;
+  }
+
+  /* Step sidebar */
+  .step-sidebar {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+  .step-sidebar-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step:hover { background: var(--paper-warm); }
+  .step.active {
+    background: var(--card);
+    border-color: var(--gold);
+    border-left: 3px solid var(--gold);
+    padding-left: 11px;
+  }
+  .step.complete {
+    background: var(--healthy-bg);
+    opacity: 0.9;
+  }
+  .step-num-circle {
+    width: 26px;
+    height: 26px;
+    border: 1.5px solid var(--rule);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--card);
+  }
+  .step.active .step-num-circle {
+    background: var(--gold);
+    color: var(--paper);
+    border-color: var(--gold);
+  }
+  .step.complete .step-num-circle {
+    background: var(--healthy);
+    color: var(--paper);
+    border-color: var(--healthy);
+  }
+  .step-num-circle svg { width: 14px; height: 14px; }
+  .step-body { flex: 1; padding-top: 2px; }
+  .step-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.3;
+  }
+  .step.active .step-name {
+    color: var(--gold-dark);
+    font-weight: 600;
+  }
+  .step-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .step-meta.complete { color: var(--healthy); font-weight: 500; }
+
+  /* Wizard panel */
+  .wizard-panel {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 36px 40px;
+  }
+  .wizard-step-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 28px;
+  }
+  .wizard-step-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .wizard-step-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 28px;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-top: 6px;
+  }
+  .wizard-step-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .wizard-step-progress {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* Form sections */
+  .field-group {
+    margin-bottom: 28px;
+  }
+  .field-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .field-hint {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .field-hint strong { font-style: normal; color: var(--ink-soft); font-weight: 600; }
+
+  .text-input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Lora', serif;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .text-input:focus { outline: none; border-color: var(--gold); }
+  .text-input.prefilled {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+  }
+  .prefilled-tag {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    padding: 3px 8px;
+    background: var(--gold);
+    color: var(--paper);
+    text-transform: uppercase;
+    border-radius: 1px;
+    margin-left: 8px;
+    vertical-align: 2px;
+  }
+
+  /* Pickable cards (kitchen type, service style) */
+  .pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .pick {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 16px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pick:hover { border-color: var(--gold); }
+  .pick.selected {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+    border-width: 2px;
+    padding: 15px 15px;
+  }
+  .pick-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .pick-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* Multi-checkbox grid */
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .check-item:hover { border-color: var(--gold); }
+  .check-item.checked {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+  }
+  .check-box {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--rule);
+    border-radius: 2px;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .check-item.checked .check-box {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--paper);
+  }
+  .check-box svg { width: 12px; height: 12px; }
+  .check-text {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  /* Summary pre-fill banner */
+  .prefill-banner {
+    background: var(--gold-bg);
+    border: 1px solid var(--gold);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .prefill-icon {
+    color: var(--gold-dark);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .prefill-icon svg { width: 20px; height: 20px; }
+  .prefill-text {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .prefill-text strong { font-weight: 600; color: var(--gold-dark); }
+
+  /* Wizard footer */
+  .wizard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+  }
+  .save-status {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .save-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--healthy);
+    border-radius: 50%;
+  }
+  .wizard-nav { display: flex; gap: 10px; }
+  .btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; padding: 14px 24px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+  .btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn-primary:hover { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* FSA Strip */
+  .fsa-strip { background: var(--paper-warm); border: 1px solid var(--rule); border-left: 3px solid var(--gold); padding: 22px 26px; margin-top: 24px; }
+  .fsa-strip-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .fsa-eyebrow { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; }
+  .fsa-source { font-family: 'Lora', serif; font-style: italic; font-size: 12px; color: var(--muted); }
+  .fsa-source strong { font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink-soft); font-style: normal; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; margin-left: 4px; }
+  .fsa-body { font-family: 'Lora', serif; font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 14px; }
+  .fsa-body strong { font-weight: 600; color: var(--ink); }
+  .fsa-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fsa-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--rule); text-decoration: none; transition: all 0.15s; cursor: pointer; }
+  .fsa-link:hover { border-color: var(--gold); background: var(--card-warm); }
+  .fsa-link-icon { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; }
+  .fsa-link-icon svg { width: 16px; height: 16px; }
+  .fsa-link-text { flex: 1; font-family: 'Lora', serif; font-size: 14px; color: var(--ink); }
+  .fsa-link-text strong { font-weight: 600; }
+  .fsa-link-arrow { color: var(--muted-soft); }
+  .fsa-link-arrow svg { width: 14px; height: 14px; }
+
+  /* Stronger liability for HACCP */
+  .liability { margin-top: 36px; padding: 22px 26px; background: var(--urgent-bg); border: 1px solid var(--urgent); border-left: 3px solid var(--urgent); }
+  .liability-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--urgent); text-transform: uppercase; margin-bottom: 8px; }
+  .liability-body { font-family: 'Lora', serif; font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+  .liability-body strong { font-weight: 600; color: var(--urgent); }
+
+  /* Footnote */
+  .footnote { margin-top: 48px; padding: 24px; background: var(--ink); color: var(--paper); border-left: 3px solid var(--gold); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.35em; color: var(--gold-light); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Lora', serif; font-size: 14px; line-height: 1.7; color: var(--paper); opacity: 0.9; }
+  .footnote-body strong { font-weight: 600; color: var(--gold-light); }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety · HACCP Wizard</div>
+  <div class="mockup-banner-meta">9-step guided plan builder · Step 1 of 9</div>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Palatable</div>
+      <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+    </div>
+    <div class="nav-section-label">Kitchen</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Prep</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>Safety</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>Recipes</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Menus</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>Margins</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Stock &amp; Suppliers</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Notebook</div>
+    <div class="nav-section-label" style="margin-top:24px">System</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>Inbox</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Settings</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>Connections</div>
+  </aside>
+
+  <main class="main">
+
+    <div class="breadcrumb">
+      <a>Safety</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">HACCP Wizard</span>
+    </div>
+
+    <h1 class="page-title">Build your <em>HACCP plan</em>.</h1>
+    <p class="page-sub">UK food safety law requires a written plan based on HACCP principles. We'll guide you through nine steps, pre-filling from what Palatable already knows about your kitchen. End result: a real, printable HACCP document.</p>
+
+    <!-- WIZARD INTRO -->
+    <div class="wizard-intro">
+      <div class="intro-content">
+        <div class="intro-eyebrow">First-Time Setup</div>
+        <div class="intro-title">A guided plan, not a blank page.</div>
+        <div class="intro-body">
+          Most kitchens spend <strong>£1,500–£3,000</strong> on a HACCP consultant. The wizard does the equivalent work using your menu, suppliers, and recipes — already in Palatable. You'll review and confirm each step. The output is a formatted document an EHO will accept.
+        </div>
+      </div>
+      <div class="intro-time">
+        <div class="intro-time-num">≈ 45 min</div>
+        <div class="intro-time-label">Estimated Time</div>
+      </div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+      <!-- LEFT: STEP SIDEBAR -->
+      <div class="step-sidebar">
+        <div class="step-sidebar-title">The Nine Steps</div>
+        <div class="step-list">
+          <div class="step active">
+            <div class="step-num-circle">1</div>
+            <div class="step-body">
+              <div class="step-name">Business profile</div>
+              <div class="step-meta">In progress · 5 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">2</div>
+            <div class="step-body">
+              <div class="step-name">Menu &amp; hazard analysis</div>
+              <div class="step-meta">Auto-populated from your menu · 10 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">3</div>
+            <div class="step-body">
+              <div class="step-name">Critical Control Points</div>
+              <div class="step-meta">Per high-risk dish · 8 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">4</div>
+            <div class="step-body">
+              <div class="step-name">Critical limits</div>
+              <div class="step-meta">FSA defaults pre-filled · 4 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">5</div>
+            <div class="step-body">
+              <div class="step-name">Monitoring procedures</div>
+              <div class="step-meta">Maps to Safety tab · 5 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">6</div>
+            <div class="step-body">
+              <div class="step-name">Corrective actions</div>
+              <div class="step-meta">From the library · 5 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">7</div>
+            <div class="step-body">
+              <div class="step-name">Verification &amp; review</div>
+              <div class="step-meta">Schedule + sign-offs · 3 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">8</div>
+            <div class="step-body">
+              <div class="step-name">Document generation</div>
+              <div class="step-meta">Auto-formatted PDF · 2 min</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num-circle">9</div>
+            <div class="step-body">
+              <div class="step-name">Annual review</div>
+              <div class="step-meta">Reminder for next year · 3 min</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: WIZARD PANEL -->
+      <div>
+        <div class="wizard-panel">
+
+          <div class="wizard-step-head">
+            <div>
+              <div class="wizard-step-eyebrow">Step 1</div>
+              <div class="wizard-step-title">Your <em>business profile</em>.</div>
+            </div>
+            <div class="wizard-step-progress">Step 1 of 9</div>
+          </div>
+
+          <!-- PRE-FILL BANNER -->
+          <div class="prefill-banner">
+            <div class="prefill-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            </div>
+            <div class="prefill-text">
+              <strong>We've pre-filled what we know.</strong> Business name, address, kitchen type and FSA registration number come from your Palatable Settings. Anything in gold is pre-filled — review, confirm, or change as needed.
+            </div>
+          </div>
+
+          <!-- BUSINESS NAME -->
+          <div class="field-group">
+            <div class="field-label">Trading Name</div>
+            <div class="field-hint">As registered with your local authority. <strong>Pulled from Settings.</strong></div>
+            <input class="text-input prefilled" type="text" value="Berber &amp; Q · Shoreditch" />
+          </div>
+
+          <!-- LEGAL ENTITY + REGISTRATION -->
+          <div class="field-group">
+            <div class="field-label">Legal Entity &amp; FSA Registration</div>
+            <div class="field-hint">Required on the HACCP document.</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px">
+              <input class="text-input prefilled" type="text" value="Berber &amp; Q Limited" placeholder="Legal entity name" />
+              <input class="text-input prefilled" type="text" value="FSA-LON-294817" placeholder="FSA registration number" />
+            </div>
+          </div>
+
+          <!-- KITCHEN TYPE -->
+          <div class="field-group">
+            <div class="field-label">Kitchen Type</div>
+            <div class="field-hint">This sets the template baseline and the questions in later steps. Pick the closest match.</div>
+            <div class="pick-grid">
+              <div class="pick selected">
+                <div class="pick-name">Restaurant</div>
+                <div class="pick-desc">Table service, fixed menu, dine-in</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">Gastropub</div>
+                <div class="pick-desc">Bar-led with kitchen service</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">Café / Coffee</div>
+                <div class="pick-desc">Counter, light cooking, pastries</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">Takeaway / Delivery</div>
+                <div class="pick-desc">No dine-in, food packed to go</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">Catering / Events</div>
+                <div class="pick-desc">Off-site preparation &amp; service</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">Food Truck / Stall</div>
+                <div class="pick-desc">Mobile or market trading</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SERVICES OFFERED -->
+          <div class="field-group">
+            <div class="field-label">Services Offered</div>
+            <div class="field-hint">Tick all that apply. Each adds relevant hazard controls in later steps.</div>
+            <div class="check-grid">
+              <div class="check-item checked">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                <div class="check-text">Dine-in à la carte</div>
+              </div>
+              <div class="check-item checked">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                <div class="check-text">Pre-booked group / events</div>
+              </div>
+              <div class="check-item checked">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                <div class="check-text">Bar / cocktails</div>
+              </div>
+              <div class="check-item">
+                <div class="check-box"></div>
+                <div class="check-text">Takeaway from premises</div>
+              </div>
+              <div class="check-item">
+                <div class="check-box"></div>
+                <div class="check-text">Delivery (in-house or Deliveroo)</div>
+              </div>
+              <div class="check-item checked">
+                <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div>
+                <div class="check-text">Pre-packed for direct sale (PPDS)</div>
+              </div>
+              <div class="check-item">
+                <div class="check-box"></div>
+                <div class="check-text">Outdoor / al fresco service</div>
+              </div>
+              <div class="check-item">
+                <div class="check-box"></div>
+                <div class="check-text">Vulnerable groups (care, school)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TEAM SIZE -->
+          <div class="field-group">
+            <div class="field-label">Team Size</div>
+            <div class="field-hint">Affects training requirements and corrective action ownership. <strong>Pulled from Training Records.</strong></div>
+            <div class="pick-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))">
+              <div class="pick">
+                <div class="pick-name">1–3 people</div>
+              </div>
+              <div class="pick selected">
+                <div class="pick-name">4–10 people</div>
+                <div class="pick-desc">8 staff currently — from Training Records</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">11–25 people</div>
+              </div>
+              <div class="pick">
+                <div class="pick-name">26+ people</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HEAD OF FOOD SAFETY -->
+          <div class="field-group">
+            <div class="field-label">Person Responsible for Food Safety</div>
+            <div class="field-hint">The "FBO" (Food Business Operator) — legally accountable. Must hold appropriate training.</div>
+            <input class="text-input prefilled" type="text" value="Jack Harrison · Head Chef &amp; Founder · Level 3 Food Hygiene + HACCP (valid Apr 2028)" />
+          </div>
+
+          <!-- FOOTER -->
+          <div class="wizard-footer">
+            <div class="save-status">
+              <span class="save-dot"></span>
+              <span>Saved as draft · 2 minutes ago</span>
+            </div>
+            <div class="wizard-nav">
+              <button class="btn">Save &amp; Exit</button>
+              <button class="btn btn-primary">
+                Continue to Step 2
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FSA REFERENCE STRIP -->
+        <div class="fsa-strip">
+          <div class="fsa-strip-head">
+            <div class="fsa-eyebrow">FSA Guidance</div>
+            <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+          </div>
+          <div class="fsa-body">
+            UK law requires every food business to have a documented <strong>food safety management system based on HACCP principles</strong> (Regulation (EC) 852/2004). The FSA's <strong>Safer Food, Better Business</strong> is the standard template for small caterers. Our wizard builds an SFBB-aligned plan automatically.
+          </div>
+          <div class="fsa-links">
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food safety management for businesses</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/safer-food-better-business-sfbb" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Safer Food, Better Business pack</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/getting-ready-to-start-your-food-business" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Starting a food business</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/here-to-help" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>FSA Here to Help — business hub</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- LIABILITY (STRONGER VERSION FOR HACCP) -->
+        <div class="liability">
+          <div class="liability-label">Stronger Notice — HACCP &amp; Legal Documents</div>
+          <div class="liability-body">
+            Palatable generates a <strong>draft HACCP plan</strong> from your data. This wizard does not replace professional food safety advice. We strongly recommend you have the generated plan <strong>reviewed by a qualified food safety adviser, your local authority Environmental Health team, or an accredited consultant</strong> before relying on it. Palatable is not a certification body, does not provide legal advice, and accepts no liability for the operation of your food business. The Food Business Operator named above remains fully accountable for compliance with UK food safety law.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">HACCP Wizard — Design Notes</div>
+  <div class="footnote-body">
+    <strong>The wizard is the v2 upgrade trigger.</strong> SFBB diary (v1) at the Kitchen tier (£79/site/mo). HACCP wizard + allergen labels move you to the Safety tier (£99). Compares to Food Alert charging £1,500-3,000 setup + £150-300/month for consultancy + software. We do it for a £20/month upgrade because the wizard does the consultant's work from data we already have.<br><br>
+    <strong>Nine steps in a vertical sidebar on the left.</strong> Each step shows estimated time. Total ≈45 minutes if all data flows from Palatable. Each step name is short, the meta line tells the chef where the data is coming from ("Auto-populated from your menu", "FSA defaults pre-filled", "Maps to Safety tab"). The chef sees from the start that this isn't a blank-page exercise — most boxes are already filled.<br><br>
+    <strong>Intro card explains the value.</strong> Gold left-bar callout: "Most kitchens spend £1,500–£3,000 on a HACCP consultant. The wizard does the equivalent work using your menu, suppliers, and recipes." Right side: "≈ 45 min Estimated Time" — sets expectation. The chef knows what they're committing to.<br><br>
+    <strong>Pre-fill banner at the top of every step.</strong> Gold-bordered: "We've pre-filled what we know. Anything in gold is pre-filled — review, confirm, or change as needed." This is the central promise of the wizard. The chef is not entering data, they're confirming our work.<br><br>
+    <strong>Step 1 (Business Profile) data sources.</strong> Trading name → Settings. Legal entity → Settings. FSA registration → Settings. Kitchen type → onboarding picker. Services offered → multi-select inferred from menu data (à la carte from Menus tab, bar from Bartender shell if installed, PPDS if labels module installed). Team size → Training Records (8 staff currently). Person responsible → Training Records (head chef with valid HACCP cert auto-selected).<br><br>
+    <strong>Form components.</strong> Text inputs (with gold border when pre-filled and a "pre-filled" visual hint). Pickable cards for single-choice (kitchen type, team size). Check items for multi-select (services). Every field has a 1-line italic hint explaining what it's for and where the default came from.<br><br>
+    <strong>Wizard footer.</strong> Save status on the left ("Saved as draft · 2 minutes ago" with healthy-green dot) — autosave runs every change so the chef can never lose work. Save &amp; Exit + Continue to Step 2 on the right. The chef can leave the wizard at any point and come back later.<br><br>
+    <strong>FSA strip is full-width here, 4 links in a 2x2 grid.</strong> Food safety management (the legal duty) · SFBB pack (the template) · Starting a food business (foundational) · FSA Here to Help (broad). Wider link grid because HACCP touches every part of the FSA's business guidance.<br><br>
+    <strong>The liability footer is louder.</strong> Urgent-red border (not the usual warm-paper), label reads "Stronger Notice — HACCP &amp; Legal Documents". Wording: <em>"Palatable generates a draft HACCP plan from your data. This wizard does not replace professional food safety advice. We strongly recommend you have the generated plan reviewed by a qualified food safety adviser, your local authority Environmental Health team, or an accredited consultant before relying on it."</em> This is non-negotiable. HACCP is a legal document, the stakes are higher than a daily diary, and we make that clear.<br><br>
+    <strong>Step 2 onwards (not mocked but spec'd).</strong> Step 2 pulls every dish from the menu, auto-classifies hazard risk, asks chef to confirm. Step 3 walks the process flow per dish, suggests CCPs. Step 4 critical limits with FSA defaults (≥75°C cook, ≥63°C hot hold, etc.). Step 5 maps each CCP to a Safety tab check. Step 6 corrective actions from a library. Step 7 review cadence and sign-offs. Step 8 generates the PDF. Step 9 sets the annual reminder. Same wizard pattern throughout. Same pre-fill banner.<br><br>
+    <strong>Output documents.</strong> Three artefacts produced at Step 8: (1) A formatted HACCP plan PDF — the legal document, dated and signed. (2) A chef's reference card — printable, for the kitchen wall, showing the CCPs and critical limits at a glance. (3) Cross-references back into the Safety tab so the chef sees which daily checks satisfy which HACCP CCP.<br><br>
+    <strong>What's NOT in the wizard.</strong> No bespoke recipe risk assessment outside the wizard flow (built into Step 2 only). No supplier audit — we use existing Suppliers tab data. No on-site visit (we're software, not consultants). No certification — we generate the document, the chef takes ownership of it and gets it reviewed.<br><br>
+    <strong>Pricing implication.</strong> The wizard is the trigger that moves a kitchen from Kitchen tier (£79) to Safety tier (£99). The £20/month uplift gives them: HACCP plan generation, Natasha's Law allergen label printing (v3), and unlimited document version history. Payback for the chef: one EHO visit they pass cleanly, one allergen incident handled correctly, one consultant invoice they don't have to pay.
+  </div>
+</div>
+
+</body>
+</html>

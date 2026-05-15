@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety · EHO Visit</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --healthy-bg: rgba(93,127,79,0.08);
+    --attention-bg: rgba(184,106,46,0.06);
+    --urgent-bg: rgba(161,68,36,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--paper-warm); border-right: 1px solid var(--rule); padding: 28px 0; flex-shrink: 0; }
+  .sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .brand-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase; }
+  .brand-sub { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .nav-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.25em; color: var(--muted-soft); text-transform: uppercase; padding: 0 24px 8px; }
+  .nav-item { display: flex; align-items: center; padding: 10px 24px; font-family: 'Lora', serif; font-size: 15px; color: var(--ink-soft); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; gap: 10px; }
+  .nav-item:hover { background: rgba(0,0,0,0.02); }
+  .nav-item.active { background: var(--card); border-left-color: var(--gold); color: var(--ink); font-weight: 600; }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; color: var(--gold); }
+
+  .main { flex: 1; padding: 32px 48px 64px; max-width: 1320px; }
+
+  .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; }
+  .breadcrumb a { color: var(--muted); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { color: var(--gold); }
+  .breadcrumb-sep { color: var(--muted-soft); font-size: 10px; }
+  .breadcrumb-current { color: var(--gold); }
+
+  /* COMMAND HEADER — dark, urgent feel */
+  .command-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 36px;
+    margin-bottom: 28px;
+    border-left: 4px solid var(--gold);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 28px;
+    align-items: center;
+  }
+  .command-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .command-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+  }
+  .command-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 32px;
+    color: var(--paper);
+    line-height: 1.1;
+  }
+  .command-title em { color: var(--gold-light); font-style: italic; font-weight: 500; }
+  .command-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--paper);
+    opacity: 0.7;
+    margin-top: 4px;
+  }
+  .command-export {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .export-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    padding: 16px 28px;
+    background: var(--gold);
+    color: var(--ink);
+    border: 1px solid var(--gold);
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .export-btn svg { width: 16px; height: 16px; }
+  .export-btn:hover { background: var(--gold-light); }
+  .export-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--paper);
+    opacity: 0.6;
+  }
+
+  /* VISIT STATUS — live timer */
+  .visit-status {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 24px;
+    padding: 18px 24px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--healthy);
+    margin-bottom: 28px;
+    align-items: center;
+  }
+  .visit-status-dot {
+    width: 12px;
+    height: 12px;
+    background: var(--healthy);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(93,127,79,0.2);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(93,127,79,0.2); }
+    50% { box-shadow: 0 0 0 8px rgba(93,127,79,0.1); }
+  }
+  .visit-info { display: flex; flex-direction: column; gap: 2px; }
+  .visit-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--healthy);
+    text-transform: uppercase;
+  }
+  .visit-detail {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .visit-detail em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .visit-timer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: right;
+  }
+  .visit-timer-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  /* COMPLIANCE POSTURE — honest dashboard */
+  .posture-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .posture-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 18px 20px;
+  }
+  .posture-card.healthy {
+    border-left: 3px solid var(--healthy);
+    padding-left: 17px;
+  }
+  .posture-card.attention {
+    border-left: 3px solid var(--attention);
+    padding-left: 17px;
+  }
+  .posture-card.urgent {
+    border-left: 3px solid var(--urgent);
+    padding-left: 17px;
+    background: var(--urgent-bg);
+  }
+  .posture-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .posture-num {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 26px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .posture-card.healthy .posture-num { color: var(--healthy); }
+  .posture-card.attention .posture-num { color: var(--attention); }
+  .posture-card.urgent .posture-num { color: var(--urgent); }
+  .posture-detail {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  /* MAIN LAYOUT — evidence tiles + visit log sidebar */
+  .desk-layout {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 28px;
+    margin-bottom: 32px;
+  }
+
+  /* Evidence section */
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .section-title-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  .evidence-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .evidence-tile {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .evidence-tile:hover { border-color: var(--gold); }
+  .evidence-tile.flagged {
+    border-color: var(--attention);
+    background: var(--attention-bg);
+  }
+  .tile-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .tile-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--gold-bg);
+    color: var(--gold-dark);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .evidence-tile.flagged .tile-icon {
+    background: var(--card);
+    color: var(--attention);
+  }
+  .tile-icon svg { width: 18px; height: 18px; }
+  .tile-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--ink);
+    flex: 1;
+  }
+  .tile-status {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    padding: 4px 10px;
+    border-radius: 1px;
+    text-transform: uppercase;
+  }
+  .tile-status.healthy { background: var(--healthy-bg); color: var(--healthy); }
+  .tile-status.attention { background: var(--card); color: var(--attention); border: 1px solid var(--attention); }
+  .tile-status.urgent { background: var(--urgent); color: var(--paper); }
+  .tile-num-row {
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+  }
+  .tile-num {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .tile-num-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .tile-detail {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .tile-detail strong { font-style: normal; color: var(--ink); font-weight: 500; }
+  .tile-action {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid var(--rule-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tile-link {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tile-link svg { width: 12px; height: 12px; }
+
+  /* VISIT LOG — live notepad */
+  .visit-log {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    position: sticky;
+    top: 24px;
+  }
+  .log-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-warm);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .log-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .log-count {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .log-entries {
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .log-entry {
+    display: grid;
+    grid-template-columns: 50px 1fr;
+    gap: 12px;
+  }
+  .log-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 1px;
+  }
+  .log-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .log-text {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .log-text em { color: var(--gold); font-style: italic; }
+  .log-text strong { font-weight: 500; }
+  .log-tag {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.25em;
+    padding: 2px 8px;
+    text-transform: uppercase;
+    border-radius: 1px;
+    margin-bottom: 4px;
+    width: fit-content;
+  }
+  .log-tag.arrival { background: var(--ink); color: var(--paper); }
+  .log-tag.observed { background: var(--gold); color: var(--paper); }
+  .log-tag.requested { background: var(--attention); color: var(--paper); }
+  .log-tag.note { background: var(--paper-warm); color: var(--ink-soft); }
+  .log-input-row {
+    padding: 16px 22px;
+    border-top: 1px solid var(--rule);
+    background: var(--paper);
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .log-input {
+    flex: 1;
+    padding: 11px 14px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .log-input::placeholder { color: var(--muted-soft); font-style: italic; }
+  .log-input:focus { outline: none; border-color: var(--gold); }
+  .log-tag-select {
+    padding: 10px 14px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--ink);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .log-add-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    padding: 11px 18px;
+    background: var(--ink);
+    color: var(--paper);
+    border: 1px solid var(--ink);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  /* Inspector info card */
+  .inspector-card {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    padding: 18px 22px;
+    margin-bottom: 20px;
+  }
+  .inspector-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .inspector-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 16px;
+    font-family: 'Lora', serif;
+    font-size: 14px;
+  }
+  .inspector-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding-top: 3px;
+  }
+  .inspector-value {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .inspector-value-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .inspector-value-input:focus { outline: none; border-color: var(--gold); }
+
+  /* FSA strip */
+  .fsa-strip { background: var(--paper-warm); border: 1px solid var(--rule); border-left: 3px solid var(--gold); padding: 22px 26px; margin-top: 12px; margin-bottom: 24px; }
+  .fsa-strip-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .fsa-eyebrow { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; }
+  .fsa-source { font-family: 'Lora', serif; font-style: italic; font-size: 12px; color: var(--muted); }
+  .fsa-source strong { font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink-soft); font-style: normal; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; margin-left: 4px; }
+  .fsa-body { font-family: 'Lora', serif; font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 14px; }
+  .fsa-body strong { font-weight: 600; color: var(--ink); }
+  .fsa-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fsa-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--rule); text-decoration: none; transition: all 0.15s; cursor: pointer; }
+  .fsa-link:hover { border-color: var(--gold); background: var(--card-warm); }
+  .fsa-link-icon { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; }
+  .fsa-link-icon svg { width: 16px; height: 16px; }
+  .fsa-link-text { flex: 1; font-family: 'Lora', serif; font-size: 14px; color: var(--ink); }
+  .fsa-link-text strong { font-weight: 600; }
+  .fsa-link-arrow { color: var(--muted-soft); }
+  .fsa-link-arrow svg { width: 14px; height: 14px; }
+
+  /* Liability */
+  .liability { margin-top: 36px; padding: 20px 24px; background: var(--paper-warm); border: 1px solid var(--rule); border-top: 2px solid var(--gold); }
+  .liability-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .liability-body { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .liability-body strong { font-style: normal; color: var(--ink-soft); font-weight: 600; }
+
+  /* Footnote */
+  .footnote { margin-top: 48px; padding: 24px; background: var(--ink); color: var(--paper); border-left: 3px solid var(--gold); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.35em; color: var(--gold-light); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Lora', serif; font-size: 14px; line-height: 1.7; color: var(--paper); opacity: 0.9; }
+  .footnote-body strong { font-weight: 600; color: var(--gold-light); }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety · EHO Visit Mode</div>
+  <div class="mockup-banner-meta">Inspection control desk · live evidence · one-click export</div>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Palatable</div>
+      <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+    </div>
+    <div class="nav-section-label">Kitchen</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Prep</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>Safety</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>Recipes</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Menus</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>Margins</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Stock &amp; Suppliers</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Notebook</div>
+    <div class="nav-section-label" style="margin-top:24px">System</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>Inbox</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Settings</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>Connections</div>
+  </aside>
+
+  <main class="main">
+
+    <div class="breadcrumb">
+      <a>Safety</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">EHO Visit</span>
+    </div>
+
+    <!-- COMMAND HEADER -->
+    <div class="command-header">
+      <div class="command-title-block">
+        <div class="command-eyebrow">EHO Visit Mode · Live</div>
+        <div class="command-title">Your <em>inspection control desk</em>.</div>
+        <div class="command-sub">Everything Palatable knows about your kitchen, ready to show. Take a breath — the records are there.</div>
+      </div>
+      <div class="command-export">
+        <button class="export-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export 90-Day Bundle
+        </button>
+        <div class="export-meta">PDF · 47 pages · 4 seconds to generate</div>
+      </div>
+    </div>
+
+    <!-- VISIT STATUS -->
+    <div class="visit-status">
+      <div class="visit-status-dot"></div>
+      <div class="visit-info">
+        <div class="visit-label">Visit In Progress</div>
+        <div class="visit-detail">Started <em>11:08</em> · <strong>Catherine Reid</strong>, Hackney Council EHO · Routine inspection</div>
+      </div>
+      <div>
+        <div class="visit-timer">00:24:18</div>
+        <div class="visit-timer-label">Elapsed</div>
+      </div>
+    </div>
+
+    <!-- COMPLIANCE POSTURE -->
+    <div class="posture-row">
+      <div class="posture-card healthy">
+        <div class="posture-label">Days Logged</div>
+        <div class="posture-num">81 / 90</div>
+        <div class="posture-detail">90% complete coverage</div>
+      </div>
+      <div class="posture-card healthy">
+        <div class="posture-label">Probe Readings</div>
+        <div class="posture-num">412</div>
+        <div class="posture-detail">All within FSA limits</div>
+      </div>
+      <div class="posture-card healthy">
+        <div class="posture-label">Deliveries Logged</div>
+        <div class="posture-num">68 / 68</div>
+        <div class="posture-detail">100% — every delivery temp-checked</div>
+      </div>
+      <div class="posture-card attention">
+        <div class="posture-label">Cleaning Gaps</div>
+        <div class="posture-num">3</div>
+        <div class="posture-detail">Sundays in last 4 weeks</div>
+      </div>
+      <div class="posture-card urgent">
+        <div class="posture-label">Expired Training</div>
+        <div class="posture-num">1</div>
+        <div class="posture-detail">Maya — renewal in progress</div>
+      </div>
+    </div>
+
+    <!-- MAIN: EVIDENCE GRID + VISIT LOG -->
+    <div class="desk-layout">
+
+      <!-- LEFT: EVIDENCE -->
+      <div>
+        <div class="section-title">
+          Evidence — Pulled From Your Last 90 Days
+          <span class="section-title-meta">tap a tile for full detail</span>
+        </div>
+
+        <div class="evidence-grid">
+
+          <!-- FSMS / HACCP -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              </div>
+              <div class="tile-title">HACCP / SFBB Plan</div>
+              <div class="tile-status healthy">In Place</div>
+            </div>
+            <div class="tile-detail">
+              <strong>Plan completed 8 Mar 2026.</strong> SFBB-aligned, version 2. Last reviewed by Jack on 1 May. Annual review due Mar 2027.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Plan → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted)">PDF · 28 pages</span>
+            </div>
+          </div>
+
+          <!-- DAILY DIARY -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 4H5a2 2 0 00-2 2v14l4-4h12a2 2 0 002-2V6a2 2 0 00-2-2z"/></svg>
+              </div>
+              <div class="tile-title">Daily Diary</div>
+              <div class="tile-status healthy">Live</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">81</div>
+              <div class="tile-num-label">Days Complete · 9 Partial</div>
+            </div>
+            <div class="tile-detail">
+              Opening checks, deliveries, probes, cleaning, waste — all in one record. Today's diary up to date.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Diary → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- TEMPERATURE LOGS -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
+              </div>
+              <div class="tile-title">Temperature Records</div>
+              <div class="tile-status healthy">Compliant</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">412</div>
+              <div class="tile-num-label">Readings · Last 90 Days</div>
+            </div>
+            <div class="tile-detail">
+              Fridges, freezers, hot holding, cooking core, cooling. All within FSA targets. Worked example available for <em>lamb shoulder</em>.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Probe Log → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- SUPPLIER DELIVERIES -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              </div>
+              <div class="tile-title">Supplier Deliveries</div>
+              <div class="tile-status healthy">All Logged</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">68</div>
+              <div class="tile-num-label">Deliveries · 12 Suppliers</div>
+            </div>
+            <div class="tile-detail">
+              Every delivery temp-checked at receipt. Supplier specs linked. Audit trail to invoice scans.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Deliveries → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- ALLERGENS -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="tile-title">Allergen Records</div>
+              <div class="tile-status healthy">In Place</div>
+            </div>
+            <div class="tile-detail">
+              <strong>14 regulated allergens tracked at ingredient level.</strong> All 47 dishes on current menu have allergen flags. Natasha's Law labels generated for 8 PPDS items.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Allergen Map → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- CLEANING SCHEDULE -->
+          <div class="evidence-tile flagged">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              </div>
+              <div class="tile-title">Cleaning Schedule</div>
+              <div class="tile-status attention">3 Gaps</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">87 / 90</div>
+              <div class="tile-num-label">Days Complete</div>
+            </div>
+            <div class="tile-detail">
+              <strong>Three Sunday closing gaps</strong> in last 4 weeks. Pattern identified — team has been briefed. Walk-in fridge deep clean overdue 9 days.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Cleaning → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- TRAINING RECORDS -->
+          <div class="evidence-tile flagged">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              </div>
+              <div class="tile-title">Training Records</div>
+              <div class="tile-status attention">1 Expired</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">8 / 8</div>
+              <div class="tile-num-label">Staff On Record · 1 Action</div>
+            </div>
+            <div class="tile-detail">
+              All staff trained. <strong>Maya's Level 2 expired 7 May</strong> — refresher course booked for 18 May (3 days from now).
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Training → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- INCIDENTS -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <div class="tile-title">Incident Log</div>
+              <div class="tile-status healthy">All Resolved</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">3</div>
+              <div class="tile-num-label">Incidents · 90 Days</div>
+            </div>
+            <div class="tile-detail">
+              1 complaint, 1 near-miss (sesame storage), 1 allergy preventive note. All resolved, corrective actions documented.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Issues → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- WASTE LOG -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/></svg>
+              </div>
+              <div class="tile-title">Waste Log</div>
+              <div class="tile-status healthy">Tracked</div>
+            </div>
+            <div class="tile-num-row">
+              <div class="tile-num">142</div>
+              <div class="tile-num-label">Entries · 90 Days</div>
+            </div>
+            <div class="tile-detail">
+              Disposal reasons logged: date expiry, prep waste, customer return. Linked back to suppliers for trend visibility.
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">Open Waste → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+          <!-- FSA REG + LAST EHO -->
+          <div class="evidence-tile">
+            <div class="tile-head">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+              </div>
+              <div class="tile-title">Registration &amp; History</div>
+              <div class="tile-status healthy">Current</div>
+            </div>
+            <div class="tile-detail">
+              <strong>FSA Reg:</strong> FSA-LON-294817 · Hackney Council<br>
+              <strong>Last EHO visit:</strong> 14 Jun 2025 — rated <strong>5 stars</strong><br>
+              <strong>Current FHRS:</strong> 5 (Very Good)
+            </div>
+            <div class="tile-action">
+              <span class="tile-link">View Full History → <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FSA REFERENCE STRIP -->
+        <div class="fsa-strip">
+          <div class="fsa-strip-head">
+            <div class="fsa-eyebrow">FSA Guidance — For the Inspector</div>
+            <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+          </div>
+          <div class="fsa-body">
+            All records on this page are kept against the FSA's <strong>Safer Food, Better Business</strong> framework and Regulation (EC) 852/2004. <strong>The exported 90-day bundle includes citations to the relevant FSA guidance</strong> alongside each record category, so the inspector can verify against the source.
+          </div>
+          <div class="fsa-links">
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food safety management for businesses</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/safer-food-better-business-sfbb" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Safer Food, Better Business (SFBB)</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/how-food-hygiene-ratings-work" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>How food hygiene ratings work</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/here-to-help" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>FSA Here to Help — business hub</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: VISIT LOG + INSPECTOR CARD -->
+      <div>
+
+        <!-- INSPECTOR CARD -->
+        <div class="inspector-card">
+          <div class="inspector-eyebrow">Inspector Details</div>
+          <div class="inspector-grid">
+            <div class="inspector-label">Name</div>
+            <div class="inspector-value">
+              <input class="inspector-value-input" value="Catherine Reid" />
+            </div>
+            <div class="inspector-label">Authority</div>
+            <div class="inspector-value">
+              <input class="inspector-value-input" value="Hackney Council · Environmental Health" />
+            </div>
+            <div class="inspector-label">ID Shown</div>
+            <div class="inspector-value">
+              <input class="inspector-value-input" value="EHO-HC-4421 · verified" />
+            </div>
+            <div class="inspector-label">Visit Type</div>
+            <div class="inspector-value">
+              <input class="inspector-value-input" value="Routine — programmed" />
+            </div>
+          </div>
+        </div>
+
+        <!-- VISIT LOG -->
+        <div class="visit-log">
+          <div class="log-head">
+            <div class="log-title">Live Visit Log</div>
+            <div class="log-count">7 entries · auto-saved</div>
+          </div>
+
+          <div class="log-entries">
+
+            <div class="log-entry">
+              <div class="log-time">11:08</div>
+              <div class="log-body">
+                <span class="log-tag arrival">Arrival</span>
+                <div class="log-text">EHO arrived unannounced. <strong>Catherine Reid</strong> · Hackney Council · ID verified.</div>
+              </div>
+            </div>
+
+            <div class="log-entry">
+              <div class="log-time">11:10</div>
+              <div class="log-body">
+                <span class="log-tag note">Note</span>
+                <div class="log-text">Brief intro completed. Opened <em>Palatable Safety</em> on the iPad at the pass — handed over for review.</div>
+              </div>
+            </div>
+
+            <div class="log-entry">
+              <div class="log-time">11:14</div>
+              <div class="log-body">
+                <span class="log-tag requested">Requested</span>
+                <div class="log-text">Asked for the HACCP plan. <strong>Shown:</strong> SFBB-aligned plan v2, dated 8 Mar. EHO read for 4 min, returned no questions.</div>
+              </div>
+            </div>
+
+            <div class="log-entry">
+              <div class="log-time">11:18</div>
+              <div class="log-body">
+                <span class="log-tag requested">Requested</span>
+                <div class="log-text">Walked her through last 14 days of the daily diary. Probed especially on <em>cooling logs</em> — all readings logged with timestamps.</div>
+              </div>
+            </div>
+
+            <div class="log-entry">
+              <div class="log-time">11:22</div>
+              <div class="log-body">
+                <span class="log-tag observed">Observed</span>
+                <div class="log-text">EHO entered the walk-in fridge. Probed three items independently. <strong>All within target range.</strong> Spent 6 min checking labels and FIFO.</div>
+              </div>
+            </div>
+
+            <div class="log-entry">
+              <div class="log-time">11:28</div>
+              <div class="log-body">
+                <span class="log-tag observed">Observed</span>
+                <div class="log-text">Noted the <strong>Fridge 2 warm-running flag</strong> on the diary. Asked what action was being taken. Showed her the maintenance booking for tomorrow.</div>
+              </div>
+            </div>
+
+            <div class="log-entry">
+              <div class="log-time">11:32</div>
+              <div class="log-body">
+                <span class="log-tag requested">Requested</span>
+                <div class="log-text">Asked for staff training records. Showed her the Training tab. <strong>Flagged Maya's expired Level 2</strong> — explained refresher booked for 18 May. EHO satisfied with action plan.</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="log-input-row">
+            <input class="log-input" type="text" placeholder="Type the next event as it happens…" />
+            <select class="log-tag-select">
+              <option>Note</option>
+              <option>Observed</option>
+              <option>Requested</option>
+              <option>Action</option>
+            </select>
+            <button class="log-add-btn">Add</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LIABILITY -->
+    <div class="liability">
+      <div class="liability-label">Important — Your Responsibility</div>
+      <div class="liability-body">
+        Palatable is a record-keeping tool. <strong>The food business operator remains fully responsible</strong> for compliance with UK food safety law, including the Food Safety Act 1990, Regulation (EC) 852/2004, Natasha's Law, and all guidance from the Food Standards Agency and your local authority. Palatable does not provide legal advice or certification, does not replace EHO inspection, and does not guarantee compliance. We present the records. The decisions, the kitchen, and the responsibility are yours.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">EHO Visit Page — Design Notes</div>
+  <div class="footnote-body">
+    <strong>This is the most strategically important page in the Safety module.</strong> When an EHO walks through the door unannounced — every chef's gut-drop moment — the chef opens this page and the entire 90 days of quiet record-keeping becomes useful in 30 seconds. The whole Safety v1 product justifies itself in this one moment.<br><br>
+    <strong>Command Header — dark, urgent, gold-accented.</strong> Unlike every other Safety surface (paper background, calm), this page leads with the ink-black command bar to signal: <em>"this is the moment that matters."</em> The "Export 90-Day Bundle" button is gold-filled — the biggest, most obvious action on the page. "PDF · 47 pages · 4 seconds to generate" subtitle tells the chef the magic is real and instant.<br><br>
+    <strong>Visit Status row with live timer.</strong> Healthy-green left border, pulsing dot (animated), "Visit In Progress · Started 11:08 · Catherine Reid, Hackney Council EHO · Routine inspection". Live elapsed timer in JetBrains Mono on the right (00:24:18). This is the only animated element on the page — deliberate, calm signal that the visit is live, the records are tracking. Not anxious. Just present.<br><br>
+    <strong>Compliance Posture — 5 metric cards.</strong> 81/90 days logged (healthy) · 412 probe readings all within FSA limits (healthy) · 68/68 deliveries logged (healthy) · 3 Sunday cleaning gaps (attention amber) · 1 expired training cert (urgent red). <em>Honest posture, not inflated.</em> The chef sees what the EHO will see. The two flags are real — the cleaning gaps and the expired training — and the page tells the truth about them. This builds trust both with the user and with the inspector. EHOs are trained to spot inflated dashboards. We don't do that.<br><br>
+    <strong>Evidence Grid — 10 tiles.</strong> HACCP/SFBB Plan · Daily Diary · Temperature Records · Supplier Deliveries · Allergen Records · Cleaning Schedule · Training Records · Incident Log · Waste Log · Registration &amp; History. Each tile pulls from a different part of Palatable (Recipes, Suppliers, Safety subpages, Settings). Each shows a status pill (In Place / Live / Compliant / Tracked) — colour-coded against the metric beneath. The two flagged tiles (Cleaning, Training) carry attention-amber backgrounds so the chef knows where the conversation will go before the EHO gets there. Every tile is tappable to drill into the underlying record.<br><br>
+    <strong>The exported PDF.</strong> "PDF · 47 pages · 4 seconds to generate". Bundles: cover page with FSA reg number and current FHRS rating, executive summary (one-pager), HACCP plan, 90 days of daily diary entries, all probe readings, all deliveries with supplier temps, allergen map, cleaning schedule sign-offs, training records with expiry dates, incident log with corrective actions, waste log. Each section cites the relevant FSA guidance. Includes the Palatable liability footer on every page so the inspector sees we don't claim to certify anything.<br><br>
+    <strong>Inspector Details card on the right.</strong> Four editable fields — Name, Authority, ID Shown, Visit Type. The chef fills these in during the first minute of the visit. The data becomes part of the inspection record automatically and gets stamped on the 90-day export PDF.<br><br>
+    <strong>Live Visit Log — the killer feature.</strong> Sticky positioned on the right, scrollable. Chef types events as they happen ("EHO asked for HACCP plan", "EHO walked the walk-in", "EHO flagged the warm Fridge 2"). Four tag types: Arrival (ink black), Observed (gold), Requested (attention amber), Note (paper warm). Timestamped automatically. Auto-saved. Becomes the official chef's record of the visit, which can be cross-referenced later if any findings are disputed.<br><br>
+    <strong>The seven worked-example log entries</strong> tell the story of a realistic 24-minute inspection: arrival, intro, HACCP request, diary walkthrough, walk-in fridge inspection, Fridge 2 flag identified by EHO, training records request. Show the chef the kind of detail to capture without prescribing too much.<br><br>
+    <strong>Input row at the bottom of the log.</strong> Text input + tag dropdown + Add button. Stays accessible while the rest of the log scrolls. Chef types one-handed while answering the EHO's questions.<br><br>
+    <strong>FSA Reference Strip — different framing here.</strong> "FSA Guidance — For the Inspector". Acknowledges this page is partly for the EHO, not just the chef. Notes that the export bundle includes FSA citations alongside each record. Four links: Food safety management · SFBB · How food hygiene ratings work (NEW — relevant for an EHO interaction specifically) · FSA Here to Help.<br><br>
+    <strong>Cross-shell loops.</strong> When the chef hits "Visit In Progress" the first time (a manual toggle at the top, not shown in this mockup), it: (1) freezes any in-flight edits to the HACCP plan, (2) takes a snapshot of all current records (so anything edited later doesn't change what was shown to the EHO), (3) routes to Manager Home as a critical alert, (4) routes to the Inbox, (5) generates the export PDF in the background so it's ready instantly. When the chef hits "End Visit" (also not shown), it: (6) requests a quick rating note (good visit / minor follow-up / formal issues raised), (7) auto-creates Looking Ahead items if the EHO flagged anything (e.g. "Address Sunday cleaning gap by next visit"), (8) emails the visit log + export PDF to the owner.<br><br>
+    <strong>What this means strategically.</strong> Every chef has an EHO visit story. The bad ones are folklore in the kitchen industry. Most include the line <em>"we couldn't find the records."</em> This page is the answer to that line. The whole 90 days of Safety logging exists for this moment. We need this page in every demo of Palatable — it's the most emotional sell. Owners will pay £20/month for the Safety tier just to have this page ready, even if they never have an EHO visit.<br><br>
+    <strong>What's NOT in v1.</strong> No live video link to a remote consultant during the visit (out of scope). No direct API to local authority systems (LAs don't have one). No automatic FHRS score prediction (legally risky — we don't claim to predict outcomes). No bots that suggest answers to inspector questions during the visit. The chef talks to the inspector. We hold the records.
+  </div>
+</div>
+
+</body>
+</html>

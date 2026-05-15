@@ -113,6 +113,7 @@ const VIEW_LABEL: Record<string, string> = {
   bartender: 'Bartender view',
   manager: 'Manager view',
   owner: 'Owner view',
+  safety: 'Safety view',
   admin: 'Founder',
 };
 
@@ -132,7 +133,7 @@ export function Topbar({
   hasBarMembership = false,
 }: {
   tier?: string;
-  view?: 'chef' | 'bartender' | 'manager' | 'owner' | 'admin';
+  view?: 'chef' | 'bartender' | 'manager' | 'owner' | 'safety' | 'admin';
   isFounder?: boolean;
   role?:
     | 'owner'
@@ -154,7 +155,7 @@ export function Topbar({
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
 
   const accessibleViews: Array<{
-    key: 'chef' | 'bartender' | 'manager' | 'owner' | 'admin';
+    key: 'chef' | 'bartender' | 'manager' | 'owner' | 'safety' | 'admin';
     label: string;
     href: string;
   }> = [];
@@ -202,6 +203,15 @@ export function Topbar({
       href: '/owner',
     });
   }
+  // Safety is its own first-class viewer. Anyone working on site can step
+  // into it — there's no payroll or P&L exposed there, just the SFBB
+  // diary, so we don't gate by role. Sales-led Safety uplift is enforced
+  // at /safety/layout.tsx via accounts.safety_enabled, not here.
+  accessibleViews.push({
+    key: 'safety',
+    label: VIEW_LABEL.safety,
+    href: '/safety',
+  });
   if (isFounder || email === 'jack@palateandpen.co.uk') {
     accessibleViews.push({
       key: 'admin',

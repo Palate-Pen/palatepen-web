@@ -130,3 +130,27 @@ export const BARTENDER_SECTIONS: NavSection[] = [
 export const BARTENDER_ACCOUNT_ITEMS: NavItem[] = [
   { href: '/bartender/settings', label: 'Settings', icon: 'settings' },
 ];
+
+export const SAFETY_SECTIONS: NavSection[] = [
+  {
+    label: 'Daily Diary',
+    items: [
+      { href: '/safety', label: 'Home', icon: 'home' },
+      { href: '/safety/probe', label: 'Probe', icon: 'prep' },
+      { href: '/safety/incidents', label: 'Issues', icon: 'service-notes' },
+      { href: '/safety/cleaning', label: 'Cleaning', icon: 'compliance' },
+      { href: '/safety/training', label: 'Training', icon: 'team' },
+    ],
+  },
+  {
+    label: 'EHO',
+    items: [
+      { href: '/safety/haccp', label: 'HACCP', icon: 'reports' },
+      { href: '/safety/eho', label: 'EHO Export', icon: 'inbox' },
+    ],
+  },
+];
+
+export const SAFETY_ACCOUNT_ITEMS: NavItem[] = [
+  { href: '/safety/settings', label: 'Settings', icon: 'settings' },
+];

@@ -95,15 +95,17 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
     </>
   ),
   settings: (
+    // Aperture — concentric circles per the chef-safety-mockup-v1.html sidebar.
     <>
       <circle cx="12" cy="12" r="3" />
-      <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+      <circle cx="12" cy="12" r="7" />
     </>
   ),
   connections: (
+    // Globe with latitude lines per the chef-safety-mockup-v1.html sidebar.
     <>
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3.6 9h16.8M3.6 15h16.8" />
     </>
   ),
   team: (
@@ -128,8 +130,10 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
     </>
   ),
   compliance: (
+    // Shield + check per the chef-safety-mockup-v1.html sidebar. Reused by
+    // the chef Safety nav entry and the manager Compliance nav entry.
     <>
-      <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z" />
+      <path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z" />
       <path d="M9 12l2 2 4-4" />
     </>
   ),

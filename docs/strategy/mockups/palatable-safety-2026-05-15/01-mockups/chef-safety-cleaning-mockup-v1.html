@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety · Cleaning Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --healthy-bg: rgba(93,127,79,0.08);
+    --attention-bg: rgba(184,106,46,0.06);
+    --urgent-bg: rgba(161,68,36,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--paper-warm); border-right: 1px solid var(--rule); padding: 28px 0; flex-shrink: 0; }
+  .sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .brand-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase; }
+  .brand-sub { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .nav-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.25em; color: var(--muted-soft); text-transform: uppercase; padding: 0 24px 8px; }
+  .nav-item { display: flex; align-items: center; padding: 10px 24px; font-family: 'Lora', serif; font-size: 15px; color: var(--ink-soft); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; gap: 10px; }
+  .nav-item:hover { background: rgba(0,0,0,0.02); }
+  .nav-item.active { background: var(--card); border-left-color: var(--gold); color: var(--ink); font-weight: 600; }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; color: var(--gold); }
+
+  .main { flex: 1; padding: 32px 56px 64px; max-width: 1280px; }
+
+  .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; }
+  .breadcrumb a { color: var(--muted); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { color: var(--gold); }
+  .breadcrumb-sep { color: var(--muted-soft); font-size: 10px; }
+  .breadcrumb-current { color: var(--gold); }
+
+  .page-title { font-family: 'Lora', serif; font-weight: 400; font-size: 36px; line-height: 1.1; color: var(--ink); letter-spacing: -0.015em; margin-bottom: 6px; }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub { font-family: 'Lora', serif; font-style: italic; font-size: 16px; color: var(--muted); margin-bottom: 24px; }
+
+  /* Frequency tabs */
+  .freq-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    width: fit-content;
+  }
+  .freq-tab {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .freq-tab:hover { color: var(--ink); }
+  .freq-tab.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .freq-tab .freq-count {
+    background: var(--card);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 1px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+  .freq-tab.active .freq-count {
+    background: var(--gold);
+    color: var(--paper);
+  }
+
+  /* Progress bar */
+  .progress-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .progress-stats {
+    flex-shrink: 0;
+  }
+  .progress-num {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 32px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .progress-num strong { color: var(--healthy); font-weight: 500; }
+  .progress-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .progress-bar-wrap { flex: 1; }
+  .progress-bar-track {
+    height: 8px;
+    background: var(--paper-warm);
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--healthy);
+    width: 64%;
+  }
+  .progress-status {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .progress-status strong { color: var(--ink-soft); font-style: normal; font-weight: 500; }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 36px; margin-bottom: 36px; }
+
+  /* Task list */
+  .task-group {
+    margin-bottom: 28px;
+  }
+  .task-group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .task-group-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .task-group-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .task-row:hover { border-color: var(--gold); }
+  .task-row.done {
+    background: var(--healthy-bg);
+    border-color: var(--healthy);
+    border-left: 3px solid var(--healthy);
+    padding-left: 16px;
+  }
+  .task-row.overdue {
+    background: var(--urgent-bg);
+    border-color: var(--urgent);
+    border-left: 3px solid var(--urgent);
+    padding-left: 16px;
+  }
+  .task-box {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--rule);
+    background: var(--card);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    border-radius: 2px;
+  }
+  .task-row.done .task-box {
+    background: var(--healthy);
+    border-color: var(--healthy);
+    color: var(--paper);
+  }
+  .task-row.overdue .task-box {
+    background: var(--urgent);
+    border-color: var(--urgent);
+    color: var(--paper);
+  }
+  .task-box svg { width: 14px; height: 14px; }
+  .task-body { flex: 1; }
+  .task-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .task-name em {
+    color: var(--gold);
+    font-style: italic;
+  }
+  .task-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    align-items: center;
+  }
+  .task-meta-item {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .task-meta-item strong {
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .task-meta-item.done-by {
+    color: var(--healthy);
+    font-weight: 500;
+  }
+  .task-meta-item.overdue {
+    color: var(--urgent);
+    font-weight: 500;
+  }
+  .task-method {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .task-method strong {
+    font-style: normal;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .task-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .task-frequency {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 3px 8px;
+    background: var(--paper-warm);
+    border-radius: 1px;
+  }
+
+  /* Add task / edit button */
+  .actions-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; padding: 12px 22px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+  .btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn-primary:hover { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* Right column */
+  .side-card { background: var(--card); border: 1px solid var(--rule); padding: 24px; margin-bottom: 20px; }
+  .side-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 16px; }
+
+  /* Recent sign-offs */
+  .signoff { padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
+  .signoff:last-child { border-bottom: none; }
+  .signoff-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .signoff-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+  .signoff-name { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .signoff-task { font-family: 'Lora', serif; font-size: 14px; color: var(--ink); line-height: 1.4; }
+  .signoff-task em { color: var(--gold); font-style: italic; }
+
+  /* FSA Strip */
+  .fsa-strip { background: var(--paper-warm); border: 1px solid var(--rule); border-left: 3px solid var(--gold); padding: 22px 26px; margin-bottom: 20px; }
+  .fsa-strip-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .fsa-eyebrow { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; }
+  .fsa-source { font-family: 'Lora', serif; font-style: italic; font-size: 12px; color: var(--muted); }
+  .fsa-source strong { font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink-soft); font-style: normal; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; margin-left: 4px; }
+  .fsa-body { font-family: 'Lora', serif; font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 14px; }
+  .fsa-body strong { font-weight: 600; color: var(--ink); }
+  .fsa-links { display: flex; flex-direction: column; gap: 8px; }
+  .fsa-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--rule); text-decoration: none; transition: all 0.15s; cursor: pointer; }
+  .fsa-link:hover { border-color: var(--gold); background: var(--card-warm); }
+  .fsa-link-icon { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; }
+  .fsa-link-icon svg { width: 16px; height: 16px; }
+  .fsa-link-text { flex: 1; font-family: 'Lora', serif; font-size: 14px; color: var(--ink); }
+  .fsa-link-text strong { font-weight: 600; }
+  .fsa-link-arrow { color: var(--muted-soft); }
+  .fsa-link-arrow svg { width: 14px; height: 14px; }
+
+  /* Liability */
+  .liability { margin-top: 36px; padding: 20px 24px; background: var(--paper-warm); border: 1px solid var(--rule); border-top: 2px solid var(--gold); }
+  .liability-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .liability-body { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .liability-body strong { font-style: normal; color: var(--ink-soft); font-weight: 600; }
+
+  /* Footnote */
+  .footnote { margin-top: 48px; padding: 24px; background: var(--ink); color: var(--paper); border-left: 3px solid var(--gold); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.35em; color: var(--gold-light); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Lora', serif; font-size: 14px; line-height: 1.7; color: var(--paper); opacity: 0.9; }
+  .footnote-body strong { font-weight: 600; color: var(--gold-light); }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety · Cleaning Schedule</div>
+  <div class="mockup-banner-meta">Daily · weekly · monthly · sign-off tracked</div>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Palatable</div>
+      <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+    </div>
+    <div class="nav-section-label">Kitchen</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Prep</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>Safety</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>Recipes</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Menus</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>Margins</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Stock &amp; Suppliers</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Notebook</div>
+    <div class="nav-section-label" style="margin-top:24px">System</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>Inbox</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Settings</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>Connections</div>
+  </aside>
+
+  <main class="main">
+
+    <div class="breadcrumb">
+      <a>Safety</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Cleaning Schedule</span>
+    </div>
+
+    <h1 class="page-title">The <em>cleaning schedule</em>.</h1>
+    <p class="page-sub">Everything we clean, when we clean it, and who signed off. The four Cs include <em>cleaning</em> — this is the record.</p>
+
+    <!-- FREQUENCY TABS -->
+    <div class="freq-tabs">
+      <button class="freq-tab active">
+        Today
+        <span class="freq-count">8 / 12</span>
+      </button>
+      <button class="freq-tab">
+        This Week
+        <span class="freq-count">5 / 9</span>
+      </button>
+      <button class="freq-tab">
+        This Month
+        <span class="freq-count">2 / 7</span>
+      </button>
+      <button class="freq-tab">
+        Quarterly &amp; Annual
+        <span class="freq-count">1 / 4</span>
+      </button>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-card">
+      <div class="progress-stats">
+        <div class="progress-num"><strong>8</strong> / 12</div>
+        <div class="progress-label">Tasks Done Today</div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill"></div>
+        </div>
+        <div class="progress-status">
+          <strong>Service starts in 3hr 40min.</strong> 4 tasks remaining — kitchen is on track if pest visual happens before 16:00.
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIONS BAR -->
+    <div class="actions-bar">
+      <div style="font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--muted);">
+        Friday 15 May 2026 · the daily cleaning list
+      </div>
+      <div style="display:flex; gap:10px">
+        <button class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          Edit Schedule
+        </button>
+        <button class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add Task
+        </button>
+      </div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+      <!-- LEFT: TASKS -->
+      <div>
+
+        <!-- OPENING CLEAN -->
+        <div class="task-group">
+          <div class="task-group-head">
+            <div class="task-group-title">Opening Clean · Before Service</div>
+            <div class="task-group-meta">5 tasks · all done</div>
+          </div>
+          <div class="task-list">
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Wipe down prep surfaces &amp; check sanitiser strength</div>
+                <div class="task-method"><strong>Method:</strong> two-stage clean &amp; disinfect with Suma Bac D10 at 1:50 dilution. Probe sanitiser test strip — should read 200ppm.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 07:48 · Sam</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Refill handwash stations — soap, blue roll, hot water</div>
+                <div class="task-method"><strong>Method:</strong> all three stations checked, refilled, paper bin emptied.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 08:46 · Jack</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Check fridge gaskets &amp; door seals (Walk-in, Fridge 1, Fridge 2)</div>
+                <div class="task-method"><strong>Method:</strong> visual check for damage, mould, food debris. Wipe with disinfectant if needed.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 08:55 · Jack</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Sweep &amp; mop kitchen floor</div>
+                <div class="task-method"><strong>Method:</strong> sweep first, hot water + degreaser, follow with sanitiser. Wet-floor signs out during.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 09:12 · Sam</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Empty bins &amp; replace liners</div>
+                <div class="task-method"><strong>Method:</strong> general waste, recycling, food waste — all to external bin store. Wash bins weekly (Sundays).</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 09:25 · Sam</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- MID-DAY -->
+        <div class="task-group">
+          <div class="task-group-head">
+            <div class="task-group-title">Mid-Day · Between Services</div>
+            <div class="task-group-meta">3 tasks · 2 done</div>
+          </div>
+          <div class="task-list">
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Clean &amp; sanitise probe (between every cooked item check)</div>
+                <div class="task-method"><strong>Method:</strong> wipe with sanitiser wipe between probes. Visual check for damage after each use.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 11:24 · Jack</span>
+                  <span class="task-meta-item">+ 4 prior uses today</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Per Use</span>
+              </div>
+            </div>
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Wipe down service pass &amp; plating area</div>
+                <div class="task-method"><strong>Method:</strong> clear, two-stage clean &amp; disinfect, allow to air-dry before next service.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 14:48 · Jack</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+            <div class="task-row">
+              <div class="task-box"></div>
+              <div class="task-body">
+                <div class="task-name">Sweep walkway &amp; check spillage station</div>
+                <div class="task-method"><strong>Method:</strong> sweep main walkway. Refill spill kit if needed. Visual check on grease trap.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item"><strong>Due by:</strong> service start (18:30)</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- BEFORE SERVICE -->
+        <div class="task-group">
+          <div class="task-group-head">
+            <div class="task-group-title">Before Service Tonight</div>
+            <div class="task-group-meta">4 tasks · 1 done · 3 pending</div>
+          </div>
+          <div class="task-list">
+
+            <div class="task-row">
+              <div class="task-box"></div>
+              <div class="task-body">
+                <div class="task-name">Weekly pest visual check (kitchen, dry store, bin area)</div>
+                <div class="task-method"><strong>Method:</strong> visual sweep all three areas. Note any droppings, gnaw marks, smell. Log findings even if clear.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item"><strong>Last done:</strong> Mon 11 May · Jack</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Weekly</span>
+              </div>
+            </div>
+
+            <div class="task-row done">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Replenish sanitiser spray bottles at each station</div>
+                <div class="task-method"><strong>Method:</strong> Suma Bac D10 at 1:50 dilution, fresh batch. Label bottle with today's date.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item done-by">✓ Done 15:02 · Sam</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Daily</span>
+              </div>
+            </div>
+
+            <div class="task-row">
+              <div class="task-box"></div>
+              <div class="task-body">
+                <div class="task-name">Clean &amp; sanitise extractor canopy filters</div>
+                <div class="task-method"><strong>Method:</strong> remove filters, soak in degreaser 20min, rinse, air-dry, refit. Replace if damaged.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item"><strong>Last done:</strong> Fri 8 May · Sam</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Weekly</span>
+              </div>
+            </div>
+
+            <div class="task-row overdue">
+              <div class="task-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <div class="task-body">
+                <div class="task-name">Deep clean walk-in fridge — shelves, floor, gaskets</div>
+                <div class="task-method"><strong>Method:</strong> empty fridge to cool box, two-stage clean all surfaces, allow to dry, restock with FIFO check.</div>
+                <div class="task-meta">
+                  <span class="task-meta-item overdue">⚠ Overdue · Last done Tue 6 May</span>
+                </div>
+              </div>
+              <div class="task-actions">
+                <span class="task-frequency">Weekly</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: FSA + RECENT SIGN-OFFS -->
+      <div>
+
+        <!-- FSA REFERENCE STRIP -->
+        <div class="fsa-strip">
+          <div class="fsa-strip-head">
+            <div class="fsa-eyebrow">FSA Guidance</div>
+            <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+          </div>
+          <div class="fsa-body">
+            <strong>Cleaning is one of the four Cs</strong> in the FSA's Safer Food, Better Business framework. The official guidance covers the <strong>two-stage clean &amp; disinfect process</strong>, frequency requirements, and the records you need to keep for EHO inspection.
+          </div>
+          <div class="fsa-links">
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/safer-food-better-business-sfbb" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>SFBB — Cleaning section</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/food-hygiene" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food hygiene business guidance</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food safety management for businesses</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- RECENT SIGN-OFFS -->
+        <div class="side-card">
+          <div class="side-title">Today's Sign-Offs</div>
+
+          <div class="signoff">
+            <div class="signoff-head">
+              <span class="signoff-time">15:02</span>
+              <span class="signoff-name">Sam</span>
+            </div>
+            <div class="signoff-task">Sanitiser bottles refilled — fresh batch Suma D10</div>
+          </div>
+
+          <div class="signoff">
+            <div class="signoff-head">
+              <span class="signoff-time">14:48</span>
+              <span class="signoff-name">Jack</span>
+            </div>
+            <div class="signoff-task">Service pass &amp; plating area wiped down</div>
+          </div>
+
+          <div class="signoff">
+            <div class="signoff-head">
+              <span class="signoff-time">11:24</span>
+              <span class="signoff-name">Jack</span>
+            </div>
+            <div class="signoff-task">Probe sanitised before <em>lamb shoulder</em> check</div>
+          </div>
+
+          <div class="signoff">
+            <div class="signoff-head">
+              <span class="signoff-time">09:25</span>
+              <span class="signoff-name">Sam</span>
+            </div>
+            <div class="signoff-task">All bins emptied + liners replaced</div>
+          </div>
+
+          <div class="signoff">
+            <div class="signoff-head">
+              <span class="signoff-time">09:12</span>
+              <span class="signoff-name">Sam</span>
+            </div>
+            <div class="signoff-task">Kitchen floor swept + mopped</div>
+          </div>
+
+          <div class="signoff">
+            <div class="signoff-head">
+              <span class="signoff-time">08:55</span>
+              <span class="signoff-name">Jack</span>
+            </div>
+            <div class="signoff-task">Fridge gaskets &amp; door seals checked, all clean</div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LIABILITY -->
+    <div class="liability">
+      <div class="liability-label">Important — Your Responsibility</div>
+      <div class="liability-body">
+        Palatable is a record-keeping tool. <strong>The food business operator remains fully responsible</strong> for compliance with UK food safety law, including the Food Safety Act 1990, Regulation (EC) 852/2004, Natasha's Law, and all guidance from the Food Standards Agency and your local authority. Palatable does not provide legal advice or certification, does not replace EHO inspection, and does not guarantee compliance. We keep the records straight. The decisions, the kitchen, and the responsibility are yours.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">Cleaning Schedule Sub-Page — Design Notes</div>
+  <div class="footnote-body">
+    <strong>The destination Quick Action #3 goes to.</strong> Same pattern as Probe and Issue — breadcrumb, two-column layout, FSA Reference Strip and recent sign-offs in the right column, liability footer.<br><br>
+    <strong>Four frequency tabs at the top.</strong> Today (8/12 done) · This Week (5/9) · This Month (2/7) · Quarterly &amp; Annual (1/4). The chef sees at a glance where they stand against every cleaning rhythm in the kitchen. Today is the default tab.<br><br>
+    <strong>Progress card under the tabs.</strong> Big number "8/12 tasks done today" with a healthy-green progress bar (64% complete) + a Looking-Ahead-style status line: <em>"Service starts in 3hr 40min. 4 tasks remaining — kitchen is on track if pest visual happens before 16:00."</em> Anticipatory, not just reporting.<br><br>
+    <strong>Three task groups for today.</strong> Opening Clean Before Service (5 tasks, all done) · Mid-Day Between Services (3 tasks, 2 done) · Before Service Tonight (4 tasks, 1 done, 1 overdue). Each task row shows: tick box (green if done, urgent-red if overdue) · task name · method line in italic (<em>"two-stage clean &amp; disinfect with Suma Bac D10 at 1:50 dilution"</em>) · sign-off line ("✓ Done 07:48 · Sam") · frequency tag (Daily / Weekly / Per Use).<br><br>
+    <strong>Method line is the SFBB compliance hook.</strong> Every task carries its method — what's being used, what dilution, what process. This is what an EHO actually checks: "show me your cleaning method for X." We make it part of the task definition, not buried in a separate document.<br><br>
+    <strong>Overdue state is loud.</strong> Deep clean walk-in fridge — last done Tue 6 May, weekly task, now 9 days overdue. Urgent-red border, exclamation icon, "⚠ Overdue · Last done Tue 6 May" in urgent-red text. This is what flows to the Chef Home's Looking Ahead as a Plan-For-It tag.<br><br>
+    <strong>Edit Schedule + Add Task buttons.</strong> Top right. Every kitchen has its own cleaning rhythm — chef can fully edit the master schedule, add bespoke tasks (e.g. weekly grease trap, monthly extractor service), set frequencies, set "last done" baselines. Default schedule when a venue onboards: full SFBB-aligned template with all 12 standard daily, 9 weekly, 7 monthly, 4 quarterly tasks pre-loaded. Customise from there.<br><br>
+    <strong>Right column: FSA Strip + Today's Sign-Offs.</strong> FSA Reference Strip links directly to SFBB Cleaning, Food hygiene business guidance, and Food safety management. Then a Sign-Offs panel showing the last 6 completions today with timestamp, who did it, what was done. Italic gold for menu-linked references (<em>lamb shoulder</em>). The chef sees their team's accountability trail at a glance.<br><br>
+    <strong>The cross-shell loop.</strong> Cleaning data flows to: (1) the Safety home's 12-week diary calendar (green/amber/red dots), (2) Looking Ahead on the Chef Home as a behavioural pattern, (3) the EHO Mode 90-day PDF export, (4) Manager Home as a multi-shift compliance score (when on multi-site tier). One signed-off task, four surfaces.
+  </div>
+</div>
+
+</body>
+</html>

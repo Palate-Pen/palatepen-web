@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety · Log an Issue</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F8F4ED;
+  --paper-warm: #F2EDE0;
+  --card: #FFFFFF;
+  --card-warm: #FDFAF2;
+  --ink: #1A1612;
+  --ink-soft: #3D362C;
+  --muted: #7A6F5E;
+  --muted-soft: #A99B85;
+  --rule: rgba(26,22,18,0.08);
+  --rule-soft: rgba(26,22,18,0.04);
+  --gold: #B8923C;
+  --gold-light: #C9A84C;
+  --gold-dark: #8B6914;
+  --gold-bg: rgba(201,168,76,0.06);
+  --attention: #B86A2E;
+  --urgent: #A14424;
+  --healthy: #5D7F4F;
+  --healthy-bg: rgba(93,127,79,0.08);
+  --attention-bg: rgba(184,106,46,0.06);
+  --urgent-bg: rgba(161,68,36,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+.mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+.mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+.mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+.shell { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: var(--paper-warm); border-right: 1px solid var(--rule); padding: 28px 0; flex-shrink: 0; }
+.sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+.brand-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase; }
+.brand-sub { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.nav-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.25em; color: var(--muted-soft); text-transform: uppercase; padding: 0 24px 8px; }
+.nav-item { display: flex; align-items: center; padding: 10px 24px; font-family: 'Lora', serif; font-size: 15px; color: var(--ink-soft); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; gap: 10px; }
+.nav-item:hover { background: rgba(0,0,0,0.02); }
+.nav-item.active { background: var(--card); border-left-color: var(--gold); color: var(--ink); font-weight: 600; }
+.nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+.nav-item.active svg { opacity: 1; color: var(--gold); }
+
+.main { flex: 1; padding: 32px 56px 64px; max-width: 1280px; }
+
+.breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; }
+.breadcrumb a { color: var(--muted); text-decoration: none; cursor: pointer; }
+.breadcrumb a:hover { color: var(--gold); }
+.breadcrumb-sep { color: var(--muted-soft); font-size: 10px; }
+.breadcrumb-current { color: var(--gold); }
+
+.page-title { font-family: 'Lora', serif; font-weight: 400; font-size: 36px; line-height: 1.1; color: var(--ink); letter-spacing: -0.015em; margin-bottom: 6px; }
+.page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+.page-sub { font-family: 'Lora', serif; font-style: italic; font-size: 16px; color: var(--muted); margin-bottom: 28px; }
+
+.layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 36px; margin-bottom: 36px; }
+
+.form-card { background: var(--card); border: 1px solid var(--rule); padding: 32px; }
+.form-section { margin-bottom: 28px; }
+.form-section:last-child { margin-bottom: 0; }
+.form-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.form-label-meta { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+/* Issue type picker */
+.issue-types {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+}
+.issue-type {
+  border: 1px solid var(--rule);
+  background: var(--card);
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.issue-type:hover { border-color: var(--gold); }
+.issue-type.active {
+  background: var(--attention-bg);
+  border-color: var(--attention);
+  border-width: 2px;
+  padding: 15px 11px;
+}
+.issue-type.active.urgent {
+  background: var(--urgent-bg);
+  border-color: var(--urgent);
+}
+.issue-icon-wrap {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 8px;
+  color: var(--muted);
+}
+.issue-type.active .issue-icon-wrap { color: var(--attention); }
+.issue-type.active.urgent .issue-icon-wrap { color: var(--urgent); }
+.issue-icon-wrap svg { width: 28px; height: 28px; }
+.issue-type-name {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+/* Severity */
+.severity-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.severity {
+  border: 1px solid var(--rule);
+  background: var(--card);
+  padding: 14px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.severity:hover { border-color: var(--gold); }
+.severity.active {
+  border-width: 2px;
+  padding: 13px 11px;
+}
+.severity.low.active { background: var(--healthy-bg); border-color: var(--healthy); }
+.severity.medium.active { background: var(--attention-bg); border-color: var(--attention); }
+.severity.high.active { background: var(--urgent-bg); border-color: var(--urgent); }
+.severity-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.severity.low .severity-label { color: var(--healthy); }
+.severity.medium .severity-label { color: var(--attention); }
+.severity.high .severity-label { color: var(--urgent); }
+.severity-desc {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Dish picker (reused pattern from probe) */
+.dish-tabs { display: flex; gap: 4px; margin-bottom: 12px; padding: 4px; background: var(--paper-warm); border: 1px solid var(--rule); border-radius: 2px; width: fit-content; }
+.dish-tab { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.25em; padding: 8px 14px; background: transparent; border: none; color: var(--muted); text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.dish-tab:hover { color: var(--ink); }
+.dish-tab.active { background: var(--ink); color: var(--paper); }
+
+.dish-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; padding-right: 6px; }
+.dish-row { display: flex; align-items: center; gap: 14px; padding: 12px 14px; background: var(--card); border: 1px solid var(--rule); cursor: pointer; transition: all 0.15s; }
+.dish-row:hover { border-color: var(--gold); background: var(--card-warm); }
+.dish-row.selected { background: var(--gold-bg); border-color: var(--gold); border-left: 3px solid var(--gold); padding-left: 12px; }
+.dish-icon { width: 32px; height: 32px; background: var(--paper-warm); border-radius: 2px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; color: var(--gold); }
+.dish-row.selected .dish-icon { background: var(--gold); color: var(--paper); }
+.dish-name { flex: 1; }
+.dish-name-main { font-family: 'Lora', serif; font-weight: 500; font-size: 15px; color: var(--ink); line-height: 1.3; }
+.dish-name-main em { color: var(--gold); font-style: italic; }
+.dish-name-sub { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.dish-section { font-family: 'Cinzel', serif; font-weight: 600; font-size: 9px; letter-spacing: 0.2em; padding: 4px 8px; background: var(--paper-warm); color: var(--muted); text-transform: uppercase; border-radius: 1px; }
+.dish-row.selected .dish-section { background: var(--gold); color: var(--paper); }
+
+.freeform { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--rule); }
+.freeform-input { width: 100%; padding: 14px 16px; border: 1px solid var(--rule); background: var(--card); font-family: 'Lora', serif; font-size: 16px; color: var(--ink); }
+.freeform-input::placeholder { color: var(--muted-soft); font-style: italic; }
+.freeform-input:focus { outline: none; border-color: var(--gold); border-width: 2px; padding: 13px 15px; }
+.freeform-hint { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* Allergen pills */
+.allergen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+}
+.allergen-pill {
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.allergen-pill:hover { border-color: var(--gold); color: var(--ink); }
+.allergen-pill.selected {
+  background: var(--urgent);
+  color: var(--paper);
+  border-color: var(--urgent);
+}
+
+/* Notes textarea */
+.notes-textarea { width: 100%; min-height: 100px; padding: 14px 16px; border: 1px solid var(--rule); background: var(--card); font-family: 'Lora', serif; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; }
+.notes-textarea::placeholder { color: var(--muted-soft); font-style: italic; }
+.notes-textarea:focus { outline: none; border-color: var(--gold); }
+
+/* Time/date inputs */
+.row { display: flex; gap: 12px; }
+.input-wrap { flex: 1; }
+.input-label { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.text-input { width: 100%; padding: 12px 14px; border: 1px solid var(--rule); background: var(--card); font-family: 'Lora', serif; font-size: 15px; color: var(--ink); }
+.text-input:focus { outline: none; border-color: var(--gold); }
+
+/* Action checkboxes */
+.action-list { display: flex; flex-direction: column; gap: 8px; }
+.action-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.action-check:hover { border-color: var(--gold); }
+.action-check.checked {
+  background: var(--healthy-bg);
+  border-color: var(--healthy);
+  border-left: 3px solid var(--healthy);
+  padding-left: 11px;
+}
+.action-box {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--rule);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  margin-top: 1px;
+}
+.action-check.checked .action-box {
+  background: var(--healthy);
+  border-color: var(--healthy);
+  color: var(--paper);
+}
+.action-box svg { width: 12px; height: 12px; }
+.action-text {
+  flex: 1;
+  font-family: 'Lora', serif;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+/* Submit */
+.form-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 24px; border-top: 1px solid var(--rule); margin-top: 28px; }
+.form-meta { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); }
+.form-meta strong { font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink); font-style: normal; font-size: 11px; letter-spacing: 0.2em; }
+.form-actions { display: flex; gap: 10px; }
+.btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; padding: 14px 24px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+.btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.btn-primary:hover { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+
+/* Right column - recent log */
+.side-card { background: var(--card); border: 1px solid var(--rule); padding: 24px; margin-bottom: 20px; }
+.side-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 16px; }
+.log-entry { padding: 14px 0; border-bottom: 1px solid var(--rule-soft); }
+.log-entry:last-child { border-bottom: none; }
+.log-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.log-tag {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  padding: 3px 8px;
+  text-transform: uppercase;
+  border-radius: 1px;
+}
+.log-tag.complaint { background: var(--attention); color: var(--paper); }
+.log-tag.allergy { background: var(--urgent); color: var(--paper); }
+.log-tag.near { background: var(--healthy); color: var(--paper); }
+.log-tag.illness { background: var(--urgent); color: var(--paper); }
+.log-date { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted); margin-left: auto; }
+.log-summary { font-family: 'Lora', serif; font-size: 14px; color: var(--ink); line-height: 1.4; margin-bottom: 4px; }
+.log-summary em { color: var(--gold); font-style: italic; }
+.log-status {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+.log-status.resolved { color: var(--healthy); }
+.log-status.open { color: var(--attention); }
+
+/* FSA Reference Strip - the new shared component */
+.fsa-strip {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--gold);
+  padding: 22px 26px;
+  margin-bottom: 24px;
+  margin-top: 12px;
+}
+.fsa-strip-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.fsa-eyebrow {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.fsa-source {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+}
+.fsa-source strong {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+.fsa-body {
+  font-family: 'Lora', serif;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.fsa-body strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.fsa-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fsa-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  text-decoration: none;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.fsa-link:hover {
+  border-color: var(--gold);
+  background: var(--card-warm);
+}
+.fsa-link-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.fsa-link-icon svg { width: 16px; height: 16px; }
+.fsa-link-text {
+  flex: 1;
+  font-family: 'Lora', serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+.fsa-link-text strong { font-weight: 600; }
+.fsa-link-arrow { color: var(--muted-soft); }
+.fsa-link-arrow svg { width: 14px; height: 14px; }
+
+/* Inline FSA reference (used next to targets/limits) */
+.inline-fsa {
+  font-family: 'Lora', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--gold-dark);
+  margin-left: 6px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.inline-fsa:hover { text-decoration: underline; }
+
+/* Liability footer */
+.liability {
+  margin-top: 36px;
+  padding: 20px 24px;
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--gold);
+}
+.liability-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+.liability-body { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.liability-body strong { font-style: normal; color: var(--ink-soft); font-weight: 600; }
+
+.footnote { margin-top: 48px; padding: 24px; background: var(--ink); color: var(--paper); border-left: 3px solid var(--gold); }
+.footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.35em; color: var(--gold-light); text-transform: uppercase; margin-bottom: 12px; }
+.footnote-body { font-family: 'Lora', serif; font-size: 14px; line-height: 1.7; color: var(--paper); opacity: 0.9; }
+.footnote-body strong { font-weight: 600; color: var(--gold-light); }
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety · Log an Issue</div>
+  <div class="mockup-banner-meta">Complaint · allergy · near-miss · illness</div>
+</div>
+
+<div class="shell">
+  
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">Palatable</div>
+    <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+  </div>
+  <div class="nav-section-label">Kitchen</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Prep</div>
+  <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>Safety</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>Recipes</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Menus</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>Margins</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Stock &amp; Suppliers</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Notebook</div>
+  <div class="nav-section-label" style="margin-top:24px">System</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>Inbox</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Settings</div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>Connections</div>
+</aside>
+
+
+  <main class="main">
+
+    <div class="breadcrumb">
+      <a>Safety</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Log an Issue</span>
+    </div>
+
+    <h1 class="page-title">Log an <em>issue</em>.</h1>
+    <p class="page-sub">Complaints, allergy incidents, near-misses, suspected illness. Better written down than remembered.</p>
+
+    <div class="layout">
+
+      <!-- LEFT: FORM -->
+      <div class="form-card">
+
+        <!-- ISSUE TYPE -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Issue Type</span>
+            <span class="form-label-meta">what happened?</span>
+          </div>
+          <div class="issue-types">
+            <div class="issue-type">
+              <div class="issue-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <div class="issue-type-name">Complaint</div>
+            </div>
+            <div class="issue-type active urgent">
+              <div class="issue-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="issue-type-name">Allergy</div>
+            </div>
+            <div class="issue-type">
+              <div class="issue-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div class="issue-type-name">Near-Miss</div>
+            </div>
+            <div class="issue-type">
+              <div class="issue-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+              </div>
+              <div class="issue-type-name">Illness</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEVERITY -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Severity</span>
+            <span class="form-label-meta">honest assessment — high severity escalates</span>
+          </div>
+          <div class="severity-row">
+            <div class="severity low">
+              <div class="severity-label">Low</div>
+              <div class="severity-desc">Minor complaint, no harm</div>
+            </div>
+            <div class="severity medium">
+              <div class="severity-label">Medium</div>
+              <div class="severity-desc">Minor reaction or risk</div>
+            </div>
+            <div class="severity high active">
+              <div class="severity-label">High</div>
+              <div class="severity-desc">Hospital, severe reaction</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALLERGEN INVOLVED -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Allergen Involved</span>
+            <span class="form-label-meta">all 14 regulated allergens — select any that apply</span>
+          </div>
+          <div class="allergen-grid">
+            <div class="allergen-pill">Celery</div>
+            <div class="allergen-pill">Cereals/Gluten</div>
+            <div class="allergen-pill">Crustaceans</div>
+            <div class="allergen-pill">Eggs</div>
+            <div class="allergen-pill">Fish</div>
+            <div class="allergen-pill">Lupin</div>
+            <div class="allergen-pill">Milk</div>
+            <div class="allergen-pill">Molluscs</div>
+            <div class="allergen-pill">Mustard</div>
+            <div class="allergen-pill selected">Nuts</div>
+            <div class="allergen-pill">Peanuts</div>
+            <div class="allergen-pill">Sesame</div>
+            <div class="allergen-pill">Soya</div>
+            <div class="allergen-pill">Sulphites</div>
+          </div>
+          <a class="inline-fsa" href="https://www.food.gov.uk/business-guidance/allergen-guidance-for-food-businesses" target="_blank">↗ FSA allergen guidance for food businesses</a>
+        </div>
+
+        <!-- DISH INVOLVED -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Dish Involved</span>
+            <span class="form-label-meta">link to the menu item · or type your own</span>
+          </div>
+          <div class="dish-tabs">
+            <button class="dish-tab active">Today's Menu</button>
+            <button class="dish-tab">Prep Items</button>
+            <button class="dish-tab">Recipes Library</button>
+          </div>
+          <div class="dish-list">
+            <div class="dish-row selected">
+              <div class="dish-icon">K</div>
+              <div class="dish-name">
+                <div class="dish-name-main"><em>Knafeh</em></div>
+                <div class="dish-name-sub">Desserts · contains nuts, milk, gluten</div>
+              </div>
+              <div class="dish-section">Dessert</div>
+            </div>
+            <div class="dish-row">
+              <div class="dish-icon">H</div>
+              <div class="dish-name">
+                <div class="dish-name-main">Hummus with confit garlic</div>
+                <div class="dish-name-sub">Starters · contains sesame</div>
+              </div>
+              <div class="dish-section">Start</div>
+            </div>
+            <div class="dish-row">
+              <div class="dish-icon">L</div>
+              <div class="dish-name">
+                <div class="dish-name-main">Slow-cooked lamb shoulder</div>
+                <div class="dish-name-sub">Mains · no listed allergens</div>
+              </div>
+              <div class="dish-section">Main</div>
+            </div>
+          </div>
+          <div class="freeform">
+            <input class="freeform-input" type="text" placeholder="Or type the item — e.g. 'amuse bouche', 'staff bread'…" />
+            <div class="freeform-hint">If the item isn't on a current menu, type it here.</div>
+          </div>
+        </div>
+
+        <!-- WHEN -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>When It Happened</span>
+            <span class="form-label-meta">date and time</span>
+          </div>
+          <div class="row">
+            <div class="input-wrap">
+              <div class="input-label">Date</div>
+              <input class="text-input" type="text" value="Fri 15 May 2026" />
+            </div>
+            <div class="input-wrap">
+              <div class="input-label">Service</div>
+              <input class="text-input" type="text" value="Dinner — 20:45" />
+            </div>
+          </div>
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>What Happened</span>
+            <span class="form-label-meta">the more detail, the better the record</span>
+          </div>
+          <textarea class="notes-textarea" placeholder="Describe what happened — guest reaction, time symptoms started, what was ordered, what was said by FOH, what action was taken…">Guest mentioned at the table that they'd ordered the knafeh without realising it contained pistachio. Light tingling on the lips reported within 5 minutes. Server collected the dish immediately and offered alternative. Guest declined further food, used their own antihistamine, declined ambulance. Left at 21:30, said they were fine but would contact us tomorrow.</textarea>
+        </div>
+
+        <!-- CORRECTIVE ACTIONS -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Corrective Actions Taken</span>
+            <span class="form-label-meta">what did you do? — tick all that apply</span>
+          </div>
+          <div class="action-list">
+            <div class="action-check checked">
+              <div class="action-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="action-text">Dish removed from guest immediately</div>
+            </div>
+            <div class="action-check checked">
+              <div class="action-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="action-text">FOH team alerted; remaining service briefed on allergen handling</div>
+            </div>
+            <div class="action-check">
+              <div class="action-box"></div>
+              <div class="action-text">Affected stock isolated for review</div>
+            </div>
+            <div class="action-check">
+              <div class="action-box"></div>
+              <div class="action-text">Allergen documentation reviewed and updated</div>
+            </div>
+            <div class="action-check checked">
+              <div class="action-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+              </div>
+              <div class="action-text">Guest contact details obtained for follow-up</div>
+            </div>
+            <div class="action-check">
+              <div class="action-box"></div>
+              <div class="action-text">Local authority (Environmental Health) notified</div>
+            </div>
+            <div class="action-check">
+              <div class="action-box"></div>
+              <div class="action-text">Insurer notified</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="form-footer">
+          <div class="form-meta"><strong>Logged by:</strong> Jack · Fri 15 May, 21:48</div>
+          <div class="form-actions">
+            <button class="btn">Save as Draft</button>
+            <button class="btn btn-primary">Log Issue</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: FSA STRIP + RECENT LOG -->
+      <div>
+
+        <!-- FSA REFERENCE STRIP -->
+        <div class="fsa-strip">
+          <div class="fsa-strip-head">
+            <div class="fsa-eyebrow">FSA Guidance</div>
+            <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+          </div>
+          <div class="fsa-body">
+            When a guest has an allergic reaction in your kitchen, your <strong>legal duty</strong> is clear — accurate allergen info, immediate response, follow-up if symptoms are severe. The FSA's allergen guidance covers what to record, when to escalate, and how to respond.
+          </div>
+          <div class="fsa-links">
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/allergen-guidance-for-food-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Allergen guidance for food businesses</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/contact/consumers/report-a-food-problem" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Reporting a food problem</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food safety management — incident handling</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- RECENT ISSUES -->
+        <div class="side-card">
+          <div class="side-title">Recent Issues</div>
+
+          <div class="log-entry">
+            <div class="log-head">
+              <span class="log-tag complaint">Complaint</span>
+              <span class="log-date">Tue 12 May</span>
+            </div>
+            <div class="log-summary">Guest reported beef short rib <em>not hot enough</em> — re-fired, complimentary dessert.</div>
+            <div class="log-status resolved">Resolved · low severity</div>
+          </div>
+
+          <div class="log-entry">
+            <div class="log-head">
+              <span class="log-tag near">Near-Miss</span>
+              <span class="log-date">Sun 10 May</span>
+            </div>
+            <div class="log-summary">Sesame seed packet stored on shelf above gluten-free flour bin. Spotted at opening checks, relocated.</div>
+            <div class="log-status resolved">Resolved · medium severity · cross-contamination review</div>
+          </div>
+
+          <div class="log-entry">
+            <div class="log-head">
+              <span class="log-tag allergy">Allergy</span>
+              <span class="log-date">Wed 30 Apr</span>
+            </div>
+            <div class="log-summary">Guest with dairy allergy ordered <em>hummus</em>, server confirmed no dairy on dish. No incident — preventive note logged.</div>
+            <div class="log-status resolved">Resolved · low severity</div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    
+<div class="liability">
+  <div class="liability-label">Important — Your Responsibility</div>
+  <div class="liability-body">
+    Palatable is a record-keeping tool. <strong>The food business operator remains fully responsible</strong> for compliance with UK food safety law, including the Food Safety Act 1990, Regulation (EC) 852/2004, Natasha's Law, and all guidance from the Food Standards Agency and your local authority. Palatable does not provide legal advice or certification, does not replace EHO inspection, and does not guarantee compliance. We keep the records straight. The decisions, the kitchen, and the responsibility are yours.
+  </div>
+</div>
+
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">Log an Issue Sub-Page — Design Notes</div>
+  <div class="footnote-body">
+    <strong>The destination Quick Action #2 goes to.</strong> Same pattern as Probe Reading — breadcrumb, two-column layout, full editable form on the left, FSA reference strip and recent log on the right.<br><br>
+    <strong>Four issue types.</strong> Complaint, Allergy, Near-Miss, Illness. Each one has its own icon. Allergy is shown as the worked example because it's the highest-risk type and the most common reason a chef would open this page mid-service. The active state uses urgent-red border when the issue type is Allergy or Illness, attention-amber for Complaint or Near-Miss — different severity signal even before the chef picks the severity level.<br><br>
+    <strong>Severity is honest, three levels.</strong> Low (minor complaint, no harm), Medium (minor reaction or risk), High (hospital, severe reaction). Italic helper text under the label: "honest assessment — high severity escalates." The system needs to know severity because high-severity allergy incidents have legal escalation paths (insurer, local authority, RIDDOR potentially).<br><br>
+    <strong>All 14 UK regulated allergens as pills.</strong> Celery, Cereals/Gluten, Crustaceans, Eggs, Fish, Lupin, Milk, Molluscs, Mustard, Nuts (selected in this example), Peanuts, Sesame, Soya, Sulphites. Tap to toggle. Selected pills fill with urgent-red. This is the Natasha's Law list. Inline FSA reference link below the grid: "↗ FSA allergen guidance for food businesses" — direct link to food.gov.uk allergen page.<br><br>
+    <strong>Dish picker reuses the Probe pattern.</strong> Three tabs (Today's Menu / Prep Items / Recipes Library), tap a dish to select, free-form fallback below for items not on a current menu. The selected dish (knafeh) shows in italic gold AND its allergen list — "contains nuts, milk, gluten" — so the chef sees the listed allergens at a glance and can confirm whether the reported allergen matches the dish.<br><br>
+    <strong>When-it-happened is two fields.</strong> Date and Service (Dinner — 20:45). Both editable. Defaults to "now" but chef can backdate if the issue is logged after the fact.<br><br>
+    <strong>The 'What Happened' textarea is the audit narrative.</strong> Worked example shows the level of detail needed: who, when, what was ordered, what was reported, what action was taken, what the guest did next. This is the witness statement equivalent. Chef should write more, not less.<br><br>
+    <strong>Corrective actions as a checklist.</strong> Seven standard actions, three checked in the worked example. Stock isolation, allergen doc review, EHO notification, insurer notification — all unchecked because in this case they haven't happened yet. The list itself is a prompt: "have you done these things?" Chef can tick them as they go through the response.<br><br>
+    <strong>The FSA Reference Strip is the new pattern.</strong> Gold left-bar callout in the right column, "FSA Guidance" eyebrow, "food.gov.uk — Authoritative Source" attribution. Three deep-linked references with external-link arrows: allergen guidance, reporting a food problem, food safety management. This pattern will be applied to every Safety sub-page with topic-relevant FSA links. The chef knows the official source is one tap away, always in the same place.<br><br>
+    <strong>Recent Issues panel.</strong> Shows the last 3 issues logged, each with a coloured tag (Complaint, Near-Miss, Allergy), date, summary, and resolution status. Pattern matches the rest of Palatable — italic gold for dish names, healthy-green for resolved, attention-amber for open. Lets the chef see the pattern of their kitchen's incident history at a glance.<br><br>
+    <strong>Liability footer stays.</strong> Identical wording on every Safety sub-page. Non-negotiable.<br><br>
+    <strong>The cross-shell loop.</strong> A logged allergy incident appears in: (1) Chef Inbox as a critical notification, (2) Manager Home as a flagged operational issue, (3) Looking Ahead on Chef Home for the next 14 days as a learning prompt ("knafeh allergen handling — review with team"), (4) Recipes for the dish involved (incident count rises by 1), (5) the EHO Mode 90-day export as a documented incident. One event, five surfaces. Same data structure as a probe reading or a fridge temp — it just routes differently depending on what it is.
+  </div>
+</div>
+
+</body>
+</html>

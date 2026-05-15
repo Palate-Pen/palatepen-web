@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety · Probe Reading</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --healthy-bg: rgba(93,127,79,0.08);
+    --attention-bg: rgba(184,106,46,0.06);
+    --urgent-bg: rgba(161,68,36,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  /* Shell */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px;
+    background: var(--paper-warm);
+    border-right: 1px solid var(--rule);
+    padding: 28px 0;
+    flex-shrink: 0;
+  }
+  .sidebar-brand {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 20px;
+  }
+  .brand-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .brand-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .nav-section-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--muted-soft);
+    text-transform: uppercase;
+    padding: 0 24px 8px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    gap: 10px;
+  }
+  .nav-item:hover { background: rgba(0,0,0,0.02); }
+  .nav-item.active {
+    background: var(--card);
+    border-left-color: var(--gold);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; color: var(--gold); }
+
+  .main { flex: 1; padding: 32px 56px 64px; max-width: 1280px; }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  .breadcrumb a {
+    color: var(--muted);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .breadcrumb a:hover { color: var(--gold); }
+  .breadcrumb-sep {
+    color: var(--muted-soft);
+    font-size: 10px;
+  }
+  .breadcrumb-current {
+    color: var(--gold);
+  }
+
+  /* Header */
+  .page-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 36px;
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin-bottom: 6px;
+  }
+  .page-title em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .page-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  /* Two col layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 36px;
+    margin-bottom: 36px;
+  }
+
+  /* FORM CARD */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 32px;
+  }
+  .form-section {
+    margin-bottom: 28px;
+  }
+  .form-section:last-child { margin-bottom: 0; }
+  .form-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .form-label-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  /* Check type selector */
+  .check-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .check-type {
+    border: 1px solid var(--rule);
+    background: var(--card);
+    padding: 14px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .check-type:hover { border-color: var(--gold); }
+  .check-type.active {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+    border-width: 2px;
+    padding: 13px 11px;
+  }
+  .check-type-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .check-type-target {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .check-type.active .check-type-target { color: var(--gold-dark); font-weight: 500; }
+
+  /* Dish picker */
+  .dish-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dish-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding: 4px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    width: fit-content;
+  }
+  .dish-tab {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .dish-tab:hover { color: var(--ink); }
+  .dish-tab.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .dish-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 6px;
+  }
+  .dish-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .dish-row:hover { border-color: var(--gold); background: var(--card-warm); }
+  .dish-row.selected {
+    background: var(--gold-bg);
+    border-color: var(--gold);
+    border-left: 3px solid var(--gold);
+    padding-left: 12px;
+  }
+  .dish-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--paper-warm);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--gold);
+  }
+  .dish-row.selected .dish-icon {
+    background: var(--gold);
+    color: var(--paper);
+  }
+  .dish-name {
+    flex: 1;
+  }
+  .dish-name-main {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .dish-name-main em {
+    color: var(--gold);
+    font-style: italic;
+  }
+  .dish-name-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .dish-section {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    padding: 4px 8px;
+    background: var(--paper-warm);
+    color: var(--muted);
+    text-transform: uppercase;
+    border-radius: 1px;
+  }
+  .dish-row.selected .dish-section {
+    background: var(--gold);
+    color: var(--paper);
+  }
+
+  /* Free-form item */
+  .freeform {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--rule);
+  }
+  .freeform-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Lora', serif;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .freeform-input::placeholder {
+    color: var(--muted-soft);
+    font-style: italic;
+  }
+  .freeform-input:focus {
+    outline: none;
+    border-color: var(--gold);
+    border-width: 2px;
+    padding: 13px 15px;
+  }
+  .freeform-hint {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Temperature input */
+  .temp-input-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .temp-input {
+    flex: 1;
+    padding: 18px 20px;
+    border: 2px solid var(--rule);
+    background: var(--card);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: center;
+  }
+  .temp-input::placeholder {
+    color: var(--muted-soft);
+  }
+  .temp-input:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+  .temp-input.healthy {
+    border-color: var(--healthy);
+    color: var(--healthy);
+    background: var(--healthy-bg);
+  }
+  .temp-input.warn {
+    border-color: var(--attention);
+    color: var(--attention);
+    background: var(--attention-bg);
+  }
+  .temp-unit {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    overflow: hidden;
+  }
+  .temp-unit-btn {
+    padding: 14px 18px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    background: var(--card);
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .temp-unit-btn:hover { background: var(--paper-warm); }
+  .temp-unit-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .temp-unit-btn:first-child { border-bottom: 1px solid var(--rule); }
+
+  /* Status / target indicator */
+  .target-indicator {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: var(--healthy-bg);
+    border-left: 3px solid var(--healthy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .target-indicator.warn {
+    background: var(--attention-bg);
+    border-left-color: var(--attention);
+  }
+  .target-text {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .target-text strong {
+    color: var(--healthy);
+    font-weight: 600;
+  }
+  .target-indicator.warn .target-text strong { color: var(--attention); }
+
+  /* Notes textarea */
+  .notes-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 14px 16px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    resize: vertical;
+  }
+  .notes-textarea::placeholder {
+    color: var(--muted-soft);
+    font-style: italic;
+  }
+  .notes-textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  /* Submit */
+  .form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    margin-top: 28px;
+  }
+  .form-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .form-meta strong {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    color: var(--ink);
+    font-style: normal;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+  }
+  .form-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 14px 24px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    color: var(--ink);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .btn-primary:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--paper);
+  }
+
+  /* RIGHT COLUMN - Today's log + tips */
+  .side-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .side-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+    width: 50px;
+  }
+  .log-body { flex: 1; }
+  .log-dish {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .log-dish em {
+    color: var(--gold);
+    font-style: italic;
+  }
+  .log-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .log-temp {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--healthy);
+    flex-shrink: 0;
+  }
+  .log-temp.warn { color: var(--attention); }
+
+  /* Tip card */
+  .tip-card {
+    background: var(--paper-warm);
+    border-left: 3px solid var(--gold);
+    padding: 18px 20px;
+  }
+  .tip-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .tip-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .tip-body strong { font-style: normal; color: var(--ink); font-weight: 600; }
+
+  /* Future feature ghost */
+  .ghost-card {
+    background: var(--paper-warm);
+    border: 1px dashed var(--muted-soft);
+    padding: 18px 20px;
+    opacity: 0.7;
+  }
+  .ghost-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ghost-title {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .ghost-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Footnote */
+  .footnote {
+    margin-top: 48px;
+    padding: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    border-left: 3px solid var(--gold);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--paper);
+    opacity: 0.9;
+  }
+  .footnote-body strong { font-weight: 600; color: var(--gold-light); }
+
+  /* FSA Reference Strip - shared component */
+  .fsa-strip {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--gold);
+    padding: 22px 26px;
+    margin-bottom: 20px;
+  }
+  .fsa-strip-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .fsa-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .fsa-source {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .fsa-source strong {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    color: var(--ink-soft);
+    font-style: normal;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
+  .fsa-body {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .fsa-body strong { font-weight: 600; color: var(--ink); }
+  .fsa-links { display: flex; flex-direction: column; gap: 8px; }
+  .fsa-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .fsa-link:hover { border-color: var(--gold); background: var(--card-warm); }
+  .fsa-link-icon { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; }
+  .fsa-link-icon svg { width: 16px; height: 16px; }
+  .fsa-link-text { flex: 1; font-family: 'Lora', serif; font-size: 14px; color: var(--ink); }
+  .fsa-link-text strong { font-weight: 600; }
+  .fsa-link-arrow { color: var(--muted-soft); }
+  .fsa-link-arrow svg { width: 14px; height: 14px; }
+
+  /* Inline FSA reference (next to targets / limits) */
+  .inline-fsa {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--gold-dark);
+    margin-left: 8px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .inline-fsa:hover { text-decoration: underline; }
+
+  /* Liability footer */
+  .liability {
+    margin-top: 36px;
+    padding: 20px 24px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--gold);
+  }
+  .liability-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .liability-body { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .liability-body strong { font-style: normal; color: var(--ink-soft); font-weight: 600; }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety · Probe Reading</div>
+  <div class="mockup-banner-meta">Dish-linked to live menu · free-form fallback · manual probe</div>
+</div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Palatable</div>
+      <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+    </div>
+
+    <div class="nav-section-label">Kitchen</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
+      Home
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Prep
+    </div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>
+      Safety
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>
+      Recipes
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>
+      Menus
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>
+      Margins
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      Stock &amp; Suppliers
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      Notebook
+    </div>
+
+    <div class="nav-section-label" style="margin-top:24px">System</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>
+      Inbox
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      Settings
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>
+      Connections
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+      <a>Safety</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Log a Probe Reading</span>
+    </div>
+
+    <!-- HEADER -->
+    <h1 class="page-title">Log a <em>probe reading</em>.</h1>
+    <p class="page-sub">Tied to today's menu where it can be. Manual entry for now — digital probes coming later.</p>
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+      <!-- LEFT: FORM -->
+      <div class="form-card">
+
+        <!-- CHECK TYPE -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Check Type</span>
+            <span class="form-label-meta">what kind of reading is this?</span>
+          </div>
+          <div class="check-type-grid">
+            <div class="check-type active">
+              <div class="check-type-name">Cooking Core</div>
+              <div class="check-type-target">≥ 75°C / 30 sec</div>
+            </div>
+            <div class="check-type">
+              <div class="check-type-name">Hot Holding</div>
+              <div class="check-type-target">≥ 63°C</div>
+            </div>
+            <div class="check-type">
+              <div class="check-type-name">Cooling</div>
+              <div class="check-type-target">≤ 8°C in 90 min</div>
+            </div>
+            <div class="check-type">
+              <div class="check-type-name">Reheating</div>
+              <div class="check-type-target">≥ 75°C</div>
+            </div>
+            <div class="check-type">
+              <div class="check-type-name">Chilled</div>
+              <div class="check-type-target">≤ 5°C</div>
+            </div>
+            <div class="check-type">
+              <div class="check-type-name">Frozen</div>
+              <div class="check-type-target">≤ −18°C</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WHAT'S BEING PROBED -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>What's being probed?</span>
+            <span class="form-label-meta">today's menu · or type your own</span>
+          </div>
+
+          <!-- TAB SWITCHER -->
+          <div class="dish-tabs">
+            <button class="dish-tab active">Today's Menu</button>
+            <button class="dish-tab">Prep Items</button>
+            <button class="dish-tab">Recipes Library</button>
+          </div>
+
+          <!-- DISH LIST -->
+          <div class="dish-list">
+
+            <div class="dish-row selected">
+              <div class="dish-icon">L</div>
+              <div class="dish-name">
+                <div class="dish-name-main"><em>Slow-cooked</em> lamb shoulder</div>
+                <div class="dish-name-sub">Mains · pulled from Dinner Menu, May 2026</div>
+              </div>
+              <div class="dish-section">Main</div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-icon">B</div>
+              <div class="dish-name">
+                <div class="dish-name-main">Beef short rib</div>
+                <div class="dish-name-sub">Mains · pulled from Dinner Menu</div>
+              </div>
+              <div class="dish-section">Main</div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-icon">C</div>
+              <div class="dish-name">
+                <div class="dish-name-main">Cauliflower shawarma</div>
+                <div class="dish-name-sub">Mains · vegetarian</div>
+              </div>
+              <div class="dish-section">Main</div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-icon">H</div>
+              <div class="dish-name">
+                <div class="dish-name-main">Hummus with confit garlic</div>
+                <div class="dish-name-sub">Starters</div>
+              </div>
+              <div class="dish-section">Start</div>
+            </div>
+
+            <div class="dish-row">
+              <div class="dish-icon">K</div>
+              <div class="dish-name">
+                <div class="dish-name-main">Knafeh</div>
+                <div class="dish-name-sub">Desserts · served warm</div>
+              </div>
+              <div class="dish-section">Dessert</div>
+            </div>
+
+          </div>
+
+          <!-- FREE-FORM FALLBACK -->
+          <div class="freeform">
+            <input class="freeform-input" type="text" placeholder="Or type the item — e.g. 'staff chicken thighs', 'birthday cake leftover'…" />
+            <div class="freeform-hint">If it's not on today's menu — staff food, prep batch, returning leftovers, sub-recipe — just type the item. We'll log it as a free-form entry.</div>
+          </div>
+        </div>
+
+        <!-- TEMPERATURE -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Temperature</span>
+            <span class="form-label-meta">manual reading from probe</span>
+          </div>
+          <div class="temp-input-wrap">
+            <input class="temp-input healthy" type="text" value="94" />
+            <div class="temp-unit">
+              <button class="temp-unit-btn active">°C</button>
+              <button class="temp-unit-btn">°F</button>
+            </div>
+          </div>
+          <div class="target-indicator">
+            <div class="target-text">Target for cooking core: <strong>≥ 75°C held for 30 seconds.</strong> You're 19°C above target.<a class="inline-fsa" href="https://www.food.gov.uk/business-guidance/safer-food-better-business-sfbb" target="_blank">↗ FSA SFBB Cooking guidance</a></div>
+          </div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="form-section">
+          <div class="form-label">
+            <span>Notes</span>
+            <span class="form-label-meta">optional</span>
+          </div>
+          <textarea class="notes-textarea" placeholder="Anything worth noting — probe location on the dish, batch size, who cooked it…">Probed at thickest part of shoulder, fat-side down. 6hr slow cook at 140°C. Batch of 4, all reading 92–95°C.</textarea>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="form-footer">
+          <div class="form-meta"><strong>Logged by:</strong> Jack · Fri 15 May, 11:24</div>
+          <div class="form-actions">
+            <button class="btn">Save &amp; Add Another</button>
+            <button class="btn btn-primary">Save Reading</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: FSA REFERENCE + TODAY'S LOG + TIPS -->
+      <div>
+
+        <!-- FSA REFERENCE STRIP -->
+        <div class="fsa-strip">
+          <div class="fsa-strip-head">
+            <div class="fsa-eyebrow">FSA Guidance</div>
+            <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+          </div>
+          <div class="fsa-body">
+            UK food safety law requires <strong>core cooking temperatures</strong>, <strong>hot holding</strong> and <strong>chilling</strong> controls to be monitored and recorded. The FSA's Safer Food, Better Business guidance covers the legal limits and the records you need to keep.
+          </div>
+          <div class="fsa-links">
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/safer-food-better-business-sfbb" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Safer Food, Better Business (SFBB)</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food safety management for businesses</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/here-to-help" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>FSA Here to Help — business hub</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- TODAY'S READINGS -->
+        <div class="side-card">
+          <div class="side-title">Today's Readings</div>
+
+          <div class="log-entry">
+            <div class="log-time">11:24</div>
+            <div class="log-body">
+              <div class="log-dish"><em>Slow-cooked</em> lamb shoulder</div>
+              <div class="log-meta">Cooking core · Jack</div>
+            </div>
+            <div class="log-temp">94°C</div>
+          </div>
+
+          <div class="log-entry">
+            <div class="log-time">10:32</div>
+            <div class="log-body">
+              <div class="log-dish">Beef short rib</div>
+              <div class="log-meta">Cooking core · Jack</div>
+            </div>
+            <div class="log-temp">91°C</div>
+          </div>
+
+          <div class="log-entry">
+            <div class="log-time">09:48</div>
+            <div class="log-body">
+              <div class="log-dish">Staff lunch — chicken</div>
+              <div class="log-meta">Free-form · Sam</div>
+            </div>
+            <div class="log-temp">78°C</div>
+          </div>
+
+          <div class="log-entry">
+            <div class="log-time">08:42</div>
+            <div class="log-body">
+              <div class="log-dish">Walk-in fridge</div>
+              <div class="log-meta">Chilled · Jack</div>
+            </div>
+            <div class="log-temp">3.4°C</div>
+          </div>
+
+          <div class="log-entry">
+            <div class="log-time">08:44</div>
+            <div class="log-body">
+              <div class="log-dish">Fridge 2 (prep)</div>
+              <div class="log-meta">Chilled · Jack</div>
+            </div>
+            <div class="log-temp warn">5.8°C</div>
+          </div>
+
+        </div>
+
+        <!-- TIP -->
+        <div class="tip-card" style="margin-bottom:20px">
+          <div class="tip-eyebrow">A Note On Probes</div>
+          <div class="tip-body">
+            Probes need <strong>weekly calibration</strong> — boiling water (100°C) or ice slurry (0°C). The system will remind you. Last calibration logged Wed 13 May.
+          </div>
+        </div>
+
+        <!-- FUTURE: DIGITAL PROBE -->
+        <div class="ghost-card">
+          <div class="ghost-eyebrow">Coming Later</div>
+          <div class="ghost-title">Digital probe integration</div>
+          <div class="ghost-body">Bluetooth probes (Thermapen, ETI, Navitas) will sync readings straight into the log. For now: manual entry, but designed to receive digital readings later.</div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- LIABILITY -->
+    <div class="liability">
+      <div class="liability-label">Important — Your Responsibility</div>
+      <div class="liability-body">
+        Palatable is a record-keeping tool. <strong>The food business operator remains fully responsible</strong> for compliance with UK food safety law, including the Food Safety Act 1990, Regulation (EC) 852/2004, Natasha's Law, and all guidance from the Food Standards Agency and your local authority. Palatable does not provide legal advice or certification, does not replace EHO inspection, and does not guarantee compliance. We keep the records straight. The decisions, the kitchen, and the responsibility are yours.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">Probe Reading Sub-Page — Design Notes</div>
+  <div class="footnote-body">
+    <strong>This is the destination Quick Action #1 goes to.</strong> Tap "Log a probe reading" from the Safety home, land here. Full editable form, integrated with the rest of Palatable's data.<br><br>
+    <strong>Six check types.</strong> Cooking core, Hot holding, Cooling, Reheating, Chilled, Frozen. Each one carries its FSA target temperature beneath the label (≥75°C for cooking, ≥63°C for hot holding, etc.). When chef picks a type, the temperature input validates against that target and shows green/amber state. Removes the chef's mental burden of remembering targets.<br><br>
+    <strong>The dish picker is the killer feature.</strong> Three tabs — Today's Menu (pulled from the live Dinner Menu in Menu Builder), Prep Items (pulled from the Prep tab batches), Recipes Library (full historical catalogue). Tap a dish, it's selected, the form records "lamb shoulder · from Dinner Menu May 2026" — full audit trail back to the menu version that was live that day. If an EHO asks "was that the same dish you served on the menu?" — we have the answer.<br><br>
+    <strong>Free-form fallback.</strong> Below the dish list, an italic-placeholder input — "Or type the item — staff chicken thighs, birthday cake leftover…". The hint text explains when to use it: staff food, prep batch, returning leftovers, sub-recipe. Logged as free-form so the chef isn't blocked when something isn't on today's menu.<br><br>
+    <strong>Temperature input is single-screen big.</strong> Mono-font, 32px, with °C/°F toggle. As the chef types, it validates against the selected check type's target — auto-green if above target, auto-amber if below. Beneath, the target-indicator line reads in plain English: "Target for cooking core: ≥ 75°C held for 30 seconds. You're 19°C above target." No ambiguity.<br><br>
+    <strong>Notes is optional.</strong> Lora serif, 100px high, italic placeholder. Chef can capture context — "probed at thickest part, fat side down, batch of 4 reading 92-95°C." This becomes the audit narrative if anything ever needs investigating.<br><br>
+    <strong>Right column shows today's log.</strong> All probe readings from today in chronological order. Each row: time · dish (with italic gold for menu-linked) · check type · cooker · reading. Mixed dish-linked and free-form entries — the chef sees the day's whole record at a glance. Includes fridge readings from the opening checks (showing how this surface connects to the wider Safety tab).<br><br>
+    <strong>Tip card.</strong> "Probes need weekly calibration — boiling water or ice slurry. Last calibration logged Wed 13 May." Builds the calibration ritual into the chef's awareness without nagging.<br><br>
+    <strong>Ghost card for future state.</strong> "Digital probe integration coming later — Thermapen, ETI, Navitas will sync readings straight in." Sets expectation that we'll receive Bluetooth data when ready, without making v1 wait for it.<br><br>
+    <strong>Footer breadcrumb everywhere.</strong> "Safety › Log a Probe Reading" — clear path back. Same liability footer as the Safety home appears underneath (omitted in this mockup for brevity, but architecturally identical to chef-safety-mockup-v1).<br><br>
+    <strong>What this means architecturally.</strong> Every dish probe reading is now linked to the menu version that was live when it happened. The audit trail becomes: <em>"on Friday 15 May 2026 at 11:24, lamb shoulder from Dinner Menu (published 1 May) was probed at 94°C by Jack."</em> If a menu changes, historical probe records still reference the old menu — they don't break. This is the data structure to ship in v1, even though digital probes come later.
+  </div>
+</div>
+
+</body>
+</html>

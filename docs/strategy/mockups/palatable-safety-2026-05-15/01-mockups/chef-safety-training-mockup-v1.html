@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety · Training Records</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --healthy-bg: rgba(93,127,79,0.08);
+    --attention-bg: rgba(184,106,46,0.06);
+    --urgent-bg: rgba(161,68,36,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--paper-warm); border-right: 1px solid var(--rule); padding: 28px 0; flex-shrink: 0; }
+  .sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--rule); margin-bottom: 20px; }
+  .brand-name { font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; letter-spacing: 0.3em; color: var(--ink); text-transform: uppercase; }
+  .brand-sub { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .nav-section-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.25em; color: var(--muted-soft); text-transform: uppercase; padding: 0 24px 8px; }
+  .nav-item { display: flex; align-items: center; padding: 10px 24px; font-family: 'Lora', serif; font-size: 15px; color: var(--ink-soft); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; gap: 10px; }
+  .nav-item:hover { background: rgba(0,0,0,0.02); }
+  .nav-item.active { background: var(--card); border-left-color: var(--gold); color: var(--ink); font-weight: 600; }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; color: var(--gold); }
+
+  .main { flex: 1; padding: 32px 56px 64px; max-width: 1280px; }
+
+  .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; }
+  .breadcrumb a { color: var(--muted); text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { color: var(--gold); }
+  .breadcrumb-sep { color: var(--muted-soft); font-size: 10px; }
+  .breadcrumb-current { color: var(--gold); }
+
+  .page-title { font-family: 'Lora', serif; font-weight: 400; font-size: 36px; line-height: 1.1; color: var(--ink); letter-spacing: -0.015em; margin-bottom: 6px; }
+  .page-title em { color: var(--gold); font-style: italic; font-weight: 500; }
+  .page-sub { font-family: 'Lora', serif; font-style: italic; font-size: 16px; color: var(--muted); margin-bottom: 24px; }
+
+  /* Summary cards */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 18px 20px;
+  }
+  .summary-card.urgent {
+    background: var(--urgent-bg);
+    border-color: var(--urgent);
+    border-left: 3px solid var(--urgent);
+    padding-left: 17px;
+  }
+  .summary-card.attention {
+    background: var(--attention-bg);
+    border-color: var(--attention);
+    border-left: 3px solid var(--attention);
+    padding-left: 17px;
+  }
+  .summary-card.healthy {
+    background: var(--healthy-bg);
+    border-color: var(--healthy);
+    border-left: 3px solid var(--healthy);
+    padding-left: 17px;
+  }
+  .summary-num {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 30px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .summary-card.urgent .summary-num { color: var(--urgent); }
+  .summary-card.attention .summary-num { color: var(--attention); }
+  .summary-card.healthy .summary-num { color: var(--healthy); }
+  .summary-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .summary-detail {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Actions bar */
+  .actions-bar { display: flex; gap: 10px; margin-bottom: 24px; justify-content: space-between; align-items: center; }
+  .btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.3em; padding: 12px 22px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); text-transform: uppercase; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+  .btn-primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .btn-primary:hover { background: var(--gold); border-color: var(--gold); color: var(--paper); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 36px; margin-bottom: 36px; }
+
+  /* Staff card list */
+  .staff-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 22px 26px;
+    margin-bottom: 14px;
+  }
+  .staff-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule-soft);
+    margin-bottom: 14px;
+  }
+  .staff-avatar {
+    width: 44px;
+    height: 44px;
+    background: var(--gold-bg);
+    color: var(--gold-dark);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .staff-info { flex: 1; }
+  .staff-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .staff-role {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .staff-overall {
+    text-align: right;
+  }
+  .staff-overall-status {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 1px;
+  }
+  .staff-overall-status.compliant {
+    background: var(--healthy-bg);
+    color: var(--healthy);
+  }
+  .staff-overall-status.attention {
+    background: var(--attention-bg);
+    color: var(--attention);
+  }
+  .staff-overall-status.urgent {
+    background: var(--urgent-bg);
+    color: var(--urgent);
+  }
+  .staff-since {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Certificates */
+  .cert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cert-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .cert-row:hover { border-color: var(--gold); }
+  .cert-row.expired {
+    background: var(--urgent-bg);
+    border-color: var(--urgent);
+    border-left: 3px solid var(--urgent);
+    padding-left: 12px;
+  }
+  .cert-row.expiring {
+    background: var(--attention-bg);
+    border-color: var(--attention);
+    border-left: 3px solid var(--attention);
+    padding-left: 12px;
+  }
+  .cert-row.valid {
+    background: var(--healthy-bg);
+    border-color: var(--healthy);
+    border-left: 3px solid var(--healthy);
+    padding-left: 12px;
+  }
+  .cert-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--card);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--gold);
+  }
+  .cert-icon svg { width: 18px; height: 18px; }
+  .cert-row.expired .cert-icon { color: var(--urgent); }
+  .cert-row.expiring .cert-icon { color: var(--attention); }
+  .cert-row.valid .cert-icon { color: var(--healthy); }
+  .cert-body { flex: 1; }
+  .cert-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .cert-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .cert-status {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .cert-row.expired .cert-status { color: var(--urgent); }
+  .cert-row.expiring .cert-status { color: var(--attention); }
+  .cert-row.valid .cert-status { color: var(--healthy); }
+  .cert-expiry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  /* Side card */
+  .side-card { background: var(--card); border: 1px solid var(--rule); padding: 24px; margin-bottom: 20px; }
+  .side-title { font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; margin-bottom: 16px; }
+
+  /* Expiring soon list */
+  .expiring-item {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .expiring-item:last-child { border-bottom: none; }
+  .expiring-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .expiring-name {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .expiring-days {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 1px;
+    margin-left: auto;
+  }
+  .expiring-days.urgent { background: var(--urgent); color: var(--paper); }
+  .expiring-days.attention { background: var(--attention); color: var(--paper); }
+  .expiring-cert {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* FSA Strip */
+  .fsa-strip { background: var(--paper-warm); border: 1px solid var(--rule); border-left: 3px solid var(--gold); padding: 22px 26px; margin-bottom: 20px; }
+  .fsa-strip-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .fsa-eyebrow { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.35em; color: var(--gold); text-transform: uppercase; }
+  .fsa-source { font-family: 'Lora', serif; font-style: italic; font-size: 12px; color: var(--muted); }
+  .fsa-source strong { font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink-soft); font-style: normal; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; margin-left: 4px; }
+  .fsa-body { font-family: 'Lora', serif; font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 14px; }
+  .fsa-body strong { font-weight: 600; color: var(--ink); }
+  .fsa-links { display: flex; flex-direction: column; gap: 8px; }
+  .fsa-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--rule); text-decoration: none; transition: all 0.15s; cursor: pointer; }
+  .fsa-link:hover { border-color: var(--gold); background: var(--card-warm); }
+  .fsa-link-icon { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; }
+  .fsa-link-icon svg { width: 16px; height: 16px; }
+  .fsa-link-text { flex: 1; font-family: 'Lora', serif; font-size: 14px; color: var(--ink); }
+  .fsa-link-text strong { font-weight: 600; }
+  .fsa-link-arrow { color: var(--muted-soft); }
+  .fsa-link-arrow svg { width: 14px; height: 14px; }
+
+  /* Liability */
+  .liability { margin-top: 36px; padding: 20px 24px; background: var(--paper-warm); border: 1px solid var(--rule); border-top: 2px solid var(--gold); }
+  .liability-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .liability-body { font-family: 'Lora', serif; font-style: italic; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .liability-body strong { font-style: normal; color: var(--ink-soft); font-weight: 600; }
+
+  /* Footnote */
+  .footnote { margin-top: 48px; padding: 24px; background: var(--ink); color: var(--paper); border-left: 3px solid var(--gold); }
+  .footnote-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.35em; color: var(--gold-light); text-transform: uppercase; margin-bottom: 12px; }
+  .footnote-body { font-family: 'Lora', serif; font-size: 14px; line-height: 1.7; color: var(--paper); opacity: 0.9; }
+  .footnote-body strong { font-weight: 600; color: var(--gold-light); }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety · Training Records</div>
+  <div class="mockup-banner-meta">Staff certifications · expiry tracking</div>
+</div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Palatable</div>
+      <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+    </div>
+    <div class="nav-section-label">Kitchen</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>Home</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Prep</div>
+    <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>Safety</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>Recipes</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>Menus</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>Margins</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Stock &amp; Suppliers</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Notebook</div>
+    <div class="nav-section-label" style="margin-top:24px">System</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>Inbox</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Settings</div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>Connections</div>
+  </aside>
+
+  <main class="main">
+
+    <div class="breadcrumb">
+      <a>Safety</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Training Records</span>
+    </div>
+
+    <h1 class="page-title">Staff <em>training records</em>.</h1>
+    <p class="page-sub">Who's trained on what, and when does it need refreshing. The FSA expects every food handler to be trained — this is the proof.</p>
+
+    <!-- SUMMARY ROW -->
+    <div class="summary-row">
+      <div class="summary-card healthy">
+        <div class="summary-num">8</div>
+        <div class="summary-label">Active Staff</div>
+        <div class="summary-detail">All current with valid training</div>
+      </div>
+      <div class="summary-card attention">
+        <div class="summary-num">2</div>
+        <div class="summary-label">Expiring Soon</div>
+        <div class="summary-detail">Within next 60 days</div>
+      </div>
+      <div class="summary-card urgent">
+        <div class="summary-num">1</div>
+        <div class="summary-label">Expired</div>
+        <div class="summary-detail">Action needed this week</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-num">24</div>
+        <div class="summary-label">Total Certificates</div>
+        <div class="summary-detail">Across all staff</div>
+      </div>
+    </div>
+
+    <!-- ACTIONS BAR -->
+    <div class="actions-bar">
+      <div style="font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--muted);">
+        Updated last by Jack · Wed 13 May
+      </div>
+      <div style="display:flex; gap:10px">
+        <button class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export Records
+        </button>
+        <button class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          Add Certificate
+        </button>
+        <button class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+          Add Staff Member
+        </button>
+      </div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="layout">
+
+      <!-- LEFT: STAFF LIST -->
+      <div>
+
+        <!-- JACK -->
+        <div class="staff-card">
+          <div class="staff-head">
+            <div class="staff-avatar">JH</div>
+            <div class="staff-info">
+              <div class="staff-name">Jack Harrison</div>
+              <div class="staff-role">Head Chef · Founder</div>
+              <div class="staff-since">Since 2019</div>
+            </div>
+            <div class="staff-overall">
+              <span class="staff-overall-status compliant">Compliant</span>
+            </div>
+          </div>
+          <div class="cert-list">
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Level 3 Food Hygiene &amp; Safety</div>
+                <div class="cert-meta">Certified · CIEH · valid 3 years</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Apr 2028</div>
+              </div>
+            </div>
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Allergen Awareness</div>
+                <div class="cert-meta">FSA online training · refreshed annually</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Feb 2027</div>
+              </div>
+            </div>
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">HACCP Principles &amp; Application</div>
+                <div class="cert-meta">Level 3 · CIEH · valid 3 years</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Apr 2028</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAM -->
+        <div class="staff-card">
+          <div class="staff-head">
+            <div class="staff-avatar">SC</div>
+            <div class="staff-info">
+              <div class="staff-name">Sam Chen</div>
+              <div class="staff-role">Sous Chef</div>
+              <div class="staff-since">Since 2022</div>
+            </div>
+            <div class="staff-overall">
+              <span class="staff-overall-status attention">Action Needed</span>
+            </div>
+          </div>
+          <div class="cert-list">
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Level 2 Food Hygiene &amp; Safety</div>
+                <div class="cert-meta">Certified · Highfield · valid 3 years</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Sep 2027</div>
+              </div>
+            </div>
+            <div class="cert-row expiring">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Allergen Awareness</div>
+                <div class="cert-meta">FSA online training · last completed Jun 2025</div>
+              </div>
+              <div>
+                <div class="cert-status">Expires in 31 Days</div>
+                <div class="cert-expiry">Expires 15 Jun 2026</div>
+              </div>
+            </div>
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Manual Handling Awareness</div>
+                <div class="cert-meta">Internal training · refreshed annually</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Jan 2027</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAYA -->
+        <div class="staff-card">
+          <div class="staff-head">
+            <div class="staff-avatar">MO</div>
+            <div class="staff-info">
+              <div class="staff-name">Maya Okafor</div>
+              <div class="staff-role">Chef de Partie</div>
+              <div class="staff-since">Since 2024</div>
+            </div>
+            <div class="staff-overall">
+              <span class="staff-overall-status urgent">Expired</span>
+            </div>
+          </div>
+          <div class="cert-list">
+            <div class="cert-row expired">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><line x1="8" y1="11" x2="16" y2="11"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Level 2 Food Hygiene &amp; Safety</div>
+                <div class="cert-meta">Highfield · originally valid 3 years</div>
+              </div>
+              <div>
+                <div class="cert-status">Expired 8 Days Ago</div>
+                <div class="cert-expiry">Expired 7 May 2026</div>
+              </div>
+            </div>
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Allergen Awareness</div>
+                <div class="cert-meta">FSA online training · refreshed annually</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Aug 2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DANNY -->
+        <div class="staff-card">
+          <div class="staff-head">
+            <div class="staff-avatar">DR</div>
+            <div class="staff-info">
+              <div class="staff-name">Danny Reilly</div>
+              <div class="staff-role">Commis Chef</div>
+              <div class="staff-since">Since Mar 2026 (new starter)</div>
+            </div>
+            <div class="staff-overall">
+              <span class="staff-overall-status attention">Onboarding</span>
+            </div>
+          </div>
+          <div class="cert-list">
+            <div class="cert-row valid">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Level 2 Food Hygiene &amp; Safety</div>
+                <div class="cert-meta">Highfield · completed during induction</div>
+              </div>
+              <div>
+                <div class="cert-status">Valid</div>
+                <div class="cert-expiry">Expires Mar 2029</div>
+              </div>
+            </div>
+            <div class="cert-row expiring">
+              <div class="cert-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              </div>
+              <div class="cert-body">
+                <div class="cert-name">Allergen Awareness</div>
+                <div class="cert-meta">Not yet completed — scheduled for induction</div>
+              </div>
+              <div>
+                <div class="cert-status">Due in 14 Days</div>
+                <div class="cert-expiry">Due 29 May 2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: FSA + EXPIRING -->
+      <div>
+
+        <!-- FSA REFERENCE STRIP -->
+        <div class="fsa-strip">
+          <div class="fsa-strip-head">
+            <div class="fsa-eyebrow">FSA Guidance</div>
+            <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+          </div>
+          <div class="fsa-body">
+            UK law requires <strong>all food handlers to be trained</strong> to a level appropriate to their role. The FSA provides <strong>free online food safety training</strong> covering allergens, hygiene, and management — recommended for any team member preparing or handling food.
+          </div>
+          <div class="fsa-links">
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/online-food-safety-training" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Online food safety training (free)</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/allergen-guidance-for-food-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Allergen training requirements</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+            <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+              <div class="fsa-link-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <div class="fsa-link-text"><strong>Food safety management requirements</strong></div>
+              <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+            </a>
+          </div>
+        </div>
+
+        <!-- EXPIRING SOON -->
+        <div class="side-card">
+          <div class="side-title">Expiring &amp; Expired</div>
+
+          <div class="expiring-item">
+            <div class="expiring-head">
+              <span class="expiring-name">Maya Okafor</span>
+              <span class="expiring-days urgent">−8 days</span>
+            </div>
+            <div class="expiring-cert">Level 2 Food Hygiene · expired 7 May</div>
+          </div>
+
+          <div class="expiring-item">
+            <div class="expiring-head">
+              <span class="expiring-name">Danny Reilly</span>
+              <span class="expiring-days attention">14 days</span>
+            </div>
+            <div class="expiring-cert">Allergen Awareness · due 29 May</div>
+          </div>
+
+          <div class="expiring-item">
+            <div class="expiring-head">
+              <span class="expiring-name">Sam Chen</span>
+              <span class="expiring-days attention">31 days</span>
+            </div>
+            <div class="expiring-cert">Allergen Awareness · expires 15 Jun</div>
+          </div>
+
+        </div>
+
+        <!-- INSURANCE REMINDER -->
+        <div style="background: var(--paper-warm); border-left: 3px solid var(--gold); padding: 18px 20px; margin-bottom: 20px">
+          <div style="font-family: 'Cinzel', serif; font-weight: 600; font-size: 10px; letter-spacing: 0.3em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px">A Note On Why This Matters</div>
+          <div style="font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--ink-soft); line-height: 1.6">
+            Public liability insurers, EHO inspectors, and Natasha's Law all rely on documented training records. When something goes wrong, the first question is <strong>"was the person trained?"</strong> — and proof is in this log.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- LIABILITY -->
+    <div class="liability">
+      <div class="liability-label">Important — Your Responsibility</div>
+      <div class="liability-body">
+        Palatable is a record-keeping tool. <strong>The food business operator remains fully responsible</strong> for compliance with UK food safety law, including the Food Safety Act 1990, Regulation (EC) 852/2004, Natasha's Law, and all guidance from the Food Standards Agency and your local authority. Palatable does not provide legal advice or certification, does not replace EHO inspection, and does not guarantee compliance. We keep the records straight. The decisions, the kitchen, and the responsibility are yours.
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">Training Records Sub-Page — Design Notes</div>
+  <div class="footnote-body">
+    <strong>The destination Quick Action #4 goes to.</strong> Same pattern as the rest — breadcrumb, two-column layout, FSA Reference Strip and Expiring panel in the right column, liability footer.<br><br>
+    <strong>Four summary cards at the top.</strong> Active Staff (8, healthy-green) · Expiring Soon (2, attention-amber) · Expired (1, urgent-red) · Total Certificates (24, neutral). At-a-glance compliance temperature for the whole team. Click any card to filter the staff list below.<br><br>
+    <strong>Three buttons in the actions bar.</strong> Export Records (CSV / PDF for EHO Mode) · Add Certificate (attach a PDF of a course completion certificate) · Add Staff Member (primary action — adds new staff and prompts to set required certifications based on role).<br><br>
+    <strong>Each staff member is a card.</strong> Avatar with initials in gold · name in Lora · role in italic Lora · "Since 2019" since-date · overall status pill on the right (Compliant green / Action Needed amber / Expired red / Onboarding amber). Below, a stack of certificate rows.<br><br>
+    <strong>Certificate rows have colour-coded status.</strong> Valid (healthy-green left border) · Expiring (attention-amber, within 60 days) · Expired (urgent-red, past expiry). Each row: icon · cert name · provider/method · status text · expiry date in mono font. The chef can see at a glance who needs what.<br><br>
+    <strong>Four worked-example staff.</strong> Jack (head chef, all valid — Level 3, allergen, HACCP) · Sam (sous chef, allergen expiring in 31 days) · Maya (CdP, food hygiene expired 8 days ago — urgent) · Danny (commis, new starter, allergen due in 14 days from induction). Shows the four standard states: fully compliant, expiring soon, expired, onboarding.<br><br>
+    <strong>FSA Reference Strip in right column.</strong> Three links: Online food safety training (free) — this is the FSA's actual free training, which we direct chefs to · Allergen training requirements · Food safety management requirements. The FSA's free online training is genuinely good — pointing to it is part of being a credible record-keeping tool, not pretending to replace external certification bodies (CIEH, Highfield, etc.).<br><br>
+    <strong>Expiring &amp; Expired panel.</strong> Quick view of who needs action. Sorted by urgency — Maya first (−8 days, urgent red pill), Danny next (14 days, attention), Sam (31 days, attention). One tap on a row jumps to the staff card.<br><br>
+    <strong>Why-This-Matters note.</strong> Italic Lora gold-bar callout: "Public liability insurers, EHO inspectors, and Natasha's Law all rely on documented training records. When something goes wrong, the first question is 'was the person trained?' — and proof is in this log." Sets the stakes without being alarmist.<br><br>
+    <strong>The cross-shell loop.</strong> Training data flows to: (1) Looking Ahead on Chef Home as a Get-Ready tag (<em>"Maya's hygiene cert expires in 8 days — book renewal"</em>), (2) EHO Mode 90-day export as documented compliance, (3) Inbox notifications 30/14/7/0 days before expiry, (4) Manager Home as a multi-site staff compliance score (multi-site tier). One certificate, four surfaces.<br><br>
+    <strong>What's NOT in v1.</strong> Training course delivery (we link to FSA free training and external providers — we don't deliver courses ourselves). Quizzes / assessments. SCORM e-learning module. Direct CIEH/Highfield API integration (chefs upload PDF certificates manually for now). Photo signatures.
+  </div>
+</div>
+
+</body>
+</html>

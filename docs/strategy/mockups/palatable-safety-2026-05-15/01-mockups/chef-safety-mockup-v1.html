@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palatable — Chef · Safety</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F8F4ED;
+    --paper-warm: #F2EDE0;
+    --card: #FFFFFF;
+    --card-warm: #FDFAF2;
+    --ink: #1A1612;
+    --ink-soft: #3D362C;
+    --muted: #7A6F5E;
+    --muted-soft: #A99B85;
+    --rule: rgba(26,22,18,0.08);
+    --rule-soft: rgba(26,22,18,0.04);
+    --gold: #B8923C;
+    --gold-light: #C9A84C;
+    --gold-dark: #8B6914;
+    --gold-bg: rgba(201,168,76,0.06);
+    --attention: #B86A2E;
+    --urgent: #A14424;
+    --healthy: #5D7F4F;
+    --healthy-bg: rgba(93,127,79,0.08);
+    --attention-bg: rgba(184,106,46,0.06);
+    --urgent-bg: rgba(161,68,36,0.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .mockup-banner { background: var(--ink); color: var(--paper); padding: 12px 56px; display: flex; justify-content: space-between; }
+  .mockup-banner-label { font-family: 'Cinzel', serif; font-weight: 600; font-size: 11px; letter-spacing: 0.4em; color: var(--gold-light); text-transform: uppercase; }
+  .mockup-banner-meta { font-family: 'Lora', serif; font-style: italic; font-size: 14px; color: var(--paper); opacity: 0.7; }
+
+  /* Shell */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px;
+    background: var(--paper-warm);
+    border-right: 1px solid var(--rule);
+    padding: 28px 0;
+    flex-shrink: 0;
+  }
+  .sidebar-brand {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 20px;
+  }
+  .brand-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.3em;
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .brand-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .nav-section-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--muted-soft);
+    text-transform: uppercase;
+    padding: 0 24px 8px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    gap: 10px;
+  }
+  .nav-item:hover { background: rgba(0,0,0,0.02); }
+  .nav-item.active {
+    background: var(--card);
+    border-left-color: var(--gold);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .nav-item svg { width: 16px; height: 16px; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; color: var(--gold); }
+
+  .main { flex: 1; padding: 32px 56px 64px; max-width: 1280px; }
+
+  /* Header */
+  .page-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .page-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 40px;
+    line-height: 1.1;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin-bottom: 6px;
+  }
+  .page-title em {
+    color: var(--gold);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .page-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  /* Date strip */
+  .date-strip {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    margin-top: 20px;
+    margin-bottom: 32px;
+  }
+  .date-strip-main {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--ink);
+  }
+  .date-strip-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .date-strip-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--healthy-bg);
+    color: var(--healthy);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--healthy);
+    border-radius: 50%;
+  }
+
+  /* Looking Ahead */
+  .ahead-bar {
+    background: var(--paper-warm);
+    border-left: 3px solid var(--gold);
+    padding: 18px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .ahead-icon {
+    color: var(--gold);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .ahead-icon svg { width: 22px; height: 22px; }
+  .ahead-content { flex: 1; }
+  .ahead-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .ahead-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ahead-item {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .ahead-item em {
+    color: var(--gold-dark);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .ahead-tag {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.25em;
+    padding: 3px 8px;
+    background: var(--gold);
+    color: var(--paper);
+    text-transform: uppercase;
+    margin-right: 10px;
+    border-radius: 1px;
+    vertical-align: 1px;
+  }
+
+  /* Section header */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: 36px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .section-meta {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .section-meta strong {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-style: normal;
+    color: var(--ink);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    margin-left: 8px;
+  }
+
+  /* Check cards */
+  .checks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .check-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 20px 22px;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .check-card:hover { border-color: var(--gold); }
+  .check-card.done {
+    background: var(--healthy-bg);
+    border-color: var(--healthy);
+    border-left: 3px solid var(--healthy);
+    padding-left: 19px;
+  }
+  .check-card.flagged {
+    background: var(--attention-bg);
+    border-color: var(--attention);
+    border-left: 3px solid var(--attention);
+    padding-left: 19px;
+  }
+  .check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .check-mark {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--rule);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card);
+  }
+  .check-card.done .check-mark {
+    background: var(--healthy);
+    border-color: var(--healthy);
+    color: var(--paper);
+  }
+  .check-card.flagged .check-mark {
+    background: var(--attention);
+    border-color: var(--attention);
+    color: var(--paper);
+  }
+  .check-mark svg { width: 14px; height: 14px; }
+  .check-body { flex: 1; }
+  .check-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .check-detail {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .check-data {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .check-data-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .check-data-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .check-data-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .check-data-value.warn { color: var(--attention); }
+  .check-data-value.healthy { color: var(--healthy); }
+  .check-time {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted-soft);
+    text-align: right;
+  }
+  .check-time strong {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    color: var(--ink-soft);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+  }
+
+  /* Pending — tap to log */
+  .pending {
+    background: var(--card);
+    border: 1px dashed var(--rule);
+  }
+  .pending .check-title { color: var(--muted); }
+  .pending .check-mark { border-color: var(--rule); background: var(--paper-warm); }
+  .pending-cta {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    padding: 6px 0 0;
+  }
+
+  /* Diary calendar */
+  .calendar {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .calendar-head {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 10px;
+  }
+  .calendar-head-cell {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day {
+    aspect-ratio: 1.4 / 1;
+    border: 1px solid var(--rule-soft);
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .day:hover { border-color: var(--gold); background: var(--gold-bg); }
+  .day-num {
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .day.muted .day-num { color: var(--muted-soft); }
+  .day-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    align-self: flex-end;
+  }
+  .day.complete { background: var(--healthy-bg); border-color: var(--healthy); }
+  .day.complete .day-dot { background: var(--healthy); }
+  .day.partial { background: var(--attention-bg); border-color: var(--attention); }
+  .day.partial .day-dot { background: var(--attention); }
+  .day.missed { background: var(--urgent-bg); border-color: var(--urgent); }
+  .day.missed .day-dot { background: var(--urgent); }
+  .day.today {
+    border: 2px solid var(--gold);
+    padding: 5px 7px;
+  }
+  .day.today .day-num {
+    font-weight: 700;
+    color: var(--gold-dark);
+  }
+  .day.future {
+    background: var(--paper-warm);
+    cursor: default;
+  }
+  .day.future .day-num { color: var(--muted-soft); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .legend-dot.complete { background: var(--healthy); }
+  .legend-dot.partial { background: var(--attention); }
+  .legend-dot.missed { background: var(--urgent); }
+
+  /* Two col bottom */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px;
+    margin-top: 36px;
+  }
+
+  /* Quick actions */
+  .quick-action {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-action:hover {
+    border-color: var(--gold);
+    background: var(--card-warm);
+  }
+  .quick-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--gold-bg);
+    color: var(--gold-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 2px;
+  }
+  .quick-icon svg { width: 18px; height: 18px; }
+  .quick-body { flex: 1; }
+  .quick-title {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .quick-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .quick-arrow {
+    color: var(--muted-soft);
+  }
+  .quick-arrow svg { width: 16px; height: 16px; }
+
+  /* EHO export card */
+  .eho-card {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 24px 28px;
+    border-left: 3px solid var(--gold);
+  }
+  .eho-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .eho-title {
+    font-family: 'Lora', serif;
+    font-weight: 400;
+    font-size: 22px;
+    color: var(--paper);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .eho-title em {
+    color: var(--gold-light);
+    font-style: italic;
+    font-weight: 500;
+  }
+  .eho-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--paper);
+    opacity: 0.75;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .eho-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .eho-stat-num {
+    font-family: 'Lora', serif;
+    font-weight: 500;
+    font-size: 26px;
+    color: var(--paper);
+  }
+  .eho-stat-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .eho-btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    padding: 12px 24px;
+    background: var(--gold);
+    color: var(--paper);
+    border: 1px solid var(--gold);
+    text-transform: uppercase;
+    cursor: pointer;
+    display: inline-block;
+  }
+
+  /* Liability footer */
+  .liability {
+    margin-top: 56px;
+    padding: 20px 24px;
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-top: 2px solid var(--gold);
+  }
+  .liability-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .liability-body {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .liability-body strong {
+    font-style: normal;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  /* Notes footnote */
+  .footnote {
+    margin-top: 48px;
+    padding: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    border-left: 3px solid var(--gold);
+  }
+  .footnote-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--gold-light);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .footnote-body {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--paper);
+    opacity: 0.9;
+  }
+  .footnote-body strong { font-weight: 600; color: var(--gold-light); }
+
+  /* FSA Reference Strip - shared component (full-width variant for home page) */
+  .fsa-strip {
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--gold);
+    padding: 24px 28px;
+    margin-top: 36px;
+  }
+  .fsa-strip-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .fsa-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .fsa-source {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .fsa-source strong {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    color: var(--ink-soft);
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-left: 4px;
+  }
+  .fsa-body {
+    font-family: 'Lora', serif;
+    font-size: 15px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    max-width: 760px;
+  }
+  .fsa-body strong { font-weight: 600; color: var(--ink); }
+  .fsa-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .fsa-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .fsa-link:hover { border-color: var(--gold); background: var(--card-warm); }
+  .fsa-link-icon { width: 16px; height: 16px; color: var(--gold); flex-shrink: 0; }
+  .fsa-link-icon svg { width: 16px; height: 16px; }
+  .fsa-link-text { flex: 1; font-family: 'Lora', serif; font-size: 14px; color: var(--ink); }
+  .fsa-link-text strong { font-weight: 600; }
+  .fsa-link-arrow { color: var(--muted-soft); }
+  .fsa-link-arrow svg { width: 14px; height: 14px; }
+
+</style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <div class="mockup-banner-label">Mockup v1 · Chef · Safety</div>
+  <div class="mockup-banner-meta">SFBB digital diary · daily-use · integrated</div>
+</div>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">Palatable</div>
+      <div class="brand-sub">Berber &amp; Q · Shoreditch</div>
+    </div>
+
+    <div class="nav-section-label">Kitchen</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12L12 3l9 9M5 10v10h14V10"/></svg>
+      Home
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3 8-8M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Prep
+    </div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L4 7v7c0 5 4 8 8 8s8-3 8-8V7l-8-5z"/><path d="M9 12l2 2 4-4"/></svg>
+      Safety
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19V5a2 2 0 012-2h11l4 4v12a2 2 0 01-2 2H6a2 2 0 01-2-2zM7 7h7M7 11h10M7 15h8"/></svg>
+      Recipes
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h16M4 18h12"/></svg>
+      Menus
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-4 3 3 7-7 4 4"/></svg>
+      Margins
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="13" rx="1"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      Stock &amp; Suppliers
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      Notebook
+    </div>
+
+    <div class="nav-section-label" style="margin-top:24px">System</div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 17a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h16a2 2 0 012 2z"/></svg>
+      Inbox
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      Settings
+    </div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M3.6 9h16.8M3.6 15h16.8"/></svg>
+      Connections
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HEADER -->
+    <div class="page-eyebrow">Chef · Safety</div>
+    <h1 class="page-title">Today's <em>safety log</em>.</h1>
+    <p class="page-sub">The cooking is the easy bit. Keeping the records straight is the bit we'll help with.</p>
+
+    <!-- DATE STRIP -->
+    <div class="date-strip">
+      <div>
+        <div class="date-strip-main">Friday 15 May 2026</div>
+        <div class="date-strip-sub">Week 20 · Day 5 of 7 · Service in 3hr 40min</div>
+      </div>
+      <div class="date-strip-status">
+        <span class="status-dot"></span>
+        <span>On Track</span>
+      </div>
+    </div>
+
+    <!-- LOOKING AHEAD -->
+    <div class="ahead-bar">
+      <div class="ahead-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div class="ahead-content">
+        <div class="ahead-label">Looking Ahead</div>
+        <div class="ahead-items">
+          <div class="ahead-item">
+            <span class="ahead-tag">Worth Knowing</span>
+            <em>Fridge 2 temp</em> has crept up 0.4°C average this week. Service in 14 days for the unit, otherwise flag with maintenance.
+          </div>
+          <div class="ahead-item">
+            <span class="ahead-tag">Get Ready</span>
+            EHO last visited <em>11 months ago</em>. The 12-month window opens 14 June. Last 90 days of records look complete — export ready when they call.
+          </div>
+          <div class="ahead-item">
+            <span class="ahead-tag">Plan For It</span>
+            Cleaning schedule completed 18 of last 21 days. The 3 gaps were all Sundays — worth a chat with the closing team.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPENING CHECKS -->
+    <div class="section-head">
+      <div class="section-title">Opening Checks</div>
+      <div class="section-meta">Logged 08:42 by Jack <strong>4 / 5 Done</strong></div>
+    </div>
+
+    <div class="checks-grid">
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Walk-in fridge</div>
+            <div class="check-detail">Target: below 5°C</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Reading</div>
+                <div class="check-data-value healthy">3.4°C</div>
+              </div>
+              <div class="check-data-item">
+                <div class="check-data-label">Probe</div>
+                <div class="check-data-value">Cal'd Wed</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>08:42</strong> · Jack</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card flagged">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Fridge 2 (prep area)</div>
+            <div class="check-detail">Target: below 5°C · running warm 3 days</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Reading</div>
+                <div class="check-data-value warn">5.8°C</div>
+              </div>
+              <div class="check-data-item">
+                <div class="check-data-label">7-day avg</div>
+                <div class="check-data-value warn">5.2°C</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>08:44</strong> · Jack</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Freezer</div>
+            <div class="check-detail">Target: below −18°C</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Reading</div>
+                <div class="check-data-value healthy">−19.6°C</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>08:43</strong> · Jack</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Cleaning verified</div>
+            <div class="check-detail">Last night's close-down · checked by Jack</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Status</div>
+                <div class="check-data-value healthy">Complete</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>08:45</strong> · Jack</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Handwash stations</div>
+            <div class="check-detail">Soap, blue roll, hot water — all three stations</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Stations</div>
+                <div class="check-data-value healthy">3 / 3</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>08:46</strong> · Jack</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card pending">
+        <div class="check-row">
+          <div class="check-mark">
+          </div>
+          <div class="check-body">
+            <div class="check-title">Pest control visual</div>
+            <div class="check-detail">Weekly check · last done Mon 11 May</div>
+            <div class="pending-cta">Tap to log →</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- IN SERVICE / PASSIVE LOG -->
+    <div class="section-head">
+      <div class="section-title">During Service · Auto-Logged</div>
+      <div class="section-meta">Records pulled from your Palatable activity</div>
+    </div>
+
+    <div class="checks-grid">
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Aubrey delivery</div>
+            <div class="check-detail">14 items received · temp logged · invoice scanned</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Chilled</div>
+                <div class="check-data-value healthy">2.1°C</div>
+              </div>
+              <div class="check-data-item">
+                <div class="check-data-label">Items</div>
+                <div class="check-data-value">14</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>07:18</strong> · auto</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Lamb shoulder probe</div>
+            <div class="check-detail">Slow-cooked 6hr · core temp confirmed</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Core</div>
+                <div class="check-data-value healthy">94°C</div>
+              </div>
+              <div class="check-data-item">
+                <div class="check-data-label">Target</div>
+                <div class="check-data-value">75°C+</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>10:32</strong> · Jack</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card done">
+        <div class="check-row">
+          <div class="check-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="check-body">
+            <div class="check-title">Waste logged</div>
+            <div class="check-detail">2 items · pulled from prep tab</div>
+            <div class="check-data">
+              <div class="check-data-item">
+                <div class="check-data-label">Items</div>
+                <div class="check-data-value">2</div>
+              </div>
+              <div class="check-data-item">
+                <div class="check-data-label">Reason</div>
+                <div class="check-data-value">Date</div>
+              </div>
+              <div class="check-data-item" style="margin-left:auto">
+                <div class="check-time"><strong>09:15</strong> · auto</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="check-card pending">
+        <div class="check-row">
+          <div class="check-mark">
+          </div>
+          <div class="check-body">
+            <div class="check-title">Hot holding check</div>
+            <div class="check-detail">Service from 18:30 · log at first plate-up</div>
+            <div class="pending-cta">Scheduled for 18:30 →</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TWO COLUMN BOTTOM -->
+    <div class="bottom-grid">
+
+      <!-- DIARY CALENDAR -->
+      <div>
+        <div class="section-head">
+          <div class="section-title">12-Week Diary</div>
+          <div class="section-meta">May 2026 · the SFBB record</div>
+        </div>
+
+        <div class="calendar">
+          <div class="calendar-head">
+            <div class="calendar-head-cell">Mon</div>
+            <div class="calendar-head-cell">Tue</div>
+            <div class="calendar-head-cell">Wed</div>
+            <div class="calendar-head-cell">Thu</div>
+            <div class="calendar-head-cell">Fri</div>
+            <div class="calendar-head-cell">Sat</div>
+            <div class="calendar-head-cell">Sun</div>
+          </div>
+          <div class="calendar-body">
+            <!-- Week 1 -->
+            <div class="day muted complete"><span class="day-num">27</span><span class="day-dot"></span></div>
+            <div class="day muted complete"><span class="day-num">28</span><span class="day-dot"></span></div>
+            <div class="day muted complete"><span class="day-num">29</span><span class="day-dot"></span></div>
+            <div class="day muted complete"><span class="day-num">30</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">1</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">2</span><span class="day-dot"></span></div>
+            <div class="day missed"><span class="day-num">3</span><span class="day-dot"></span></div>
+            <!-- Week 2 -->
+            <div class="day complete"><span class="day-num">4</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">5</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">6</span><span class="day-dot"></span></div>
+            <div class="day partial"><span class="day-num">7</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">8</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">9</span><span class="day-dot"></span></div>
+            <div class="day missed"><span class="day-num">10</span><span class="day-dot"></span></div>
+            <!-- Week 3 -->
+            <div class="day complete"><span class="day-num">11</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">12</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">13</span><span class="day-dot"></span></div>
+            <div class="day complete"><span class="day-num">14</span><span class="day-dot"></span></div>
+            <div class="day today"><span class="day-num">15</span><span class="day-dot"></span></div>
+            <div class="day future"><span class="day-num">16</span></div>
+            <div class="day future"><span class="day-num">17</span></div>
+            <!-- Week 4 -->
+            <div class="day future"><span class="day-num">18</span></div>
+            <div class="day future"><span class="day-num">19</span></div>
+            <div class="day future"><span class="day-num">20</span></div>
+            <div class="day future"><span class="day-num">21</span></div>
+            <div class="day future"><span class="day-num">22</span></div>
+            <div class="day future"><span class="day-num">23</span></div>
+            <div class="day future"><span class="day-num">24</span></div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-dot complete"></span>
+              <span>All checks complete</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot partial"></span>
+              <span>Partial</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot missed"></span>
+              <span>Not logged</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS + EHO -->
+      <div>
+        <div class="section-head">
+          <div class="section-title">Quick Actions</div>
+          <div class="section-meta">Logged on the floor</div>
+        </div>
+
+        <div class="quick-action">
+          <div class="quick-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v6m0 0l-4-4m4 4l4-4M3 12h6m-6 0l4-4m-4 4l4 4M15 12h6m0 0l-4-4m4 4l-4 4M12 22v-6m0 0l-4 4m4-4l4 4"/></svg>
+          </div>
+          <div class="quick-body">
+            <div class="quick-title">Log a probe reading</div>
+            <div class="quick-sub">Cooking / hot holding / cooling</div>
+          </div>
+          <div class="quick-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+
+        <div class="quick-action">
+          <div class="quick-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 21l-4.35-4.35M19 11a8 8 0 11-16 0 8 8 0 0116 0z"/></svg>
+          </div>
+          <div class="quick-body">
+            <div class="quick-title">Log an issue</div>
+            <div class="quick-sub">Complaint, allergy, near-miss</div>
+          </div>
+          <div class="quick-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+
+        <div class="quick-action">
+          <div class="quick-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          </div>
+          <div class="quick-body">
+            <div class="quick-title">Cleaning schedule</div>
+            <div class="quick-sub">5 tasks left today</div>
+          </div>
+          <div class="quick-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+
+        <div class="quick-action">
+          <div class="quick-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="quick-body">
+            <div class="quick-title">Training records</div>
+            <div class="quick-sub">8 staff · 2 certificates expiring</div>
+          </div>
+          <div class="quick-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+
+        <!-- EHO Export -->
+        <div class="eho-card" style="margin-top:20px">
+          <div class="eho-eyebrow">EHO Mode</div>
+          <div class="eho-title">Inspector at the door? <em>One tap</em>, you're ready.</div>
+          <div class="eho-body">Bundles last 90 days of records — opening checks, deliveries, probe readings, cleaning, waste, training — into a clean PDF.</div>
+          <div class="eho-stats">
+            <div>
+              <div class="eho-stat-num">81</div>
+              <div class="eho-stat-label">Days Logged</div>
+            </div>
+            <div>
+              <div class="eho-stat-num">9</div>
+              <div class="eho-stat-label">Days Partial</div>
+            </div>
+            <div>
+              <div class="eho-stat-num">100%</div>
+              <div class="eho-stat-label">Deliveries</div>
+            </div>
+          </div>
+          <button class="eho-btn">Export 90-day Record</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FSA REFERENCE STRIP -->
+    <div class="fsa-strip">
+      <div class="fsa-strip-head">
+        <div class="fsa-eyebrow">FSA Guidance — Official Source</div>
+        <div class="fsa-source">food.gov.uk <strong>Authoritative Source</strong></div>
+      </div>
+      <div class="fsa-body">
+        Every UK food business is legally required to keep a documented <strong>food safety management system based on HACCP principles</strong>. Palatable is built around the FSA's <strong>Safer Food, Better Business (SFBB)</strong> framework — the diary, the four Cs (cross-contamination, cleaning, chilling, cooking), and the records you need to show an EHO. The official guidance is always one tap away.
+      </div>
+      <div class="fsa-links">
+        <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/safer-food-better-business-sfbb" target="_blank">
+          <div class="fsa-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="fsa-link-text"><strong>Safer Food, Better Business (SFBB)</strong></div>
+          <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        </a>
+        <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/business-guidance/food-safety-management-for-businesses" target="_blank">
+          <div class="fsa-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="fsa-link-text"><strong>Food safety management for businesses</strong></div>
+          <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        </a>
+        <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/allergen-guidance-for-food-businesses" target="_blank">
+          <div class="fsa-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="fsa-link-text"><strong>Allergen guidance for food businesses</strong></div>
+          <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        </a>
+        <a class="fsa-link" href="https://www.food.gov.uk/business-guidance/online-food-safety-training" target="_blank">
+          <div class="fsa-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="fsa-link-text"><strong>Online food safety training</strong></div>
+          <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        </a>
+        <a class="fsa-link" href="https://www.food.gov.uk/contact/consumers/report-a-food-problem" target="_blank">
+          <div class="fsa-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="fsa-link-text"><strong>Report a food problem</strong></div>
+          <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        </a>
+        <a class="fsa-link" href="https://www.food.gov.uk/here-to-help" target="_blank">
+          <div class="fsa-link-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <div class="fsa-link-text"><strong>FSA Here to Help — business hub</strong></div>
+          <div class="fsa-link-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17L17 7M7 7h10v10"/></svg></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- LIABILITY -->
+    <div class="liability">
+      <div class="liability-label">Important — Your Responsibility</div>
+      <div class="liability-body">
+        Palatable is a record-keeping tool. <strong>The food business operator remains fully responsible</strong> for compliance with UK food safety law, including the Food Safety Act 1990, Regulation (EC) 852/2004, Natasha's Law, and all guidance from the Food Standards Agency and your local authority. Palatable does not provide legal advice or certification, does not replace EHO inspection, and does not guarantee compliance. We keep the records straight. The decisions, the kitchen, and the responsibility are yours. <strong>Full terms and the FSA's free Safer Food, Better Business guidance are linked in Settings.</strong>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="footnote">
+  <div class="footnote-label">Safety v1 — Design Notes</div>
+  <div class="footnote-body">
+    <strong>The wedge: replace the paper SFBB diary every UK kitchen is legally obliged to keep.</strong> Not HACCP wizard, not full allergen labels, not audit reports. Just the daily record-keeping, done well, integrated with what Palatable already knows.<br><br>
+    <strong>Three sections, one workflow.</strong> Opening Checks (chef walks in, logs fridge temps, probe cal, cleaning verified, handwash stations, pest visual). During Service (auto-logged — deliveries come from Deliveries tab, waste from Waste, probe readings logged by chef when cooking). Closing comes later in the day (hot holding, cooling logs, cleaning complete). The diary calendar at the bottom shows the last 12 weeks at a glance — green/amber/red dots tell the EHO story instantly.<br><br>
+    <strong>Looking Ahead applied to safety.</strong> Same pattern as every other Palatable surface. "Fridge 2 temp has crept up 0.4°C average this week" — proactive maintenance flag. "EHO last visited 11 months ago" — the 12-month window opens 14 June, get ready. "Cleaning completed 18 of last 21 days, gaps on Sundays" — behavioural pattern, not just a check failure. Three Worth-Knowing / Get-Ready / Plan-For-It tags rotating just like the chef shell home.<br><br>
+    <strong>EHO Mode is the killer feature.</strong> Inspector shows up unannounced — one tap produces a clean 90-day PDF bundle covering everything (opening checks, deliveries with supplier temps, probe readings, cleaning, waste, training records, incidents). The 81/9 stats reassure the chef that what they're producing is solid. Replaces the binder of paper SFBB diary sheets that everybody loses or forgets to file.<br><br>
+    <strong>Zero re-entry from existing data.</strong> Aubrey delivery? Already in Deliveries tab — auto-logged here with chilled temp. Lamb shoulder probe? Pulled from Prep tab when chef recorded the core temp. Waste? From the existing Waste log. The promise: <em>"You're already doing this work. We just make it count as legal compliance."</em><br><br>
+    <strong>Liability framing throughout.</strong> Footer on every page makes clear Palatable is a record-keeping tool, not a certification body. The user — the FBO — remains legally responsible. This is non-negotiable. Onboarding flow needs to make the user acknowledge this. Settings page has the full disclaimer + link to FSA's free SFBB pack. EHO export PDF includes the same footer so inspectors see we're not claiming to certify anything — the chef is.<br><br>
+    <strong>The cross-shell loop.</strong> When a supplier delivery flags a temperature outside spec, that flows to Safety (logged as a temperature deviation) AND to Suppliers (logged against Aubrey's reliability score) AND to Looking Ahead on the Chef Home (flagged for the chef's attention). One event, three surfaces. The data lives once.<br><br>
+    <strong>What's NOT in v1 (deliberately).</strong> No HACCP plan builder. No allergen label printer (Natasha's Law PPDS labels — that's v2). No incident root-cause analysis. No audit module. No training course delivery. No fridge sensor hardware. We build the wedge first, prove it, then expand.
+  </div>
+</div>
+
+</body>
+</html>
