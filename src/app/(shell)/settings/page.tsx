@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { PreferenceToggle } from './PreferenceToggle';
 import { InboxTokenPanel } from './InboxTokenPanel';
 import { AccountPreferencesPanel } from './AccountPreferencesPanel';
+import { DataExportPanel } from './DataExportPanel';
 import { KpiCard } from '@/components/shell/KpiCard';
 
 export const metadata = { title: 'Settings — Palatable' };
@@ -154,6 +155,10 @@ export default async function SettingsPage() {
             Manage in Connections tab →
           </span>
         </Link>
+      </Section>
+
+      <Section title="Export Data">
+        <DataExportPanel />
       </Section>
 
       <Section title="Account">

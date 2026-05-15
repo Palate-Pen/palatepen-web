@@ -149,6 +149,17 @@ export type SupplierInvoiceRow = {
   flagged_lines: number;
 };
 
+export type SupplierPriceChange = {
+  ingredient_id: string;
+  ingredient_name: string;
+  /** Most recent price BEFORE the latest move (`from`), or null on the
+   *  first observation. */
+  from_price: number | null;
+  to_price: number;
+  recorded_at: string;
+  pct_change: number | null;
+};
+
 export type SupplierDetail = SupplierContactBits & {
   id: string;
   name: string;
@@ -158,6 +169,10 @@ export type SupplierDetail = SupplierContactBits & {
   total_spend_90d: number;
   ingredients: SupplierIngredientRow[];
   invoices: SupplierInvoiceRow[];
+  /** Last ~30 price moves on this supplier's ingredients in the past
+   *  90 days. Each entry is a transition (from → to). Used to render
+   *  the per-supplier price-change history list. */
+  price_changes: SupplierPriceChange[];
 };
 
 type RawInvoiceWithLines = {
@@ -255,6 +270,46 @@ export async function getSupplierDetail(
   const reliability =
     total === 0 ? null : Math.round((confirmed / total) * 100) / 10;
 
+  // Build a per-supplier price-change history: pull the recent rows
+  // from ingredient_price_history scoped to this supplier's bank
+  // entries, then derive the transition (previous price → new price)
+  // by ordering per ingredient.
+  const priceChanges: SupplierPriceChange[] = await (async () => {
+    if (ingredients.length === 0) return [];
+    const ingIds = ingredients.map((i) => i.id);
+    const { data: hist } = await supabase
+      .from('ingredient_price_history')
+      .select('ingredient_id, price, recorded_at')
+      .in('ingredient_id', ingIds)
+      .gte('recorded_at', ninetyAgo)
+      .order('recorded_at', { ascending: true });
+
+    const nameById = new Map(ingredients.map((i) => [i.id, i.name]));
+    const prevByIng = new Map<string, number>();
+    const out: SupplierPriceChange[] = [];
+    for (const row of hist ?? []) {
+      const ingId = row.ingredient_id as string;
+      const price = Number(row.price);
+      const prev = prevByIng.get(ingId) ?? null;
+      // First observation: record as a "new on file" with no from.
+      out.push({
+        ingredient_id: ingId,
+        ingredient_name: nameById.get(ingId) ?? '',
+        from_price: prev,
+        to_price: price,
+        recorded_at: row.recorded_at as string,
+        pct_change:
+          prev != null && prev > 0 ? ((price - prev) / prev) * 100 : null,
+      });
+      prevByIng.set(ingId, price);
+    }
+    // Show the most recent first; cap to the last 30 transitions so
+    // the panel stays readable on busy suppliers.
+    return out
+      .sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))
+      .slice(0, 30);
+  })();
+
   return {
     id: supplier.id as string,
     name: supplier.name as string,
@@ -277,5 +332,6 @@ export async function getSupplierDetail(
         ? null
         : Number(supplier.account_balance),
     notes_md: (supplier.notes_md as string | null) ?? null,
+    price_changes: priceChanges,
   };
 }

@@ -11,6 +11,7 @@ import {
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { ScanSpecSheetDialog } from './ScanSpecSheetDialog';
+import { AutoCategoriseButton } from './AutoCategoriseButton';
 
 export const metadata = { title: 'The Bank — Palatable' };
 
@@ -73,6 +74,7 @@ export default async function TheBankPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <AutoCategoriseButton />
           <ScanSpecSheetDialog />
           <Link
             href="/stock-suppliers/the-bank/new"

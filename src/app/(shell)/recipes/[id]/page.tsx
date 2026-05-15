@@ -13,6 +13,7 @@ import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
 import { getGPHistory } from '@/lib/gp-calculations';
 import { PrintButton } from '@/components/shell/PrintButton';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -43,6 +44,7 @@ export default async function RecipeDetailPage({
   const gpTarget = accountPrefs.gp_target_pct ?? 70;
   const linkedNotes = await getNotesForRecipe(recipe.id, ctx.siteId);
   const gpHistory = await getGPHistory(ctx.siteId);
+  const usedIn = await getRecipesUsingThisAsSubRecipe(recipe.id);
   const gpSeed = {
     dishName: recipe.name,
     sellPrice: recipe.sell_price,
@@ -369,6 +371,37 @@ export default async function RecipeDetailPage({
         </section>
       )}
 
+      {usedIn.length > 0 && (
+        <section className="mb-12">
+          <SectionHead
+            title="Used In"
+            meta={`${usedIn.length} ${usedIn.length === 1 ? 'recipe pulls' : 'recipes pull'} this in as a component`}
+          />
+          <div className="bg-card border border-rule">
+            {usedIn.map((p, i) => (
+              <Link
+                key={p.id}
+                href={`/recipes/${p.id}`}
+                className={
+                  'flex items-center justify-between gap-4 px-7 py-4 hover:bg-paper-warm transition-colors' +
+                  (i < usedIn.length - 1 ? ' border-b border-rule-soft' : '')
+                }
+              >
+                <div className="font-serif font-semibold text-base text-ink">
+                  {p.name}
+                </div>
+                <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold whitespace-nowrap">
+                  Open →
+                </span>
+              </Link>
+            ))}
+          </div>
+          <p className="font-serif italic text-xs text-muted mt-2">
+            A price change here flows through every parent recipe automatically.
+          </p>
+        </section>
+      )}
+
       {linkedNotes.length > 0 && (
         <section className="mb-12">
           <SectionHead
@@ -518,4 +551,33 @@ function IngredientLine({
       </div>
     </div>
   );
+}
+
+/**
+ * Reverse lookup of the sub-recipe FK: which recipes consume THIS one
+ * as a component? Drives the "Used in" panel — chef knows that
+ * changing a stock base will reprice the dishes that pull from it.
+ * Returns at most 25 to avoid runaway rendering on widely-used bases.
+ */
+async function getRecipesUsingThisAsSubRecipe(
+  recipeId: string,
+): Promise<Array<{ id: string; name: string }>> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('recipe_ingredients')
+    .select('recipe_id, recipes:recipe_id (id, name, archived_at)')
+    .eq('sub_recipe_id', recipeId)
+    .limit(25);
+  const seen = new Set<string>();
+  const out: Array<{ id: string; name: string }> = [];
+  for (const row of data ?? []) {
+    const parent = row.recipes as unknown as
+      | { id: string; name: string; archived_at: string | null }
+      | null;
+    if (!parent || parent.archived_at) continue;
+    if (seen.has(parent.id)) continue;
+    seen.add(parent.id);
+    out.push({ id: parent.id, name: parent.name });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }

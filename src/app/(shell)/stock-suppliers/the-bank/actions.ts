@@ -352,3 +352,51 @@ export async function updateIngredientPar(
   revalidatePath('/bartender');
   return { ok: true, id: input.ingredientId };
 }
+
+/**
+ * Bulk auto-categorise uncategorised Bank entries on this site. Runs
+ * `guessCategory(name)` for every ingredient whose category is null,
+ * writes the best-fit category back, and reports the count. Idempotent
+ * — re-running won't touch ingredients that already have a category
+ * (so chef-corrected categories are sticky).
+ */
+export async function autoCategoriseBank(): Promise<
+  { ok: true; categorised: number } | { ok: false; error: string }
+> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/signin');
+
+  const { guessCategory } = await import('@/lib/categorize');
+
+  const { data: memberships } = await supabase
+    .from('memberships')
+    .select('site_id')
+    .eq('user_id', user.id)
+    .limit(1);
+  const siteId = memberships?.[0]?.site_id as string | undefined;
+  if (!siteId) return { ok: false, error: 'no_membership' };
+
+  const { data: rows } = await supabase
+    .from('ingredients')
+    .select('id, name, category')
+    .eq('site_id', siteId)
+    .is('category', null);
+  if (!rows || rows.length === 0) return { ok: true, categorised: 0 };
+
+  let updated = 0;
+  for (const r of rows) {
+    const guess = guessCategory(r.name as string);
+    const { error } = await supabase
+      .from('ingredients')
+      .update({ category: guess })
+      .eq('id', r.id as string);
+    if (!error) updated += 1;
+  }
+
+  revalidatePath('/stock-suppliers/the-bank');
+  revalidatePath('/stock-suppliers');
+  return { ok: true, categorised: updated };
+}

@@ -223,24 +223,100 @@ export default async function SupplierDetailPage({
             </p>
           </div>
         ) : (
+          <>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {supplier.ingredients.slice(0, 40).map((ing) => (
+                <Link
+                  key={ing.id}
+                  href={`/stock-suppliers/the-bank/${ing.id}`}
+                  className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border border-rule bg-paper-warm text-ink-soft hover:border-gold hover:text-gold transition-colors"
+                >
+                  {ing.name}
+                </Link>
+              ))}
+              {supplier.ingredients.length > 40 && (
+                <span className="font-serif italic text-xs text-muted-soft self-center ml-1">
+                  +{supplier.ingredients.length - 40} more
+                </span>
+              )}
+            </div>
+            <div className="bg-card border border-rule">
+              <div className="hidden md:grid grid-cols-[2fr_120px_120px_120px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
+                {['Ingredient', 'Unit price', 'Last seen', 'Category'].map((h) => (
+                  <div key={h} className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
+                    {h}
+                  </div>
+                ))}
+              </div>
+              {supplier.ingredients.map((ing, i) => (
+                <IngredientRowLine
+                  key={ing.id}
+                  ing={ing}
+                  last={i === supplier.ingredients.length - 1}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      {supplier.price_changes.length > 0 && (
+        <section className="mb-10">
+          <SectionHead
+            title="Price Changes"
+            meta={`${supplier.price_changes.length} in the last 90 days`}
+          />
           <div className="bg-card border border-rule">
-            <div className="hidden md:grid grid-cols-[2fr_120px_120px_120px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
-              {['Ingredient', 'Unit price', 'Last seen', 'Category'].map((h) => (
+            <div className="hidden md:grid grid-cols-[140px_2fr_130px_130px_100px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
+              {['Date', 'Ingredient', 'From', 'To', 'Change'].map((h) => (
                 <div key={h} className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted">
                   {h}
                 </div>
               ))}
             </div>
-            {supplier.ingredients.map((ing, i) => (
-              <IngredientRowLine
-                key={ing.id}
-                ing={ing}
-                last={i === supplier.ingredients.length - 1}
-              />
-            ))}
+            {supplier.price_changes.map((pc, i) => {
+              const tone =
+                pc.pct_change == null
+                  ? 'text-muted'
+                  : pc.pct_change > 5
+                    ? 'text-urgent'
+                    : pc.pct_change > 0
+                      ? 'text-attention'
+                      : 'text-healthy';
+              return (
+                <Link
+                  key={`${pc.ingredient_id}-${pc.recorded_at}-${i}`}
+                  href={`/stock-suppliers/the-bank/${pc.ingredient_id}`}
+                  className={
+                    'grid grid-cols-1 md:grid-cols-[140px_2fr_130px_130px_100px] gap-4 px-7 py-3.5 items-center transition-colors hover:bg-paper-warm ' +
+                    (i === supplier.price_changes.length - 1
+                      ? ''
+                      : 'border-b border-rule-soft')
+                  }
+                >
+                  <div className="font-serif text-sm text-muted">
+                    {dateShort.format(new Date(pc.recorded_at))}
+                  </div>
+                  <div className="font-serif text-sm text-ink truncate">
+                    {pc.ingredient_name}
+                  </div>
+                  <div className="font-serif text-sm text-muted">
+                    {pc.from_price != null ? gbp.format(pc.from_price) : 'new'}
+                  </div>
+                  <div className="font-serif font-semibold text-sm text-ink">
+                    {gbp.format(pc.to_price)}
+                  </div>
+                  <div className={`font-display font-semibold text-xs tracking-[0.08em] uppercase ${tone}`}>
+                    {pc.pct_change == null
+                      ? 'on file'
+                      : (pc.pct_change > 0 ? '+' : '') + pc.pct_change.toFixed(1) + '%'}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       <section className="mb-10">
         <SectionHead
