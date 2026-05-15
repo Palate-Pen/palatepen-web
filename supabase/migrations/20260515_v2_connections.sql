@@ -1,5 +1,6 @@
 -- v2 migration: connections — third-party integration credentials
 -- Date: 2026-05-15
+-- Applied: 2026-05-15 (run by founder via Supabase SQL editor; MCP was offline during the commit session)
 --
 -- Per the founder's lock: integrations are CHEF-INPUT (paste their own
 -- keys), not us building OAuth pipelines. This table holds those

@@ -1,5 +1,6 @@
 -- v2 migration: admin_announcements — founder-controlled site-wide banner
 -- Date: 2026-05-15
+-- Applied: 2026-05-15 (run by founder via Supabase SQL editor; MCP was offline during the commit session)
 --
 -- Founder writes a single active announcement that renders on every
 -- chef shell page (and bartender / manager / owner if we extend).

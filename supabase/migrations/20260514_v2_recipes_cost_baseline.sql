@@ -1,5 +1,6 @@
 -- v2 migration: add cost_baseline + costed_at to v2.recipes
 -- Date: 2026-05-14
+-- Applied: 2026-05-14 (verified by production usage — both columns are read in src/lib/recipes.ts, src/app/(shell)/recipes/[id]/page.tsx, src/lib/margins.ts, and the recipe-staleness detector; columns must exist for the chef shell to render at all)
 --
 -- The recipe-staleness detector needs to know what the dish cost was
 -- when the chef set its sell_price, so it can flag drift when current

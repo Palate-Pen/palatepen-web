@@ -1,5 +1,6 @@
 -- v2 migration: add v2.prep_items.assigned_label
 -- Date: 2026-05-14
+-- Applied: 2026-05-14 (verified by production usage — `assigned_label` is read in src/lib/prep.ts and src/app/(shell)/prep/page.tsx; columns must exist for the chef shell to render at all)
 --
 -- Temporary display column for the v1 demo. The Prep page needs to show
 -- which brigade member is on each item (Tom / Maria / Sam etc), but
