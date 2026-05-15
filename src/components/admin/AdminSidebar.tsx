@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebarState } from '@/components/shell/SidebarState';
@@ -77,44 +78,81 @@ export function AdminSidebar({
   kitchenBadge?: string;
   opsBadge?: string;
 }) {
-  const { collapsed } = useSidebarState();
+  const { collapsed, mobileOpen, closeMobile } = useSidebarState();
+  const pathname = usePathname();
   const domains = buildDomains(kitchenBadge, opsBadge);
 
-  return (
-    <aside
-      className={`${
-        collapsed ? 'w-[72px]' : 'w-[252px]'
-      } bg-paper-warm border-r border-rule h-screen sticky top-0 flex flex-col overflow-hidden flex-shrink-0 transition-[width] duration-200`}
-    >
-      <div
-        className={`h-[76px] border-b border-rule flex items-center flex-shrink-0 ${
-          collapsed ? 'px-0 justify-center' : 'px-6'
-        }`}
-      >
-        <Link
-          href="/admin"
-          className="font-display text-xl font-semibold tracking-[0.16em] uppercase text-ink"
-          aria-label="Palatable Founder Admin"
-        >
-          <span>P</span>
-          <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
-          {!collapsed && <span>alatable</span>}
-        </Link>
-      </div>
+  // Close the mobile drawer whenever the route changes (chef clicks a link).
+  useEffect(() => {
+    if (mobileOpen) closeMobile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
-      {!collapsed && (
-        <div className="px-6 pt-3 pb-1">
+  // Lock body scroll while the mobile drawer is open.
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  const widthClass = collapsed ? 'lg:w-[72px]' : 'lg:w-[252px]';
+  const mobilePositioning = mobileOpen
+    ? 'translate-x-0'
+    : '-translate-x-full lg:translate-x-0';
+
+  return (
+    <>
+      {/* Mobile backdrop — tap-to-close. */}
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        onClick={closeMobile}
+        className={
+          'fixed inset-0 z-30 bg-ink/40 lg:hidden transition-opacity duration-200 ' +
+          (mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none')
+        }
+      />
+
+      <aside
+        className={
+          'fixed lg:sticky top-0 left-0 z-40 h-screen w-[260px] ' +
+          widthClass +
+          ' ' +
+          mobilePositioning +
+          ' bg-paper-warm border-r border-rule flex flex-col overflow-hidden flex-shrink-0 transition-[transform,width] duration-200'
+        }
+      >
+        <div
+          className={`h-[76px] border-b border-rule flex items-center flex-shrink-0 ${
+            collapsed ? 'lg:px-0 lg:justify-center px-6' : 'px-6'
+          }`}
+        >
+          <Link
+            href="/admin"
+            className="font-display text-xl font-semibold tracking-[0.16em] uppercase text-ink"
+            aria-label="Palatable Founder Admin"
+          >
+            <span>P</span>
+            <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
+            {!collapsed && <span>alatable</span>}
+            {collapsed && <span className="lg:hidden">alatable</span>}
+          </Link>
+        </div>
+
+        <div className={'px-6 pt-3 pb-1 ' + (collapsed ? 'lg:hidden' : '')}>
           <div className="font-display text-xs font-medium tracking-[0.32em] uppercase text-muted truncate">
             Founder Admin
           </div>
         </div>
-      )}
 
-      <nav className="flex-1 overflow-y-auto py-2">
-        <Section label="Overview" items={OVERVIEW} collapsed={collapsed} />
-        <Section label="Domains" items={domains} collapsed={collapsed} />
-      </nav>
-    </aside>
+        <nav className="flex-1 overflow-y-auto py-2">
+          <Section label="Overview" items={OVERVIEW} collapsed={collapsed} />
+          <Section label="Domains" items={domains} collapsed={collapsed} />
+        </nav>
+      </aside>
+    </>
   );
 }
 
