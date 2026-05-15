@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getAdminHomeData, tierPrice, type AdminTier, type RecentSignup } from '@/lib/admin';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
@@ -111,10 +112,30 @@ export default async function AdminHomePage() {
       <section className="mt-12">
         <SectionHead title="Quick Actions" meta="jump straight in" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ActionCard eyebrow="Users" title="Find a user" sub="search by email or kitchen" />
-          <ActionCard eyebrow="Comms" title="Send announcement" sub="target by tier or activity" />
-          <ActionCard eyebrow="Data" title="Update seasonal calendar" sub="82 ingredients · last update 8 May" />
-          <ActionCard eyebrow="Ops" title="Toggle feature flag" sub="3 features in beta" />
+          <ActionCard
+            href="/admin/users"
+            eyebrow="Users"
+            title="Find a user"
+            sub="search the directory · drill into any account"
+          />
+          <ActionCard
+            href="/admin/content"
+            eyebrow="Comms"
+            title="Send announcement"
+            sub="publish a site-wide banner"
+          />
+          <ActionCard
+            href="/admin/system"
+            eyebrow="Ops"
+            title="System pulse"
+            sub="row counts · detector mix · health"
+          />
+          <ActionCard
+            href="/admin/ops"
+            eyebrow="Demo"
+            title="Reseed founder data"
+            sub="re-anchor every surface to today"
+          />
         </div>
       </section>
 
@@ -267,15 +288,20 @@ function AdminAheadCard({
 
 function ActionCard({
   eyebrow,
+  href,
   title,
   sub,
 }: {
   eyebrow: string;
+  href: string;
   title: string;
   sub: string;
 }) {
   return (
-    <button className="bg-card border border-rule px-5 py-5 text-left cursor-pointer transition-all hover:border-gold hover:-translate-y-px">
+    <Link
+      href={href}
+      className="bg-card border border-rule px-5 py-5 block text-left cursor-pointer transition-all hover:border-gold hover:-translate-y-px"
+    >
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-2">
         {eyebrow}
       </div>
@@ -283,7 +309,7 @@ function ActionCard({
         {title}
       </div>
       <div className="font-serif italic text-sm text-muted">{sub}</div>
-    </button>
+    </Link>
   );
 }
 

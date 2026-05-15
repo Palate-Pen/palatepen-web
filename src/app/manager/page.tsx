@@ -214,7 +214,7 @@ export default async function ManagerHomePage() {
       <section className="mt-12">
         <SectionHead
           title="Manager Surfaces"
-          meta={`${LIVE_TAB_COUNT} live · ${PENDING_TAB_COUNT} pending design`}
+          meta={`${LIVE_TAB_COUNT} live${PENDING_TAB_COUNT > 0 ? ` · ${PENDING_TAB_COUNT} pending design` : ''}`}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-rule border border-rule">
           {MANAGER_TABS.map((tab) => (
@@ -407,16 +407,16 @@ const MANAGER_TABS: Array<{
     name: 'Menu Builder',
     href: '/manager/menu-builder',
     status: 'live',
-    description: 'design + cost the menu',
+    description: 'design + cost the menu, planning view too',
   },
-  { name: 'Team', href: null, status: 'soon', description: 'brigade, rotas, permissions' },
-  { name: 'P&L', href: null, status: 'soon', description: 'GP, food cost, labour, waste' },
-  { name: 'Deliveries', href: null, status: 'soon', description: 'site-level intake oversight' },
-  { name: 'Suppliers', href: null, status: 'soon', description: 'reliability, terms, contracts' },
-  { name: 'Service Notes', href: null, status: 'soon', description: 'what went well, what didn’t' },
-  { name: 'Compliance', href: null, status: 'soon', description: 'HACCP, allergens, sign-offs' },
-  { name: 'Reports', href: null, status: 'soon', description: 'period reports, year-on-year' },
-  { name: 'Settings', href: null, status: 'soon', description: 'site preferences' },
+  { name: 'Team', href: '/manager/team', status: 'live', description: 'brigade, rotas, permissions' },
+  { name: 'P&L', href: '/manager/pl', status: 'live', description: 'GP, food cost, labour, waste' },
+  { name: 'Deliveries', href: '/manager/deliveries', status: 'live', description: 'site-level intake oversight' },
+  { name: 'Suppliers', href: '/manager/suppliers', status: 'live', description: 'reliability, terms, contracts' },
+  { name: 'Service Notes', href: '/manager/service-notes', status: 'live', description: 'what went well, what didn’t' },
+  { name: 'Compliance', href: '/manager/compliance', status: 'live', description: 'HACCP, allergens, sign-offs' },
+  { name: 'Reports', href: '/manager/reports', status: 'live', description: 'period reports, year-on-year' },
+  { name: 'Settings', href: '/manager/settings', status: 'live', description: 'site preferences' },
 ];
 
 const LIVE_TAB_COUNT = MANAGER_TABS.filter((t) => t.status === 'live').length;
