@@ -221,6 +221,7 @@ Payroll. HR. Accounting replacement. POS replacement. Generic ERP. Anything that
 Full strategy lives in:
 - `docs/strategy/palatable-way.md` — principles and brand voice
 - `docs/strategy/role-aware-surfaces.md` — chef / manager / owner surface design
+- `docs/strategy/role-hierarchy.svg` — visual reference: Founder → Owner → Manager → Chef + Bartender (peers). Data flows up, permissions flow down.
 - `docs/strategy/pre-launch-build-sequence.md` — 10–12 week pre-launch plan
 
 When in doubt about a product or UX decision, read these first.
