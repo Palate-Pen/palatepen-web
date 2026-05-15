@@ -12,6 +12,8 @@ import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { ScanSpecSheetDialog } from './ScanSpecSheetDialog';
 import { AutoCategoriseButton } from './AutoCategoriseButton';
+import { BankPrint } from './BankPrint';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'The Bank — Palatable' };
 
@@ -47,6 +49,7 @@ export default async function TheBankPage() {
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="print-hide">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5 flex items-center gap-3">
@@ -74,6 +77,7 @@ export default async function TheBankPage() {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          {rows.length > 0 && <PrintButton label="Print Bank list" />}
           <AutoCategoriseButton />
           <ScanSpecSheetDialog />
           <Link
@@ -143,6 +147,9 @@ export default async function TheBankPage() {
       )}
 
       <LookingAhead siteId={ctx.siteId} surface="stock-suppliers" />
+      </div>
+
+      <BankPrint rows={rows} kitchenName={ctx.kitchenName} />
     </div>
   );
 }

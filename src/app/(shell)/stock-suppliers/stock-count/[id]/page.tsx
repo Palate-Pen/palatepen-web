@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getStockTake } from '@/lib/stock-takes';
+import { getShellContext } from '@/lib/shell/context';
 import { StockCountSession } from '@/components/stock-count/StockCountSession';
 import { cancelStockCountAction } from '../actions';
+import { PrintButton } from '@/components/shell/PrintButton';
+import { StockCountPrint } from './StockCountPrint';
 
 export const metadata = { title: 'Stock Count Session — Palatable' };
 
@@ -24,11 +27,13 @@ export default async function ChefStockCountSessionPage({
   const justCompleted = sp?.completed === '1';
   const take = await getStockTake(id);
   if (!take) notFound();
+  const ctx = await getShellContext();
 
   const readOnly = take.status !== 'in_progress';
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1300px] mx-auto">
+      <div className="print-hide">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Stock & Suppliers · Count Session
       </div>
@@ -39,16 +44,27 @@ export default async function ChefStockCountSessionPage({
             {take.status === 'in_progress' ? 'In Progress' : take.status === 'completed' ? 'Completed' : 'Cancelled'}
           </em>
         </h1>
-        {take.status === 'in_progress' && (
-          <form action={cancelStockCountAction.bind(null, take.id)}>
-            <button
-              type="submit"
-              className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-4 py-2 bg-transparent text-muted border border-rule hover:border-urgent hover:text-urgent transition-colors"
-            >
-              Cancel count
-            </button>
-          </form>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {take.lines.length > 0 && (
+            <PrintButton
+              label={
+                take.status === 'in_progress'
+                  ? 'Print tick sheet'
+                  : 'Print summary'
+              }
+            />
+          )}
+          {take.status === 'in_progress' && (
+            <form action={cancelStockCountAction.bind(null, take.id)}>
+              <button
+                type="submit"
+                className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-4 py-2 bg-transparent text-muted border border-rule hover:border-urgent hover:text-urgent transition-colors"
+              >
+                Cancel count
+              </button>
+            </form>
+          )}
+        </div>
       </div>
       <p className="font-serif italic text-lg text-muted mt-1 mb-8">
         {subtitleFor(take, justCompleted)}
@@ -68,6 +84,9 @@ export default async function ChefStockCountSessionPage({
           ← Back to Stock Count
         </Link>
       </div>
+      </div>
+
+      <StockCountPrint take={take} kitchenName={ctx.kitchenName} />
     </div>
   );
 }
