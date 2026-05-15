@@ -52,7 +52,7 @@ export default async function NewSpecPage() {
         bankIngredients={bankIngredients}
         subRecipeOptions={subRecipeOptions}
         defaultDishType="cocktail"
-        redirectOnSave={(id) => `/bartender/specs/${id}`}
+        redirectBase="/bartender/specs"
         importLabel="Import a cocktail spec from a URL"
         importBody="Paste any cocktail recipe page — Diffords Guide, Imbibe, Punch, a blog. Haiku reads it and pre-fills the spec form below. Review the pour sizes and the glass before saving."
       />

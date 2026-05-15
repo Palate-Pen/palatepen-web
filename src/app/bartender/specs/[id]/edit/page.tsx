@@ -96,7 +96,7 @@ export default async function EditSpecPage({
         initial={initial}
         bankIngredients={bankIngredients}
         siteId={ctx.siteId}
-        redirectOnSave={(id) => `/bartender/specs/${id}`}
+        redirectBase="/bartender/specs"
       />
     </div>
   );

@@ -112,7 +112,7 @@ export function NewRecipeClient({
   bankIngredients,
   subRecipeOptions = [],
   defaultDishType = 'food',
-  redirectOnSave,
+  redirectBase,
   importLabel = 'Import from a URL',
   importBody = 'Paste any recipe page — Bon Appétit, NYT Cooking, BBC Good Food, your favourite blog. Haiku reads it and pre-fills the form below. Review every line before saving.',
 }: {
@@ -122,8 +122,8 @@ export function NewRecipeClient({
   subRecipeOptions?: SubRecipeOption[];
   /** Default dish type when no recipe imported. Bar passes 'cocktail'. */
   defaultDishType?: DishType;
-  /** Where to send the chef after a successful save. */
-  redirectOnSave?: (id: string) => string;
+  /** Base path the form redirects to after save, e.g. '/bartender/specs'. */
+  redirectBase?: string;
   /** Copy override for the import panel — bar uses "Import a cocktail spec". */
   importLabel?: string;
   importBody?: string;
@@ -227,7 +227,7 @@ export function NewRecipeClient({
         subRecipeOptions={subRecipeOptions}
         defaultDishType={defaultDishType}
         defaultSyncToBank={!!prefill}
-        redirectOnSave={redirectOnSave}
+        redirectBase={redirectBase}
       />
     </>
   );

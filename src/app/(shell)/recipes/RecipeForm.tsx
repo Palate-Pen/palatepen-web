@@ -103,7 +103,7 @@ export function RecipeForm({
   siteId,
   defaultDishType = 'food',
   defaultSyncToBank = false,
-  redirectOnSave,
+  redirectBase,
 }: {
   mode: 'create' | 'edit';
   recipeId?: string;
@@ -147,9 +147,11 @@ export function RecipeForm({
   /** When true, the "Sync new ingredients to Bank" toggle starts on.
    *  URL import flips this to true so chefs get the lazy path. */
   defaultSyncToBank?: boolean;
-  /** Where to send the chef after a successful save. Defaults to
-   *  /recipes/[id]; bar uses /bartender/specs/[id]. */
-  redirectOnSave?: (id: string) => string;
+  /** Base path for the post-save redirect. Defaults to '/recipes'; bar
+   *  passes '/bartender/specs'. Client appends `/${id}` at navigation
+   *  time. (Was a function, but Next 15 disallows passing functions
+   *  from Server → Client Components without "use server".) */
+  redirectBase?: string;
 }) {
   const router = useRouter();
   const [dishType, setDishType] = useState<DishType>(
@@ -354,9 +356,7 @@ export function RecipeForm({
         setError(humaniseError(res.error));
         return;
       }
-      const dest = redirectOnSave
-        ? redirectOnSave(res.id)
-        : `/recipes/${res.id}`;
+      const dest = `${redirectBase ?? '/recipes'}/${res.id}`;
       router.push(dest);
     });
   }
