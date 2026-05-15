@@ -4,6 +4,7 @@ import { getRecipes, type Recipe } from '@/lib/recipes';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { PrintButton } from '@/components/shell/PrintButton';
 import { BAR_DISH_TYPES, POUR_COST_BANDS } from '@/lib/bar';
 import { GPBenchmarkPanel } from '@/components/gp/GPBenchmarkPanel';
 
@@ -64,17 +65,22 @@ export default async function BarMarginsPage() {
   }
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
-      <div className="mb-8">
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-          The Pour-Cost Picture
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            The Pour-Cost Picture
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            <em className="text-gold font-semibold not-italic">Margins</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            {subtitleFor(withBands, urgentCount, attentionCount, drifting.length)}
+          </p>
         </div>
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-          <em className="text-gold font-semibold not-italic">Margins</em>
-        </h1>
-        <p className="font-serif italic text-lg text-muted">
-          {subtitleFor(withBands, urgentCount, attentionCount, drifting.length)}
-        </p>
+        <div className="print-hide">
+          {specs.length > 0 && <PrintButton label="Print bar margins" />}
+        </div>
       </div>
 
       {specs.length > 0 && (

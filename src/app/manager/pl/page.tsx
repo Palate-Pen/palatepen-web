@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getPeriodSummary } from '@/lib/oversight';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'P&L — Manager — Palatable' };
 
@@ -25,18 +26,25 @@ export default async function ManagerPLPage() {
   ]);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Site · The Money
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Site · The Money
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            <em className="text-gold font-semibold not-italic">P&L</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            The cost side is real — pulled from confirmed invoices + waste +
+            recipe COGS. Revenue side waits on POS integration. Period view
+            below shows where the money has gone.
+          </p>
+        </div>
+        <div className="print-hide">
+          <PrintButton label="Print P&L" />
+        </div>
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">P&L</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        The cost side is real — pulled from confirmed invoices + waste +
-        recipe COGS. Revenue side waits on POS integration. Period view
-        below shows where the money has gone.
-      </p>
 
       <SectionHead title="Last 30 Days" meta="confirmed invoices + waste" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
@@ -98,7 +106,7 @@ export default async function ManagerPLPage() {
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 print-hide">
         <Link
           href="/stock-suppliers/invoices"
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"

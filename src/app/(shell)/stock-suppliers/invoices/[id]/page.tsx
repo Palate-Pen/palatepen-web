@@ -9,6 +9,7 @@ import {
   getCreditNoteForInvoice,
   CREDIT_NOTE_STATUS_LABEL,
 } from '@/lib/credit-notes';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Invoice — Palatable' };
 
@@ -121,21 +122,28 @@ export default async function InvoiceDetailPage({
       : null;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Stock & Suppliers · Invoice
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Stock & Suppliers · Invoice
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            {supplierName ? supplierName : 'Invoice'}
+            {invoice.invoice_number && (
+              <span className="text-muted text-2xl ml-3 font-medium normal-case tracking-[0.02em]">
+                #{invoice.invoice_number}
+              </span>
+            )}
+          </h1>
+          <p className="font-serif italic text-lg text-muted mt-3">
+            {subtitleFor(invoice, lines.length, matchedCount, flaggedCount)}
+          </p>
+        </div>
+        <div className="print-hide">
+          <PrintButton label="Print invoice" />
+        </div>
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        {supplierName ? supplierName : 'Invoice'}
-        {invoice.invoice_number && (
-          <span className="text-muted text-2xl ml-3 font-medium normal-case tracking-[0.02em]">
-            #{invoice.invoice_number}
-          </span>
-        )}
-      </h1>
-      <p className="font-serif italic text-lg text-muted mt-3 mb-8">
-        {subtitleFor(invoice, lines.length, matchedCount, flaggedCount)}
-      </p>
 
       {justConfirmed && (
         <div className="mb-8 bg-card border border-l-4 border-l-healthy border-rule px-5 py-4">

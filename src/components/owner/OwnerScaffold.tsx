@@ -101,7 +101,7 @@ export function OwnerPageHeader({
         {subtitle}
       </p>
 
-      <nav className="flex gap-1 flex-wrap border-b border-rule pb-1 mb-10">
+      <nav className="flex gap-1 flex-wrap border-b border-rule pb-1 mb-10 print-hide">
         {OWNER_TABS.map((tab) => {
           const isActive = tab.slug === activeSlug;
           return (

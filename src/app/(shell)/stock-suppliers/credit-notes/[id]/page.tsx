@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getCreditNote, CREDIT_NOTE_STATUS_LABEL } from '@/lib/credit-notes';
 import { CreditNoteEditor } from './CreditNoteEditor';
 import { CreditNoteStateBar } from './CreditNoteStateBar';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Credit Note — Palatable' };
 
@@ -30,7 +31,7 @@ export default async function CreditNoteDetailPage({
   if (!cn) notFound();
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Stock & Suppliers · Credit Note
       </div>
@@ -39,8 +40,13 @@ export default async function CreditNoteDetailPage({
         <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
           {cn.supplier_name ?? 'Credit Note'}
         </h1>
-        <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted">
-          {cn.reference}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted">
+            {cn.reference}
+          </div>
+          <div className="print-hide">
+            <PrintButton label="Print credit note" />
+          </div>
         </div>
       </div>
 

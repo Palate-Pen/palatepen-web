@@ -14,6 +14,8 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { PrepStatusButton } from './PrepStatusButton';
 import { PrepNotesField } from './PrepNotesField';
 import { AddPrepItemDialog } from './AddPrepItemDialog';
+import { PrintButton } from '@/components/shell/PrintButton';
+import { PrepPrint } from '@/components/prep/PrepPrint';
 
 export const metadata = { title: 'Prep — Palatable' };
 
@@ -160,6 +162,7 @@ export default async function PrepPage({
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="print-hide">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -205,19 +208,22 @@ export default async function PrepPage({
           </p>
         </div>
 
-        <AddPrepItemDialog
-          prepDate={selectedIso}
-          recipes={recipeOptions}
-          knownStations={knownStations}
-          savedItems={savedItems.map((s) => ({
-            name: s.name,
-            station: s.station,
-            recipe_id: s.recipe_id,
-            qty: s.qty,
-            qty_unit: s.qty_unit,
-            last_prepped_on: s.last_prepped_on,
-          }))}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          {board.total_items > 0 && <PrintButton label="Print prep sheet" />}
+          <AddPrepItemDialog
+            prepDate={selectedIso}
+            recipes={recipeOptions}
+            knownStations={knownStations}
+            savedItems={savedItems.map((s) => ({
+              name: s.name,
+              station: s.station,
+              recipe_id: s.recipe_id,
+              qty: s.qty,
+              qty_unit: s.qty_unit,
+              last_prepped_on: s.last_prepped_on,
+            }))}
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 items-center mb-8 flex-wrap">
@@ -311,6 +317,13 @@ export default async function PrepPage({
       )}
 
       <LookingAhead siteId={ctx.siteId} surface="prep" />
+      </div>
+
+      <PrepPrint
+        board={board}
+        kitchenName={ctx.kitchenName}
+        surfaceLabel="Prep board"
+      />
     </div>
   );
 }

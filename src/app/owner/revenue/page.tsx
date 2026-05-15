@@ -5,6 +5,7 @@ import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { getPeriodSummary } from '@/lib/oversight';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Revenue — Owner — Palatable' };
 
@@ -46,13 +47,20 @@ export default async function OwnerRevenuePage() {
   const totalWaste = summaries.reduce((a, s) => a + s.waste_value, 0);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <OwnerPageHeader
-        eyebrow="The Money In"
-        title="Revenue"
-        subtitle="Where the income side stands. POS integration pending — the cost-side view below is the inverse picture, showing the rhythm of money out."
-        activeSlug="revenue"
-      />
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
+        <div className="flex-1 min-w-[280px]">
+          <OwnerPageHeader
+            eyebrow="The Money In"
+            title="Revenue"
+            subtitle="Where the income side stands. POS integration pending — the cost-side view below is the inverse picture, showing the rhythm of money out."
+            activeSlug="revenue"
+          />
+        </div>
+        <div className="print-hide pt-2">
+          <PrintButton label="Print revenue" />
+        </div>
+      </div>
 
       <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-6 mb-10">
         <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-2">

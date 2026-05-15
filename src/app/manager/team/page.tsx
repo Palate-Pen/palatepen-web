@@ -2,6 +2,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getTeam } from '@/lib/oversight';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { KpiCard } from '@/components/shell/KpiCard';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Team — Manager — Palatable' };
 
@@ -40,18 +41,25 @@ export default async function ManagerTeamPage() {
   const managers = team.filter((m) => m.role === 'manager').length;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Site · Brigade
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Site · Brigade
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            <em className="text-gold font-semibold not-italic">Team</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            {team.length === 0
+              ? 'No memberships on this site yet.'
+              : `${team.length} on the books — ${kitchen} kitchen, ${bar} bar, ${managers + owners} management.`}
+          </p>
+        </div>
+        <div className="print-hide">
+          {team.length > 0 && <PrintButton label="Print team list" />}
+        </div>
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">Team</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        {team.length === 0
-          ? 'No memberships on this site yet.'
-          : `${team.length} on the books — ${kitchen} kitchen, ${bar} bar, ${managers + owners} management.`}
-      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard label="Total" value={String(team.length)} sub="members" />

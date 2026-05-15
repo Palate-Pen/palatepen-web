@@ -5,6 +5,7 @@ import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { getMarginRollup } from '@/lib/oversight';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Margins — Owner — Palatable' };
 
@@ -53,13 +54,20 @@ export default async function OwnerMarginsPage() {
     .slice(0, 8);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <OwnerPageHeader
-        eyebrow="The Whole Menu, Across Every Site"
-        title="Margins"
-        subtitle="Group-wide dish performance. Where margins are slipping, where the kitchen is making money, where to look first."
-        activeSlug="margins"
-      />
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
+        <div className="flex-1 min-w-[280px]">
+          <OwnerPageHeader
+            eyebrow="The Whole Menu, Across Every Site"
+            title="Margins"
+            subtitle="Group-wide dish performance. Where margins are slipping, where the kitchen is making money, where to look first."
+            activeSlug="margins"
+          />
+        </div>
+        <div className="print-hide pt-2">
+          <PrintButton label="Print margins" />
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard
@@ -187,7 +195,7 @@ export default async function OwnerMarginsPage() {
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-8 print-hide">
         <Link
           href="/margins"
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"

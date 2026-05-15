@@ -5,6 +5,7 @@ import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { getSupplierLedger } from '@/lib/oversight';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Cash — Owner — Palatable' };
 
@@ -49,13 +50,20 @@ export default async function OwnerCashPage() {
       : 0;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <OwnerPageHeader
-        eyebrow="The Money In, The Money Out"
-        title="Cash"
-        subtitle="Supplier balance ledger across every site. Credit usage today; A/R + bank-feed integration land with the cash-flow build."
-        activeSlug="cash"
-      />
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
+        <div className="flex-1 min-w-[280px]">
+          <OwnerPageHeader
+            eyebrow="The Money In, The Money Out"
+            title="Cash"
+            subtitle="Supplier balance ledger across every site. Credit usage today; A/R + bank-feed integration land with the cash-flow build."
+            activeSlug="cash"
+          />
+        </div>
+        <div className="print-hide pt-2">
+          <PrintButton label="Print cash ledger" />
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard

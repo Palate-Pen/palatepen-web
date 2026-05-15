@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getInvoicesList, type InvoiceListRow } from '@/lib/invoices';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Invoices — Bar — Palatable' };
 
@@ -21,7 +22,7 @@ export default async function BarInvoicesPage() {
   const data = await getInvoicesList(ctx.siteId);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -33,6 +34,11 @@ export default async function BarInvoicesPage() {
           <p className="font-serif italic text-lg text-muted mt-3">
             Every invoice scanned, confirmed, flagged — across the whole site. The bar's share is in here.
           </p>
+        </div>
+        <div className="print-hide">
+          {(data.awaiting.length + data.recent.length) > 0 && (
+            <PrintButton label="Print invoice register" />
+          )}
         </div>
       </div>
 

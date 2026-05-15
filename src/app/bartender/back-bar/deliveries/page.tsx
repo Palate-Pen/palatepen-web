@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getDeliveries, type DeliveryRow } from '@/lib/deliveries';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Deliveries — Bar — Palatable' };
 
@@ -29,7 +30,7 @@ export default async function BarDeliveriesPage() {
   const allRows = [...data.today, ...data.upcoming, ...data.recent];
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -41,6 +42,9 @@ export default async function BarDeliveriesPage() {
           <p className="font-serif italic text-lg text-muted mt-3">
             Spirits, wine, beer, soft, ice — what's on the way and when.
           </p>
+        </div>
+        <div className="print-hide">
+          {allRows.length > 0 && <PrintButton label="Print delivery sheet" />}
         </div>
       </div>
 

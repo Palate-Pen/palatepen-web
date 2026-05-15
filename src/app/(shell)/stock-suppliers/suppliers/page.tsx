@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getSuppliers, type SupplierRow } from '@/lib/suppliers';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 import { AddSupplierDialog } from './AddSupplierDialog';
 
 export const metadata = { title: 'Suppliers — Palatable' };
@@ -25,7 +26,7 @@ export default async function SuppliersPage() {
   );
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -38,7 +39,10 @@ export default async function SuppliersPage() {
             {subtitle(data, lowReliability)}
           </p>
         </div>
-        <AddSupplierDialog />
+        <div className="flex items-center gap-3 flex-wrap print-hide">
+          {data.total_count > 0 && <PrintButton label="Print suppliers list" />}
+          <AddSupplierDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">

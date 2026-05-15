@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Mise — Bar — Palatable' };
 
@@ -71,17 +72,22 @@ export default async function BarMisePage() {
   const shortCount = todayItems.filter((i) => i.status === 'short').length;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <div className="mb-8">
-        <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-          Bar Prep
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Bar Prep
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            <em className="text-gold font-semibold not-italic">Mise</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            {subtitleFor(todayItems.length, doneCount, shortCount, tomorrowItems.length)}
+          </p>
         </div>
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-          <em className="text-gold font-semibold not-italic">Mise</em>
-        </h1>
-        <p className="font-serif italic text-lg text-muted">
-          {subtitleFor(todayItems.length, doneCount, shortCount, tomorrowItems.length)}
-        </p>
+        <div className="print-hide">
+          {todayItems.length > 0 && <PrintButton label="Print bar mise" />}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">

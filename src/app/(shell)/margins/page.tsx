@@ -14,6 +14,7 @@ import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { GPBenchmarkPanel } from '@/components/gp/GPBenchmarkPanel';
 import { FOOD_DISH_TYPES } from '@/lib/bar';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Margins — Palatable' };
 
@@ -47,7 +48,7 @@ export default async function MarginsPage() {
   const needsAttention = data.dishes_attention + data.dishes_urgent;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -62,13 +63,18 @@ export default async function MarginsPage() {
           </p>
         </div>
 
-        <div className="bg-card border border-rule px-5 py-4 min-w-[300px]">
-          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
-            Comparing
+        <div className="flex items-start gap-3 flex-wrap">
+          <div className="print-hide">
+            {data.dishes_total > 0 && <PrintButton label="Print margins" />}
           </div>
-          <div className="font-serif italic text-xs text-muted">
-            All dishes · live Bank prices · target{' '}
-            <strong className="not-italic font-semibold text-ink">{DEFAULT_GP_TARGET}%</strong>
+          <div className="bg-card border border-rule px-5 py-4 min-w-[300px]">
+            <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted mb-3">
+              Comparing
+            </div>
+            <div className="font-serif italic text-xs text-muted">
+              All dishes · live Bank prices · target{' '}
+              <strong className="not-italic font-semibold text-ink">{DEFAULT_GP_TARGET}%</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -114,7 +120,9 @@ export default async function MarginsPage() {
         />
       </div>
 
-      <LookingAhead siteId={ctx.siteId} surface="margins" />
+      <div className="print-hide">
+        <LookingAhead siteId={ctx.siteId} surface="margins" />
+      </div>
 
       <section className="mt-12">
         <SectionHead

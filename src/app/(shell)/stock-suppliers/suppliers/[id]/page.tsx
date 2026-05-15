@@ -8,6 +8,7 @@ import {
 } from '@/lib/suppliers';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 import { EditSupplierButton } from './EditSupplierButton';
 
 export const metadata = { title: 'Supplier — Palatable' };
@@ -52,7 +53,7 @@ export default async function SupplierDetailPage({
           : 'urgent';
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Stock & Suppliers · Suppliers
       </div>
@@ -60,21 +61,24 @@ export default async function SupplierDetailPage({
         <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
           {supplier.name}
         </h1>
-        <EditSupplierButton
-          supplier={{
-            id: supplier.id,
-            name: supplier.name,
-            contact_person: supplier.contact_person,
-            phone: supplier.phone,
-            email: supplier.email,
-            address: supplier.address,
-            website: supplier.website,
-            payment_terms: supplier.payment_terms,
-            credit_limit: supplier.credit_limit,
-            account_balance: supplier.account_balance,
-            notes_md: supplier.notes_md,
-          }}
-        />
+        <div className="flex items-center gap-3 flex-wrap print-hide">
+          <PrintButton label="Print supplier card" />
+          <EditSupplierButton
+            supplier={{
+              id: supplier.id,
+              name: supplier.name,
+              contact_person: supplier.contact_person,
+              phone: supplier.phone,
+              email: supplier.email,
+              address: supplier.address,
+              website: supplier.website,
+              payment_terms: supplier.payment_terms,
+              credit_limit: supplier.credit_limit,
+              account_balance: supplier.account_balance,
+              notes_md: supplier.notes_md,
+            }}
+          />
+        </div>
       </div>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
         {subtitle(supplier)}

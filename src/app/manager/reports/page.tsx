@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getPeriodSummary, getMarginRollup } from '@/lib/oversight';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Reports — Manager — Palatable' };
 
@@ -31,20 +32,27 @@ export default async function ManagerReportsPage({
   ]);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Site · Period Picture
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-8">
+        <div className="flex-1 min-w-[280px]">
+          <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+            Site · Period Picture
+          </div>
+          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+            <em className="text-gold font-semibold not-italic">Reports</em>
+          </h1>
+          <p className="font-serif italic text-lg text-muted">
+            Last {days} days of operational state — spend, waste, margin
+            drift. Export bundles for accountants land with the Phase 5
+            reporting build.
+          </p>
+        </div>
+        <div className="print-hide">
+          <PrintButton label="Print report" />
+        </div>
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">Reports</em>
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        Last {days} days of operational state — spend, waste, margin
-        drift. Export bundles for accountants land with the Phase 5
-        reporting build.
-      </p>
 
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center gap-2 mb-8 print-hide">
         {[7, 30, 90].map((d) => (
           <Link
             key={d}

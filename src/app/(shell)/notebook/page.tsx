@@ -5,6 +5,7 @@ import { getRecipes } from '@/lib/recipes';
 import { FOOD_DISH_TYPES } from '@/lib/bar';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { PrintButton } from '@/components/shell/PrintButton';
 import { AddNoteDialog, type RecipeOption } from './AddNoteDialog';
 import { CaptureSoonButton } from './CaptureSoonButton';
 import { NotebookFilters } from './NotebookFilters';
@@ -90,7 +91,7 @@ export default async function NotebookPage() {
   }));
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="flex justify-between items-start gap-8 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -107,7 +108,8 @@ export default async function NotebookPage() {
           </p>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap print-hide">
+          {data.entries.length > 0 && <PrintButton label="Print notebook" />}
           <CaptureSoonButton label="Voice" primary>
             <rect x="9" y="3" width="6" height="13" rx="3" />
             <path d="M5 11a7 7 0 0 0 14 0" />
