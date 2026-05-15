@@ -89,6 +89,16 @@ Complete. See docs/roadmap-archive.md for full checklist.
 ### Phase 5 — Intelligence Layer
 Complete. See docs/roadmap-archive.md for full checklist.
 
+### Phase — Safety Module (v1 wedge piece #4)
+
+Three-week build deferred — backlog. Full spec lives in [`docs/CLAUDE-CODE-SAFETY-HANDOFF.md`](docs/CLAUDE-CODE-SAFETY-HANDOFF.md). Note: that doc is written against a legacy folder layout (`mise/app/`, `venues`, `staff`) and must be adapted to v2 conventions (`web/src/`, `v2.sites`, `auth.users`, `v2.recipes`) when the build starts.
+
+- [ ] Week 1 — schema (8 `v2.safety_*` tables + `v2.menu_versions` audit trail + `accounts.safety_enabled` flag + RLS) + shared components (LiabilityFooter, FsaReferenceStrip, SafetyOnboardingModal, fsa-links lib) + sidebar route between Prep and Recipes + liability-ack onboarding gate
+- [ ] Week 2 — Safety home (opening checks grid + 12-week diary calendar) · Probe Reading (menu-version snapshot per reading) · Log an Issue (4 incident types + 14 UK allergen pills) · Cleaning Schedule (SFBB-aligned default tasks) · Training Records (cert expiry tracking + 30/14/7/0-day notifications)
+- [ ] Week 3 — HACCP Wizard (9 steps, FSA-default critical limits, react-pdf output) · EHO Visit (snapshot + live timer + 4-second 47-page export bundle)
+- [ ] Pricing: gate via `accounts.safety_enabled` boolean. £20/site/mo uplift via Stripe upsell webhook. Kitchen + Safety = £99/site/mo; Group + Safety = £149/site/mo
+- [ ] Legal: locked liability wording on every page, stronger urgent-red treatment on HACCP, ack required before entering Safety tab. Never softened.
+
 ### Mobile — Responsive Web Polish
 
 Near-term tweaks to the responsive web layout (≤768px). Distinct from the native iOS/Android effort below.
@@ -131,6 +141,7 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 - API key management in Settings (Kitchen+ tier feature).
 - Notebook captures pt 2 (voice/photo/sketch via Storage — task #50).
 - Manager and Owner pending tabs need mockups locked before scaffolding the rest.
+- **Safety module (v1 wedge piece #4)** — three-week build backlogged. Spec in `docs/CLAUDE-CODE-SAFETY-HANDOFF.md`; mockups land in `docs/strategy/mockups/` before Week 2. See new "Phase — Safety Module" in Roadmap above.
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.
 
