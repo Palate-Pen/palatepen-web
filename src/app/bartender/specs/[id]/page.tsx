@@ -9,6 +9,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
 import { getGPHistory } from '@/lib/gp-calculations';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Spec — Bar — Palatable' };
 
@@ -73,8 +74,8 @@ export default async function SpecDetailPage({
   const unmatched = spec.ingredients.length - spec.matched_ingredient_count;
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1100px] mx-auto">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5 print-hide">
         Specs · Detail
       </div>
       <div className="flex flex-col md:flex-row gap-6 md:items-start mb-3">
@@ -339,7 +340,7 @@ export default async function SpecDetailPage({
         </section>
       )}
 
-      <div className="flex items-center justify-between gap-3 mt-10 flex-wrap">
+      <div className="flex items-center justify-between gap-3 mt-10 flex-wrap print-hide">
         <Link
           href="/bartender/specs"
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
@@ -347,6 +348,7 @@ export default async function SpecDetailPage({
           ← Back to Specs
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
+          <PrintButton label="Print spec" />
           <GPCalculatorButton
             seed={gpSeed}
             targetGpPct={gpTarget}

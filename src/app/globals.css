@@ -89,3 +89,74 @@
     font-weight: 500;
   }
 }
+
+/* Print styles — recipe + spec detail pages print as a clean A4 card.
+   Browser native print dialog handles save-as-PDF.
+   Pages opt in by wrapping content in class="printable" + tagging chrome
+   with class="print-hide". */
+@media print {
+  aside,
+  header,
+  nav,
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+
+  main,
+  .printable {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    background: white !important;
+  }
+
+  .printable h1 {
+    font-size: 24pt;
+    margin-bottom: 8pt;
+    page-break-after: avoid;
+  }
+
+  .printable h2,
+  .printable h3 {
+    page-break-after: avoid;
+  }
+
+  .printable .bg-card,
+  .printable .bg-paper-warm {
+    background: white !important;
+    border: 1px solid #1a1612 !important;
+  }
+
+  .printable .text-gold,
+  .printable .text-gold-dark {
+    color: black !important;
+  }
+  .printable .border-gold,
+  .printable .border-l-gold,
+  .printable .border-rule-gold {
+    border-color: #1a1612 !important;
+  }
+  .printable .bg-gold-bg {
+    background: white !important;
+  }
+
+  .printable img {
+    max-height: 220pt !important;
+    object-fit: cover;
+    page-break-inside: avoid;
+  }
+
+  .printable section {
+    page-break-inside: avoid;
+  }
+
+  .sticky {
+    position: static !important;
+  }
+}

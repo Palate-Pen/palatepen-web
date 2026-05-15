@@ -12,6 +12,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
 import { getGPHistory } from '@/lib/gp-calculations';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Recipe — Palatable' };
 
@@ -78,8 +79,8 @@ export default async function RecipeDetailPage({
   );
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5 print-hide">
         Recipes · Detail
       </div>
       <div className="flex flex-col md:flex-row gap-6 md:items-start mb-3">
@@ -405,7 +406,7 @@ export default async function RecipeDetailPage({
         </section>
       )}
 
-      <div className="mt-10 flex items-center justify-between gap-3 flex-wrap">
+      <div className="mt-10 flex items-center justify-between gap-3 flex-wrap print-hide">
         <Link
           href="/recipes"
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
@@ -413,6 +414,7 @@ export default async function RecipeDetailPage({
           ← Back to Recipes
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
+          <PrintButton label="Print recipe" />
           <GPCalculatorButton
             seed={gpSeed}
             targetGpPct={gpTarget}

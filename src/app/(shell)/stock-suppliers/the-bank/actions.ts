@@ -196,6 +196,114 @@ export async function updateIngredientPrice(
   return { ok: true, id: input.ingredientId };
 }
 
+export type BulkCreateBankInput = {
+  rows: Array<{
+    name: string;
+    unit: string;
+    current_price: number | null;
+    supplier_name: string | null;
+    notes: string | null;
+  }>;
+  default_supplier_name?: string | null;
+};
+
+/**
+ * Bulk-create Bank entries from a scanned spec sheet. Matches each row's
+ * supplier_name (or default) to an existing v2.suppliers row case-
+ * insensitively; creates the supplier when none exists. Each ingredient
+ * gets an opening price-history row tagged source='imported' so the
+ * Bank sparkline has a real starting point.
+ */
+export async function bulkCreateBankFromSpecAction(
+  input: BulkCreateBankInput,
+): Promise<{ ok: true; created: number } | { ok: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/signin');
+
+  const { data: memberships } = await supabase
+    .from('memberships')
+    .select('site_id')
+    .eq('user_id', user.id)
+    .limit(1);
+  const siteId = memberships?.[0]?.site_id as string | undefined;
+  if (!siteId) return { ok: false, error: 'no_membership' };
+
+  // Resolve supplier names — lookup-or-create on first sight
+  const supplierIdByName = new Map<string, string>();
+  const allSupplierNames = new Set<string>();
+  for (const r of input.rows) {
+    const name = (r.supplier_name ?? input.default_supplier_name ?? '').trim();
+    if (name) allSupplierNames.add(name);
+  }
+  if (allSupplierNames.size > 0) {
+    const { data: existing } = await supabase
+      .from('suppliers')
+      .select('id, name')
+      .eq('site_id', siteId);
+    const byLower = new Map<string, string>();
+    for (const s of existing ?? []) {
+      byLower.set((s.name as string).toLowerCase(), s.id as string);
+    }
+    for (const name of allSupplierNames) {
+      const hit = byLower.get(name.toLowerCase());
+      if (hit) {
+        supplierIdByName.set(name, hit);
+      } else {
+        const { data: created } = await supabase
+          .from('suppliers')
+          .insert({ site_id: siteId, name })
+          .select('id')
+          .single();
+        if (created) supplierIdByName.set(name, created.id as string);
+      }
+    }
+  }
+
+  const now = new Date().toISOString();
+  const ingredientPayload = input.rows
+    .filter((r) => r.name.trim() !== '')
+    .map((r) => ({
+      site_id: siteId,
+      supplier_id:
+        supplierIdByName.get(
+          (r.supplier_name ?? input.default_supplier_name ?? '').trim(),
+        ) ?? null,
+      name: r.name.trim(),
+      unit: r.unit.trim(),
+      current_price: r.current_price,
+      last_seen_at: r.current_price != null ? now : null,
+      spec: r.notes?.trim() || null,
+    }));
+
+  const { data: createdIngs, error } = await supabase
+    .from('ingredients')
+    .insert(ingredientPayload)
+    .select('id, current_price');
+  if (error) return { ok: false, error: error.message };
+
+  // Opening price-history rows for ingredients that had a price
+  const histPayload = (createdIngs ?? [])
+    .filter((i) => i.current_price != null)
+    .map((i) => ({
+      ingredient_id: i.id as string,
+      price: Number(i.current_price),
+      source: 'imported' as const,
+      recorded_at: now,
+      notes: 'Spec sheet scan',
+    }));
+  if (histPayload.length > 0) {
+    await supabase.from('ingredient_price_history').insert(histPayload);
+  }
+
+  revalidatePath('/stock-suppliers/the-bank');
+  revalidatePath('/stock-suppliers');
+  revalidatePath('/stock-suppliers/suppliers');
+  return { ok: true, created: createdIngs?.length ?? 0 };
+}
+
 export type ParLevelInput = {
   ingredientId: string;
   parLevel: number | null;

@@ -10,6 +10,7 @@ import {
 } from '@/lib/bank';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
+import { ScanSpecSheetDialog } from './ScanSpecSheetDialog';
 
 export const metadata = { title: 'The Bank — Palatable' };
 
@@ -71,12 +72,15 @@ export default async function TheBankPage() {
             )}
           </p>
         </div>
-        <Link
-          href="/stock-suppliers/the-bank/new"
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
-        >
-          + Add ingredient
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          <ScanSpecSheetDialog />
+          <Link
+            href="/stock-suppliers/the-bank/new"
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+          >
+            + Add ingredient
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
