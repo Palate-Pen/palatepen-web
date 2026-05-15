@@ -135,7 +135,7 @@ export default function MenuBuilderClient() {
   return (
     <div className="bg-paper">
       {/* Top context bar */}
-      <div className="bg-paper-warm border-b border-rule px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-20 flex-wrap">
+      <div className="print-hide bg-paper-warm border-b border-rule px-8 py-4 flex items-center justify-between gap-6 sticky top-0 z-20 flex-wrap">
         <div className="flex items-center gap-4 min-w-0">
           <input
             value={menuName}
@@ -181,6 +181,7 @@ export default function MenuBuilderClient() {
           <ActionBtn label="Preview" />
           <ActionBtn
             label="Print"
+            onClick={() => window.print()}
             icon={
               <>
                 <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z" />
@@ -505,13 +506,17 @@ function ActionBtn({
   label,
   icon,
   primary,
+  onClick,
 }: {
   label: string;
   icon?: React.ReactNode;
   primary?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
+      type="button"
+      onClick={onClick}
       className={
         'font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-4 py-2.5 border transition-colors inline-flex items-center gap-1.5 ' +
         (primary

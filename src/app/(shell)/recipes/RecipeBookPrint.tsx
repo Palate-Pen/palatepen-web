@@ -21,10 +21,14 @@ export function RecipeBookPrint({
   recipes,
   kitchenName,
   filterLabel,
+  bookLabel = 'Recipe book',
 }: {
   recipes: Recipe[];
   kitchenName: string;
   filterLabel: string | null;
+  /** Subtitle below the kitchen name on the cover page. Defaults to
+   *  "Recipe book"; the bar shell passes "Drinks book" for specs. */
+  bookLabel?: string;
 }) {
   const generated = dateFmt.format(new Date());
 
@@ -42,7 +46,7 @@ export function RecipeBookPrint({
               marginBottom: '24pt',
             }}
           >
-            Recipe book{filterLabel ? ` · ${filterLabel}` : ''}
+            {bookLabel}{filterLabel ? ` · ${filterLabel}` : ''}
           </p>
           <p style={{ fontSize: '10pt', color: '#444' }}>
             {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'} · generated {generated}

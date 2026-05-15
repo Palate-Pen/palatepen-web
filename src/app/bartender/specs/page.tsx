@@ -5,6 +5,8 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { TagCloud, buildTagCloud } from '@/components/shell/TagCloud';
 import { BAR_DISH_TYPES, POUR_COST_BANDS } from '@/lib/bar';
+import { PrintButton } from '@/components/shell/PrintButton';
+import { RecipeBookPrint } from '@/app/(shell)/recipes/RecipeBookPrint';
 
 export const metadata = { title: 'Specs — Bar — Palatable' };
 
@@ -55,6 +57,7 @@ export default async function BarSpecsPage({
 
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="print-hide">
       <div className="flex justify-between items-start gap-6 flex-wrap mb-8">
         <div className="flex-1 min-w-[280px]">
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -73,12 +76,19 @@ export default async function BarSpecsPage({
             )}
           </p>
         </div>
-        <Link
-          href="/bartender/specs/new"
-          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
-        >
-          + Add spec
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          {specs.length > 0 && (
+            <PrintButton
+              label={activeTag ? `Print ${activeTag} book` : 'Print spec book'}
+            />
+          )}
+          <Link
+            href="/bartender/specs/new"
+            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
+          >
+            + Add spec
+          </Link>
+        </div>
       </div>
 
       {specs.length > 0 && (
@@ -143,6 +153,14 @@ export default async function BarSpecsPage({
       )}
 
       <LookingAhead siteId={ctx.siteId} surface="specs" />
+      </div>
+
+      <RecipeBookPrint
+        recipes={specs}
+        kitchenName={ctx.kitchenName}
+        bookLabel="Drinks book"
+        filterLabel={activeTag ? `Tagged "${activeTag}"` : null}
+      />
     </div>
   );
 }
