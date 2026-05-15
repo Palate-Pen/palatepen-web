@@ -50,6 +50,20 @@ export const OWNER_TABS: Array<{
     status: 'live',
   },
   {
+    slug: 'transfers',
+    href: '/owner/transfers',
+    name: 'Transfers',
+    description: 'Stock on the move · intra-site + cross-site movement log',
+    status: 'live',
+  },
+  {
+    slug: 'alerts',
+    href: '/owner/alerts',
+    name: 'Alerts',
+    description: 'Group-wide forward signals · attention across every site',
+    status: 'live',
+  },
+  {
     slug: 'reports',
     href: '/owner/reports',
     name: 'Reports',

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getManagerHomeData } from '@/lib/manager-home';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
@@ -16,14 +17,69 @@ const gbp = new Intl.NumberFormat('en-GB', {
 
 export default async function OwnerHomePage() {
   const ctx = await getShellContext();
-  // First-pass owner home: jack@ has one site, so we lean on
-  // manager-home data and re-frame it through the business-pulse lens.
-  // When real multi-site owners onboard, this resolves to a cross-site
-  // rollup that fans across every site the owner has membership on.
-  const data = await getManagerHomeData(ctx.siteId);
+
+  // Fan across every site this owner has membership on so KPIs aggregate
+  // the group, not just the chef's primary site.
+  const supabase = await createSupabaseServerClient();
+  const { data: ownerMemberships } = await supabase
+    .from('memberships')
+    .select('site_id, sites:site_id (name)')
+    .eq('user_id', ctx.userId)
+    .eq('role', 'owner');
+  const ownedSites = (ownerMemberships ?? []) as unknown as Array<{
+    site_id: string;
+    sites: { name: string | null } | null;
+  }>;
+
+  // Fallback to the primary site if no owner memberships (shouldn't happen
+  // in this shell — gated above — but keeps the page resilient).
+  const siteIdsToRoll =
+    ownedSites.length > 0
+      ? ownedSites.map((s) => s.site_id)
+      : [ctx.siteId];
+
+  const perSite = await Promise.all(
+    siteIdsToRoll.map((id) =>
+      getManagerHomeData(id).then((d) => ({ siteId: id, data: d })),
+    ),
+  );
+
+  // Roll up the cross-site totals
+  const data = perSite.reduce<ReturnType<typeof emptyRollup>>((acc, p) => {
+    acc.food_cost_7d += p.data.food_cost_7d;
+    acc.food_cost_count += p.data.food_cost_count;
+    acc.outstanding_invoices_value += p.data.outstanding_invoices_value;
+    acc.outstanding_invoices_count += p.data.outstanding_invoices_count;
+    acc.waste_7d_value += p.data.waste_7d_value;
+    acc.waste_7d_count += p.data.waste_7d_count;
+    acc.prep_board.total_items += p.data.prep_board.total_items;
+    acc.prep_board.done += p.data.prep_board.done;
+    // Take the busiest supplier across the group for the headline tile
+    if (p.data.supplier_spend_90d.length > 0) {
+      const top = p.data.supplier_spend_90d[0];
+      if (top.total > acc._topSupplierTotal) {
+        acc._topSupplierTotal = top.total;
+        acc.top_supplier_name = top.supplier_name;
+        acc.top_supplier_pct = top.pct;
+      }
+    }
+    if (p.data.top_margin_dishes.length > 0) {
+      const d = p.data.top_margin_dishes[0];
+      if (d.gp_pct > acc._topMarginPct) {
+        acc._topMarginPct = d.gp_pct;
+        acc.top_margin_name = d.name;
+        acc.top_margin_pct = d.gp_pct;
+      }
+    }
+    if (p.data.waste_by_category_90d.length > 0) {
+      acc.waste_top_category = p.data.waste_by_category_90d[0].category;
+    }
+    return acc;
+  }, emptyRollup());
 
   const foodCostPct =
     data.food_cost_7d > 0 ? estimateFoodCostPct(data.food_cost_7d) : null;
+  const siteCount = ownedSites.length || 1;
 
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
@@ -53,8 +109,8 @@ export default async function OwnerHomePage() {
         />
         <KpiCard
           label="Sites"
-          value="1"
-          sub="single-site mode"
+          value={String(siteCount)}
+          sub={siteCount === 1 ? 'single-site mode' : 'group rollup'}
         />
         <KpiCard
           label="Food Cost %"
@@ -77,15 +133,11 @@ export default async function OwnerHomePage() {
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <BusinessTile
-            title="Suppliers"
-            value={
-              data.supplier_spend_90d.length > 0
-                ? data.supplier_spend_90d[0].supplier_name
-                : '—'
-            }
+            title="Top Supplier"
+            value={data.top_supplier_name ?? '—'}
             sub={
-              data.supplier_spend_90d.length > 0
-                ? `${data.supplier_spend_90d[0].pct.toFixed(0)}% of 90-day spend`
+              data.top_supplier_name
+                ? `${data.top_supplier_pct.toFixed(0)}% of 90-day spend`
                 : 'no confirmed invoices yet'
             }
             href="/owner/suppliers"
@@ -98,8 +150,8 @@ export default async function OwnerHomePage() {
                 : '£0'
             }
             sub={
-              data.waste_by_category_90d.length > 0
-                ? `top: ${data.waste_by_category_90d[0].category}`
+              data.waste_top_category
+                ? `top: ${data.waste_top_category}`
                 : 'nothing logged'
             }
             href="/owner/sites"
@@ -107,15 +159,11 @@ export default async function OwnerHomePage() {
           <BusinessTile
             title="Top Margin"
             value={
-              data.top_margin_dishes.length > 0
-                ? `${data.top_margin_dishes[0].gp_pct.toFixed(0)}%`
+              data.top_margin_name
+                ? `${data.top_margin_pct.toFixed(0)}%`
                 : '—'
             }
-            sub={
-              data.top_margin_dishes.length > 0
-                ? data.top_margin_dishes[0].name
-                : 'no costed dishes yet'
-            }
+            sub={data.top_margin_name ?? 'no costed dishes yet'}
             href="/owner/margins"
           />
         </div>
@@ -124,28 +172,43 @@ export default async function OwnerHomePage() {
       <section className="mt-12">
         <SectionHead
           title="Sites"
-          meta="single-site for now · multi-site rollup once a second site lands"
+          meta={
+            siteCount === 1
+              ? 'single-site for now'
+              : `${siteCount} sites in the group`
+          }
         />
-        <div className="bg-card border border-rule px-7 py-7 flex justify-between items-center flex-wrap gap-4">
-          <div>
-            <div className="font-serif font-semibold text-xl text-ink">
-              {ctx.kitchenName}
-            </div>
-            <p className="font-serif italic text-sm text-muted mt-1">
-              {data.prep_board.total_items > 0
-                ? `${data.prep_board.done}/${data.prep_board.total_items} prep done · `
-                : ''}
-              {data.outstanding_invoices_count > 0
-                ? `${data.outstanding_invoices_count} invoices pending`
-                : 'caught up'}
-            </p>
-          </div>
-          <Link
-            href="/manager"
-            className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-transparent text-gold border border-gold hover:bg-gold hover:text-paper transition-colors"
-          >
-            Open Manager view →
-          </Link>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {perSite.map((p) => {
+            const site = ownedSites.find((s) => s.site_id === p.siteId);
+            const name = site?.sites?.name ?? 'Site';
+            return (
+              <div
+                key={p.siteId}
+                className="bg-card border border-rule px-7 py-7 flex justify-between items-center flex-wrap gap-4"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-serif font-semibold text-xl text-ink">
+                    {name}
+                  </div>
+                  <p className="font-serif italic text-sm text-muted mt-1">
+                    {p.data.prep_board.total_items > 0
+                      ? `${p.data.prep_board.done}/${p.data.prep_board.total_items} prep done · `
+                      : ''}
+                    {p.data.outstanding_invoices_count > 0
+                      ? `${p.data.outstanding_invoices_count} invoices pending`
+                      : 'caught up'}
+                  </p>
+                </div>
+                <Link
+                  href="/owner/sites"
+                  className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-transparent text-gold border border-gold hover:bg-gold hover:text-paper transition-colors"
+                >
+                  Drill in →
+                </Link>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -154,7 +217,26 @@ export default async function OwnerHomePage() {
   );
 }
 
-function subtitle(data: Awaited<ReturnType<typeof getManagerHomeData>>): string {
+function emptyRollup() {
+  return {
+    food_cost_7d: 0,
+    food_cost_count: 0,
+    outstanding_invoices_value: 0,
+    outstanding_invoices_count: 0,
+    waste_7d_value: 0,
+    waste_7d_count: 0,
+    prep_board: { total_items: 0, done: 0 },
+    top_supplier_name: null as string | null,
+    top_supplier_pct: 0,
+    _topSupplierTotal: 0,
+    top_margin_name: null as string | null,
+    top_margin_pct: 0,
+    _topMarginPct: 0,
+    waste_top_category: null as string | null,
+  };
+}
+
+function subtitle(data: ReturnType<typeof emptyRollup>): string {
   if (
     data.outstanding_invoices_count === 0 &&
     data.waste_7d_value < 100 &&

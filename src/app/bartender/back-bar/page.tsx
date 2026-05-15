@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getCellarRows } from '@/lib/cellar';
+import { countOpenTransfers } from '@/lib/stock-transfers';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { KpiCard } from '@/components/shell/KpiCard';
@@ -29,6 +30,7 @@ export default async function BackBarHubPage() {
     pendingInvoices,
     spillageLast30d,
     lastStockTake,
+    transferCounts,
   ] = await Promise.all([
     getCellarRows(ctx.siteId),
     supabase
@@ -61,6 +63,7 @@ export default async function BackBarHubPage() {
       .order('conducted_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    countOpenTransfers(ctx.siteId),
   ]);
 
   const breachCount = cellar.filter((r) => r.par_status === 'breach').length;
@@ -307,6 +310,45 @@ export default async function BackBarHubPage() {
             />
             <StateRow label="Logged entries" value="see Spillage" />
             <StateRow label="Pattern alerts" value="see Inbox" />
+          </DestinationCard>
+
+          <DestinationCard
+            name="Transfers"
+            tagline="move stock to/from kitchen, other sites"
+            href="/bartender/back-bar/transfers"
+            iconPath={
+              <>
+                <path d="M3 12h13" />
+                <path d="M12 6l6 6-6 6" />
+                <path d="M21 6v12" />
+              </>
+            }
+            linkLabel="Open Transfers →"
+            linkMeta={
+              transferCounts.outbound_in_transit + transferCounts.inbound_awaiting > 0
+                ? `${transferCounts.outbound_in_transit + transferCounts.inbound_awaiting} in flight`
+                : 'nothing in flight'
+            }
+          >
+            <StateRow
+              label="Outbound"
+              value={
+                transferCounts.outbound_in_transit > 0
+                  ? `${transferCounts.outbound_in_transit} in transit`
+                  : '—'
+              }
+              tone={transferCounts.outbound_in_transit > 0 ? 'attention' : undefined}
+            />
+            <StateRow
+              label="Inbound"
+              value={
+                transferCounts.inbound_awaiting > 0
+                  ? `${transferCounts.inbound_awaiting} awaiting receive`
+                  : '—'
+              }
+              tone={transferCounts.inbound_awaiting > 0 ? 'attention' : undefined}
+            />
+            <StateRow label="Across" value="bar · kitchen · sites" />
           </DestinationCard>
 
           <DestinationCard

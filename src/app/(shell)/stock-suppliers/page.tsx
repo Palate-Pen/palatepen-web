@@ -14,6 +14,7 @@ import {
   countOpenPurchaseOrders,
   getReorderSuggestionsBySupplier,
 } from '@/lib/purchase-orders';
+import { countOpenTransfers } from '@/lib/stock-transfers';
 
 export const metadata = { title: 'The Walk-in — Palatable' };
 
@@ -30,13 +31,14 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 
 export default async function StockSuppliersPage() {
   const ctx = await getShellContext();
-  const [summary, bank, creditNotesInFlight, openPOs, reorderSuggestions] =
+  const [summary, bank, creditNotesInFlight, openPOs, reorderSuggestions, transferCounts] =
     await Promise.all([
       getHubSummary(ctx.siteId),
       getBankSummary(ctx.siteId),
       countDraftCreditNotes(ctx.siteId),
       countOpenPurchaseOrders(ctx.siteId),
       getReorderSuggestionsBySupplier(ctx.siteId),
+      countOpenTransfers(ctx.siteId),
     ]);
   const breachItemCount = reorderSuggestions.reduce(
     (s, x) => s + x.rows.length,
@@ -393,6 +395,45 @@ export default async function StockSuppliersPage() {
             <StateRow label="Cadence" value="weekly" />
             <StateRow label="Updates" value="current_stock on every line" />
             <StateRow label="Variance" value="surfaced in £" />
+          </DestinationCard>
+
+          <DestinationCard
+            name="Transfers"
+            tagline="move stock between kitchen, bar, and sites"
+            href="/stock-suppliers/transfers"
+            iconPath={
+              <>
+                <path d="M3 12h13" />
+                <path d="M12 6l6 6-6 6" />
+                <path d="M21 6v12" />
+              </>
+            }
+            linkLabel="Open Transfers →"
+            linkMeta={
+              transferCounts.outbound_in_transit + transferCounts.inbound_awaiting > 0
+                ? `${transferCounts.outbound_in_transit + transferCounts.inbound_awaiting} in flight`
+                : 'nothing in flight'
+            }
+          >
+            <StateRow
+              label="Outbound"
+              value={
+                transferCounts.outbound_in_transit > 0
+                  ? `${transferCounts.outbound_in_transit} in transit`
+                  : '—'
+              }
+              tone={transferCounts.outbound_in_transit > 0 ? 'attention' : undefined}
+            />
+            <StateRow
+              label="Inbound"
+              value={
+                transferCounts.inbound_awaiting > 0
+                  ? `${transferCounts.inbound_awaiting} awaiting receive`
+                  : '—'
+              }
+              tone={transferCounts.inbound_awaiting > 0 ? 'attention' : undefined}
+            />
+            <StateRow label="Across" value="kitchen · bar · sites" />
           </DestinationCard>
 
           <DestinationCard

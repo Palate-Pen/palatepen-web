@@ -84,12 +84,16 @@ export const OWNER_SECTIONS: NavSection[] = [
       { href: '/owner/margins', label: 'Margins', icon: 'margins' },
       { href: '/owner/suppliers', label: 'Suppliers', icon: 'suppliers' },
       { href: '/owner/cash', label: 'Cash', icon: 'cash' },
+      { href: '/owner/transfers', label: 'Transfers', icon: 'prep' },
       { href: '/owner/reports', label: 'Reports', icon: 'reports' },
     ],
   },
   {
     label: 'Intelligence',
-    items: [{ href: '/owner/inbox', label: 'Inbox', icon: 'inbox' }],
+    items: [
+      { href: '/owner/alerts', label: 'Alerts', icon: 'inbox' },
+      { href: '/owner/inbox', label: 'Inbox', icon: 'inbox' },
+    ],
   },
 ];
 
