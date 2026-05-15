@@ -48,17 +48,14 @@ const timeFmt = new Intl.DateTimeFormat('en-GB', {
   hour12: false,
 });
 
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+// Local-date helpers (Europe/London) — anchor the calendar to the user's
+// wall clock, not UTC. See src/lib/dates.ts for the why.
+import { isoDateLocal, todayIso, addDaysIso, diffDaysIso } from '@/lib/dates';
 
-function parseDateParam(raw: string | undefined): Date {
-  if (!raw) return new Date();
-  // Accept YYYY-MM-DD only; everything else falls back to today.
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return new Date();
-  const d = new Date(`${raw}T00:00:00Z`);
-  if (Number.isNaN(d.getTime())) return new Date();
-  return d;
+function parseDateParam(raw: string | undefined): string {
+  if (!raw) return todayIso();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return todayIso();
+  return raw;
 }
 
 /**
@@ -70,7 +67,7 @@ function parseDateParam(raw: string | undefined): Date {
  */
 function rollingDays(
   selectedIso: string,
-  realToday: Date,
+  realTodayIso: string,
 ): {
   label: string;
   date: Date;
@@ -78,9 +75,6 @@ function rollingDays(
   selected: boolean;
   isToday: boolean;
 }[] {
-  const realTodayIso = isoDate(realToday);
-  const center = new Date(`${selectedIso}T00:00:00Z`);
-  const days: typeof out = [];
   const out: {
     label: string;
     date: Date;
@@ -90,27 +84,28 @@ function rollingDays(
   }[] = [];
   // 2 days before, selected, 2 days after — five-day window
   for (let offset = -2; offset <= 2; offset++) {
-    const d = new Date(center);
-    d.setUTCDate(d.getUTCDate() + offset);
-    const iso = isoDate(d);
-    const dayDiffFromToday = Math.round(
-      (d.getTime() - realToday.getTime()) / 86400_000,
-    );
+    const iso = addDaysIso(selectedIso, offset);
+    const dayDiffFromToday = diffDaysIso(iso, realTodayIso);
     let label: string;
     if (dayDiffFromToday === 0) label = 'Today';
     else if (dayDiffFromToday === -1) label = 'Yesterday';
     else if (dayDiffFromToday === 1) label = 'Tomorrow';
-    else
-      label = d.toLocaleDateString('en-GB', { weekday: 'long' });
+    else {
+      // Use UTC midnight purely to derive the weekday name — both sides
+      // are anchored to the same calendar day so the weekday is correct
+      // regardless of viewer timezone.
+      label = new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', {
+        weekday: 'long',
+      });
+    }
     out.push({
       label,
-      date: d,
+      date: new Date(`${iso}T12:00:00Z`),
       iso,
       selected: iso === selectedIso,
       isToday: iso === realTodayIso,
     });
   }
-  void days;
   return out;
 }
 
@@ -126,10 +121,8 @@ export default async function PrepPage({
 }) {
   const ctx = await getShellContext();
   const sp = searchParams ? await searchParams : {};
-  const realToday = new Date();
-  const selectedDate = parseDateParam(sp?.date);
-  const selectedIso = isoDate(selectedDate);
-  const realTodayIso = isoDate(realToday);
+  const realTodayIso = todayIso();
+  const selectedIso = parseDateParam(sp?.date);
 
   const [board, recipes, savedItems] = await Promise.all([
     getPrepBoard(ctx.siteId, selectedIso),
@@ -137,17 +130,16 @@ export default async function PrepPage({
     getSavedPrepItems(ctx.siteId, selectedIso, 30),
   ]);
 
-  const days = rollingDays(selectedIso, realToday);
+  const days = rollingDays(selectedIso, realTodayIso);
   const stationCount = board.stations.length;
   const recipeOptions = recipes.map((r) => ({ id: r.id, name: r.name }));
   const knownStations = board.stations.map((s) => s.name);
 
-  const prevIso = isoDate(
-    new Date(new Date(`${selectedIso}T00:00:00Z`).getTime() - 86400_000),
-  );
-  const nextIso = isoDate(
-    new Date(new Date(`${selectedIso}T00:00:00Z`).getTime() + 86400_000),
-  );
+  const prevIso = addDaysIso(selectedIso, -1);
+  const nextIso = addDaysIso(selectedIso, 1);
+  // For headers / "Prep on Tue 14 May" formatting — anchor to noon UTC
+  // so the day label is correct regardless of viewer timezone.
+  const selectedDate = new Date(`${selectedIso}T12:00:00Z`);
   const isFuture = selectedIso > realTodayIso;
   const isPast = selectedIso < realTodayIso;
 
