@@ -52,7 +52,7 @@ export function DataExportPanel() {
                 {d.sub}
               </div>
             </div>
-            <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold whitespace-nowrap">
+            <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold whitespace-nowrap">
               Download CSV →
             </span>
           </div>

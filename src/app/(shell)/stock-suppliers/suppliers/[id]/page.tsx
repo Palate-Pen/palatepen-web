@@ -208,7 +208,7 @@ export default async function SupplierDetailPage({
             </div>
             {supplier.notes_md && (
               <div className="px-7 py-5 border-t border-rule bg-paper-warm/50">
-                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+                <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
                   Notes
                 </div>
                 <p className="font-serif italic text-base text-ink-soft leading-relaxed whitespace-pre-line">
@@ -238,7 +238,7 @@ export default async function SupplierDetailPage({
                 <Link
                   key={ing.id}
                   href={`/stock-suppliers/the-bank/${ing.id}`}
-                  className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border border-rule bg-paper-warm text-ink-soft hover:border-gold hover:text-gold transition-colors"
+                  className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 border border-rule bg-paper-warm text-ink-soft hover:border-gold hover:text-gold transition-colors"
                 >
                   {ing.name}
                 </Link>
@@ -470,7 +470,7 @@ function ContactRow({
   if (!value) {
     return (
       <div className="flex items-baseline justify-between gap-3 py-1.5">
-        <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted-soft">
+        <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted-soft">
           {label}
         </span>
         <span className="font-serif italic text-xs text-muted-soft">—</span>
@@ -490,7 +490,7 @@ function ContactRow({
         ' py-1.5'
       }
     >
-      <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+      <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
         {label}
       </span>
       {href ? (
@@ -522,7 +522,7 @@ function CreditBar({ used, limit }: { used: number; limit: number }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1">
-        <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+        <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
           Credit used
         </span>
         <span className="font-serif font-semibold text-xs text-ink">
@@ -562,7 +562,7 @@ function SourceBadge({ source }: { source: string }) {
   return (
     <span
       className={
-        'inline-flex items-center px-2 py-0.5 border font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm ' +
+        'inline-flex items-center px-2 py-0.5 border font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm ' +
         m.classes
       }
     >
@@ -601,7 +601,7 @@ function StatusPill({
   const { label, classes } = map[status];
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm ${classes}`}
+      className={`inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm ${classes}`}
     >
       {label}
     </span>

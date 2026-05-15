@@ -249,7 +249,7 @@ export function Topbar({
         <div className="hidden md:flex items-center gap-2 relative">
           {isFounder ? (
             <span
-              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border bg-gold-bg text-gold-dark border-gold/40"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 border bg-gold-bg text-gold-dark border-gold/40"
               title="Founder demo account · zero cost · not billable"
             >
               Founder
@@ -257,7 +257,7 @@ export function Topbar({
           ) : (
             <Link
               href="/settings#tier"
-              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border bg-paper-warm text-ink-soft border-rule hover:border-gold hover:text-gold transition-colors"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 border bg-paper-warm text-ink-soft border-rule hover:border-gold hover:text-gold transition-colors"
               title={`${tierLabel(tier)} tier · click to manage`}
             >
               {tierLabel(tier)}
@@ -270,7 +270,7 @@ export function Topbar({
               type="button"
               onClick={() => setViewMenuOpen((v) => !v)}
               onBlur={() => setTimeout(() => setViewMenuOpen(false), 120)}
-              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-ink text-paper hover:bg-ink-soft transition-colors inline-flex items-center gap-1"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 bg-ink text-paper hover:bg-ink-soft transition-colors inline-flex items-center gap-1"
               title="Switch surface"
               aria-haspopup="menu"
               aria-expanded={viewMenuOpen}
@@ -280,7 +280,7 @@ export function Topbar({
             </button>
           ) : (
             <span
-              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-ink text-paper"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 bg-ink text-paper"
               title={`Viewing as ${VIEW_LABEL[view]}`}
             >
               {VIEW_LABEL[view] ?? 'View'}
@@ -294,7 +294,7 @@ export function Topbar({
                   key={v.key}
                   href={v.href}
                   className={
-                    'block px-4 py-2.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase transition-colors ' +
+                    'block px-4 py-2.5 font-display font-semibold text-[11px] tracking-[0.18em] uppercase transition-colors ' +
                     (v.key === view
                       ? 'bg-gold-bg text-gold-dark'
                       : 'text-ink-soft hover:bg-paper-warm hover:text-ink')

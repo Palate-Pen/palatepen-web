@@ -84,7 +84,7 @@ export function ConnectionCard({
     <div className="bg-card border border-rule px-7 py-6">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-2">
+          <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-2">
             {def.category}
           </div>
           <h3 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink">
@@ -142,7 +142,7 @@ export function ConnectionCard({
       ) : (
         <div className="border-t border-rule pt-4 mt-3 space-y-3">
           <div>
-            <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+            <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
               API key / token
             </label>
             <input
@@ -158,7 +158,7 @@ export function ConnectionCard({
             </p>
           </div>
           <div>
-            <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+            <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
               Label (optional)
             </label>
             <input
@@ -170,7 +170,7 @@ export function ConnectionCard({
             />
           </div>
           <div>
-            <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+            <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
               Notes (optional)
             </label>
             <input

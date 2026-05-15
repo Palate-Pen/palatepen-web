@@ -217,7 +217,7 @@ function IssueRow({ issue, last }: { issue: AdminIssue; last: boolean }) {
             <span
               key={label.name}
               className={
-                'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border ' +
+                'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-0.5 border ' +
                 (issue.is_urgent &&
                 ['bug', 'urgent', 'critical', 'security', 'p0', 'p1'].includes(
                   label.name.toLowerCase(),

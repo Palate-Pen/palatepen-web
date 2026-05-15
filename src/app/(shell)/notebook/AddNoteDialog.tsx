@@ -164,7 +164,7 @@ export function AddNoteDialog({
                           return (
                             <span
                               key={rid}
-                              className="inline-flex items-center gap-1.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-gold-bg text-gold-dark border border-gold/40 rounded-sm"
+                              className="inline-flex items-center gap-1.5 font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 bg-gold-bg text-gold-dark border border-gold/40 rounded-sm"
                             >
                               {r.name}
                               <button
@@ -207,7 +207,7 @@ export function AddNoteDialog({
                             className="block w-full text-left px-3 py-2 font-serif text-sm text-ink hover:bg-paper-warm transition-colors border-b border-rule-soft last:border-b-0"
                           >
                             {r.name}
-                            <span className="ml-2 font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+                            <span className="ml-2 font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft">
                               {r.dish_type === 'food' ? 'dish' : r.dish_type}
                             </span>
                           </button>
@@ -293,7 +293,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+      <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
         {label}
       </span>
       {children}

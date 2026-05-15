@@ -245,7 +245,7 @@ function SpecRow({
           {row.spec.name}
         </div>
         {row.spec.menu_section && (
-          <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mt-0.5">
+          <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mt-0.5">
             {row.spec.menu_section}
           </div>
         )}

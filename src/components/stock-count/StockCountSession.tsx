@@ -233,7 +233,7 @@ export function StockCountSession({
                     {l.ingredient_name}
                   </div>
                   {l.category && (
-                    <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mt-0.5">
+                    <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft mt-0.5">
                       {l.category}
                     </div>
                   )}

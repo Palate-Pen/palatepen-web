@@ -86,14 +86,14 @@ export function NotebookFilters({ entries }: { entries: NotebookEntry[] }) {
       {tags.length > 0 && (
         <div className="mb-8 pb-4 border-b border-rule">
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+            <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
               Filter by tag
             </span>
             {tagFilter && (
               <button
                 type="button"
                 onClick={() => setTagFilter(null)}
-                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors bg-transparent border-0 p-0 cursor-pointer"
+                className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors bg-transparent border-0 p-0 cursor-pointer"
               >
                 Clear
               </button>
@@ -175,7 +175,7 @@ function EntryCardLive({ entry }: { entry: NotebookEntry }) {
   return (
     <div className="bg-card border border-rule px-6 py-5 flex flex-col gap-3 hover:border-rule-gold transition-colors">
       <div className="flex items-baseline justify-between gap-2">
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold">
           {kindLabel[entry.kind]}
         </div>
         <div className="font-sans text-xs text-muted-soft whitespace-nowrap">
@@ -234,7 +234,7 @@ function EntryCardLive({ entry }: { entry: NotebookEntry }) {
       {entry.season_label && entry.season_tone && (
         <div
           className={
-            'font-display font-semibold text-[10px] tracking-[0.3em] uppercase px-2.5 py-1 self-start ' +
+            'font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-2.5 py-1 self-start ' +
             ribbonClass[entry.season_tone]
           }
         >
@@ -265,7 +265,7 @@ function EntryCardLive({ entry }: { entry: NotebookEntry }) {
       )}
 
       {!entry.shared && (
-        <div className="font-sans font-semibold text-[10px] tracking-[0.3em] uppercase text-muted-soft mt-auto pt-2">
+        <div className="font-sans font-semibold text-[11px] tracking-[0.3em] uppercase text-muted-soft mt-auto pt-2">
           Private · just you
         </div>
       )}

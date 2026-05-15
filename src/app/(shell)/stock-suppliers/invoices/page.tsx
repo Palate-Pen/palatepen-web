@@ -248,7 +248,7 @@ function InvoiceRow({
           {row.source === 'email' && (
             <span
               title="Forwarded from supplier email"
-              className="font-display font-semibold text-[9px] tracking-[0.18em] uppercase px-1.5 py-0.5 bg-gold-bg text-gold-dark border border-gold/40"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-1.5 py-0.5 bg-gold-bg text-gold-dark border border-gold/40"
             >
               ✉ Email
             </span>
@@ -327,7 +327,7 @@ function StatusPill({ status }: { status: InvoiceListStatus }) {
   const { label, classes } = map[status];
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm ${classes}`}
+      className={`inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm ${classes}`}
     >
       {label}
     </span>

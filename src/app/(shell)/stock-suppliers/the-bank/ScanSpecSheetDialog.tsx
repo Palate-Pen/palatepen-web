@@ -339,7 +339,7 @@ function ReviewTable({
     <div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-4 mb-5">
         <div>
-          <label className="block font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-1.5">
+          <label className="block font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-1.5">
             Default supplier (applied to rows without one)
           </label>
           <input
@@ -351,7 +351,7 @@ function ReviewTable({
           />
         </div>
         <div className="flex flex-col justify-end">
-          <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-1">
+          <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-1">
             Selected
           </div>
           <div className="font-serif font-semibold text-xl text-ink">

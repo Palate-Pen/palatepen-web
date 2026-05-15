@@ -232,7 +232,7 @@ export default async function RecipeDetailPage({
           <div className="bg-card border border-rule px-7 py-6">
             {recipe.allergens.contains.length > 0 && (
               <div className="mb-4">
-                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-urgent mb-2">
+                <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-urgent mb-2">
                   Contains
                 </div>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -262,7 +262,7 @@ export default async function RecipeDetailPage({
             )}
             {recipe.allergens.mayContain.length > 0 && (
               <div>
-                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-attention mb-2">
+                <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-attention mb-2">
                   May contain (cross-contamination)
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -405,7 +405,7 @@ export default async function RecipeDetailPage({
                 <div className="font-serif font-semibold text-base text-ink">
                   {p.name}
                 </div>
-                <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold whitespace-nowrap">
+                <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold whitespace-nowrap">
                   Open →
                 </span>
               </Link>

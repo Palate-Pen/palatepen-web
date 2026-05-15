@@ -250,7 +250,7 @@ function SiteCard({ site }: { site: SiteRow }) {
   return (
     <div className="bg-card border border-rule px-7 py-6 flex flex-col gap-3">
       <div>
-        <div className="font-display font-semibold text-[10px] tracking-[0.4em] uppercase text-gold">
+        <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold">
           {site.kind}
         </div>
         <div className="font-serif font-semibold text-xl text-ink mt-1">
@@ -334,7 +334,7 @@ function Stat({
           : 'text-ink';
   return (
     <div className="bg-card px-3 py-2.5">
-      <div className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-muted mb-1">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-1">
         {label}
       </div>
       <div className={`font-serif font-semibold text-sm ${toneClass}`}>

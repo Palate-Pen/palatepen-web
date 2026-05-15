@@ -120,7 +120,7 @@ export async function PlannerView({
       </div>
 
       <div className="mb-10">
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-3">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-3">
           Menu Engineering
         </div>
         <h2 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink mb-2">
@@ -133,7 +133,7 @@ export async function PlannerView({
       </div>
 
       <div className="mb-10">
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-3">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-3">
           The Plan
         </div>
         <h2 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink mb-5">
@@ -155,7 +155,7 @@ export async function PlannerView({
               if (items.length === 0) return null;
               return (
                 <div key={action}>
-                  <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-2">
+                  <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-2">
                     {ACTION_LABEL[action]} · {items.length}
                   </div>
                   <div className="space-y-2">
@@ -175,7 +175,7 @@ export async function PlannerView({
       </div>
 
       <div>
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-3">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-3">
           Looking Ahead
         </div>
         <h2 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink mb-5">
@@ -237,7 +237,7 @@ function PlannerEmpty({
   const surfaceLabel = surface === 'bar' ? 'drinks list' : 'menu';
   return (
     <div className="bg-card border border-rule px-10 py-16 text-center max-w-2xl mx-auto">
-      <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-2">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-2">
         Forward planning
       </div>
       <h2 className="font-display text-3xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">

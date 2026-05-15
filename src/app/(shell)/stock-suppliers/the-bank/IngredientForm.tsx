@@ -216,7 +216,7 @@ export function IngredientForm({
       </div>
 
       <div className="pt-2 border-t border-rule-soft">
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
           Allergens
         </div>
         <p className="font-serif italic text-xs text-muted mb-3">
@@ -226,7 +226,7 @@ export function IngredientForm({
       </div>
 
       <div className="pt-2 border-t border-rule-soft">
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
           Nutrition (per 100g / 100ml)
         </div>
         <NutritionPanel value={nutrition} onChange={setNutrition} />
@@ -277,7 +277,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+      <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
         {label}
       </span>
       {children}

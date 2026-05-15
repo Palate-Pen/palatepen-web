@@ -283,7 +283,7 @@ export function PoLineEditor({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
         <div>
-          <label className="block font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-2">
+          <label className="block font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-2">
             Expected delivery
           </label>
           <input
@@ -294,7 +294,7 @@ export function PoLineEditor({
           />
         </div>
         <div>
-          <label className="block font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-2">
+          <label className="block font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-2">
             Notes for the supplier
           </label>
           <textarea

@@ -144,7 +144,7 @@ export default async function OwnerMarginsPage() {
               <div className="font-serif italic text-sm text-muted">
                 {d.siteName}
               </div>
-              <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+              <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
                 {d.dish_type}
               </div>
               <div

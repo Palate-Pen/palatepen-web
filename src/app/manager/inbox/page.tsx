@@ -190,7 +190,7 @@ function SignalCard({ signal: s }: { signal: Signal }) {
           {s.section_label}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft">
             {SURFACE_LABEL[s.target_surface] ?? s.target_surface}
           </span>
           <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted px-2 py-1 border border-rule whitespace-nowrap">

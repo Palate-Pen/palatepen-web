@@ -222,7 +222,7 @@ function FilterChip({
       {label}
       <span
         className={
-          'text-[10px] tracking-[0.18em] ' +
+          'text-[11px] tracking-[0.18em] ' +
           (active ? 'text-paper/70' : 'text-muted-soft')
         }
       >
@@ -295,7 +295,7 @@ function CellarRowDisplay({
           </div>
         )}
       </div>
-      <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+      <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
         {row.category ?? '—'}
       </div>
       <div>

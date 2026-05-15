@@ -97,7 +97,7 @@ export function AddPlanItemDialog({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-5 border-b border-rule">
-              <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-1">
+              <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-1">
                 Plan a dish
               </div>
               <h3 className="font-display text-2xl font-semibold uppercase tracking-[0.04em] text-ink">
@@ -176,7 +176,7 @@ export function AddPlanItemDialog({
                 </div>
               ) : (
                 <div>
-                  <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-2 block">
+                  <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-2 block">
                     Placeholder dish name
                   </label>
                   <input
@@ -194,7 +194,7 @@ export function AddPlanItemDialog({
               )}
 
               <div>
-                <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-2 block">
+                <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-2 block">
                   Action
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -206,7 +206,7 @@ export function AddPlanItemDialog({
                         type="button"
                         onClick={() => setAction(a)}
                         className={
-                          'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-3 py-1.5 border transition-colors ' +
+                          'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border transition-colors ' +
                           (active
                             ? 'bg-ink text-paper border-ink'
                             : 'bg-transparent text-muted border-rule hover:border-gold')
@@ -220,7 +220,7 @@ export function AddPlanItemDialog({
               </div>
 
               <div>
-                <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-2 block">
+                <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-2 block">
                   Popularity (optional now, rate later)
                 </label>
                 <div className="flex gap-0.5">

@@ -122,7 +122,7 @@ export default async function AdminSystemPage() {
               <div className="font-serif font-semibold text-sm text-ink">
                 {r.label}
               </div>
-              <div className="font-mono text-[10px] text-muted-soft mt-0.5">
+              <div className="font-mono text-[11px] text-muted-soft mt-0.5">
                 v2.{r.name}
               </div>
             </div>

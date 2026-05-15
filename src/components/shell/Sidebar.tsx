@@ -104,7 +104,7 @@ export function Sidebar({
           className={'px-6 pt-3 pb-1 ' + (collapsed ? 'lg:hidden' : '')}
         >
           {surfaceTag && (
-            <div className="font-display text-[10px] font-semibold tracking-[0.4em] uppercase text-gold mb-1">
+            <div className="font-display text-[11px] font-semibold tracking-[0.4em] uppercase text-gold mb-1">
               {surfaceTag}
             </div>
           )}
@@ -187,7 +187,7 @@ function NavLink({
         </span>
         <span
           className={
-            'font-display text-[8px] tracking-[0.18em] uppercase text-muted-soft ml-auto ' +
+            'font-display text-[11px] tracking-[0.18em] uppercase text-muted-soft ml-auto ' +
             (collapsed ? 'lg:hidden' : '')
           }
         >

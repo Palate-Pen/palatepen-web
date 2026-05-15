@@ -229,7 +229,7 @@ function MiseRow({ row, last }: { row: PrepRow; last: boolean }) {
           {row.name}
         </div>
         {row.station && (
-          <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold mt-0.5">
+          <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold mt-0.5">
             {row.station}
           </div>
         )}
@@ -243,7 +243,7 @@ function MiseRow({ row, last }: { row: PrepRow; last: boolean }) {
       <div>
         <span
           className={
-            'inline-flex items-center px-2 py-0.5 border font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm ' +
+            'inline-flex items-center px-2 py-0.5 border font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm ' +
             statusClass
           }
         >

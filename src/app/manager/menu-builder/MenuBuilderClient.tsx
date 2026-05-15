@@ -218,7 +218,7 @@ export default function MenuBuilderClient() {
                 key={chip.key}
                 onClick={() => setFilterChip(chip.key)}
                 className={
-                  'font-display font-semibold text-[9px] tracking-[0.2em] uppercase px-2.5 py-1 border transition-colors ' +
+                  'font-display font-semibold text-[11px] tracking-[0.2em] uppercase px-2.5 py-1 border transition-colors ' +
                   (filterChip === chip.key
                     ? 'bg-ink border-ink text-paper'
                     : 'bg-transparent border-rule text-muted hover:border-gold hover:text-gold')
@@ -257,7 +257,7 @@ export default function MenuBuilderClient() {
             costPerCover={overlaysVisible && costPerCover}
           />
           {isCustomerView && (
-            <div className="font-display font-semibold text-[10px] tracking-[0.4em] uppercase text-gold-dark bg-gold-bg px-4 py-2 border border-gold/30">
+            <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold-dark bg-gold-bg px-4 py-2 border border-gold/30">
               Customer view · overlays hidden
             </div>
           )}
@@ -488,7 +488,7 @@ function ViewToggleBtn({
     <button
       onClick={onClick}
       className={
-        'font-display font-semibold text-[10px] tracking-[0.25em] uppercase px-3.5 py-2 inline-flex items-center gap-1.5 transition-colors ' +
+        'font-display font-semibold text-[11px] tracking-[0.25em] uppercase px-3.5 py-2 inline-flex items-center gap-1.5 transition-colors ' +
         (active
           ? 'bg-ink text-paper'
           : 'bg-transparent text-muted hover:text-ink')
@@ -589,7 +589,7 @@ function DishTile({ dish }: { dish: Dish }) {
         </div>
         <span
           className={
-            'inline-block font-display font-semibold text-[9px] tracking-[0.25em] uppercase px-1.5 py-[2px] mt-1.5 ' +
+            'inline-block font-display font-semibold text-[11px] tracking-[0.25em] uppercase px-1.5 py-[2px] mt-1.5 ' +
             CHIP_BY_CLASS[dish.classification]
           }
         >
@@ -679,7 +679,7 @@ function MenuPreview({
             }
           >
             {goldenTriangle && section.golden && (
-              <span className="absolute -top-3 right-0 font-display font-semibold text-[9px] tracking-[0.3em] text-gold bg-paper px-2 py-[2px]">
+              <span className="absolute -top-3 right-0 font-display font-semibold text-[11px] tracking-[0.3em] text-gold bg-paper px-2 py-[2px]">
                 GOLDEN TRIANGLE
               </span>
             )}
@@ -736,12 +736,12 @@ function MenuPreview({
                     </div>
                   )}
                   {starPuzzleLabels && row.featured && (
-                    <span className="absolute -right-9 top-3.5 font-display font-semibold text-[8px] tracking-[0.3em] text-gold">
+                    <span className="absolute -right-9 top-3.5 font-display font-semibold text-[11px] tracking-[0.3em] text-gold">
                       STAR
                     </span>
                   )}
                   {starPuzzleLabels && row.flagged && (
-                    <span className="absolute -right-12 top-3.5 font-display font-semibold text-[8px] tracking-[0.3em] text-attention">
+                    <span className="absolute -right-12 top-3.5 font-display font-semibold text-[11px] tracking-[0.3em] text-attention">
                       PUZZLE
                     </span>
                   )}
@@ -803,7 +803,7 @@ function LayoutBtn({
           />
         ))}
       </div>
-      <span className="font-display font-semibold text-[9px] tracking-[0.2em] uppercase text-ink">
+      <span className="font-display font-semibold text-[11px] tracking-[0.2em] uppercase text-ink">
         {label}
       </span>
     </button>
@@ -874,10 +874,10 @@ function TemplateCard({
       <div className="w-full h-20 bg-paper mb-2 relative border border-rule overflow-hidden">
         <TemplateThumb template={template.key} />
       </div>
-      <div className="font-display font-semibold text-[9px] tracking-[0.25em] uppercase text-ink">
+      <div className="font-display font-semibold text-[11px] tracking-[0.25em] uppercase text-ink">
         {template.name}
       </div>
-      <div className="font-serif italic text-[10px] text-muted mt-0.5">
+      <div className="font-serif italic text-[11px] text-muted mt-0.5">
         {template.sub}
       </div>
     </button>
@@ -1013,14 +1013,14 @@ function Suggestion({
   const rest = body.replace(boldPart, '').trim();
   return (
     <div className={`bg-card border border-rule border-l-[3px] ${borderClass} px-4 py-3.5 mb-2.5`}>
-      <div className={`font-display font-semibold text-[9px] tracking-[0.3em] uppercase mb-1.5 ${tagColor}`}>
+      <div className={`font-display font-semibold text-[11px] tracking-[0.3em] uppercase mb-1.5 ${tagColor}`}>
         {tag}
       </div>
       <div className="font-serif italic text-[13px] text-ink-soft leading-relaxed">
         <strong className="not-italic font-semibold text-ink">{boldPart}</strong>{' '}
         {rest}
       </div>
-      <a className="font-display font-semibold text-[9px] tracking-[0.3em] uppercase text-gold mt-2 inline-block cursor-pointer">
+      <a className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mt-2 inline-block cursor-pointer">
         {action}
       </a>
     </div>

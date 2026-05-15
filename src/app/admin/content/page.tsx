@@ -135,7 +135,7 @@ export default async function AdminContentPage() {
                   <div className="flex items-center gap-2 whitespace-nowrap">
                     <span
                       className={
-                        'font-display font-semibold text-[10px] tracking-[0.18em] uppercase ' +
+                        'font-display font-semibold text-[11px] tracking-[0.18em] uppercase ' +
                         (r.severity === 'urgent'
                           ? 'text-urgent'
                           : r.severity === 'attention'
@@ -149,7 +149,7 @@ export default async function AdminContentPage() {
                       {dateFmt.format(new Date(r.created_at))}
                     </span>
                     {r.active && (
-                      <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-healthy border border-healthy/40 px-1.5 py-0.5">
+                      <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-healthy border border-healthy/40 px-1.5 py-0.5">
                         active
                       </span>
                     )}

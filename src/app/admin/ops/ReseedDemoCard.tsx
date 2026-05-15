@@ -82,13 +82,13 @@ export function ReseedDemoCard() {
             emitted from current state.
           </div>
 
-          <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+          <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
             Detector output
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-6">
             {Object.entries(result.signal_breakdown).map(([k, n]) => (
               <div key={k} className="bg-card px-4 py-3">
-                <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+                <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
                   {k.replace(/_/g, ' ')}
                 </div>
                 <div
@@ -103,13 +103,13 @@ export function ReseedDemoCard() {
             ))}
           </div>
 
-          <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+          <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
             Tables shifted
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-rule border border-rule">
             {result.tables.map((t) => (
               <div key={t.name} className="bg-card px-4 py-3">
-                <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+                <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
                   {t.name.replace(/_/g, ' ')}
                 </div>
                 <div className="font-serif font-semibold text-lg text-ink leading-none mt-1">

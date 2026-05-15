@@ -278,7 +278,7 @@ function DishLine({ recipe, last }: { recipe: Recipe; last: boolean }) {
                 key={t}
                 title={dietaryTagFull(t)}
                 className={
-                  'font-display font-semibold text-[9px] tracking-[0.18em] uppercase px-1.5 py-[1px] border ' +
+                  'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-1.5 py-[1px] border ' +
                   DIETARY_CHIP_CLASS[t]
                 }
               >

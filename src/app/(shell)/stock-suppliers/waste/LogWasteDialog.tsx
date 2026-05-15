@@ -234,7 +234,7 @@ export function LogWasteDialog({
                           : 'bg-card border-rule text-ink-soft hover:border-gold')
                       }
                     >
-                      <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase">
+                      <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase">
                         {c.label}
                       </span>
                       <span className="font-serif italic text-[11px] text-muted leading-tight">
@@ -324,7 +324,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+      <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
         {label}
       </span>
       {children}

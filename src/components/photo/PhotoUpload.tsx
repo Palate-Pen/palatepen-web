@@ -116,7 +116,7 @@ export function PhotoUpload({
 
   return (
     <div>
-      <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
         {label}
       </div>
 

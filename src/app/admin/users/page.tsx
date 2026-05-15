@@ -170,7 +170,7 @@ export default async function AdminUsersPage() {
             <div className="font-serif font-semibold text-base text-ink flex items-center gap-2">
               {r.name ?? 'Unnamed account'}
               {r.is_founder && (
-                <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
+                <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
                   founder
                 </span>
               )}

@@ -49,7 +49,7 @@ export function TagCloud({
       <Link
         href={basePath}
         className={
-          'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors ' +
+          'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors ' +
           (activeTag == null
             ? 'bg-ink text-paper border-ink'
             : 'bg-transparent text-muted border-rule hover:border-gold hover:text-gold')
@@ -64,7 +64,7 @@ export function TagCloud({
             key={tag}
             href={`${basePath}?tag=${encodeURIComponent(tag)}`}
             className={
-              'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors inline-flex items-center gap-1.5 ' +
+              'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors inline-flex items-center gap-1.5 ' +
               (active
                 ? 'bg-gold text-paper border-gold'
                 : 'bg-transparent text-ink-soft border-rule hover:border-gold hover:text-gold')
@@ -73,7 +73,7 @@ export function TagCloud({
             {tag}
             <span
               className={
-                'text-[8px] tracking-[0.18em] ' +
+                'text-[11px] tracking-[0.18em] ' +
                 (active ? 'text-paper/70' : 'text-muted-soft')
               }
             >

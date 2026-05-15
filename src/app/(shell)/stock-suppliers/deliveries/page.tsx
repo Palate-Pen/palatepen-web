@@ -254,7 +254,7 @@ function StatusPill({
   const { label, classes } = map[status];
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm ${classes}`}
+      className={`inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm ${classes}`}
     >
       {label}
     </span>

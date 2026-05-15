@@ -199,7 +199,7 @@ function BusinessTile({
       href={href}
       className="bg-card border border-rule px-7 py-6 flex flex-col gap-2 hover:border-rule-gold transition-colors"
     >
-      <div className="font-display font-semibold text-[10px] tracking-[0.4em] uppercase text-gold">
+      <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold">
         {title}
       </div>
       <div className="font-serif font-medium text-2xl text-ink leading-none">

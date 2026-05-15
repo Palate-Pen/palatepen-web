@@ -143,7 +143,7 @@ export function StockCountList({
                     </div>
                   )}
                 </div>
-                <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+                <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
                   {SCOPE_LABEL[r.scope]}
                 </div>
                 <div className="font-serif text-sm text-ink">
@@ -161,7 +161,7 @@ export function StockCountList({
                 <div>
                   <span
                     className={
-                      'inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm ' +
+                      'inline-flex items-center px-2.5 py-1 border font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm ' +
                       statusClass
                     }
                   >

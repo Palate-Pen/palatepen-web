@@ -92,7 +92,7 @@ export function ParLevelForm({
         {ratio != null && (
           <span
             className={
-              'font-display font-semibold text-[10px] tracking-[0.18em] uppercase ' +
+              'font-display font-semibold text-[11px] tracking-[0.18em] uppercase ' +
               (tone === 'breach'
                 ? 'text-urgent'
                 : tone === 'low'
@@ -188,7 +188,7 @@ function FieldRow({
 }) {
   return (
     <div>
-      <label className="block font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-1.5">
+      <label className="block font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-1.5">
         {label}
       </label>
       <div className="flex items-center gap-2">

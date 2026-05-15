@@ -56,7 +56,7 @@ export function AnnouncementForm() {
   return (
     <div className="bg-card border border-rule px-7 py-6 space-y-4">
       <div>
-        <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+        <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
           Title
         </label>
         <input
@@ -70,7 +70,7 @@ export function AnnouncementForm() {
       </div>
 
       <div>
-        <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+        <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
           Body (optional)
         </label>
         <textarea
@@ -84,7 +84,7 @@ export function AnnouncementForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+          <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
             Severity
           </label>
           <div className="flex gap-1.5">
@@ -94,7 +94,7 @@ export function AnnouncementForm() {
                 type="button"
                 onClick={() => setSeverity(s)}
                 className={
-                  'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-3 py-1.5 border transition-colors ' +
+                  'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border transition-colors ' +
                   (severity === s
                     ? s === 'info'
                       ? 'bg-gold/10 border-gold text-gold'
@@ -111,7 +111,7 @@ export function AnnouncementForm() {
         </div>
 
         <div>
-          <label className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
+          <label className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted mb-1.5 block">
             Expires (optional)
           </label>
           <input

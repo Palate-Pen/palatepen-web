@@ -72,7 +72,7 @@ export function PriceUpdateForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+          <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
             New price (£)
           </span>
           <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ export function PriceUpdateForm({
         </label>
 
         <label className="flex flex-col gap-1.5">
-          <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+          <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
             Reason (optional)
           </span>
           <input

@@ -74,7 +74,7 @@ export function NutritionPanel({
                   placeholder="—"
                   className="w-[64px] px-2 py-1 border border-rule bg-card font-serif text-sm text-ink text-right focus:outline-none focus:border-gold disabled:opacity-50"
                 />
-                <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft w-8">
+                <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft w-8">
                   {f.unit}
                 </span>
               </div>

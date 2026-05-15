@@ -186,7 +186,7 @@ function CategoryTile({
 }) {
   return (
     <div className="bg-card px-6 py-5">
-      <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
         {wasteCategoryLabel(cat.category)}
       </div>
       <div className="font-serif font-semibold text-xl text-ink mb-1">
@@ -227,7 +227,7 @@ function WasteRowView({ row, last }: { row: WasteRow; last: boolean }) {
         {row.value != null ? gbp2.format(row.value) : '—'}
       </div>
       <div>
-        <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted px-2.5 py-1 border border-rule rounded-sm">
+        <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted px-2.5 py-1 border border-rule rounded-sm">
           {wasteCategoryLabel(row.category)}
         </span>
       </div>

@@ -150,11 +150,11 @@ function AccountRow({
         </div>
       </div>
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border border-rule rounded-sm text-ink">
+        <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 border border-rule rounded-sm text-ink">
           {account.tier}
         </span>
         {account.is_founder && (
-          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 bg-gold-bg border border-gold/40 text-gold-dark rounded-sm">
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 bg-gold-bg border border-gold/40 text-gold-dark rounded-sm">
             Founder · zero cost
           </span>
         )}

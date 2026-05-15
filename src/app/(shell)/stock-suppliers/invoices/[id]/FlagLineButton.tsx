@@ -92,7 +92,7 @@ export function FlagLineButton({
     return (
       <div className="bg-paper-warm border border-attention/40 rounded-sm px-3 py-2.5 flex flex-col gap-2 max-w-[360px]">
         <div className="grid grid-cols-[80px_1fr] gap-2 items-center">
-          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
             Qty short
           </span>
           <input
@@ -105,7 +105,7 @@ export function FlagLineButton({
           />
         </div>
         <div className="grid grid-cols-[80px_1fr] gap-2 items-start">
-          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted pt-1.5">
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted pt-1.5">
             Reason
           </span>
           <textarea
@@ -125,7 +125,7 @@ export function FlagLineButton({
             type="button"
             onClick={() => setOpen(false)}
             disabled={pending}
-            className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted hover:text-ink transition-colors bg-transparent border-0 p-0 cursor-pointer"
+            className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted hover:text-ink transition-colors bg-transparent border-0 p-0 cursor-pointer"
           >
             Cancel
           </button>
@@ -135,7 +135,7 @@ export function FlagLineButton({
                 type="button"
                 onClick={clear}
                 disabled={pending}
-                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted hover:text-urgent transition-colors bg-transparent border-0 p-0 cursor-pointer"
+                className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted hover:text-urgent transition-colors bg-transparent border-0 p-0 cursor-pointer"
               >
                 Clear flag
               </button>
@@ -144,7 +144,7 @@ export function FlagLineButton({
               type="button"
               onClick={save}
               disabled={pending}
-              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-3 py-1.5 bg-attention text-paper border border-attention hover:bg-attention/80 transition-colors disabled:opacity-40"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 bg-attention text-paper border border-attention hover:bg-attention/80 transition-colors disabled:opacity-40"
             >
               {pending ? 'Saving…' : 'Save flag'}
             </button>
@@ -160,7 +160,7 @@ export function FlagLineButton({
         type="button"
         onClick={() => setOpen(true)}
         disabled={disabled}
-        className="inline-flex items-center gap-1.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-attention hover:text-attention/70 transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-40"
+        className="inline-flex items-center gap-1.5 font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-attention hover:text-attention/70 transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-40"
       >
         <span>⚑ Flagged</span>
         <span className="font-serif italic text-xs text-muted normal-case tracking-normal">
@@ -175,7 +175,7 @@ export function FlagLineButton({
       type="button"
       onClick={() => setOpen(true)}
       disabled={disabled}
-      className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted hover:text-attention transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-40"
+      className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted hover:text-attention transition-colors bg-transparent border-0 p-0 cursor-pointer disabled:opacity-40"
       title="Flag this line for discrepancy"
     >
       ⚑ Flag

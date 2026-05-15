@@ -445,7 +445,7 @@ function TabCard({
     >
       <div
         className={
-          'font-display font-semibold text-[10px] tracking-[0.3em] uppercase mb-2 ' +
+          'font-display font-semibold text-[11px] tracking-[0.3em] uppercase mb-2 ' +
           (tab.status === 'live' ? 'text-gold' : 'text-muted')
         }
       >

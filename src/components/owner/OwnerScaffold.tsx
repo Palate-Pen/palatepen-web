@@ -121,7 +121,7 @@ export function OwnerPageHeader({
                 <span className="absolute left-3 right-3 bottom-0 h-0.5 bg-gold" />
               )}
               {tab.status === 'soon' && (
-                <span className="ml-1.5 font-display font-semibold text-[8px] tracking-[0.18em] text-gold align-top">
+                <span className="ml-1.5 font-display font-semibold text-[11px] tracking-[0.18em] text-gold align-top">
                   ●
                 </span>
               )}
@@ -151,7 +151,7 @@ export function OwnerComingSoon({
       <p className="font-serif italic text-base text-ink-soft leading-relaxed mb-5">
         {body}
       </p>
-      <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
         Will read from
       </div>
       <ul className="font-serif text-sm text-ink-soft leading-relaxed">

@@ -129,7 +129,7 @@ export default async function ManagerDeliveriesPage() {
               <div className="font-serif font-semibold text-base text-ink">
                 {r.suppliers?.name ?? 'Unknown supplier'}
               </div>
-              <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+              <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
                 {r.status}
               </div>
               <div className="font-serif font-semibold text-sm text-ink">

@@ -105,7 +105,7 @@ export function NutritionDisplay({
               {tl ? (
                 <span
                   className={
-                    'inline-flex items-center font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border rounded-sm ' +
+                    'inline-flex items-center font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 border rounded-sm ' +
                     FOP_LIGHT_CLASS[tl]
                   }
                 >

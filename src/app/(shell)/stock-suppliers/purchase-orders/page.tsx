@@ -240,7 +240,7 @@ function PoTable({ rows }: { rows: PurchaseOrderRow[] }) {
               (i === rows.length - 1 ? '' : 'border-b border-rule-soft')
             }
           >
-            <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+            <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
               {po.reference}
             </div>
             <div className="font-serif font-semibold text-base text-ink">

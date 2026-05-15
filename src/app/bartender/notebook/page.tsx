@@ -103,7 +103,7 @@ function EntryCard({ entry }: { entry: NotebookEntry }) {
           {entry.tags.map((t, i) => (
             <span
               key={`${t.kind}-${t.text}-${i}`}
-              className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
             >
               {t.text}
             </span>

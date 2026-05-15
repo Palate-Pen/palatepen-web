@@ -208,7 +208,7 @@ export function CreditNoteEditor({
                     ))}
                   </select>
                 ) : (
-                  <span className="inline-flex items-center px-2 py-0.5 bg-attention/10 text-attention border border-attention/40 font-display font-semibold text-[10px] tracking-[0.18em] uppercase rounded-sm">
+                  <span className="inline-flex items-center px-2 py-0.5 bg-attention/10 text-attention border border-attention/40 font-display font-semibold text-[11px] tracking-[0.18em] uppercase rounded-sm">
                     {CREDIT_NOTE_LINE_REASON_LABEL[l.reason]}
                   </span>
                 )}

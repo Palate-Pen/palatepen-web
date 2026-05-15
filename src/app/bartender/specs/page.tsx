@@ -238,7 +238,7 @@ function SpecCard({ spec }: { spec: Recipe }) {
           </div>
         )}
         {spec.menu_section && (
-          <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold mt-2">
+          <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold mt-2">
             {spec.menu_section}
           </div>
         )}
@@ -247,13 +247,13 @@ function SpecCard({ spec }: { spec: Recipe }) {
             {spec.tags.slice(0, 4).map((t) => (
               <span
                 key={t}
-                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
+                className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-0.5 border border-rule text-muted-soft"
               >
                 {t}
               </span>
             ))}
             {spec.tags.length > 4 && (
-              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+              <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft">
                 +{spec.tags.length - 4}
               </span>
             )}

@@ -51,7 +51,7 @@ export function PlanHeaderEditor({
         disabled={pending}
       />
       <label className="flex items-center gap-2">
-        <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+        <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
           Target launch
         </span>
         <input

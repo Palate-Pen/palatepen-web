@@ -188,7 +188,7 @@ export function AddPrepItemDialog({
 
             {savedItems.length > 0 && (
               <div className="px-7 py-4 border-b border-rule bg-paper-warm">
-                <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2.5">
+                <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2.5">
                   Saved Prep · pick to add
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
@@ -201,7 +201,7 @@ export function AddPrepItemDialog({
                       title={`Last prepped ${s.last_prepped_on}`}
                     >
                       {s.name}
-                      <span className="font-display font-semibold text-[9px] tracking-[0.18em] uppercase text-muted-soft ml-1.5">
+                      <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft ml-1.5">
                         {s.station}
                       </span>
                     </button>
@@ -215,7 +215,7 @@ export function AddPrepItemDialog({
                 {['Name', 'Station', 'Quantity', 'Recipe', 'Notes', ''].map((h) => (
                   <div
                     key={h}
-                    className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted"
+                    className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted"
                   >
                     {h}
                   </div>

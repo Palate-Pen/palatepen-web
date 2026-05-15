@@ -181,12 +181,12 @@ export default async function PublicMenuPage({
                     <div className="font-serif font-semibold text-lg text-ink mb-1 flex items-center gap-2 flex-wrap">
                       {dish.name}
                       {dish.v && (
-                        <span className="font-display font-semibold text-[9px] tracking-[0.18em] uppercase text-healthy bg-healthy/10 border border-healthy/30 px-1.5 py-0.5">
+                        <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-healthy bg-healthy/10 border border-healthy/30 px-1.5 py-0.5">
                           V
                         </span>
                       )}
                       {dish.gf && (
-                        <span className="font-display font-semibold text-[9px] tracking-[0.18em] uppercase text-gold bg-gold-bg border border-gold/40 px-1.5 py-0.5">
+                        <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold bg-gold-bg border border-gold/40 px-1.5 py-0.5">
                           GF
                         </span>
                       )}
@@ -208,7 +208,7 @@ export default async function PublicMenuPage({
           <p className="font-serif italic text-xs text-muted-soft">
             Allergens available on request · prices include VAT · please let your server know of any dietary requirements
           </p>
-          <div className="font-display font-semibold text-[9px] tracking-[0.4em] uppercase text-muted-soft mt-3">
+          <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-muted-soft mt-3">
             Menu by Palatable
           </div>
         </footer>

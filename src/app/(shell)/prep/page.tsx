@@ -227,7 +227,7 @@ export default async function PrepPage({
         {selectedIso !== realTodayIso && (
           <Link
             href="/prep"
-            className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors ml-2"
+            className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold hover:text-gold-dark transition-colors ml-2"
           >
             ← Jump to today
           </Link>

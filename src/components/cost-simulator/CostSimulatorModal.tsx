@@ -169,7 +169,7 @@ export function CostSimulatorModal({
         <div className="px-7 py-6">
           {/* Scenario presets */}
           <div className="flex items-center gap-2 flex-wrap mb-5">
-            <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mr-1">
+            <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mr-1">
               Scenarios
             </span>
             <PresetChip
@@ -186,7 +186,7 @@ export function CostSimulatorModal({
               <button
                 type="button"
                 onClick={resetAll}
-                className="ml-auto font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft hover:text-ink transition-colors"
+                className="ml-auto font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft hover:text-ink transition-colors"
               >
                 Reset all
               </button>
@@ -290,7 +290,7 @@ function PresetChip({
   tone?: 'muted';
 }) {
   const base =
-    'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-3 py-1.5 border transition-colors';
+    'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border transition-colors';
   const cls = active
     ? tone === 'muted'
       ? 'bg-paper-warm text-ink border-rule'
@@ -338,7 +338,7 @@ function LineRow({
       </div>
 
       <div>
-        <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+        <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
           Today
         </div>
         <div className="font-serif text-sm text-ink">
@@ -348,7 +348,7 @@ function LineRow({
 
       <div>
         <div className="flex items-baseline justify-between mb-1">
-          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
             Change
           </span>
           <span
@@ -378,7 +378,7 @@ function LineRow({
       </div>
 
       <div className="text-right">
-        <div className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+        <div className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
           What-if
         </div>
         <div
@@ -396,7 +396,7 @@ function LineRow({
           {simCost == null ? '—' : gbp.format(simCost)}
         </div>
         {deltaCost != null && deltaCost !== 0 && (
-          <div className="font-serif italic text-[10px] text-muted">
+          <div className="font-serif italic text-[11px] text-muted">
             {deltaCost > 0 ? '+' : ''}
             {gbp.format(deltaCost)}
           </div>

@@ -79,7 +79,7 @@ export function PlanItemRow({
           <div className="font-serif font-semibold text-base text-ink">
             {item.display_name}
             {!item.recipe && item.placeholder_name && (
-              <span className="ml-2 font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft">
+              <span className="ml-2 font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft">
                 placeholder
               </span>
             )}
@@ -103,7 +103,7 @@ export function PlanItemRow({
                 disabled={pending}
                 onClick={() => applyAction(a)}
                 className={
-                  'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors disabled:opacity-50 ' +
+                  'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors disabled:opacity-50 ' +
                   (active
                     ? ACTION_TONE[a]
                     : 'bg-transparent text-muted border-rule hover:border-gold cursor-pointer')
@@ -118,7 +118,7 @@ export function PlanItemRow({
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
             Popularity
           </span>
           <div className="flex gap-0.5">
@@ -152,7 +152,7 @@ export function PlanItemRow({
           type="button"
           disabled={pending}
           onClick={remove}
-          className="ml-auto font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted hover:text-urgent transition-colors disabled:opacity-50"
+          className="ml-auto font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted hover:text-urgent transition-colors disabled:opacity-50"
         >
           Drop
         </button>

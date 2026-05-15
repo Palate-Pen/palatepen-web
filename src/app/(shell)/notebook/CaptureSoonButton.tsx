@@ -60,7 +60,7 @@ export function CaptureSoonButton({
         <span className="font-sans font-semibold text-xs tracking-[0.08em] uppercase">
           {label}
         </span>
-        <span className="absolute -top-1.5 -right-1.5 font-display font-semibold text-[8px] tracking-[0.18em] uppercase bg-gold-bg border border-gold/40 text-gold-dark px-1 py-0.5">
+        <span className="absolute -top-1.5 -right-1.5 font-display font-semibold text-[11px] tracking-[0.18em] uppercase bg-gold-bg border border-gold/40 text-gold-dark px-1 py-0.5">
           Soon
         </span>
       </button>

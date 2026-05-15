@@ -501,7 +501,7 @@ export function RecipeForm({
             {tags.map((t) => (
               <span
                 key={t}
-                className="inline-flex items-center gap-1.5 font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 bg-gold-bg text-gold-dark border border-gold/40 rounded-sm"
+                className="inline-flex items-center gap-1.5 font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 bg-gold-bg text-gold-dark border border-gold/40 rounded-sm"
               >
                 {t}
                 <button
@@ -881,7 +881,7 @@ function IngredientRowEditor({
                   sub_recipe_id: isSub ? null : subRecipeOptions[0].id,
                 })
               }
-              className="ml-auto font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft hover:text-gold transition-colors bg-transparent border-0 p-0 cursor-pointer"
+              className="ml-auto font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft hover:text-gold transition-colors bg-transparent border-0 p-0 cursor-pointer"
               title={
                 isSub
                   ? 'Switch this row back to a Bank ingredient'
@@ -964,7 +964,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted">
+      <span className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted">
         {label}
       </span>
       {children}

@@ -43,7 +43,7 @@ export function BarComingSoon({
         <p className="font-serif italic text-base text-ink-soft leading-relaxed mb-5">
           {body}
         </p>
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
           Will read from
         </div>
         <ul className="font-serif text-sm text-ink-soft leading-relaxed">

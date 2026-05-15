@@ -173,7 +173,7 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
         <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 pb-3 border-b border-rule-soft">
           {supplier.contact_person && (
             <span className="font-serif text-xs text-ink-soft">
-              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mr-1">
+              <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft mr-1">
                 Contact
               </span>
               {supplier.contact_person}
@@ -181,7 +181,7 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
           )}
           {supplier.phone && (
             <span className="font-serif text-xs text-ink-soft">
-              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mr-1">
+              <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft mr-1">
                 Tel
               </span>
               {supplier.phone}
@@ -189,7 +189,7 @@ function SupplierCard({ supplier }: { supplier: SupplierRow }) {
           )}
           {supplier.payment_terms && (
             <span className="font-serif text-xs text-ink-soft">
-              <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft mr-1">
+              <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft mr-1">
                 Terms
               </span>
               {supplier.payment_terms}
@@ -221,7 +221,7 @@ function Stat({
 }) {
   return (
     <div className="bg-card px-4 py-3">
-      <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-1">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-1">
         {label}
       </div>
       <div

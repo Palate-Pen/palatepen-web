@@ -57,7 +57,7 @@ export function AllergenPanel({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-muted mb-2">
+        <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-muted mb-2">
           UK FIR 14 mandatory allergens
         </div>
         <p className="font-serif italic text-xs text-muted leading-relaxed mb-3">
@@ -113,7 +113,7 @@ function AllergenRow({
   return (
     <div className="flex items-center justify-between gap-3 py-1.5 border-b border-rule-soft last:border-b-0">
       <div className="flex items-center gap-2 min-w-0">
-        <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-muted-soft w-7 text-center">
+        <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-muted-soft w-7 text-center">
           {allergen.short}
         </span>
         <span className="font-serif text-sm text-ink">{allergen.label}</span>
@@ -129,7 +129,7 @@ function AllergenRow({
               disabled={readOnly}
               onClick={() => !readOnly && onChange(option)}
               className={
-                'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border transition-colors disabled:cursor-not-allowed ' +
+                'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 border transition-colors disabled:cursor-not-allowed ' +
                 (isActive ? klass.active : klass.inactive) +
                 (!readOnly ? ' hover:border-gold cursor-pointer' : '')
               }
@@ -158,7 +158,7 @@ function SubTypePanel({
 }) {
   return (
     <div className="bg-card border border-rule border-l-4 border-l-urgent px-4 py-3">
-      <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-urgent mb-2">
+      <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-urgent mb-2">
         {title}
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -171,7 +171,7 @@ function SubTypePanel({
               disabled={readOnly}
               onClick={() => !readOnly && onToggle(option)}
               className={
-                'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors disabled:cursor-not-allowed ' +
+                'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2.5 py-1 border transition-colors disabled:cursor-not-allowed ' +
                 (isActive
                   ? 'bg-urgent/10 border-urgent/40 text-urgent'
                   : 'bg-transparent border-rule text-muted hover:border-urgent/40 cursor-pointer')
@@ -195,7 +195,7 @@ export function AllergenChips({
   size?: 'sm' | 'md';
 }) {
   const sizeClass =
-    size === 'md' ? 'text-xs px-2.5 py-1' : 'text-[10px] px-2 py-0.5';
+    size === 'md' ? 'text-xs px-2.5 py-1' : 'text-[11px] px-2 py-0.5';
   if (
     value.contains.length === 0 &&
     value.mayContain.length === 0

@@ -250,7 +250,7 @@ export default async function BankIngredientDetailPage({
                   {gbp.format(h.price)}
                 </div>
                 <div>
-                  <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-1 border border-rule rounded-sm text-muted">
+                  <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-1 border border-rule rounded-sm text-muted">
                     {h.source}
                   </span>
                 </div>

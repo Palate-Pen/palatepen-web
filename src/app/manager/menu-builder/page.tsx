@@ -85,7 +85,7 @@ function ManagerModeTabs({ current }: { current: 'build' | 'planning' }) {
 
 function surfaceChipClass(active: boolean): string {
   return (
-    'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-4 py-2 border transition-colors ' +
+    'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-4 py-2 border transition-colors ' +
     (active
       ? 'bg-ink text-paper border-ink'
       : 'bg-transparent text-muted border-rule hover:border-gold')

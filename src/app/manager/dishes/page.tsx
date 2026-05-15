@@ -318,7 +318,7 @@ function FilterChip({
       {label}
       <span
         className={
-          'text-[10px] tracking-[0.18em] ' +
+          'text-[11px] tracking-[0.18em] ' +
           (active ? 'text-paper/70' : 'text-muted-soft')
         }
       >
@@ -383,7 +383,7 @@ function DishTile({ recipe }: { recipe: Recipe }) {
             {recipe.name}
             {recipe.locked && (
               <span
-                className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold ml-2"
+                className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold ml-2"
                 title="Locked"
               >
                 🔒
@@ -405,7 +405,7 @@ function DishTile({ recipe }: { recipe: Recipe }) {
       </div>
 
       <div className="px-6 py-3 border-t border-rule bg-gradient-to-r from-[rgba(93,127,79,0.04)] to-transparent flex justify-between items-baseline gap-3">
-        <div className="font-sans font-semibold text-[10px] tracking-[0.18em] uppercase text-muted">
+        <div className="font-sans font-semibold text-[11px] tracking-[0.18em] uppercase text-muted">
           {surface === 'bar' ? 'Pour cost' : 'Dish GP'}
         </div>
         <div className="text-right">
@@ -443,7 +443,7 @@ function SurfaceBadge({ surface }: { surface: 'food' | 'bar' }) {
   return (
     <span
       className={
-        'font-display font-semibold text-[10px] tracking-[0.18em] uppercase px-2 py-0.5 border whitespace-nowrap ' +
+        'font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-2 py-0.5 border whitespace-nowrap ' +
         (surface === 'bar'
           ? 'bg-paper-warm text-gold-dark border-gold/40'
           : 'bg-gold-bg text-gold-dark border-gold/40')
