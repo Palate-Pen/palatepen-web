@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/drain-events",
-      "schedule": "*/1 * * * *"
+      "schedule": "15 8 * * *"
     },
     {
       "path": "/api/cron/detect-market-moves",
