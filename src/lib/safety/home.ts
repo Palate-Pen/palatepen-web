@@ -136,12 +136,12 @@ export async function getSafetyEhoRollup(
   let days_logged = 0;
   let days_partial = 0;
   for (const row of (checksRes.data ?? []) as Array<{
-    answers: Record<string, boolean> | null;
+    answers: Record<string, unknown> | null;
   }>) {
     const answers = row.answers ?? {};
-    const vals = Object.values(answers);
-    if (vals.length === 0) continue;
-    if (vals.every(Boolean)) days_logged += 1;
+    const entries = Object.entries(answers).filter(([k]) => k !== '_meta');
+    if (entries.length === 0) continue;
+    if (entries.every(([, v]) => Boolean(v))) days_logged += 1;
     else days_partial += 1;
   }
 
@@ -199,9 +199,9 @@ export async function getSafetyLookingAhead(
     const lastChecks = inputs.recent_checks.slice(0, 14);
     if (lastChecks.length >= 7) {
       const allClear = lastChecks.every((c) => {
-        const a = (c.answers ?? {}) as Record<string, boolean>;
-        const vals = Object.values(a);
-        return vals.length > 0 && vals.every(Boolean);
+        const a = (c.answers ?? {}) as Record<string, unknown>;
+        const entries = Object.entries(a).filter(([k]) => k !== '_meta');
+        return entries.length > 0 && entries.every(([, v]) => Boolean(v));
       });
       if (allClear) {
         items.push({
@@ -247,7 +247,7 @@ export async function getSafetyLookingAhead(
   if (recent21.length >= 14) {
     const missedByDow = new Map<number, number>();
     for (const c of recent21) {
-      const a = (c.answers ?? {}) as Record<string, boolean>;
+      const a = (c.answers ?? {}) as Record<string, unknown>;
       if (a.cleaning_signed_off === false) {
         const dow = new Date(c.check_date).getDay();
         missedByDow.set(dow, (missedByDow.get(dow) ?? 0) + 1);

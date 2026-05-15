@@ -34,17 +34,26 @@ const QUESTIONS: Array<{ key: string; label: string; detail: string }> = [
 ];
 
 type State = Record<string, 'done' | 'flagged' | 'pending'>;
+type Meta = Record<string, { by: string; at: string }>;
 
-function initialState(answers: Record<string, boolean> | null): State {
+function initialState(answers: Record<string, unknown> | null): State {
   const out: State = {};
   for (const q of QUESTIONS) {
     if (answers === null || !(q.key in answers)) {
       out[q.key] = 'pending';
     } else {
-      out[q.key] = answers[q.key] ? 'done' : 'flagged';
+      const val = answers[q.key];
+      out[q.key] = val === true ? 'done' : val === false ? 'flagged' : 'pending';
     }
   }
   return out;
+}
+
+function initialMeta(answers: Record<string, unknown> | null): Meta {
+  if (!answers) return {};
+  const m = answers._meta;
+  if (!m || typeof m !== 'object') return {};
+  return m as Meta;
 }
 
 /**
@@ -58,8 +67,9 @@ function initialState(answers: Record<string, boolean> | null): State {
  */
 export function OpeningChecksGrid({ initial }: { initial: OpeningCheckRow | null }) {
   const router = useRouter();
-  const initialAnswers = (initial?.answers as Record<string, boolean> | null) ?? null;
+  const initialAnswers = (initial?.answers as Record<string, unknown> | null) ?? null;
   const [state, setState] = useState<State>(() => initialState(initialAnswers));
+  const [meta] = useState<Meta>(() => initialMeta(initialAnswers));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +79,6 @@ export function OpeningChecksGrid({ initial }: { initial: OpeningCheckRow | null
     setState((prev) => {
       const next = { ...prev };
       next[key] = prev[key] === 'pending' ? 'done' : prev[key] === 'done' ? 'flagged' : 'pending';
-      // Autosave through submit action — only includes non-pending entries.
       const answers: Record<string, boolean> = {};
       for (const q of QUESTIONS) {
         if (next[q.key] === 'done') answers[q.key] = true;
@@ -92,7 +101,7 @@ export function OpeningChecksGrid({ initial }: { initial: OpeningCheckRow | null
           Opening Checks
         </h2>
         <div className="font-serif italic text-sm text-muted">
-          {pending ? 'Saving…' : `Logged ${nowLabel()}`}{' '}
+          {pending ? 'Saving…' : freshestMetaLabel(meta) ?? `Logged ${nowLabel()}`}
           <strong className="font-display not-italic font-semibold text-ink text-[11px] tracking-[0.25em] uppercase ml-2">
             {doneCount} / {QUESTIONS.length} Done
           </strong>
@@ -105,6 +114,7 @@ export function OpeningChecksGrid({ initial }: { initial: OpeningCheckRow | null
             label={q.label}
             detail={q.detail}
             state={state[q.key]}
+            attribution={meta[q.key]}
             onClick={() => cycle(q.key)}
           />
         ))}
@@ -122,11 +132,13 @@ function CheckTile({
   label,
   detail,
   state,
+  attribution,
   onClick,
 }: {
   label: string;
   detail: string;
   state: 'done' | 'flagged' | 'pending';
+  attribution?: { by: string; at: string };
   onClick: () => void;
 }) {
   const wrapper =
@@ -183,6 +195,19 @@ function CheckTile({
               Flagged · tap to revisit
             </div>
           )}
+          {state !== 'pending' && attribution && (
+            <div className="font-sans text-xs text-muted-soft pt-2 flex items-center gap-1.5">
+              <span className="font-display font-semibold text-[10px] tracking-[0.2em] text-ink-soft">
+                {new Date(attribution.at).toLocaleTimeString('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
+              </span>
+              <span>·</span>
+              <span>{attribution.by}</span>
+            </div>
+          )}
         </div>
       </div>
     </button>
@@ -195,4 +220,18 @@ function nowLabel(): string {
     minute: '2-digit',
     hour12: false,
   });
+}
+
+function freshestMetaLabel(meta: Meta): string | null {
+  let latest: { by: string; at: string } | null = null;
+  for (const entry of Object.values(meta)) {
+    if (!latest || entry.at > latest.at) latest = entry;
+  }
+  if (!latest) return null;
+  const time = new Date(latest.at).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return `Logged ${time} by ${latest.by}`;
 }

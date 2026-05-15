@@ -1,120 +1,126 @@
-import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
 import { getRecentIncidents } from '@/lib/safety/lib';
 import { INCIDENT_KIND_LABEL } from '@/lib/safety/standards';
-import { SectionHead } from '@/components/shell/SectionHead';
-import { KpiCard } from '@/components/shell/KpiCard';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
+import {
+  SafetyPageHeader,
+  SafetySideCard,
+} from '@/components/safety/SafetyPageHeader';
+import { SafetyLookingAhead } from '@/components/safety/SafetyLookingAhead';
 import { IncidentForm } from './IncidentForm';
 
-export const metadata = { title: 'Incidents \u00b7 Safety \u00b7 Palatable' };
+export const metadata = { title: 'Log an issue · Safety · Palatable' };
 
 export default async function IncidentsPage() {
   const ctx = await getShellContext();
   const incidents = await getRecentIncidents(ctx.siteId);
   const open = incidents.filter((i) => !i.resolved_at);
 
+  // Pattern detection
+  const ahead: Array<{
+    tag: 'worth_knowing' | 'get_ready' | 'plan_for_it';
+    body: string;
+  }> = [];
+  const last30 = incidents.filter(
+    (i) =>
+      Date.now() - new Date(i.occurred_at).getTime() <
+      30 * 24 * 60 * 60 * 1000,
+  );
+  const allergenCount = last30.filter((i) => i.kind === 'allergen').length;
+  if (allergenCount >= 2) {
+    ahead.push({
+      tag: 'worth_knowing',
+      body: `<em>${allergenCount} allergen incidents</em> in last 30 days. Worth a briefing with FOH before next service.`,
+    });
+  }
+  if (open.length > 0) {
+    const oldest = open[open.length - 1];
+    const daysOld = Math.floor(
+      (Date.now() - new Date(oldest.occurred_at).getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+    if (daysOld >= 3) {
+      ahead.push({
+        tag: 'plan_for_it',
+        body: `<em>${oldest.summary}</em> has been open ${daysOld} days. Resolve or escalate.`,
+      });
+    }
+  }
+
   return (
-    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Safety \u00b7 Incidents
-      </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">Log</em> an Incident
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        Complaints, allergens, near-misses, suspected illness. Log it now, resolve it later, keep the record either way.
-      </p>
+    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
+      <SafetyPageHeader
+        crumb="Log an Issue"
+        title="Log an"
+        titleEm="issue"
+        subtitle="Complaint, allergy, near-miss, illness. Log it honestly — high severity escalates to the right people automatically."
+      />
 
-      <FsaReferenceStrip surface="incidents" />
+      {ahead.length > 0 && <SafetyLookingAhead items={ahead} />}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <KpiCard
-          label="Open"
-          value={String(open.length)}
-          sub="awaiting resolution"
-          tone={open.length > 0 ? 'attention' : 'healthy'}
-        />
-        <KpiCard
-          label="Allergens"
-          value={String(incidents.filter((i) => i.kind === 'allergen').length)}
-          sub="of last 50"
-          tone={incidents.filter((i) => i.kind === 'allergen').length > 0 ? 'urgent' : undefined}
-        />
-        <KpiCard
-          label="Complaints"
-          value={String(incidents.filter((i) => i.kind === 'complaint').length)}
-          sub="of last 50"
-        />
-        <KpiCard
-          label="Near misses"
-          value={String(incidents.filter((i) => i.kind === 'near_miss').length)}
-          sub="of last 50"
-        />
-      </div>
-
-      <SectionHead title="New incident" />
-      <IncidentForm />
-
-      <SectionHead title="Recent" meta={incidents.length + ' on file'} />
-      {incidents.length === 0 ? (
-        <div className="bg-card border border-rule px-10 py-12 text-center">
-          <p className="font-serif italic text-muted">
-            Nothing on file. Hopefully that stays the case.
-          </p>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
+        <div>
+          <IncidentForm />
         </div>
-      ) : (
-        <div className="bg-card border border-rule mb-10">
-          {incidents.map((inc, i) => (
-            <div
-              key={inc.id}
-              className={
-                'px-7 py-5 ' +
-                (i < incidents.length - 1 ? 'border-b border-rule-soft' : '')
-              }
-            >
-              <div className="flex items-baseline justify-between gap-4 mb-2 flex-wrap">
-                <div className="font-serif font-semibold text-base text-ink">
-                  {inc.summary}
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
-                    {INCIDENT_KIND_LABEL[inc.kind]}
-                  </span>
-                  <span
+        <div>
+          <FsaReferenceStrip surface="incidents" variant="full" />
+
+          <SafetySideCard title="Recent issues">
+            {incidents.length === 0 ? (
+              <div className="px-6 py-6 font-serif italic text-sm text-muted">
+                Nothing on file. Hopefully that stays the case.
+              </div>
+            ) : (
+              incidents.slice(0, 6).map((inc) => (
+                <div key={inc.id} className="px-6 py-4">
+                  <div className="flex items-center justify-between gap-3 mb-1.5">
+                    <span
+                      className={
+                        'inline-flex font-display font-semibold text-[9px] tracking-[0.25em] uppercase px-2 py-1 ' +
+                        toneForKind(inc.kind)
+                      }
+                    >
+                      {INCIDENT_KIND_LABEL[inc.kind]}
+                    </span>
+                    <span className="font-sans text-xs text-muted-soft">
+                      {new Date(inc.occurred_at).toLocaleDateString('en-GB', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                  </div>
+                  <div className="font-serif text-sm text-ink leading-snug mb-1.5">
+                    {inc.summary}
+                  </div>
+                  <div
                     className={
-                      'font-display font-semibold text-xs tracking-[0.18em] uppercase ' +
+                      'font-display font-semibold text-[10px] tracking-[0.25em] uppercase ' +
                       (inc.resolved_at ? 'text-healthy' : 'text-attention')
                     }
                   >
                     {inc.resolved_at ? 'Resolved' : 'Open'}
-                  </span>
+                    {inc.allergens && inc.allergens.length > 0 && (
+                      <span className="ml-2 normal-case font-sans text-muted not-italic">
+                        · {inc.allergens.join(', ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="font-serif italic text-xs text-muted mb-2">
-                {new Date(inc.occurred_at).toLocaleString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-                {inc.allergens && inc.allergens.length > 0 && (
-                  <> \u00b7 {inc.allergens.join(', ')}</>
-                )}
-              </div>
-              {inc.body_md && (
-                <p className="font-serif text-sm text-ink-soft leading-relaxed whitespace-pre-line">
-                  {inc.body_md}
-                </p>
-              )}
-            </div>
-          ))}
+              ))
+            )}
+          </SafetySideCard>
         </div>
-      )}
+      </div>
 
       <LiabilityFooter />
     </div>
   );
+}
+
+function toneForKind(k: string): string {
+  if (k === 'allergen' || k === 'illness') return 'bg-urgent/10 text-urgent';
+  if (k === 'complaint') return 'bg-attention/10 text-attention';
+  return 'bg-gold-bg text-gold-dark';
 }

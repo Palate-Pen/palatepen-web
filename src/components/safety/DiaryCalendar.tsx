@@ -152,9 +152,9 @@ export function DiaryCalendar({
 
 function classify(row: OpeningCheckRow | null): 'complete' | 'partial' | 'missed' | null {
   if (!row) return null;
-  const a = (row.answers ?? {}) as Record<string, boolean>;
-  const vals = Object.values(a);
-  if (vals.length === 0) return 'missed';
-  if (vals.every(Boolean)) return 'complete';
+  const a = (row.answers ?? {}) as Record<string, unknown>;
+  const entries = Object.entries(a).filter(([k]) => k !== '_meta');
+  if (entries.length === 0) return 'missed';
+  if (entries.every(([, v]) => Boolean(v))) return 'complete';
   return 'partial';
 }

@@ -44,7 +44,18 @@ export async function ackLiabilityAction(): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Submit today's opening check. Either creates or updates. */
+/**
+ * Submit today's opening check.
+ *
+ * Attribution: per-question who/when is stored under `answers._meta` so
+ * the safety home can render "✓ Jack at 08:42" against each check
+ * without a schema change. The existing `completed_by` column still
+ * captures the most-recent toggler for backwards compat.
+ *
+ * Diff-aware: only stamps `_meta` for questions whose value changed
+ * since the previous saved row, so chained autosaves don't overwrite
+ * the original sign-off timestamp.
+ */
 export async function submitOpeningCheckAction(input: {
   answers: Record<string, boolean | string>;
   notes: string | null;
@@ -64,6 +75,33 @@ export async function submitOpeningCheckAction(input: {
   if (!membership) return { ok: false, error: 'No site membership' };
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const { data: existing } = await supabase
+    .from('safety_opening_checks')
+    .select('answers')
+    .eq('site_id', membership.site_id)
+    .eq('check_date', today)
+    .maybeSingle();
+
+  const prev = ((existing?.answers ?? {}) as Record<string, unknown>) || {};
+  const prevMeta =
+    (prev._meta as Record<string, { by: string; at: string }> | undefined) ??
+    {};
+
+  const display = await resolveDisplayName(supabase, user.id, user.email);
+  const nowIso = new Date().toISOString();
+
+  const nextMeta: Record<string, { by: string; at: string }> = { ...prevMeta };
+  for (const [key, val] of Object.entries(input.answers)) {
+    if (key === '_meta') continue;
+    if (prev[key] !== val) {
+      nextMeta[key] = { by: display, at: nowIso };
+    }
+  }
+
+  const answersWithMeta: Record<string, unknown> = { ...input.answers };
+  answersWithMeta._meta = nextMeta;
+
   const { error } = await supabase
     .from('safety_opening_checks')
     .upsert(
@@ -71,7 +109,7 @@ export async function submitOpeningCheckAction(input: {
         site_id: membership.site_id,
         completed_by: user.id,
         check_date: today,
-        answers: input.answers,
+        answers: answersWithMeta,
         notes: input.notes,
       },
       { onConflict: 'site_id,check_date' },
@@ -80,6 +118,19 @@ export async function submitOpeningCheckAction(input: {
 
   revalidatePath('/safety');
   return { ok: true };
+}
+
+async function resolveDisplayName(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string,
+  fallbackEmail: string | undefined,
+): Promise<string> {
+  void supabase;
+  void userId;
+  if (!fallbackEmail) return 'team';
+  const local = fallbackEmail.split('@')[0] ?? 'team';
+  // Capitalise first letter for display
+  return local.charAt(0).toUpperCase() + local.slice(1);
 }
 
 /** Log a probe reading. Pass/fail is derived from FSA-aligned thresholds. */

@@ -1,66 +1,93 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getCleaningSchedule } from '@/lib/safety/lib';
 import { CLEANING_FREQ_LABEL } from '@/lib/safety/standards';
-import { SectionHead } from '@/components/shell/SectionHead';
-import { KpiCard } from '@/components/shell/KpiCard';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
+import {
+  SafetyPageHeader,
+  SafetySideCard,
+} from '@/components/safety/SafetyPageHeader';
+import { SafetyLookingAhead } from '@/components/safety/SafetyLookingAhead';
 import { CleaningTickRow } from './CleaningTickRow';
 import { seedDefaultCleaningTasksFormAction } from '@/lib/safety/actions';
 
-export const metadata = { title: 'Cleaning \u00b7 Safety \u00b7 Palatable' };
+export const metadata = { title: 'Cleaning schedule · Safety · Palatable' };
 
 export default async function CleaningPage() {
   const ctx = await getShellContext();
   const tasks = await getCleaningSchedule(ctx.siteId);
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const dailyTasks = tasks.filter((t) => t.frequency === 'daily');
+  const dailyDone = dailyTasks.filter(
+    (t) => t.last_completed_at?.slice(0, 10) === todayIso,
+  ).length;
+  const dailyTotal = dailyTasks.length;
+  const pct = dailyTotal === 0 ? 0 : Math.round((dailyDone / dailyTotal) * 100);
+
+  // Overdue = weekly/monthly past their cycle, or never done
+  const overdue = tasks.filter((t) => {
+    if (!t.last_completed_at) return true;
+    const days = Math.floor(
+      (Date.now() - new Date(t.last_completed_at).getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+    if (t.frequency === 'daily') return days > 1;
+    if (t.frequency === 'weekly') return days > 7;
+    if (t.frequency === 'monthly') return days > 30;
+    if (t.frequency === 'quarterly') return days > 90;
+    if (t.frequency === 'annually') return days > 365;
+    return false;
+  });
+
+  // Group by area
   const grouped = new Map<string, typeof tasks>();
   for (const t of tasks) {
     if (!grouped.has(t.area)) grouped.set(t.area, []);
     grouped.get(t.area)!.push(t);
   }
 
-  const dailyDone = tasks.filter((t) => {
-    if (t.frequency !== 'daily' || !t.last_completed_at) return false;
-    const today = new Date().toISOString().slice(0, 10);
-    const last = t.last_completed_at.slice(0, 10);
-    return last === today;
-  }).length;
-  const dailyTotal = tasks.filter((t) => t.frequency === 'daily').length;
+  // Today's sign-offs feed (last 6)
+  const signoffs = [...tasks]
+    .filter((t) => t.last_completed_at?.slice(0, 10) === todayIso)
+    .sort((a, b) => (b.last_completed_at ?? '').localeCompare(a.last_completed_at ?? ''))
+    .slice(0, 6);
+
+  const ahead: Array<{
+    tag: 'worth_knowing' | 'get_ready' | 'plan_for_it';
+    body: string;
+  }> = [];
+  if (overdue.length > 0) {
+    ahead.push({
+      tag: 'plan_for_it',
+      body: `<em>${overdue[0].task}</em>${overdue.length > 1 ? ` and ${overdue.length - 1} other task${overdue.length - 1 === 1 ? '' : 's'}` : ''} overdue. The diary calendar marks these red on the home page.`,
+    });
+  }
+  if (dailyTotal > 0 && dailyDone === dailyTotal) {
+    ahead.push({
+      tag: 'worth_knowing',
+      body: `All daily tasks ticked off. The full SFBB record looks clean for today.`,
+    });
+  }
 
   return (
-    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Safety \u00b7 Cleaning
-      </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">Cleaning</em> Schedule
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        SFBB-aligned cleaning checklist. Tick each task as you go and the diary builds itself.
-      </p>
+    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
+      <SafetyPageHeader
+        crumb="Cleaning Schedule"
+        title="The"
+        titleEm="cleaning"
+        subtitle="SFBB-aligned tasks across opening, mid-day, and pre-service. Tick as you go — the calendar dots itself."
+      />
 
-      <FsaReferenceStrip surface="cleaning" />
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <KpiCard
-          label="Daily progress"
-          value={dailyDone + ' / ' + dailyTotal}
-          sub="ticked today"
-          tone={dailyDone === dailyTotal && dailyTotal > 0 ? 'healthy' : 'attention'}
-        />
-        <KpiCard label="Tasks on file" value={String(tasks.length)} sub="across all frequencies" />
-        <KpiCard label="Areas" value={String(grouped.size)} sub="distinct zones" />
-        <KpiCard label="Last sign-off" value={(tasks[0]?.last_completed_at ? new Date(tasks[0].last_completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '\u2014')} sub="most recent" />
-      </div>
+      {ahead.length > 0 && <SafetyLookingAhead items={ahead} />}
 
       {tasks.length === 0 ? (
-        <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-7 mb-10">
+        <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-7">
           <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-3">
             No cleaning schedule yet
           </div>
           <p className="font-serif italic text-base text-ink-soft leading-relaxed mb-5">
-            We can seed a default SFBB-aligned schedule with 14 tasks across kitchen, front of house, bar, and storage. You can edit every row afterwards.
+            Seed the default SFBB-aligned schedule (14 tasks across kitchen, FOH, bar, storage). Every row is editable afterwards.
           </p>
           <form action={seedDefaultCleaningTasksFormAction}>
             <button
@@ -72,21 +99,96 @@ export default async function CleaningPage() {
           </form>
         </div>
       ) : (
-        Array.from(grouped.entries()).map(([area, items]) => (
-          <section key={area} className="mb-10">
-            <SectionHead title={area} meta={items.length + (items.length === 1 ? ' task' : ' tasks')} />
-            <div className="bg-card border border-rule">
-              {items.map((t, i) => (
-                <CleaningTickRow
-                  key={t.id}
-                  task={t}
-                  freqLabel={CLEANING_FREQ_LABEL[t.frequency]}
-                  isLast={i === items.length - 1}
+        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
+          <div>
+            <div className="bg-card border border-rule px-7 py-5 mb-6">
+              <div className="flex items-baseline justify-between gap-4 mb-3 flex-wrap">
+                <div>
+                  <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-1">
+                    Today
+                  </div>
+                  <div className="font-serif text-2xl font-medium text-ink">
+                    {dailyDone} / {dailyTotal} daily tasks done
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono font-medium text-3xl text-gold-dark leading-none">
+                    {pct}%
+                  </div>
+                  <div className="font-sans text-xs text-muted mt-1">
+                    complete
+                  </div>
+                </div>
+              </div>
+              <div className="w-full h-2 bg-rule rounded-sm overflow-hidden">
+                <div
+                  className="h-full bg-healthy"
+                  style={{ width: pct + '%' }}
                 />
-              ))}
+              </div>
+              {overdue.length > 0 && (
+                <p className="font-serif italic text-sm text-attention mt-3">
+                  {overdue.length} task{overdue.length === 1 ? '' : 's'} overdue against frequency cycle
+                </p>
+              )}
             </div>
-          </section>
-        ))
+
+            {Array.from(grouped.entries()).map(([area, items]) => (
+              <section key={area} className="mb-8">
+                <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
+                  <h2 className="font-display font-semibold text-[13px] tracking-[0.35em] uppercase text-gold">
+                    {area}
+                  </h2>
+                  <span className="font-serif italic text-sm text-muted">
+                    {items.length} task{items.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="bg-card border border-rule">
+                  {items.map((t, i) => (
+                    <CleaningTickRow
+                      key={t.id}
+                      task={t}
+                      freqLabel={CLEANING_FREQ_LABEL[t.frequency]}
+                      isLast={i === items.length - 1}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          <div>
+            <FsaReferenceStrip surface="cleaning" variant="full" />
+
+            <SafetySideCard title="Today's sign-offs">
+              {signoffs.length === 0 ? (
+                <div className="px-6 py-6 font-serif italic text-sm text-muted">
+                  Nothing ticked yet today.
+                </div>
+              ) : (
+                signoffs.map((s) => (
+                  <div key={s.id} className="px-6 py-3.5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-xs text-muted-soft">
+                        {new Date(s.last_completed_at!).toLocaleTimeString('en-GB', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
+                      </span>
+                      <span className="font-display font-semibold text-[10px] tracking-[0.25em] uppercase text-gold">
+                        {CLEANING_FREQ_LABEL[s.frequency]}
+                      </span>
+                    </div>
+                    <div className="font-serif text-sm text-ink leading-snug">
+                      {s.task}
+                    </div>
+                  </div>
+                ))
+              )}
+            </SafetySideCard>
+          </div>
+        </div>
       )}
 
       <LiabilityFooter />

@@ -1,13 +1,16 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getRecentProbeReadings } from '@/lib/safety/lib';
 import { PROBE_KIND_LABEL } from '@/lib/safety/standards';
-import { SectionHead } from '@/components/shell/SectionHead';
-import { KpiCard } from '@/components/shell/KpiCard';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
+import {
+  SafetyPageHeader,
+  SafetySideCard,
+} from '@/components/safety/SafetyPageHeader';
+import { SafetyLookingAhead } from '@/components/safety/SafetyLookingAhead';
 import { ProbeForm } from './ProbeForm';
 
-export const metadata = { title: 'Probe Reading \u00b7 Safety \u00b7 Palatable' };
+export const metadata = { title: 'Probe reading · Safety · Palatable' };
 
 const tempFmt = new Intl.NumberFormat('en-GB', {
   minimumFractionDigits: 1,
@@ -16,112 +19,103 @@ const tempFmt = new Intl.NumberFormat('en-GB', {
 
 export default async function ProbeReadingPage() {
   const ctx = await getShellContext();
-  const readings = await getRecentProbeReadings(ctx.siteId, 50);
+  const readings = await getRecentProbeReadings(ctx.siteId, 30);
 
-  const failingLast24h = readings.filter((r) => {
-    if (r.passed) return false;
-    return Date.now() - new Date(r.logged_at).getTime() < 24 * 60 * 60 * 1000;
-  }).length;
-  const totalLast24h = readings.filter(
-    (r) => Date.now() - new Date(r.logged_at).getTime() < 24 * 60 * 60 * 1000,
-  ).length;
+  const today = new Date().toISOString().slice(0, 10);
+  const todaysReadings = readings.filter((r) =>
+    r.logged_at.startsWith(today),
+  );
+
+  // Pattern detection — surface in Looking Ahead bar at the top.
+  const ahead: Array<{ tag: 'worth_knowing' | 'get_ready' | 'plan_for_it'; body: string }> = [];
+  const failingByLoc = new Map<string, number>();
+  for (const r of readings) {
+    if (!r.passed) {
+      failingByLoc.set(r.location, (failingByLoc.get(r.location) ?? 0) + 1);
+    }
+  }
+  for (const [loc, count] of failingByLoc.entries()) {
+    if (count >= 2) {
+      ahead.push({
+        tag: 'worth_knowing',
+        body: `<em>${loc}</em> read outside spec ${count} times in last 30 days. Worth a maintenance flag.`,
+      });
+    }
+  }
+  if (todaysReadings.length === 0) {
+    ahead.push({
+      tag: 'plan_for_it',
+      body: `No probe readings logged today yet. Cooking core checks land here at first plate-up.`,
+    });
+  }
 
   return (
-    <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
-      <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Safety \u00b7 Probe
-      </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
-        <em className="text-gold font-semibold not-italic">Probe</em> Reading
-      </h1>
-      <p className="font-serif italic text-lg text-muted mb-8">
-        Log temperatures. Pass/fail is automatic against FSA-aligned thresholds and stored against the reading so the audit trail survives rule changes.
-      </p>
+    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
+      <SafetyPageHeader
+        crumb="Log a Probe Reading"
+        title="Log a"
+        titleEm="probe reading"
+        subtitle="Tied to today's menu where it can be. Manual entry for now — digital probes coming later."
+      />
 
-      <FsaReferenceStrip surface="probe_readings" />
+      {ahead.length > 0 && <SafetyLookingAhead items={ahead} />}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
-        <KpiCard
-          label="Logged"
-          value={String(totalLast24h)}
-          sub="in last 24 hours"
-        />
-        <KpiCard
-          label="Failing"
-          value={String(failingLast24h)}
-          sub="below or above safe range"
-          tone={failingLast24h > 0 ? 'urgent' : 'healthy'}
-        />
-        <KpiCard
-          label="On file"
-          value={String(readings.length)}
-          sub="last 50 readings"
-        />
-        <KpiCard label="Source" value="Manual" sub="bluetooth probe \u00b7 next batch" />
-      </div>
-
-      <SectionHead title="New reading" />
-      <ProbeForm />
-
-      <SectionHead title="Recent" meta={readings.length === 0 ? 'no readings yet' : readings.length + ' on file'} />
-      {readings.length === 0 ? (
-        <div className="bg-card border border-rule px-10 py-12 text-center">
-          <p className="font-serif italic text-muted">
-            No readings yet. Log the first one above and the audit trail starts to build.
-          </p>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
+        <div>
+          <ProbeForm />
         </div>
-      ) : (
-        <div className="bg-card border border-rule">
-          <div className="hidden md:grid grid-cols-[120px_120px_1.4fr_110px_120px_100px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
-            {['When', 'Kind', 'Location', 'Temperature', 'Status', 'Notes'].map(
-              (h) => (
+        <div>
+          <FsaReferenceStrip surface="probe_readings" variant="full" />
+
+          <SafetySideCard title="Today's readings">
+            {todaysReadings.length === 0 ? (
+              <div className="px-6 py-6 font-serif italic text-sm text-muted">
+                No readings yet today.
+              </div>
+            ) : (
+              todaysReadings.slice(0, 8).map((r) => (
                 <div
-                  key={h}
-                  className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-muted"
+                  key={r.id}
+                  className="px-6 py-3.5 flex items-center gap-3"
                 >
-                  {h}
+                  <div className="font-mono text-xs text-muted-soft w-12 flex-shrink-0">
+                    {new Date(r.logged_at).toLocaleTimeString('en-GB', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false,
+                    })}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-serif text-sm text-ink truncate">
+                      {r.location}
+                    </div>
+                    <div className="font-sans text-xs text-muted mt-0.5">
+                      {PROBE_KIND_LABEL[r.kind as keyof typeof PROBE_KIND_LABEL] ?? r.kind}
+                    </div>
+                  </div>
+                  <div
+                    className={
+                      'font-mono font-medium text-sm flex-shrink-0 ' +
+                      (r.passed ? 'text-healthy' : 'text-attention')
+                    }
+                  >
+                    {tempFmt.format(r.temperature_c)}°C
+                  </div>
                 </div>
-              ),
+              ))
             )}
-          </div>
-          {readings.map((r, i) => (
-            <div
-              key={r.id}
-              className={
-                'grid grid-cols-1 md:grid-cols-[120px_120px_1.4fr_110px_120px_100px] gap-4 px-7 py-4 items-center' +
-                (i < readings.length - 1 ? ' border-b border-rule-soft' : '')
-              }
-            >
-              <div className="font-serif italic text-xs text-muted">
-                {new Date(r.logged_at).toLocaleString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-              <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
-                {PROBE_KIND_LABEL[r.kind as keyof typeof PROBE_KIND_LABEL] ?? r.kind}
-              </div>
-              <div className="font-serif text-sm text-ink">{r.location}</div>
-              <div className="font-serif font-semibold text-base text-ink">
-                {tempFmt.format(r.temperature_c)} {String.fromCharCode(0xb0)}C
-              </div>
-              <div
-                className={
-                  'font-display font-semibold text-xs tracking-[0.18em] uppercase ' +
-                  (r.passed ? 'text-healthy' : 'text-urgent')
-                }
-              >
-                {r.passed ? 'PASS' : 'FAIL'}
-              </div>
-              <div className="font-serif italic text-xs text-muted line-clamp-2">
-                {r.notes ?? ''}
-              </div>
+          </SafetySideCard>
+
+          <div className="bg-paper-warm border-l-[3px] border-gold px-6 py-5">
+            <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-2">
+              A note on probes
             </div>
-          ))}
+            <p className="font-serif text-sm text-ink-soft leading-relaxed">
+              Probes need <strong className="font-semibold">weekly calibration</strong> — boiling water (100°C) or ice slurry (0°C). The system flags overdue calibrations on the home Looking Ahead bar.
+            </p>
+          </div>
         </div>
-      )}
+      </div>
 
       <LiabilityFooter />
     </div>
