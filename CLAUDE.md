@@ -107,6 +107,7 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 ## Recent activity
 
 **Last shipped:**
+- Credit notes — v1 wedge piece #3 (`988e93c`). Schema `v2.credit_notes` + `v2.credit_note_lines` (1:1 with invoices, four-state lifecycle, five reasons). Draft button on flagged-invoice page pre-seeds lines from the invoice's discrepancies. Detail view has inline line editor, mailto: compose with body pre-filled, print-to-PDF, and state actions (Send / Resolved / Cancel / Re-open). Stock & Suppliers hub shows in-flight count. Seeded on jack@: one resolved (£27.54 Aubrey Allen lamb short), one sent (£2.77 Bookers damaged chicken), one draft (£21.04 Reza Foods wrong cut) + Inbox forward signal pointing at the draft.
 - Write-paths across every surface — Recipe CRUD with allergens + method + lock; Bank ingredient CRUD + manual price updates; Margins what-if slider saves new prices with cost-baseline re-anchor; Prep status cycle + inline notes + Add Prep Item dialog; Suppliers/Deliveries/Waste add dialogs; Inbox signal dismiss + acted-on.
 - Manager Home (real data over locked v1 mockup — KPIs, prep status, reporting grid) + Owner shell scaffold (8 tabs at `/owner/*`, Home + Sites live, 6 pending with OwnerComingSoon placeholders).
 - Legacy compliance + ops features merged: UK FIR 14-allergen tri-state on Recipes + Bank with nut/cereal sub-types; per-100g nutrition + UK DH 2013 FoP traffic lights; recipe method[] with numbered-step editor; public menu reader at `/m/[slug]`; inbox email token in Settings; AI recipe import from URL; per-line invoice discrepancy flagging; account-level preferences (currency/GP target/kitchen size+location/stock day); UK FIR Compliance Check modal; V/VG/GF/DF/NF dietary chips derived from allergen state; per-supplier detail view with reliability score; email source badge; notebook tag filter.
@@ -119,7 +120,6 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 - The eight pending Manager tabs (Team, P&L, Deliveries, Suppliers, Service Notes, Compliance, Reports, Settings) and six pending Owner tabs (Revenue, Margins, Suppliers, Cash, Reports) remain mockup-pending; sidebar already shows them as "soon".
 
 **Next:**
-- Credit notes workflow — the second half of v1 wedge piece #3. Schema `v2.credit_notes` + draft/send UI when a flagged invoice has discrepancies.
 - Photo upload + Supabase Storage bucket (recipes + branding).
 - Cost simulator modal on recipes (drag-adjust % per ingredient).
 - Spec sheet OCR port from legacy.
