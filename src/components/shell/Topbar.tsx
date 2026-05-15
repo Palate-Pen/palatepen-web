@@ -14,7 +14,6 @@ const BREADCRUMBS: Array<{ prefix: string; label: string }> = [
   { prefix: '/bartender/notebook', label: 'Notebook' },
   { prefix: '/bartender/inbox', label: 'Inbox' },
   { prefix: '/bartender/settings', label: 'Settings' },
-  { prefix: '/bartender/connections', label: 'Connections' },
   { prefix: '/bartender', label: 'Home' },
   { prefix: '/prep', label: 'Prep' },
   { prefix: '/recipes', label: 'Recipes' },
@@ -24,7 +23,6 @@ const BREADCRUMBS: Array<{ prefix: string; label: string }> = [
   { prefix: '/notebook', label: 'Notebook' },
   { prefix: '/inbox', label: 'Inbox' },
   { prefix: '/settings', label: 'Settings' },
-  { prefix: '/connections', label: 'Connections' },
 ];
 
 // Named ancestors for the back link. When the chef is at a sub-route
@@ -38,7 +36,6 @@ const NAMED_PATHS: Record<string, string> = {
   '/notebook': 'Notebook',
   '/inbox': 'Inbox',
   '/settings': 'Settings',
-  '/connections': 'Connections',
   '/stock-suppliers': 'The Walk-in',
   '/stock-suppliers/the-bank': 'The Bank',
   '/stock-suppliers/invoices': 'Invoices',
@@ -54,7 +51,6 @@ const NAMED_PATHS: Record<string, string> = {
   '/bartender/notebook': 'Notebook',
   '/bartender/inbox': 'Inbox',
   '/bartender/settings': 'Settings',
-  '/bartender/connections': 'Connections',
   '/bartender/back-bar': 'Back Bar',
   '/bartender/back-bar/cellar': 'Cellar',
   '/bartender/back-bar/deliveries': 'Deliveries',
@@ -167,24 +163,39 @@ export function Topbar({
   const isKitchenRole = role === 'chef' || role === 'sous_chef' || role === 'commis';
   const isManagerPlus = role === 'manager' || role === 'owner';
 
+  // Tier rank for view-switcher gating. Pro = 1 user / 1 outlet so they
+  // get Chef view only (no Manager / Owner / Bartender — those imply
+  // multi-user setup). Kitchen+ unlocks Manager (single site, up to 5
+  // users on roles). Group+ unlocks Owner (multi-site, multi-outlet).
+  const tierRank: Record<string, number> = {
+    free: 0,
+    pro: 1,
+    kitchen: 2,
+    group: 3,
+    enterprise: 4,
+  };
+  const t = tierRank[tier.toLowerCase()] ?? 0;
+  const allowsBarOrManager = t >= 2; // kitchen+
+  const allowsOwner = t >= 3; // group+
+
   if (isKitchenRole || isManagerPlus) {
     accessibleViews.push({ key: 'chef', label: VIEW_LABEL.chef, href: '/' });
   }
-  if (isBarRole || isManagerPlus || hasBarMembership) {
+  if (allowsBarOrManager && (isBarRole || isManagerPlus || hasBarMembership)) {
     accessibleViews.push({
       key: 'bartender',
       label: VIEW_LABEL.bartender,
       href: '/bartender',
     });
   }
-  if (isManagerPlus) {
+  if (allowsBarOrManager && isManagerPlus) {
     accessibleViews.push({
       key: 'manager',
       label: VIEW_LABEL.manager,
       href: '/manager',
     });
   }
-  if (role === 'owner') {
+  if (allowsOwner && role === 'owner') {
     accessibleViews.push({
       key: 'owner',
       label: VIEW_LABEL.owner,

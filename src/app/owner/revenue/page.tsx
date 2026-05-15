@@ -146,7 +146,7 @@ export default async function OwnerRevenuePage() {
 
       <p className="font-serif italic text-sm text-muted mt-6">
         <Link
-          href="/connections"
+          href="/owner/connections"
           className="text-gold hover:text-gold-dark transition-colors"
         >
           Wire up POS in Connections

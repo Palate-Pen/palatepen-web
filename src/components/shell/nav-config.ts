@@ -25,7 +25,6 @@ export const CHEF_SECTIONS: NavSection[] = [
 
 export const CHEF_ACCOUNT_ITEMS: NavItem[] = [
   { href: '/settings', label: 'Settings', icon: 'settings' },
-  { href: '/connections', label: 'Connections', icon: 'connections' },
 ];
 
 export const MANAGER_SECTIONS: NavSection[] = [
@@ -72,6 +71,7 @@ export const MANAGER_SECTIONS: NavSection[] = [
 
 export const MANAGER_ACCOUNT_ITEMS: NavItem[] = [
   { href: '/manager/settings', label: 'Settings', icon: 'settings' },
+  { href: '/manager/connections', label: 'Connections', icon: 'connections' },
 ];
 
 export const OWNER_SECTIONS: NavSection[] = [
@@ -99,6 +99,7 @@ export const OWNER_SECTIONS: NavSection[] = [
 
 export const OWNER_ACCOUNT_ITEMS: NavItem[] = [
   { href: '/owner/settings', label: 'Settings', icon: 'settings' },
+  { href: '/owner/connections', label: 'Connections', icon: 'connections' },
 ];
 
 export const BARTENDER_SECTIONS: NavSection[] = [
@@ -126,9 +127,4 @@ export const BARTENDER_SECTIONS: NavSection[] = [
 
 export const BARTENDER_ACCOUNT_ITEMS: NavItem[] = [
   { href: '/bartender/settings', label: 'Settings', icon: 'settings' },
-  {
-    href: '/bartender/connections',
-    label: 'Connections',
-    icon: 'connections',
-  },
 ];

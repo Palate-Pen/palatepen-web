@@ -146,15 +146,12 @@ export default async function SettingsPage() {
       </Section>
 
       <Section title="Connections">
-        <Link
-          href="/connections"
-          className="px-7 py-4 flex justify-between items-center hover:text-gold transition-colors"
-        >
+        <div className="px-7 py-4 flex justify-between items-center">
           <span className="font-serif text-sm text-ink">Integrations</span>
-          <span className="text-xs text-muted">
-            Manage in Connections tab →
+          <span className="text-xs text-muted italic">
+            Manager + Owner controls these — Kitchen+ tier
           </span>
-        </Link>
+        </div>
       </Section>
 
       <Section title="Export Data">

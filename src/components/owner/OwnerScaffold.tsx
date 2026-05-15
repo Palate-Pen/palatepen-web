@@ -71,6 +71,13 @@ export const OWNER_TABS: Array<{
     status: 'live',
   },
   {
+    slug: 'connections',
+    href: '/owner/connections',
+    name: 'Connections',
+    description: 'Per-site integrations · POS · inbound email · accountant feed',
+    status: 'live',
+  },
+  {
     slug: 'settings',
     href: '/owner/settings',
     name: 'Settings',

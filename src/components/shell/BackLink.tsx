@@ -24,7 +24,6 @@ const LABELS: Record<string, string> = {
   '/notebook': 'Notebook',
   '/inbox': 'Inbox',
   '/settings': 'Settings',
-  '/connections': 'Connections',
   '/stock-suppliers': 'The Walk-in',
   '/stock-suppliers/the-bank': 'The Bank',
   '/stock-suppliers/invoices': 'Invoices',
