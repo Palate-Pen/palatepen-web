@@ -6,6 +6,8 @@ import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
+import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
+import { getForwardCalendar } from '@/lib/safety/forward-calendar';
 
 export const metadata = { title: 'Owner · Palatable' };
 
@@ -212,6 +214,7 @@ export default async function OwnerHomePage() {
         </div>
       </section>
 
+      <ForwardCalendar days={14} items={await getForwardCalendar(ctx.siteId, 14)} />
       <LookingAhead siteId={ctx.siteId} surface="owner_home" />
     </div>
   );

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { defaultHomeForCurrentUser } from '@/lib/role-home';
 
 async function siteOrigin() {
   const h = await headers();
@@ -21,7 +22,10 @@ export async function signInWithPassword(formData: FormData) {
   if (error) {
     redirect(`/signin?error=${encodeURIComponent(error.message)}`);
   }
-  redirect('/');
+  // Role-aware default home: chef -> /, bar -> /bartender, manager
+  // -> /manager, owner -> /owner. Resolved server-side after the
+  // session lands so RLS can read the membership.
+  redirect(await defaultHomeForCurrentUser());
 }
 
 export async function signUpWithPassword(formData: FormData) {

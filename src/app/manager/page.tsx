@@ -4,6 +4,8 @@ import { getManagerHomeData } from '@/lib/manager-home';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
+import { getForwardCalendar } from '@/lib/safety/forward-calendar';
 
 export const metadata = { title: 'Manager · Palatable' };
 
@@ -24,7 +26,10 @@ const WASTE_CATEGORY_LABEL: Record<string, string> = {
 
 export default async function ManagerHomePage() {
   const ctx = await getShellContext();
-  const data = await getManagerHomeData(ctx.siteId);
+  const [data, calendar] = await Promise.all([
+    getManagerHomeData(ctx.siteId),
+    getForwardCalendar(ctx.siteId, 14),
+  ]);
 
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1680px] mx-auto">
@@ -224,6 +229,7 @@ export default async function ManagerHomePage() {
         </div>
       </section>
 
+      <ForwardCalendar days={14} items={calendar} />
       <LookingAhead siteId={ctx.siteId} surface="manager_home" />
     </div>
   );

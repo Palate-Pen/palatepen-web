@@ -1,9 +1,13 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getShellContext } from '@/lib/shell/context';
 import { getHomeRollup } from '@/lib/home';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
+import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
+import { getForwardCalendar } from '@/lib/safety/forward-calendar';
+import { defaultHomePath } from '@/lib/role-home';
 
 export const metadata = { title: 'Home — Palatable' };
 
@@ -22,7 +26,16 @@ function timeOfDay(now: Date): { eyebrow: string; greeting: string } {
 
 export default async function HomePage() {
   const ctx = await getShellContext();
-  const rollup = await getHomeRollup(ctx.siteId);
+  // Role-aware home: bar staff, managers, owners get redirected to
+  // their own default home. Chef + sous_chef + commis + viewer fall
+  // through to the chef shell that follows.
+  const fallback = defaultHomePath(ctx.role);
+  if (fallback !== '/') redirect(fallback);
+
+  const [rollup, calendar] = await Promise.all([
+    getHomeRollup(ctx.siteId),
+    getForwardCalendar(ctx.siteId, 14),
+  ]);
   const tod = timeOfDay(new Date());
 
   return (
@@ -99,6 +112,8 @@ export default async function HomePage() {
           </Panel>
         </div>
       </section>
+
+      <ForwardCalendar days={14} items={calendar} />
 
       <section className="mb-12">
         <SectionHead title="Kitchen at a Glance" meta="live" />

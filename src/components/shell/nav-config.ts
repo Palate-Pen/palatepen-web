@@ -6,6 +6,7 @@ export const CHEF_SECTIONS: NavSection[] = [
     items: [
       { href: '/', label: 'Home', icon: 'home' },
       { href: '/prep', label: 'Prep', icon: 'prep' },
+      { href: '/safety', label: 'Safety', icon: 'compliance' },
       { href: '/recipes', label: 'Recipes', icon: 'recipes' },
       { href: '/menus', label: 'Menus', icon: 'menus' },
       { href: '/margins', label: 'Margins', icon: 'margins' },
