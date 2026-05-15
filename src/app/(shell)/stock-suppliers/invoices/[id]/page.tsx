@@ -4,6 +4,11 @@ import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { confirmInvoiceAction, rejectInvoiceAction } from './actions';
 import { FlagLineButton } from './FlagLineButton';
+import { createCreditNoteFromInvoiceAction } from '../../credit-notes/actions';
+import {
+  getCreditNoteForInvoice,
+  CREDIT_NOTE_STATUS_LABEL,
+} from '@/lib/credit-notes';
 
 export const metadata = { title: 'Invoice — Palatable' };
 
@@ -110,6 +115,11 @@ export default async function InvoiceDetailPage({
   const justConfirmed = resolvedSearchParams?.confirmed === '1';
   void ctx;
 
+  const existingCreditNote =
+    invoice.status === 'flagged' || flaggedCount > 0
+      ? await getCreditNoteForInvoice(invoice.id)
+      : null;
+
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
@@ -204,6 +214,14 @@ export default async function InvoiceDetailPage({
         )}
       </div>
 
+      {flaggedCount > 0 && (
+        <CreditNotePrompt
+          flaggedCount={flaggedCount}
+          existing={existingCreditNote}
+          invoiceId={invoice.id}
+        />
+      )}
+
       {isReviewable ? (
         <ReviewActions invoiceId={invoice.id} />
       ) : (
@@ -216,6 +234,62 @@ export default async function InvoiceDetailPage({
           </Link>
         </div>
       )}
+    </div>
+  );
+}
+
+function CreditNotePrompt({
+  flaggedCount,
+  existing,
+  invoiceId,
+}: {
+  flaggedCount: number;
+  existing: {
+    id: string;
+    status: 'draft' | 'sent' | 'resolved' | 'cancelled';
+    reference: string;
+  } | null;
+  invoiceId: string;
+}) {
+  if (existing) {
+    return (
+      <div className="mb-8 bg-card border border-l-4 border-l-attention border-rule px-5 py-4 flex flex-wrap items-center gap-4">
+        <div className="flex-1 min-w-[200px]">
+          <div className="font-display text-xs font-semibold tracking-[0.3em] uppercase text-attention mb-1">
+            Credit note {CREDIT_NOTE_STATUS_LABEL[existing.status]}
+          </div>
+          <div className="font-serif italic text-sm text-ink-soft">
+            {existing.reference} — raised against this invoice.
+          </div>
+        </div>
+        <Link
+          href={`/stock-suppliers/credit-notes/${existing.id}`}
+          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-transparent text-attention border border-attention/40 hover:bg-attention/10 transition-colors"
+        >
+          Open credit note →
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="mb-8 bg-card border border-l-4 border-l-attention border-rule px-5 py-4 flex flex-wrap items-center gap-4">
+      <div className="flex-1 min-w-[200px]">
+        <div className="font-display text-xs font-semibold tracking-[0.3em] uppercase text-attention mb-1">
+          {flaggedCount} {flaggedCount === 1 ? 'line' : 'lines'} flagged
+        </div>
+        <div className="font-serif italic text-sm text-ink-soft">
+          Draft a credit note to claim back from the supplier. The flagged
+          lines auto-fill — review and send.
+        </div>
+      </div>
+      <form action={createCreditNoteFromInvoiceAction.bind(null, invoiceId)}>
+        <button
+          type="submit"
+          className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-5 py-2.5 bg-attention text-paper border border-attention hover:bg-attention/90 transition-colors"
+        >
+          Draft credit note →
+        </button>
+      </form>
     </div>
   );
 }

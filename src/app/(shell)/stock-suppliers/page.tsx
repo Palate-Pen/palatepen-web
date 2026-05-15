@@ -9,6 +9,7 @@ import {
   type HubSupplyGraphSignal,
 } from '@/lib/hub';
 import { getBankSummary } from '@/lib/bank';
+import { countDraftCreditNotes } from '@/lib/credit-notes';
 
 export const metadata = { title: 'Stock & Suppliers — Palatable' };
 
@@ -25,9 +26,10 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 
 export default async function StockSuppliersPage() {
   const ctx = await getShellContext();
-  const [summary, bank] = await Promise.all([
+  const [summary, bank, creditNotesInFlight] = await Promise.all([
     getHubSummary(ctx.siteId),
     getBankSummary(ctx.siteId),
+    countDraftCreditNotes(ctx.siteId),
   ]);
 
   const todaysSub =
@@ -223,7 +225,13 @@ export default async function StockSuppliersPage() {
               value={String(summary.invoices_with_discrepancy)}
               tone={summary.invoices_with_discrepancy > 0 ? 'attention' : undefined}
             />
-            <StateRow label="Credit notes in flight" value="—" />
+            <StateRow
+              label="Credit notes in flight"
+              value={
+                creditNotesInFlight > 0 ? String(creditNotesInFlight) : '—'
+              }
+              tone={creditNotesInFlight > 0 ? 'attention' : undefined}
+            />
           </DestinationCard>
 
           <DestinationCard
