@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { getShellContext } from '@/lib/shell/context';
 import { getHomeRollup } from '@/lib/home';
 import { KpiCard } from '@/components/shell/KpiCard';
@@ -6,7 +5,6 @@ import { SectionHead } from '@/components/shell/SectionHead';
 import { LookingAhead } from '@/components/shell/LookingAhead';
 import { ForwardCalendar } from '@/components/safety/ForwardCalendar';
 import { getForwardCalendar } from '@/lib/safety/forward-calendar';
-import { defaultHomePath } from '@/lib/role-home';
 import { HomePanel, HomePanelEmpty } from '@/components/home/HomePanel';
 import { QuickActions, QUICK_ICONS } from '@/components/home/QuickActions';
 
@@ -26,13 +24,12 @@ function timeOfDay(now: Date): { eyebrow: string; greeting: string } {
 }
 
 export default async function HomePage() {
+  // Role-aware default home is handled at sign-in (src/lib/actions/auth.ts).
+  // We deliberately don't redirect here — that bounces a manager / owner
+  // who clicks "Chef view" in the view-switcher back to their own home,
+  // creating a render loop. `/` is the chef shell; users with multi-role
+  // access can land here on purpose.
   const ctx = await getShellContext();
-  // Role-aware home: bar staff, managers, owners get redirected to
-  // their own default home. Chef + sous_chef + commis + viewer fall
-  // through to the chef shell that follows.
-  const fallback = defaultHomePath(ctx.role);
-  if (fallback !== '/') redirect(fallback);
-
   const [rollup, calendar] = await Promise.all([
     getHomeRollup(ctx.siteId),
     getForwardCalendar(ctx.siteId, 14),

@@ -36,18 +36,17 @@ const PATHS: Record<NavIconName, React.ReactNode> = {
     </>
   ),
   prep: (
-    // Chef's knife — triangular blade pointing left, rectangular handle right
+    // Herb leaf — almond-shape with a central vein
     <>
-      <path d="M3 17l14-8v4z" />
-      <path d="M17 11h5v2h-5z" />
+      <path d="M5 18C5 11 11 5 19 5c0 8-6 14-14 14z" />
+      <path d="M5 18l9-9" />
     </>
   ),
   'cocktail-shaker': (
-    // Boston shaker — cap + neck ring + tapered body
+    // Martini glass — V bowl on a stem with a foot
     <>
-      <path d="M10 3h4v4h-4z" />
-      <path d="M9 7h6" />
-      <path d="M9 7l-1 13h8l-1-13" />
+      <path d="M4 5h16l-7 8v6" />
+      <path d="M9 21h6" />
     </>
   ),
   recipes: (
