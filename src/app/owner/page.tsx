@@ -3,6 +3,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getManagerHomeData } from '@/lib/manager-home';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { LookingAhead } from '@/components/shell/LookingAhead';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 
 export const metadata = { title: 'Owner · Palatable' };
@@ -147,6 +148,8 @@ export default async function OwnerHomePage() {
           </Link>
         </div>
       </section>
+
+      <LookingAhead siteId={ctx.siteId} surface="owner_home" />
     </div>
   );
 }

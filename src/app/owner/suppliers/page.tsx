@@ -5,6 +5,7 @@ import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { getSuppliers } from '@/lib/suppliers';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Suppliers — Owner — Palatable' };
 
@@ -58,13 +59,20 @@ export default async function OwnerSuppliersPage() {
     .slice(0, 10);
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
-      <OwnerPageHeader
-        eyebrow="Group Spend, Group Leverage"
-        title="Suppliers"
-        subtitle="Consolidated supplier picture across every site. Top balances, reliability watch, where the credit limits are stretched."
-        activeSlug="suppliers"
-      />
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1200px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
+        <div className="flex-1 min-w-[280px]">
+          <OwnerPageHeader
+            eyebrow="Group Spend, Group Leverage"
+            title="Suppliers"
+            subtitle="Consolidated supplier picture across every site. Top balances, reliability watch, where the credit limits are stretched."
+            activeSlug="suppliers"
+          />
+        </div>
+        <div className="print-hide pt-2">
+          {totalCount > 0 && <PrintButton label="Print supplier rollup" />}
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { PrintButton } from '@/components/shell/PrintButton';
 
 export const metadata = { title: 'Sites — Owner — Palatable' };
 
@@ -85,17 +86,24 @@ export default async function OwnerSitesPage() {
   );
 
   return (
-    <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
-      <OwnerPageHeader
-        eyebrow="Every Kitchen You Own"
-        title="Sites"
-        subtitle={
-          rows.length === 1
-            ? 'Single-site for now. Add a second site and the cross-site rollups light up.'
-            : `${rows.length} sites under one roof. Drill into any one to see it as the Manager would.`
-        }
-        activeSlug="sites"
-      />
+    <div className="printable px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1400px] mx-auto">
+      <div className="flex items-start justify-between gap-6 flex-wrap mb-2">
+        <div className="flex-1 min-w-[280px]">
+          <OwnerPageHeader
+            eyebrow="Every Kitchen You Own"
+            title="Sites"
+            subtitle={
+              rows.length === 1
+                ? 'Single-site for now. Add a second site and the cross-site rollups light up.'
+                : `${rows.length} sites under one roof. Drill into any one to see it as the Manager would.`
+            }
+            activeSlug="sites"
+          />
+        </div>
+        <div className="print-hide pt-2">
+          {rows.length > 0 && <PrintButton label="Print site list" />}
+        </div>
+      </div>
 
       <section>
         <SectionHead

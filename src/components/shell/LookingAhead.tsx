@@ -16,7 +16,10 @@ type TargetSurface =
   | 'bar_menus'
   | 'bar_margins'
   | 'back_bar'
-  | 'cellar';
+  | 'cellar'
+  // Manager + owner home rollups
+  | 'manager_home'
+  | 'owner_home';
 
 type SignalTag = 'plan_for_it' | 'get_ready' | 'worth_knowing' | 'market_move';
 type SignalSeverity = 'urgent' | 'attention' | 'healthy' | 'info';
