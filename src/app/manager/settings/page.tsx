@@ -5,9 +5,9 @@ import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { AccountPreferencesPanel } from '@/app/(shell)/settings/AccountPreferencesPanel';
 
-export const metadata = { title: 'Settings — Bar — Palatable' };
+export const metadata = { title: 'Settings — Manager — Palatable' };
 
-export default async function BarSettingsPage() {
+export default async function ManagerSettingsPage() {
   const ctx = await getShellContext();
   const accountPrefs = await getAccountPreferences(ctx.accountId);
   const isOwner = ctx.role === 'owner';
@@ -25,14 +25,12 @@ export default async function BarSettingsPage() {
           title="Chef surface"
           body="The kitchen view — recipes, prep, stock & suppliers."
         />
-        {(ctx.role === 'manager' || ctx.role === 'owner') && (
-          <SurfaceLink
-            href="/manager"
-            eyebrow="Manager access"
-            title="Manager surface"
-            body="Site command — menu builder, team, deliveries oversight."
-          />
-        )}
+        <SurfaceLink
+          href="/bartender"
+          eyebrow="Bar access"
+          title="Bartender surface"
+          body="The bar view — specs, cellar, pour-cost margins."
+        />
         {ctx.role === 'owner' && (
           <SurfaceLink
             href="/owner"
@@ -45,7 +43,7 @@ export default async function BarSettingsPage() {
 
       <AccessibilitySettings />
 
-      <Section title="Bar Info">
+      <Section title="Site Info">
         <AccountPreferencesPanel initial={accountPrefs} canEdit={isOwner} />
       </Section>
 
@@ -93,11 +91,7 @@ function Row({
   return (
     <div className="px-7 py-4 flex justify-between items-center">
       <div className="font-serif text-sm text-ink">{label}</div>
-      <div
-        className={
-          'text-xs text-muted' + (capitalize ? ' capitalize' : '')
-        }
-      >
+      <div className={'text-xs text-muted' + (capitalize ? ' capitalize' : '')}>
         {value}
       </div>
     </div>
@@ -127,9 +121,7 @@ function SurfaceLink({
         <div className="font-serif font-semibold text-base text-ink leading-tight">
           {title}
         </div>
-        <div className="font-serif italic text-sm text-muted mt-1">
-          {body}
-        </div>
+        <div className="font-serif italic text-sm text-muted mt-1">{body}</div>
       </div>
       <span className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted group-hover:text-gold transition-colors">
         Open →

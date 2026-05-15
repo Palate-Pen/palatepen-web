@@ -5,15 +5,46 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { AllergenState } from '@/lib/allergens';
 
-export type MenuSection =
-  | 'starters'
-  | 'mains'
-  | 'grill'
-  | 'sides'
-  | 'desserts'
-  | 'drinks';
+export type DishType =
+  | 'food'
+  | 'cocktail'
+  | 'wine'
+  | 'beer'
+  | 'soft'
+  | 'spirit';
 
-export const MENU_SECTIONS: MenuSection[] = [
+export const DISH_TYPES: DishType[] = [
+  'food',
+  'cocktail',
+  'wine',
+  'beer',
+  'soft',
+  'spirit',
+];
+
+export type CocktailTechnique =
+  | 'build'
+  | 'stir'
+  | 'shake'
+  | 'throw'
+  | 'rolled'
+  | 'blended';
+
+export const COCKTAIL_TECHNIQUES: CocktailTechnique[] = [
+  'build',
+  'stir',
+  'shake',
+  'throw',
+  'rolled',
+  'blended',
+];
+
+/**
+ * menu_section is free-text in v2 (the DB CHECK was dropped 2026-05-15).
+ * These are the suggested values rendered as a dropdown for chefs +
+ * bartenders. Free text input always wins.
+ */
+export const FOOD_MENU_SECTIONS = [
   'starters',
   'mains',
   'grill',
@@ -22,9 +53,24 @@ export const MENU_SECTIONS: MenuSection[] = [
   'drinks',
 ];
 
+export const BAR_MENU_SECTIONS = [
+  'Classics',
+  'Signatures',
+  'Tonight Only',
+  'Lower-ABV',
+  'Non-Alc',
+  'Wines By Glass',
+  'On Draught',
+  'Bottled Beer',
+];
+
+/** Legacy alias kept for any chef-side imports still expecting this name. */
+export type MenuSection = string;
+export const MENU_SECTIONS: string[] = FOOD_MENU_SECTIONS;
+
 export type RecipeFormInput = {
   name: string;
-  menu_section: MenuSection | null;
+  menu_section: string | null;
   serves: number | null;
   portion_per_cover: number | null;
   sell_price: number | null;
@@ -32,6 +78,12 @@ export type RecipeFormInput = {
   allergens: AllergenState;
   locked: boolean;
   method: string[];
+  dish_type: DishType;
+  glass_type: string | null;
+  ice_type: string | null;
+  technique: CocktailTechnique | null;
+  pour_ml: number | null;
+  garnish: string | null;
   ingredients: Array<{
     name: string;
     qty: number;
@@ -46,11 +98,20 @@ type ActionResult =
 
 function validate(input: RecipeFormInput): string | null {
   if (!input.name.trim()) return 'name_required';
+  if (!DISH_TYPES.includes(input.dish_type)) {
+    return 'invalid_dish_type';
+  }
   if (
-    input.menu_section != null &&
-    !MENU_SECTIONS.includes(input.menu_section)
+    input.technique != null &&
+    !COCKTAIL_TECHNIQUES.includes(input.technique)
   ) {
-    return 'invalid_menu_section';
+    return 'invalid_technique';
+  }
+  if (
+    input.pour_ml != null &&
+    (!Number.isFinite(input.pour_ml) || input.pour_ml <= 0)
+  ) {
+    return 'invalid_pour_ml';
   }
   if (input.serves != null && (input.serves <= 0 || !Number.isFinite(input.serves))) {
     return 'invalid_serves';
@@ -122,6 +183,12 @@ export async function createRecipe(
       method: input.method
         .map((s) => s.trim())
         .filter((s) => s.length > 0) as unknown as object,
+      dish_type: input.dish_type,
+      glass_type: input.glass_type?.trim() || null,
+      ice_type: input.ice_type?.trim() || null,
+      technique: input.technique,
+      pour_ml: input.pour_ml,
+      garnish: input.garnish?.trim() || null,
     })
     .select('id')
     .single();
@@ -152,6 +219,8 @@ export async function createRecipe(
 
   revalidatePath('/recipes');
   revalidatePath('/margins');
+  revalidatePath('/bartender/specs');
+  revalidatePath('/bartender/margins');
   return { ok: true, id: recipeId };
 }
 
@@ -188,6 +257,12 @@ export async function updateRecipe(
       method: input.method
         .map((s) => s.trim())
         .filter((s) => s.length > 0) as unknown as object,
+      dish_type: input.dish_type,
+      glass_type: input.glass_type?.trim() || null,
+      ice_type: input.ice_type?.trim() || null,
+      technique: input.technique,
+      pour_ml: input.pour_ml,
+      garnish: input.garnish?.trim() || null,
     })
     .eq('id', recipeId);
   if (updErr) return { ok: false, error: updErr.message };
@@ -217,6 +292,9 @@ export async function updateRecipe(
   revalidatePath(`/recipes/${recipeId}`);
   revalidatePath('/margins');
   revalidatePath(`/margins/${recipeId}`);
+  revalidatePath('/bartender/specs');
+  revalidatePath(`/bartender/specs/${recipeId}`);
+  revalidatePath('/bartender/margins');
   return { ok: true, id: recipeId };
 }
 
@@ -235,5 +313,7 @@ export async function archiveRecipe(recipeId: string): Promise<ActionResult> {
 
   revalidatePath('/recipes');
   revalidatePath('/margins');
+  revalidatePath('/bartender/specs');
+  revalidatePath('/bartender/margins');
   return { ok: true, id: recipeId };
 }

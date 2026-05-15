@@ -61,7 +61,7 @@ export default async function BarSpecsPage() {
           </p>
         </div>
         <Link
-          href="/recipes/new"
+          href="/bartender/specs/new"
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors whitespace-nowrap"
         >
           + Add spec

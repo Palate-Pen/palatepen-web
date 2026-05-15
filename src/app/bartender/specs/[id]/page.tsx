@@ -278,7 +278,7 @@ export default async function SpecDetailPage({
           ← Back to Specs
         </Link>
         <Link
-          href={`/recipes/${spec.id}/edit`}
+          href={`/bartender/specs/${spec.id}/edit`}
           className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted hover:text-gold transition-colors"
         >
           Edit this spec →

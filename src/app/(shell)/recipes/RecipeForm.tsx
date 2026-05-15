@@ -7,12 +7,35 @@ import {
   createRecipe,
   updateRecipe,
   archiveRecipe,
-  MENU_SECTIONS,
+  FOOD_MENU_SECTIONS,
+  BAR_MENU_SECTIONS,
+  COCKTAIL_TECHNIQUES,
+  DISH_TYPES,
+  type CocktailTechnique,
+  type DishType,
   type MenuSection,
   type RecipeFormInput,
 } from './actions';
 import { EMPTY_ALLERGENS, type AllergenState } from '@/lib/allergens';
 import { AllergenPanel } from '@/components/allergens/AllergenPanel';
+
+const DISH_TYPE_LABEL: Record<DishType, string> = {
+  food: 'Food',
+  cocktail: 'Cocktail',
+  wine: 'Wine',
+  beer: 'Beer',
+  soft: 'Soft drink',
+  spirit: 'Spirit',
+};
+
+const TECHNIQUE_LABEL: Record<CocktailTechnique, string> = {
+  build: 'Build',
+  stir: 'Stir',
+  shake: 'Shake',
+  throw: 'Throw',
+  rolled: 'Rolled',
+  blended: 'Blended',
+};
 
 export type BankIngredientOption = {
   id: string;
@@ -63,6 +86,8 @@ export function RecipeForm({
   recipeId,
   initial,
   bankIngredients,
+  defaultDishType = 'food',
+  redirectOnSave,
 }: {
   mode: 'create' | 'edit';
   recipeId?: string;
@@ -76,6 +101,12 @@ export function RecipeForm({
     allergens: AllergenState;
     locked: boolean;
     method: string[];
+    dish_type?: DishType;
+    glass_type?: string | null;
+    ice_type?: string | null;
+    technique?: CocktailTechnique | null;
+    pour_ml?: number | null;
+    garnish?: string | null;
     ingredients: Array<{
       name: string;
       qty: number;
@@ -84,12 +115,32 @@ export function RecipeForm({
     }>;
   };
   bankIngredients: BankIngredientOption[];
+  /** Default dish type when creating a new recipe. Bar shell sets this
+   *  to 'cocktail' so the bar fields show by default. */
+  defaultDishType?: DishType;
+  /** Where to send the chef after a successful save. Defaults to
+   *  /recipes/[id]; bar uses /bartender/specs/[id]. */
+  redirectOnSave?: (id: string) => string;
 }) {
   const router = useRouter();
+  const [dishType, setDishType] = useState<DishType>(
+    initial?.dish_type ?? defaultDishType,
+  );
   const [name, setName] = useState(initial?.name ?? '');
   const [menuSection, setMenuSection] = useState<MenuSection | ''>(
     initial?.menu_section ?? '',
   );
+  const [glassType, setGlassType] = useState<string>(
+    initial?.glass_type ?? '',
+  );
+  const [iceType, setIceType] = useState<string>(initial?.ice_type ?? '');
+  const [technique, setTechnique] = useState<CocktailTechnique | ''>(
+    initial?.technique ?? '',
+  );
+  const [pourMl, setPourMl] = useState<string>(
+    initial?.pour_ml != null ? String(initial.pour_ml) : '',
+  );
+  const [garnish, setGarnish] = useState<string>(initial?.garnish ?? '');
   const [serves, setServes] = useState<string>(
     initial?.serves != null ? String(initial.serves) : '',
   );
@@ -189,6 +240,11 @@ export function RecipeForm({
       }
     }
 
+    const pourMlNum = pourMl.trim() === '' ? null : Number(pourMl);
+    if (pourMlNum != null && (!Number.isFinite(pourMlNum) || pourMlNum <= 0)) {
+      return { error: 'Pour size must be a positive number of millilitres.' };
+    }
+
     return {
       name: trimmedName,
       menu_section: (menuSection || null) as MenuSection | null,
@@ -199,6 +255,12 @@ export function RecipeForm({
       allergens,
       locked,
       method: method.map((s) => s.trim()).filter((s) => s.length > 0),
+      dish_type: dishType,
+      glass_type: glassType.trim() || null,
+      ice_type: iceType.trim() || null,
+      technique: (technique || null) as CocktailTechnique | null,
+      pour_ml: pourMlNum,
+      garnish: garnish.trim() || null,
       ingredients,
     };
   }
@@ -221,7 +283,10 @@ export function RecipeForm({
         setError(humaniseError(res.error));
         return;
       }
-      router.push(`/recipes/${res.id}`);
+      const dest = redirectOnSave
+        ? redirectOnSave(res.id)
+        : `/recipes/${res.id}`;
+      router.push(dest);
     });
   }
 
@@ -252,35 +317,64 @@ export function RecipeForm({
         ))}
       </datalist>
 
-      <Section title="Dish">
-        <Field label="Name">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Hummus, Lamb Shawarma, Lemon Posset"
-            maxLength={120}
-            className="w-full px-3 py-2 border border-rule bg-card font-serif font-semibold text-base text-ink focus:outline-none focus:border-gold"
-            autoFocus
-          />
-        </Field>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Menu section">
+      <Section title={dishType === 'food' ? 'Dish' : 'Spec'}>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
+          <Field label="Type">
             <select
-              value={menuSection}
-              onChange={(e) =>
-                setMenuSection(e.target.value as MenuSection | '')
-              }
+              value={dishType}
+              onChange={(e) => setDishType(e.target.value as DishType)}
               className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
             >
-              <option value="">— pick a section —</option>
-              {MENU_SECTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s[0].toUpperCase() + s.slice(1)}
+              {DISH_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {DISH_TYPE_LABEL[t]}
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label="Name">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={
+                dishType === 'food'
+                  ? 'e.g. Hummus, Lamb Shawarma, Lemon Posset'
+                  : 'e.g. Negroni, Espresso Martini, Picante'
+              }
+              maxLength={120}
+              className="w-full px-3 py-2 border border-rule bg-card font-serif font-semibold text-base text-ink focus:outline-none focus:border-gold"
+              autoFocus
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="Menu section">
+            <input
+              type="text"
+              list={
+                dishType === 'food'
+                  ? 'food-menu-sections'
+                  : 'bar-menu-sections'
+              }
+              value={menuSection}
+              onChange={(e) => setMenuSection(e.target.value)}
+              placeholder={
+                dishType === 'food' ? 'starters / mains / sides' : 'Classics / Signatures'
+              }
+              className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
+            />
+            <datalist id="food-menu-sections">
+              {FOOD_MENU_SECTIONS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+            <datalist id="bar-menu-sections">
+              {BAR_MENU_SECTIONS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </Field>
           <Field label="Sell price (£)">
             <input
@@ -331,6 +425,70 @@ export function RecipeForm({
           />
         </Field>
       </Section>
+
+      {dishType !== 'food' && (
+        <Section
+          title="At The Pass"
+          sub="Glass, ice, technique, pour size, garnish. The detail page shows these as a strip above the build sheet so the bartender can confirm presentation at a glance."
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Glass">
+              <input
+                type="text"
+                value={glassType}
+                onChange={(e) => setGlassType(e.target.value)}
+                placeholder="e.g. Rocks, Coupe, Highball, Flute"
+                className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
+              />
+            </Field>
+            <Field label="Ice">
+              <input
+                type="text"
+                value={iceType}
+                onChange={(e) => setIceType(e.target.value)}
+                placeholder="e.g. Large cube, Cubed, None (chilled glass)"
+                className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
+              />
+            </Field>
+            <Field label="Technique">
+              <select
+                value={technique}
+                onChange={(e) =>
+                  setTechnique(e.target.value as CocktailTechnique | '')
+                }
+                className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
+              >
+                <option value="">— pick a technique —</option>
+                {COCKTAIL_TECHNIQUES.map((t) => (
+                  <option key={t} value={t}>
+                    {TECHNIQUE_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Pour size (ml)">
+              <input
+                type="number"
+                step="5"
+                min="0"
+                value={pourMl}
+                onChange={(e) => setPourMl(e.target.value)}
+                placeholder="e.g. 75"
+                className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
+              />
+            </Field>
+          </div>
+          <Field label="Garnish">
+            <input
+              type="text"
+              value={garnish}
+              onChange={(e) => setGarnish(e.target.value)}
+              placeholder="e.g. Orange peel flamed, three coffee beans, lime wheel"
+              className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold"
+            />
+          </Field>
+        </Section>
+      )}
 
       <Section
         title="Method"

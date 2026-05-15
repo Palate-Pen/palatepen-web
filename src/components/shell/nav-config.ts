@@ -62,10 +62,14 @@ export const MANAGER_SECTIONS: NavSection[] = [
       { href: '#', label: 'Reports', icon: 'reports', pending: true },
     ],
   },
+  {
+    label: 'Intelligence',
+    items: [{ href: '/manager/inbox', label: 'Inbox', icon: 'inbox' }],
+  },
 ];
 
 export const MANAGER_ACCOUNT_ITEMS: NavItem[] = [
-  { href: '#', label: 'Settings', icon: 'settings', pending: true },
+  { href: '/manager/settings', label: 'Settings', icon: 'settings' },
 ];
 
 export const OWNER_SECTIONS: NavSection[] = [
@@ -105,6 +109,10 @@ export const OWNER_SECTIONS: NavSection[] = [
         pending: true,
       },
     ],
+  },
+  {
+    label: 'Intelligence',
+    items: [{ href: '/owner/inbox', label: 'Inbox', icon: 'inbox' }],
   },
 ];
 

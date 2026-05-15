@@ -2,12 +2,14 @@ import { notFound } from 'next/navigation';
 import { getShellContext } from '@/lib/shell/context';
 import { getRecipe } from '@/lib/recipes';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { RecipeForm, type BankIngredientOption } from '../../RecipeForm';
-import type { MenuSection } from '../../actions';
+import {
+  RecipeForm,
+  type BankIngredientOption,
+} from '@/app/(shell)/recipes/RecipeForm';
 
-export const metadata = { title: 'Edit recipe — Palatable' };
+export const metadata = { title: 'Edit spec — Bar — Palatable' };
 
-export default async function EditRecipePage({
+export default async function EditSpecPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -34,7 +36,7 @@ export default async function EditRecipePage({
 
   const initial = {
     name: recipe.name,
-    menu_section: recipe.menu_section as MenuSection | null,
+    menu_section: recipe.menu_section,
     serves: recipe.serves,
     portion_per_cover: recipe.portion_per_cover,
     sell_price: recipe.sell_price,
@@ -59,13 +61,14 @@ export default async function EditRecipePage({
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[900px] mx-auto">
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
-        Recipes · Edit
+        Specs · Edit
       </div>
       <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
-        Edit <em className="text-gold font-semibold not-italic">{recipe.name}</em>
+        Edit{' '}
+        <em className="text-gold font-semibold not-italic">{recipe.name}</em>
       </h1>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
-        Tweak the dish, its ingredients, or its sell price. Saved changes flow into Margins, The Bank, and the menu builder immediately.
+        Tweak the build, glass, technique, or sell price. Saved changes flow into Margins and the Cellar immediately.
       </p>
 
       <RecipeForm
@@ -73,6 +76,7 @@ export default async function EditRecipePage({
         recipeId={recipe.id}
         initial={initial}
         bankIngredients={bankIngredients}
+        redirectOnSave={(id) => `/bartender/specs/${id}`}
       />
     </div>
   );

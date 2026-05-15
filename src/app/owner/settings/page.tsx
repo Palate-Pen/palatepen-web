@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { SectionHead } from '@/components/shell/SectionHead';
+import { getAccountPreferences } from '@/lib/account-preferences';
+import { AccountPreferencesPanel } from '@/app/(shell)/settings/AccountPreferencesPanel';
 
 export const metadata = { title: 'Settings — Owner — Palatable' };
 
@@ -48,6 +50,11 @@ export default async function OwnerSettingsPage() {
       created_at: string;
     }>;
 
+  const primaryAccountId = accountRows[0]?.id;
+  const accountPrefs = primaryAccountId
+    ? await getAccountPreferences(primaryAccountId)
+    : null;
+
   return (
     <div className="px-4 sm:px-8 lg:px-14 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1000px] mx-auto">
       <OwnerPageHeader
@@ -76,6 +83,18 @@ export default async function OwnerSettingsPage() {
           </div>
         )}
       </section>
+
+      {accountPrefs && (
+        <section className="mb-10">
+          <SectionHead
+            title="Business Defaults"
+            meta="currency · GP target · stock day"
+          />
+          <div className="bg-card border border-rule">
+            <AccountPreferencesPanel initial={accountPrefs} canEdit={true} />
+          </div>
+        </section>
+      )}
 
       <section className="mb-10">
         <SectionHead title="Tier & Billing" meta="manage in Stripe portal" />
