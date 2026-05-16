@@ -10,6 +10,8 @@ import {
   IMPERSONATION_LABEL_COOKIE,
 } from './cookies';
 
+type Svc = ReturnType<typeof createSupabaseServiceClient>;
+
 const VALID_TIERS = ['free', 'pro', 'kitchen', 'group', 'enterprise'] as const;
 type Tier = (typeof VALID_TIERS)[number];
 
@@ -148,4 +150,111 @@ export async function stopImpersonationAction(): Promise<{
   c.delete(IMPERSONATION_LABEL_COOKIE);
 
   return { ok: true, url: data.properties.action_link };
+}
+
+// ---------- Cross-account destructive actions ----------
+//
+// The founder-admin variants of the per-owner actions in
+// /owner/team/actions.ts. Same shape, but instead of "caller must own
+// the target's site" the gate is just "caller is the founder."
+// Founder accounts (accounts.is_founder) are still protected.
+
+async function isFounderAccountUser(
+  svc: Svc,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await svc
+    .from('memberships')
+    .select('sites:site_id (account_id)')
+    .eq('user_id', userId)
+    .eq('role', 'owner');
+  if (error) return true; // fail closed
+  const accountIds = Array.from(
+    new Set(
+      ((data ?? []) as unknown as Array<{ sites: { account_id?: string } | null }>)
+        .map((m) => m.sites?.account_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  if (accountIds.length === 0) return false;
+  const { data: accts, error: aErr } = await svc
+    .from('accounts')
+    .select('is_founder')
+    .in('id', accountIds);
+  if (aErr) return true;
+  return (accts ?? []).some((a) => Boolean(a.is_founder));
+}
+
+/** Remove one membership from a user's record. Founder-only. */
+export async function adminRemoveMembershipAction(
+  membershipId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireFounder();
+  if (!gate.ok) return gate;
+
+  const svc = createSupabaseServiceClient();
+  const { data: target } = await svc
+    .from('memberships')
+    .select('id, user_id')
+    .eq('id', membershipId)
+    .maybeSingle();
+  if (!target) return { ok: false, error: 'Membership not found.' };
+
+  if (await isFounderAccountUser(svc, target.user_id as string)) {
+    return {
+      ok: false,
+      error: 'Founder accounts are protected and cannot be modified here.',
+    };
+  }
+
+  await svc.from('feature_flags').delete().eq('membership_id', membershipId);
+  const { error } = await svc
+    .from('memberships')
+    .delete()
+    .eq('id', membershipId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin/users');
+  revalidatePath('/admin/users/' + target.user_id);
+  return { ok: true };
+}
+
+/**
+ * Permanently delete a user account. Founder-only. Founder accounts
+ * protected; cannot delete self.
+ */
+export async function adminDeleteUserAction(
+  userId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requireFounder();
+  if (!gate.ok) return gate;
+
+  const svc = createSupabaseServiceClient();
+  const { data: self } = await (await createSupabaseServerClient()).auth.getUser();
+  if (self?.user?.id === userId) {
+    return { ok: false, error: "You can't delete your own account from here." };
+  }
+
+  if (await isFounderAccountUser(svc, userId)) {
+    return { ok: false, error: 'Founder accounts are protected.' };
+  }
+
+  // Wipe app-level rows first (most cascade, but explicit is readable).
+  const { data: memberships } = await svc
+    .from('memberships')
+    .select('id')
+    .eq('user_id', userId);
+  const membershipIds = ((memberships ?? []) as Array<{ id: string }>).map(
+    (m) => m.id,
+  );
+  if (membershipIds.length > 0) {
+    await svc.from('feature_flags').delete().in('membership_id', membershipIds);
+    await svc.from('memberships').delete().in('id', membershipIds);
+  }
+
+  const { error } = await svc.auth.admin.deleteUser(userId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/admin/users');
+  return { ok: true };
 }

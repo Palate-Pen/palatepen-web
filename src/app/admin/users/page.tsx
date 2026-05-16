@@ -32,7 +32,6 @@ type UserRow = {
   created_at: string;
   last_sign_in_at: string | null;
   membership_count: number;
-  /** Primary account (most-recent owner membership, or first membership). */
   primary_account_id: string | null;
   primary_account_name: string | null;
   primary_account_tier: string | null;
@@ -57,63 +56,73 @@ const ROLE_LABEL: Record<string, string> = {
 /**
  * Founder Admin · Users & Kitchens.
  *
- * Top: every auth.users row with the primary account they belong to,
- * the role they hold there, and per-user actions (impersonate).
+ * Two complementary directories on one page:
  *
- * Below: account directory with inline tier dropdown so the founder
- * can move a customer between tiers without leaving the page.
+ *   People   → every auth.users row. Click a person to manage that
+ *              individual's memberships, impersonate, change tier on
+ *              accounts they own, or delete the auth login.
  *
- * Founder account is protected on both surfaces — tier locked,
- * impersonation refused (you're already that user).
+ *   Accounts → every v2.accounts row (the businesses). Click an
+ *              account to manage tier, see every site under it, every
+ *              person on it, and the Stripe IDs.
+ *
+ * One person can sit on multiple accounts; one account can host many
+ * people. The two views give different entry points to the same
+ * underlying data — pick whichever fits the task at hand.
+ *
+ * Schema note: v2.memberships does NOT have account_id. Account is
+ * always derived via site_id → v2.sites.account_id.
  */
 export default async function AdminUsersPage() {
   const svc = createSupabaseServiceClient();
 
-  const [{ data: accounts }, { data: usersPage }] = await Promise.all([
-    svc
-      .from('accounts')
-      .select('id, name, tier, is_founder, created_at, owner_user_id')
-      .order('created_at', { ascending: false }),
-    svc.auth.admin.listUsers({ page: 1, perPage: 500 }),
-  ]);
+  const [{ data: accounts }, { data: usersPage }, { data: sites }] =
+    await Promise.all([
+      svc
+        .from('accounts')
+        .select('id, name, tier, is_founder, created_at')
+        .order('created_at', { ascending: false }),
+      svc.auth.admin.listUsers({ page: 1, perPage: 500 }),
+      svc.from('sites').select('id, name, account_id'),
+    ]);
 
-  const accountIds = (accounts ?? []).map((a) => a.id as string);
-
-  const [{ data: memberships }, { data: sites }] = await Promise.all([
-    accountIds.length === 0
-      ? Promise.resolve({ data: [] as unknown[] })
-      : svc
-          .from('memberships')
-          .select('id, account_id, user_id, role, site_id, created_at'),
-    accountIds.length === 0
-      ? Promise.resolve({ data: [] as unknown[] })
-      : svc.from('sites').select('id, name, account_id'),
-  ]);
-
-  type Membership = {
+  const sRows = (sites ?? []) as Array<{
     id: string;
+    name: string;
     account_id: string;
+  }>;
+  const accountIdBySiteId = new Map(sRows.map((s) => [s.id, s.account_id]));
+  const siteNameById = new Map(sRows.map((s) => [s.id, s.name]));
+
+  // Pull every membership (need cross-account totals + per-user
+  // primary lookup). Filter null site_ids defensively.
+  const { data: memberships } = await svc
+    .from('memberships')
+    .select('id, user_id, role, site_id, created_at');
+  const allMemberships = ((memberships ?? []) as Array<{
+    id: string;
     user_id: string;
     role: string;
     site_id: string;
     created_at: string;
-  };
-  type Site = { id: string; name: string; account_id: string };
+  }>).filter((m) => accountIdBySiteId.has(m.site_id));
 
-  const allMemberships = (memberships ?? []) as Membership[];
-  const allSites = (sites ?? []) as Site[];
-
+  // Per-account counts via site lookup.
   const memberCount = new Map<string, number>();
-  for (const m of allMemberships) {
-    memberCount.set(m.account_id, (memberCount.get(m.account_id) ?? 0) + 1);
-  }
   const siteCount = new Map<string, number>();
-  for (const s of allSites) {
+  for (const s of sRows) {
     siteCount.set(s.account_id, (siteCount.get(s.account_id) ?? 0) + 1);
   }
-  const siteNameById = new Map<string, string>();
-  for (const s of allSites) siteNameById.set(s.id, s.name);
-  const accountById = new Map<string, { name: string | null; tier: string; is_founder: boolean }>();
+  for (const m of allMemberships) {
+    const aid = accountIdBySiteId.get(m.site_id);
+    if (!aid) continue;
+    memberCount.set(aid, (memberCount.get(aid) ?? 0) + 1);
+  }
+
+  const accountById = new Map<
+    string,
+    { name: string | null; tier: string; is_founder: boolean }
+  >();
   for (const a of accounts ?? []) {
     accountById.set(a.id as string, {
       name: (a.name as string | null) ?? null,
@@ -127,33 +136,45 @@ export default async function AdminUsersPage() {
     if (u.email) emailById.set(u.id, u.email);
   }
 
+  // "Owner" of an account = earliest user with role='owner' on any
+  // site belonging to that account.
+  const ownerByAccount = new Map<string, { user_id: string; email: string | null }>();
+  const ownerCandidates = allMemberships
+    .filter((m) => m.role === 'owner')
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  for (const m of ownerCandidates) {
+    const aid = accountIdBySiteId.get(m.site_id);
+    if (!aid || ownerByAccount.has(aid)) continue;
+    ownerByAccount.set(aid, {
+      user_id: m.user_id,
+      email: emailById.get(m.user_id) ?? null,
+    });
+  }
+
   // ---------- Account rows ----------
-  const accountRows: AccountRow[] = (accounts ?? []).map((a) => ({
-    id: a.id as string,
-    name: (a.name as string | null) ?? null,
-    tier: (a.tier as string) ?? 'free',
-    is_founder: Boolean(a.is_founder),
-    created_at: a.created_at as string,
-    member_count: memberCount.get(a.id as string) ?? 0,
-    site_count: siteCount.get(a.id as string) ?? 0,
-    owner_user_id: (a.owner_user_id as string | null) ?? null,
-    owner_email:
-      a.owner_user_id != null
-        ? emailById.get(a.owner_user_id as string) ?? null
-        : null,
-  }));
+  const accountRows: AccountRow[] = (accounts ?? []).map((a) => {
+    const owner = ownerByAccount.get(a.id as string);
+    return {
+      id: a.id as string,
+      name: (a.name as string | null) ?? null,
+      tier: (a.tier as string) ?? 'free',
+      is_founder: Boolean(a.is_founder),
+      created_at: a.created_at as string,
+      member_count: memberCount.get(a.id as string) ?? 0,
+      site_count: siteCount.get(a.id as string) ?? 0,
+      owner_user_id: owner?.user_id ?? null,
+      owner_email: owner?.email ?? null,
+    };
+  });
 
   // ---------- User rows ----------
-  // For each auth user, pick a "primary" membership to label the row.
-  // Preference: owner role > earliest joined. This gives a stable
-  // primary even when a user belongs to multiple accounts.
-  const membershipsByUser = new Map<string, Membership[]>();
+  const membershipsByUser = new Map<string, typeof allMemberships>();
   for (const m of allMemberships) {
     if (!membershipsByUser.has(m.user_id)) membershipsByUser.set(m.user_id, []);
     membershipsByUser.get(m.user_id)!.push(m);
   }
 
-  function pickPrimary(list: Membership[]): Membership | null {
+  function pickPrimary(list: typeof allMemberships) {
     if (list.length === 0) return null;
     const sorted = [...list].sort((a, b) => {
       const aOwner = a.role === 'owner' ? 0 : 1;
@@ -167,14 +188,17 @@ export default async function AdminUsersPage() {
   const userRows: UserRow[] = (usersPage?.users ?? []).map((u) => {
     const mine = membershipsByUser.get(u.id) ?? [];
     const primary = pickPrimary(mine);
-    const account = primary ? accountById.get(primary.account_id) : null;
+    const primaryAccountId = primary
+      ? accountIdBySiteId.get(primary.site_id) ?? null
+      : null;
+    const account = primaryAccountId ? accountById.get(primaryAccountId) : null;
     return {
       user_id: u.id,
       email: u.email ?? '—',
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at ?? null,
       membership_count: mine.length,
-      primary_account_id: primary?.account_id ?? null,
+      primary_account_id: primaryAccountId,
       primary_account_name: account?.name ?? null,
       primary_account_tier: account?.tier ?? null,
       primary_role: primary?.role ?? null,
@@ -185,7 +209,6 @@ export default async function AdminUsersPage() {
   });
 
   userRows.sort((a, b) => {
-    // Recent sign-ins first, then by created.
     const aSign = a.last_sign_in_at ?? a.created_at;
     const bSign = b.last_sign_in_at ?? b.created_at;
     return bSign.localeCompare(aSign);
@@ -209,18 +232,19 @@ export default async function AdminUsersPage() {
       </div>
       <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
         Every <em className="text-gold font-semibold not-italic">person</em>{' '}
-        on the system
+        &amp; every{' '}
+        <em className="text-gold font-semibold not-italic">account</em>
       </h1>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
-        {totalUsers} {totalUsers === 1 ? 'user' : 'users'} across{' '}
+        {totalUsers} {totalUsers === 1 ? 'person' : 'people'} across{' '}
         {accountRows.length}{' '}
-        {accountRows.length === 1 ? 'account' : 'accounts'}. Change a tier
-        inline or impersonate a user to step into their kitchen.
+        {accountRows.length === 1 ? 'account' : 'accounts'}. Click into either
+        to manage tiers, memberships, impersonation, or to delete.
       </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard
-          label="Users"
+          label="People"
           value={String(totalUsers)}
           sub={orphanUsers > 0 ? orphanUsers + ' with no membership' : 'all on a site'}
           tone={orphanUsers > 0 ? 'attention' : undefined}
@@ -242,8 +266,14 @@ export default async function AdminUsersPage() {
         />
       </div>
 
-      {/* ---------- USERS ---------- */}
+      {/* ---------- PEOPLE ---------- */}
       <SectionHead title="People" meta={totalUsers + ' total'} />
+      <p className="font-serif italic text-sm text-muted -mt-2 mb-3 max-w-[700px]">
+        Every individual <strong className="not-italic font-semibold text-ink">login</strong> on the system —
+        owners, managers, chefs, bar staff. Click a row to open that person&apos;s
+        page: their memberships, role across each site, tier on any account
+        they own, and the destructive actions (remove from sites, delete login).
+      </p>
       <div className="bg-card border border-rule mb-12">
         <div className="hidden md:grid grid-cols-[1.6fr_1fr_1.2fr_90px_120px_130px_130px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
           {['Email', 'Role', 'Primary site / account', 'Tier', 'Last sign-in', 'Joined', 'Action'].map((h) => (
@@ -268,45 +298,52 @@ export default async function AdminUsersPage() {
               <div
                 key={u.user_id}
                 className={
-                  'grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1.2fr_90px_120px_130px_130px] gap-4 px-7 py-4 items-center ' +
+                  'grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1.2fr_90px_120px_130px_130px] gap-4 px-7 py-4 items-center hover:bg-paper-warm transition-colors ' +
                   (i === userRows.length - 1 ? '' : 'border-b border-rule-soft')
                 }
               >
-                <div className="min-w-0">
-                  <div className="font-serif font-semibold text-base text-ink truncate flex items-center gap-2 flex-wrap">
-                    {u.email}
-                    {u.is_self && (
-                      <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
-                        you
-                      </span>
-                    )}
-                    {u.is_founder_account && !u.is_self && (
-                      <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
-                        founder
-                      </span>
-                    )}
+                <Link
+                  href={'/admin/users/' + u.user_id}
+                  className="min-w-0 no-underline text-inherit md:col-span-3"
+                >
+                  <div className="grid grid-cols-[1.6fr_1fr_1.2fr] gap-4">
+                    <div className="min-w-0">
+                      <div className="font-serif font-semibold text-base text-ink truncate flex items-center gap-2 flex-wrap">
+                        {u.email}
+                        {u.is_self && (
+                          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
+                            you
+                          </span>
+                        )}
+                        {u.is_founder_account && !u.is_self && (
+                          <span className="font-display font-semibold text-[10px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
+                            founder
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-mono text-[11px] text-muted-soft truncate">
+                        {u.user_id.slice(0, 8)}
+                      </div>
+                    </div>
+                    <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
+                      {u.primary_role ? ROLE_LABEL[u.primary_role] ?? u.primary_role : '—'}
+                      {u.membership_count > 1 && (
+                        <span className="ml-1 text-muted-soft font-normal">
+                          +{u.membership_count - 1}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-serif text-sm text-ink truncate">
+                      {u.primary_site_name ?? '—'}
+                      {u.primary_account_name && u.primary_account_name !== u.primary_site_name && (
+                        <span className="text-muted italic">
+                          {' · '}
+                          {u.primary_account_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="font-mono text-[11px] text-muted-soft truncate">
-                    {u.user_id.slice(0, 8)}
-                  </div>
-                </div>
-                <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold">
-                  {u.primary_role ? ROLE_LABEL[u.primary_role] ?? u.primary_role : '—'}
-                  {u.membership_count > 1 && (
-                    <span className="ml-1 text-muted-soft font-normal">
-                      +{u.membership_count - 1}
-                    </span>
-                  )}
-                </div>
-                <div className="font-serif text-sm text-ink truncate">
-                  {u.primary_site_name ?? '—'}
-                  {u.primary_account_name && u.primary_account_name !== u.primary_site_name && (
-                    <span className="text-muted italic">
-                      {' · '}
-                      {u.primary_account_name}
-                    </span>
-                  )}
-                </div>
+                </Link>
                 <div className="font-display font-semibold text-xs tracking-[0.08em] uppercase text-gold">
                   {u.primary_account_tier ?? '—'}
                 </div>
@@ -334,6 +371,12 @@ export default async function AdminUsersPage() {
 
       {/* ---------- ACCOUNTS ---------- */}
       <SectionHead title="Accounts" meta={accountRows.length + ' total'} />
+      <p className="font-serif italic text-sm text-muted -mt-2 mb-3 max-w-[700px]">
+        Every <strong className="not-italic font-semibold text-ink">business</strong> on the system. One account
+        can have many people (managers, chefs, bar staff). Tier &amp; billing live
+        here — change tier inline below or click an account to see its full
+        member list, sites, and Stripe IDs.
+      </p>
       <div className="bg-card border border-rule">
         <div className="hidden md:grid grid-cols-[2fr_1.5fr_140px_80px_80px_120px] gap-4 px-7 py-3.5 bg-paper-warm border-b border-rule">
           {['Name', 'Owner email', 'Tier', 'Sites', 'Members', 'Created'].map((h) => (
@@ -346,21 +389,28 @@ export default async function AdminUsersPage() {
           <div
             key={r.id}
             className={
-              'grid grid-cols-1 md:grid-cols-[2fr_1.5fr_140px_80px_80px_120px] gap-4 px-7 py-4 items-center ' +
+              'grid grid-cols-1 md:grid-cols-[2fr_1.5fr_140px_80px_80px_120px] gap-4 px-7 py-4 items-center hover:bg-paper-warm transition-colors ' +
               (i === accountRows.length - 1 ? '' : 'border-b border-rule-soft')
             }
           >
-            <div className="font-serif font-semibold text-base text-ink flex items-center gap-2 flex-wrap">
-              {r.name ?? 'Unnamed account'}
-              {r.is_founder && (
-                <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
-                  founder
-                </span>
-              )}
-            </div>
-            <div className="font-mono text-xs text-muted truncate">
-              {r.owner_email ?? '—'}
-            </div>
+            <Link
+              href={'/admin/accounts/' + r.id}
+              className="no-underline text-inherit md:col-span-2"
+            >
+              <div className="grid grid-cols-[2fr_1.5fr] gap-4">
+                <div className="font-serif font-semibold text-base text-ink flex items-center gap-2 flex-wrap">
+                  {r.name ?? 'Unnamed account'}
+                  {r.is_founder && (
+                    <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-1.5 py-0.5">
+                      founder
+                    </span>
+                  )}
+                </div>
+                <div className="font-mono text-xs text-muted truncate">
+                  {r.owner_email ?? '—'}
+                </div>
+              </div>
+            </Link>
             <div>
               <TierSelect
                 accountId={r.id}
