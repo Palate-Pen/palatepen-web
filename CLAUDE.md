@@ -20,7 +20,7 @@ Palatable by Palate & Pen — Back office work you can stomach. A professional c
 - Name: Palatable
 - Tagline: Back office work you can stomach
 - By Palate & Pen
-- Logo: italic P + gold dot + alatable
+- Logo: "Palatable" wordmark with a gold dot after the word. Cinzel display, semibold, uppercase, `tracking-[0.3em]` at the small marketing size and `tracking-[0.16em]` at the 24px sidebar size. Collapsed sidebar shows just "P" + dot. Canonical render lives in `src/components/shell/Sidebar.tsx` (chef/bar/manager/owner), `src/components/admin/AdminSidebar.tsx` (founder admin), `src/app/(flows)/layout.tsx` (signin/signup), and the marketing pages (`/landing`, `/coming-soon-feature`).
 - Colours (v8, chef-shell canon): Ink #1A1612, Gold #B8923C, Paper #F8F4ED, Card #FFFFFF, Muted #7A6F5E, Muted-soft #A99B85, Urgent #A14424, Attention #B86A2E, Healthy #5D7F4F, Rule rgba(26,22,18,0.08). Full palette and severity language in `docs/strategy/working-notes/design-system-v8.md`.
 - Type stack: Cormorant Garamond (serif, headings + italic context), Cinzel (display, uppercase labels + small caps), Jost (sans, body)
 - Tiers: Free / Pro £25pm / Kitchen £59pm / Group £129pm / Enterprise (price on request — contact_sales route to hello@palateandpen.co.uk)

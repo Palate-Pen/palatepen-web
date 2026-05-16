@@ -10,11 +10,11 @@ export default function FlowsLayout({
       <header className="px-8 md:px-14 py-8">
         <Link
           href="/"
-          className="font-serif text-2xl text-ink hover:text-ink/80 transition-colors"
+          className="font-display font-semibold text-sm tracking-[0.3em] uppercase text-ink no-underline inline-flex items-center gap-1.5 hover:text-ink/80 transition-colors"
+          aria-label="Palatable"
         >
-          <span className="italic">P</span>
-          <span className="text-gold">.</span>
-          <span>alatable</span>
+          Palatable
+          <span className="w-1.5 h-1.5 rounded-full bg-gold" />
         </Link>
       </header>
       <main className="flex-1 w-full max-w-[600px] mx-auto px-8 md:px-14 pb-20">

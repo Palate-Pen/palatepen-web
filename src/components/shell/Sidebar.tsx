@@ -101,10 +101,11 @@ export function Sidebar({
             style={{ fontSize: '24px' }}
             aria-label="Palatable"
           >
-            <span>P</span>
-            <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full mx-1 relative -top-[3px]" />
-            {!collapsed && <span>alatable</span>}
-            {collapsed && <span className="lg:hidden">alatable</span>}
+            <span>
+              P
+              <span className={collapsed ? 'lg:hidden' : ''}>alatable</span>
+            </span>
+            <span className="inline-block w-[6px] h-[6px] bg-gold rounded-full ml-1 relative -top-[3px]" />
           </Link>
         </div>
 
