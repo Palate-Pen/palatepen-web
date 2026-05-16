@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { KpiCard } from '@/components/shell/KpiCard';
-import { TeamList, type TeamListMember } from '@/components/team/TeamList';
+import { TeamList, type TeamListUser } from '@/components/team/TeamList';
 import {
   FEATURE_REGISTRY,
   isFeatureAvailableAtTier,
@@ -113,7 +113,11 @@ export default async function OwnerTeamPage() {
     isFeatureAvailableAtTier(f.key, tier),
   );
 
-  const listMembers: TeamListMember[] = allMembers.map((m) => {
+  // Group memberships by user so jack@ on Kitchen + Cellar Bar surfaces
+  // as one row, not two. Click goes to the user-level detail page that
+  // lists per-site permissions and destructive actions.
+  const byUser = new Map<string, TeamListUser>();
+  for (const m of allMembers) {
     const overrides = overrideByMembership.get(m.id);
     let on = 0;
     let hasOverride = false;
@@ -126,21 +130,34 @@ export default async function OwnerTeamPage() {
         on++;
       }
     }
-    return {
+    const existing = byUser.get(m.user_id);
+    const membershipEntry = {
       membership_id: m.id,
-      user_id: m.user_id,
-      email: emailById.get(m.user_id) ?? m.user_id.slice(0, 8),
-      role: m.role,
       site_id: m.site_id,
       site_name: siteNameById.get(m.site_id) ?? 'Site',
+      role: m.role,
       joined_at: m.created_at,
       features_on: on,
       features_total: availableFeatures.length,
       has_override: hasOverride,
     };
-  });
+    if (existing) {
+      existing.memberships.push(membershipEntry);
+    } else {
+      byUser.set(m.user_id, {
+        user_id: m.user_id,
+        email: emailById.get(m.user_id) ?? m.user_id.slice(0, 8),
+        href: '/owner/team/u/' + m.user_id,
+        memberships: [membershipEntry],
+      });
+    }
+  }
+  const listUsers = Array.from(byUser.values()).sort((a, b) =>
+    a.email.localeCompare(b.email),
+  );
 
-  // KPIs
+  // KPIs (counts based on memberships, not users — a person who's owner
+  // on two sites is still two ownership rows worth of access).
   const totalMembers = allMembers.length;
   const ownerCount = allMembers.filter((m) => m.role === 'owner').length;
   const managerCount = allMembers.filter((m) => m.role === 'manager').length;
@@ -159,30 +176,34 @@ export default async function OwnerTeamPage() {
       <OwnerPageHeader
         eyebrow="Who Has The Keys"
         title="Team"
-        subtitle="Every member across every site you own. Roles set the defaults; per-feature overrides give you precise control over who can do what."
+        subtitle="Every person across every site you own. Roles set the defaults; per-feature overrides give you precise control over who can do what."
         activeSlug="team"
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-rule border border-rule mb-10">
         <KpiCard
-          label="Total"
-          value={String(totalMembers)}
+          label="People"
+          value={String(listUsers.length)}
           sub={'across ' + siteIds.length + ' site' + (siteIds.length === 1 ? '' : 's')}
         />
         <KpiCard
           label="Management"
           value={String(ownerCount + managerCount)}
-          sub="owner + manager"
+          sub="owner + manager memberships"
         />
         <KpiCard label="Kitchen" value={String(kitchenCount)} sub="chef + sous + commis" />
         <KpiCard label="Bar" value={String(barCount)} sub="head + bartender + back" />
       </div>
 
-      <TeamList
-        members={listMembers}
-        basePath="/owner/team"
-        showSiteColumn={siteIds.length > 1}
-      />
+      <TeamList users={listUsers} showSiteColumn={siteIds.length > 1} />
+
+      {totalMembers !== listUsers.length && (
+        <p className="font-serif italic text-sm text-muted mt-4">
+          {totalMembers} memberships across {listUsers.length}{' '}
+          {listUsers.length === 1 ? 'person' : 'people'} — multi-site users
+          appear once with all their sites listed.
+        </p>
+      )}
     </div>
   );
 }

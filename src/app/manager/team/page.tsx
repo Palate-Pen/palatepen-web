@@ -4,7 +4,7 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { getShellContext } from '@/lib/shell/context';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { KpiCard } from '@/components/shell/KpiCard';
-import { TeamList, type TeamListMember } from '@/components/team/TeamList';
+import { TeamList, type TeamListUser } from '@/components/team/TeamList';
 import {
   FEATURE_REGISTRY,
   isFeatureAvailableAtTier,
@@ -86,7 +86,9 @@ export default async function ManagerTeamPage() {
     isFeatureAvailableAtTier(f.key, tier),
   );
 
-  const listMembers: TeamListMember[] = allMembers.map((m) => {
+  // Manager view is single-site so each user has exactly one membership.
+  // Wrap each into the shared TeamListUser shape (memberships.length === 1).
+  const listUsers: TeamListUser[] = allMembers.map((m) => {
     const overrides = overrideByMembership.get(m.id);
     let on = 0;
     let hasOverride = false;
@@ -100,16 +102,21 @@ export default async function ManagerTeamPage() {
       }
     }
     return {
-      membership_id: m.id,
       user_id: m.user_id,
       email: emailById.get(m.user_id) ?? m.user_id.slice(0, 8),
-      role: m.role,
-      site_id: m.site_id,
-      site_name: (site?.name as string | undefined) ?? ctx.kitchenName,
-      joined_at: m.created_at,
-      features_on: on,
-      features_total: availableFeatures.length,
-      has_override: hasOverride,
+      href: '/manager/team/' + m.id,
+      memberships: [
+        {
+          membership_id: m.id,
+          site_id: m.site_id,
+          site_name: (site?.name as string | undefined) ?? ctx.kitchenName,
+          role: m.role,
+          joined_at: m.created_at,
+          features_on: on,
+          features_total: availableFeatures.length,
+          has_override: hasOverride,
+        },
+      ],
     };
   });
 
@@ -191,11 +198,7 @@ export default async function ManagerTeamPage() {
           </p>
         </div>
       ) : (
-        <TeamList
-          members={listMembers}
-          basePath="/manager/team"
-          showSiteColumn={false}
-        />
+        <TeamList users={listUsers} showSiteColumn={false} />
       )}
 
       <p className="font-serif italic text-sm text-muted mt-6">
