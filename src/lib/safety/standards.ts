@@ -189,3 +189,40 @@ export const TRAINING_KIND_LABEL: Record<TrainingKind, string> = {
   fire_safety: 'Fire safety',
   other: 'Other',
 };
+
+/**
+ * SFBB opening-check questions. Single source of truth shared between
+ * OpeningChecksGrid (where they're rendered + ticked) and the diary-day
+ * detail page (where "missed" items are surfaced).
+ */
+export const OPENING_CHECK_QUESTIONS: Array<{
+  key: string;
+  label: string;
+  detail: string;
+}> = [
+  {
+    key: 'fridge_temps',
+    label: 'Fridges + freezers',
+    detail: 'All units reading safe targets',
+  },
+  {
+    key: 'probes_calibrated',
+    label: 'Probes calibrated',
+    detail: 'Weekly calibration sign-off',
+  },
+  {
+    key: 'cleaning_signed_off',
+    label: 'Cleaning verified',
+    detail: "Last night's close-down checked",
+  },
+  {
+    key: 'staff_health',
+    label: 'Staff health',
+    detail: 'No reported sickness in last 48h',
+  },
+  {
+    key: 'handwash_stocked',
+    label: 'Handwash stations',
+    detail: 'Soap, blue roll, hot water — every station',
+  },
+];

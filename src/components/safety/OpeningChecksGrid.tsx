@@ -4,34 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitOpeningCheckAction } from '@/lib/safety/actions';
 import type { OpeningCheckRow } from '@/lib/safety/lib';
-
-const QUESTIONS: Array<{ key: string; label: string; detail: string }> = [
-  {
-    key: 'fridge_temps',
-    label: 'Fridges + freezers',
-    detail: 'All units reading safe targets',
-  },
-  {
-    key: 'probes_calibrated',
-    label: 'Probes calibrated',
-    detail: 'Weekly calibration sign-off',
-  },
-  {
-    key: 'cleaning_signed_off',
-    label: 'Cleaning verified',
-    detail: "Last night's close-down checked",
-  },
-  {
-    key: 'staff_health',
-    label: 'Staff health',
-    detail: 'No reported sickness in last 48h',
-  },
-  {
-    key: 'handwash_stocked',
-    label: 'Handwash stations',
-    detail: 'Soap, blue roll, hot water — every station',
-  },
-];
+import { OPENING_CHECK_QUESTIONS as QUESTIONS } from '@/lib/safety/standards';
 
 type State = Record<string, 'done' | 'flagged' | 'pending'>;
 type Meta = Record<string, { by: string; at: string }>;

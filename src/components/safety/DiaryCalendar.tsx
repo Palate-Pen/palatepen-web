@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { OpeningCheckRow } from '@/lib/safety/lib';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -120,18 +121,39 @@ export function DiaryCalendar({
               ? 'font-bold text-gold-dark'
               : 'text-ink-soft'
             : 'text-muted-soft';
-          return (
-            <div
-              key={c.iso}
-              className={'p-1.5 flex flex-col justify-between transition-colors ' + wrapper + todayRing}
-              style={{ aspectRatio: '1.4 / 1' }}
-              title={c.iso}
-            >
+          const inner = (
+            <>
               <span className={'font-serif text-[13px] ' + numClass}>
                 {c.date.getDate()}
               </span>
               {dotClass && <span className={'w-1.5 h-1.5 rounded-full self-end ' + dotClass} />}
-            </div>
+            </>
+          );
+          const wrapperClass =
+            'p-1.5 flex flex-col justify-between transition-colors ' + wrapper + todayRing;
+          if (isFuture) {
+            return (
+              <div
+                key={c.iso}
+                className={wrapperClass}
+                style={{ aspectRatio: '1.4 / 1' }}
+                title={c.iso}
+              >
+                {inner}
+              </div>
+            );
+          }
+          return (
+            <Link
+              key={c.iso}
+              href={'/safety/diary/' + c.iso}
+              className={wrapperClass + ' no-underline'}
+              style={{ aspectRatio: '1.4 / 1' }}
+              title={`Open diary for ${c.iso}`}
+              aria-label={`Open diary for ${c.iso}`}
+            >
+              {inner}
+            </Link>
           );
         })}
       </div>

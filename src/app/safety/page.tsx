@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getSafetyHomeBundle } from '@/lib/safety/home';
+import { getComplianceReport } from '@/lib/safety/compliance';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import { DiaryCalendar } from '@/components/safety/DiaryCalendar';
@@ -9,12 +10,16 @@ import { OpeningChecksGrid } from '@/components/safety/OpeningChecksGrid';
 import { SafetyCheckCard } from '@/components/safety/SafetyCheckCard';
 import { SafetyEhoExport } from '@/components/safety/SafetyEhoExport';
 import { SafetyQuickAction } from '@/components/safety/SafetyQuickAction';
+import { ComplianceCard } from '@/components/safety/ComplianceCard';
 
 export const metadata = { title: "Today's safety log · Palatable" };
 
 export default async function SafetyHomePage() {
   const ctx = await getShellContext();
-  const bundle = await getSafetyHomeBundle(ctx.siteId);
+  const [bundle, compliance] = await Promise.all([
+    getSafetyHomeBundle(ctx.siteId),
+    getComplianceReport(ctx.siteId),
+  ]);
 
   const todayMonth = new Date().toLocaleDateString('en-GB', {
     month: 'long',
@@ -50,6 +55,8 @@ export default async function SafetyHomePage() {
       </p>
 
       <SafetyDateStrip serviceStart="18:30" tone={tone} toneLabel={toneLabel} />
+
+      <ComplianceCard report={compliance} />
 
       <SafetyLookingAhead items={bundle.looking_ahead} />
 
