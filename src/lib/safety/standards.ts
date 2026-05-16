@@ -191,38 +191,136 @@ export const TRAINING_KIND_LABEL: Record<TrainingKind, string> = {
 };
 
 /**
- * SFBB opening-check questions. Single source of truth shared between
- * OpeningChecksGrid (where they're rendered + ticked) and the diary-day
- * detail page (where "missed" items are surfaced).
+ * SFBB opening-check questions, grouped by department.
+ *
+ * Each group renders as its own side tab in OpeningChecksGrid so the
+ * chef / bar / manager only see the checks relevant to them — and the
+ * full record sits in one place for the SFBB diary. Answers from all
+ * groups merge into a single jsonb on safety_opening_checks so the
+ * row count + diary calendar stays unchanged.
+ *
+ * Adding a new question: extend the relevant group below — no
+ * migration needed (answers JSONB tolerates new keys, old rows just
+ * won't have them).
  */
-export const OPENING_CHECK_QUESTIONS: Array<{
+export type OpeningCheckDepartment = 'kitchen' | 'bar' | 'management';
+
+export type OpeningCheckQuestion = {
   key: string;
   label: string;
   detail: string;
-}> = [
+};
+
+export type OpeningCheckGroup = {
+  department: OpeningCheckDepartment;
+  label: string;
+  blurb: string;
+  questions: OpeningCheckQuestion[];
+};
+
+export const OPENING_CHECK_GROUPS: OpeningCheckGroup[] = [
   {
-    key: 'fridge_temps',
-    label: 'Fridges + freezers',
-    detail: 'All units reading safe targets',
+    department: 'kitchen',
+    label: 'Kitchen',
+    blurb: "Pre-service sign-offs — food safety law expects every one of these every day.",
+    questions: [
+      {
+        key: 'fridge_temps',
+        label: 'Fridges + freezers',
+        detail: 'All units reading safe targets',
+      },
+      {
+        key: 'probes_calibrated',
+        label: 'Probes calibrated',
+        detail: 'Weekly calibration sign-off',
+      },
+      {
+        key: 'cleaning_signed_off',
+        label: 'Cleaning verified',
+        detail: "Last night's close-down checked",
+      },
+      {
+        key: 'staff_health',
+        label: 'Staff health',
+        detail: 'No reported sickness in last 48h',
+      },
+      {
+        key: 'handwash_stocked',
+        label: 'Handwash stations',
+        detail: 'Soap, blue roll, hot water — every station',
+      },
+    ],
   },
   {
-    key: 'probes_calibrated',
-    label: 'Probes calibrated',
-    detail: 'Weekly calibration sign-off',
+    department: 'bar',
+    label: 'Bar',
+    blurb: 'Pre-service bar checks — service standards + the bits an EHO will spot.',
+    questions: [
+      {
+        key: 'bar_glassware_polished',
+        label: 'Glassware polished',
+        detail: 'Stocked + spot-free at the rail',
+      },
+      {
+        key: 'bar_lines_flushed',
+        label: 'Beer + cocktail lines',
+        detail: 'Flushed at open · no off-flavours',
+      },
+      {
+        key: 'bar_pourers_clean',
+        label: 'Spirit pourers',
+        detail: 'Cleaned + free-flowing',
+      },
+      {
+        key: 'bar_ice_quality',
+        label: 'Ice machine',
+        detail: 'Running clean · scoop dry · stored ice covered',
+      },
+      {
+        key: 'bar_float_counted',
+        label: 'Cash + card float',
+        detail: 'Counted, signed, in the till',
+      },
+    ],
   },
   {
-    key: 'cleaning_signed_off',
-    label: 'Cleaning verified',
-    detail: "Last night's close-down checked",
-  },
-  {
-    key: 'staff_health',
-    label: 'Staff health',
-    detail: 'No reported sickness in last 48h',
-  },
-  {
-    key: 'handwash_stocked',
-    label: 'Handwash stations',
-    detail: 'Soap, blue roll, hot water — every station',
+    department: 'management',
+    label: 'Management',
+    blurb: 'Front-of-house sign-offs that knit the kitchen + bar checks together.',
+    questions: [
+      {
+        key: 'mgmt_brief_held',
+        label: 'Pre-service brief',
+        detail: 'Allergens · 86s · VIPs covered with the team',
+      },
+      {
+        key: 'mgmt_bookings_reviewed',
+        label: 'Bookings reviewed',
+        detail: 'Covers + notes checked, large parties briefed',
+      },
+      {
+        key: 'mgmt_safety_walk',
+        label: 'Safety walkthrough',
+        detail: 'FOH + BOH spot-check completed',
+      },
+      {
+        key: 'mgmt_close_signed',
+        label: "Last night's close",
+        detail: 'Close-down checklist signed by closing manager',
+      },
+    ],
   },
 ];
+
+/**
+ * Flat list of every question across every department — used by the
+ * diary-day detail page's missed-items detector and any other reader
+ * that doesn't care about the group structure.
+ */
+export const OPENING_CHECK_QUESTIONS: Array<
+  OpeningCheckQuestion & { department: OpeningCheckDepartment }
+> = OPENING_CHECK_GROUPS.flatMap((g) =>
+  g.questions.map((q) => ({ ...q, department: g.department })),
+);
+
+export const OPENING_CHECK_TOTAL = OPENING_CHECK_QUESTIONS.length;
