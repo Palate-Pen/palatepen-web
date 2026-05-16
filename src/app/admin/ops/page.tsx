@@ -8,6 +8,7 @@ import {
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { ReseedDemoCard } from './ReseedDemoCard';
+import { ReseedHelloDemoCard } from './ReseedHelloDemoCard';
 
 export const metadata = { title: 'Admin · Founder Ops — Palatable' };
 
@@ -182,10 +183,11 @@ export default async function AdminOpsPage() {
         )}
       </section>
 
-      {/* Founder demo controls — kept from v1 */}
-      <section id="demo">
-        <SectionHead title="Founder Demo" meta="re-anchor every surface to today" />
+      {/* Demo controls — founder demo (jack@) + customer demo (hello@) */}
+      <section id="demo" className="space-y-6">
+        <SectionHead title="Demo Reseeds" meta="re-anchor every surface to today" />
         <ReseedDemoCard />
+        <ReseedHelloDemoCard />
       </section>
     </div>
   );

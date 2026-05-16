@@ -5,6 +5,10 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { ADMIN_EMAIL } from '@/lib/admin';
 import { regenerateSignalsForSite } from '@/lib/signal-detectors';
+import {
+  reseedHelloDemoOnSupabase,
+  type DemoReseedResult,
+} from '@/lib/seed/demo-reseed';
 
 export type ReseedResult =
   | {
@@ -194,4 +198,58 @@ export async function reseedFounderDemoAction(): Promise<ReseedResult> {
     tables: results,
     timestamp: new Date().toISOString(),
   };
+}
+
+/**
+ * Re-anchor every is_demo account (currently just hello@'s Hello Demo,
+ * but the lib walks all is_demo rows so adding a second demo account
+ * later is zero code). Wraps reseedHelloDemoOnSupabase with the founder
+ * email gate and triggers revalidation across every surface the demo
+ * touches.
+ *
+ * Cron route /api/cron/reseed-demo calls the lib directly without this
+ * gate — it has its own Bearer auth.
+ */
+export async function reseedHelloDemoAction(): Promise<DemoReseedResult> {
+  const supabaseUser = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabaseUser.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthenticated' };
+  if ((user.email ?? '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    return { ok: false, error: 'forbidden' };
+  }
+
+  const svc = createSupabaseServiceClient();
+  const result = await reseedHelloDemoOnSupabase(svc);
+
+  if (result.ok) {
+    // Hit the same paths the founder reseed does so the demo dashboards
+    // pick up the shifted timestamps on next render.
+    revalidatePath('/');
+    revalidatePath('/inbox');
+    revalidatePath('/prep');
+    revalidatePath('/recipes');
+    revalidatePath('/margins');
+    revalidatePath('/stock-suppliers');
+    revalidatePath('/stock-suppliers/the-bank');
+    revalidatePath('/stock-suppliers/invoices');
+    revalidatePath('/stock-suppliers/deliveries');
+    revalidatePath('/stock-suppliers/suppliers');
+    revalidatePath('/stock-suppliers/waste');
+    revalidatePath('/stock-suppliers/credit-notes');
+    revalidatePath('/notebook');
+    revalidatePath('/bartender');
+    revalidatePath('/manager');
+    revalidatePath('/owner');
+    revalidatePath('/safety');
+    revalidatePath('/safety/probe');
+    revalidatePath('/safety/incidents');
+    revalidatePath('/safety/cleaning');
+    revalidatePath('/safety/training');
+    revalidatePath('/safety/eho');
+    revalidatePath('/admin/ops');
+  }
+
+  return result;
 }
