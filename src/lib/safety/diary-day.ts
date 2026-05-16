@@ -5,7 +5,7 @@ import {
   type ProbeReadingRow,
   type IncidentRow,
 } from '@/lib/safety/lib';
-import { OPENING_CHECK_QUESTIONS } from '@/lib/safety/standards';
+import { getOpeningCheckGroups, flattenGroups } from '@/lib/safety/checklists';
 
 export type CleaningSignoffRow = {
   id: string;
@@ -53,6 +53,10 @@ export type DiaryDayBundle = {
 export async function getDiaryDay(
   siteId: string,
   isoDate: string,
+  /** Account id — used to resolve the per-account opening-check config
+   *  so missed-items detection respects custom questions. Falls back to
+   *  hardcoded defaults if omitted. */
+  accountId?: string,
 ): Promise<DiaryDayBundle> {
   const supabase = await createSupabaseServerClient();
 
@@ -152,7 +156,9 @@ export async function getDiaryDay(
 
   if (opening) {
     const answers = (opening.answers ?? {}) as Record<string, unknown>;
-    for (const q of OPENING_CHECK_QUESTIONS) {
+    const groups = await getOpeningCheckGroups(accountId ?? '');
+    const questions = flattenGroups(groups);
+    for (const q of questions) {
       const v = answers[q.key];
       if (v === false || v === undefined || v === null) {
         missed.unticked_questions.push({ key: q.key, label: q.label });

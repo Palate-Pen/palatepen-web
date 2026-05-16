@@ -1,6 +1,7 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getSafetyHomeBundle } from '@/lib/safety/home';
 import { getComplianceReport } from '@/lib/safety/compliance';
+import { getOpeningCheckGroups } from '@/lib/safety/checklists';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import { DiaryCalendar } from '@/components/safety/DiaryCalendar';
@@ -11,14 +12,16 @@ import { SafetyCheckCard } from '@/components/safety/SafetyCheckCard';
 import { SafetyEhoExport } from '@/components/safety/SafetyEhoExport';
 import { SafetyQuickAction } from '@/components/safety/SafetyQuickAction';
 import { ComplianceCard } from '@/components/safety/ComplianceCard';
+import { ManageChecklistsSection } from '@/components/safety/ManageChecklistsSection';
 
 export const metadata = { title: "Today's safety log · Palatable" };
 
 export default async function SafetyHomePage() {
   const ctx = await getShellContext();
-  const [bundle, compliance] = await Promise.all([
+  const [bundle, compliance, openingCheckGroups] = await Promise.all([
     getSafetyHomeBundle(ctx.siteId),
     getComplianceReport(ctx.siteId),
+    getOpeningCheckGroups(ctx.accountId),
   ]);
 
   const todayMonth = new Date().toLocaleDateString('en-GB', {
@@ -60,7 +63,15 @@ export default async function SafetyHomePage() {
 
       <SafetyLookingAhead items={bundle.looking_ahead} />
 
-      <OpeningChecksGrid initial={bundle.todays_check} />
+      <ManageChecklistsSection
+        accountId={ctx.accountId}
+        groups={openingCheckGroups}
+      />
+
+      <OpeningChecksGrid
+        initial={bundle.todays_check}
+        groups={openingCheckGroups}
+      />
 
       <AutoLoggedSection bundle={bundle} />
 

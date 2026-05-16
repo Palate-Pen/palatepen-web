@@ -6,16 +6,24 @@ import { submitOpeningCheckAction } from '@/lib/safety/actions';
 import type { OpeningCheckRow } from '@/lib/safety/lib';
 import {
   OPENING_CHECK_GROUPS,
-  OPENING_CHECK_QUESTIONS,
   type OpeningCheckDepartment,
+  type OpeningCheckGroup,
+  type OpeningCheckQuestion,
 } from '@/lib/safety/standards';
 
 type State = Record<string, 'done' | 'flagged' | 'pending'>;
 type Meta = Record<string, { by: string; at: string }>;
 
-function initialState(answers: Record<string, unknown> | null): State {
+function flatQuestions(groups: OpeningCheckGroup[]): OpeningCheckQuestion[] {
+  return groups.flatMap((g) => g.questions);
+}
+
+function initialState(
+  questions: OpeningCheckQuestion[],
+  answers: Record<string, unknown> | null,
+): State {
   const out: State = {};
-  for (const q of OPENING_CHECK_QUESTIONS) {
+  for (const q of questions) {
     if (answers === null || !(q.key in answers)) {
       out[q.key] = 'pending';
     } else {
@@ -43,20 +51,32 @@ function initialMeta(answers: Record<string, unknown> | null): Meta {
  * department's state) through submitOpeningCheckAction(), so switching
  * tabs never loses sign-offs from another department.
  */
-export function OpeningChecksGrid({ initial }: { initial: OpeningCheckRow | null }) {
+export function OpeningChecksGrid({
+  initial,
+  groups,
+}: {
+  initial: OpeningCheckRow | null;
+  /** Optional override — falls back to the hardcoded default config. */
+  groups?: OpeningCheckGroup[];
+}) {
   const router = useRouter();
+  const resolvedGroups = groups && groups.length > 0 ? groups : OPENING_CHECK_GROUPS;
+  const questions = flatQuestions(resolvedGroups);
   const initialAnswers = (initial?.answers as Record<string, unknown> | null) ?? null;
-  const [state, setState] = useState<State>(() => initialState(initialAnswers));
+  const [state, setState] = useState<State>(() =>
+    initialState(questions, initialAnswers),
+  );
   const [meta] = useState<Meta>(() => initialMeta(initialAnswers));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [activeDept, setActiveDept] = useState<OpeningCheckDepartment>('kitchen');
+  const [activeDept, setActiveDept] = useState<OpeningCheckDepartment>(
+    resolvedGroups[0]?.department ?? 'kitchen',
+  );
 
   const activeGroup =
-    OPENING_CHECK_GROUPS.find((g) => g.department === activeDept) ??
-    OPENING_CHECK_GROUPS[0];
+    resolvedGroups.find((g) => g.department === activeDept) ?? resolvedGroups[0];
 
-  function tabSummary(group: (typeof OPENING_CHECK_GROUPS)[number]) {
+  function tabSummary(group: OpeningCheckGroup) {
     let done = 0;
     let flagged = 0;
     for (const q of group.questions) {
@@ -67,14 +87,14 @@ export function OpeningChecksGrid({ initial }: { initial: OpeningCheckRow | null
   }
 
   const overallDone = Object.values(state).filter((s) => s === 'done').length;
-  const overallTotal = OPENING_CHECK_QUESTIONS.length;
+  const overallTotal = questions.length;
 
   function cycle(key: string) {
     setState((prev) => {
       const next = { ...prev };
       next[key] = prev[key] === 'pending' ? 'done' : prev[key] === 'done' ? 'flagged' : 'pending';
       const answers: Record<string, boolean> = {};
-      for (const q of OPENING_CHECK_QUESTIONS) {
+      for (const q of questions) {
         if (next[q.key] === 'done') answers[q.key] = true;
         else if (next[q.key] === 'flagged') answers[q.key] = false;
       }

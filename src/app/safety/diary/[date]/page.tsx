@@ -37,7 +37,7 @@ export default async function DiaryDayPage({
   if (!ISO_DATE.test(date)) notFound();
 
   const ctx = await getShellContext();
-  const day = await getDiaryDay(ctx.siteId, date);
+  const day = await getDiaryDay(ctx.siteId, date, ctx.accountId);
 
   // Resolve every user_id we'll surface in one shot.
   const userIds: Array<string | null> = [

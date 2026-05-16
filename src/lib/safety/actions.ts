@@ -493,6 +493,96 @@ export async function updateCleaningTaskAction(input: {
   return { ok: true };
 }
 
+/**
+ * Atomic full-replace of the account's opening-checks config. Owner or
+ * manager only (it's an account-wide setting, not a per-shift one).
+ * Validates each question has a key + label before saving.
+ *
+ * Storage: accounts.preferences.opening_check_groups (JSONB), so no
+ * migration — we merge into whatever else lives on preferences.
+ */
+export async function setOpeningCheckGroupsAction(input: {
+  accountId: string;
+  groups: Array<{
+    department: 'kitchen' | 'bar' | 'management';
+    label: string;
+    blurb: string;
+    questions: Array<{ key: string; label: string; detail: string }>;
+  }>;
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not signed in' };
+
+  // Authorisation: caller must be owner or manager on a site under
+  // this account.
+  const { data: ownedSites } = await supabase
+    .from('memberships')
+    .select('role, sites:site_id (account_id)')
+    .eq('user_id', user.id);
+  type Row = { role: string; sites: { account_id: string } | null };
+  const rows = (ownedSites ?? []) as unknown as Row[];
+  const authorised = rows.some(
+    (r) =>
+      r.sites?.account_id === input.accountId &&
+      ['owner', 'manager'].includes(r.role),
+  );
+  if (!authorised) {
+    return { ok: false, error: 'Owner or manager role required.' };
+  }
+
+  // Shape validation — bail before clobbering preferences.
+  const cleaned = input.groups.map((g) => {
+    const label = (g.label ?? '').trim() || g.department;
+    const blurb = (g.blurb ?? '').trim();
+    const questions = (g.questions ?? [])
+      .map((q) => ({
+        key: (q.key ?? '').trim(),
+        label: (q.label ?? '').trim(),
+        detail: (q.detail ?? '').trim(),
+      }))
+      .filter((q) => q.key && q.label);
+    return { department: g.department, label, blurb, questions };
+  });
+
+  // Catch dupe keys across the whole config — they'd corrupt the
+  // answers JSONB lookup. Flag the first duplicate found.
+  const seen = new Set<string>();
+  for (const g of cleaned) {
+    for (const q of g.questions) {
+      if (seen.has(q.key)) {
+        return {
+          ok: false,
+          error: `Duplicate question key "${q.key}" — every question must be unique.`,
+        };
+      }
+      seen.add(q.key);
+    }
+  }
+
+  // Merge into existing preferences (don't clobber currency, gp_target,
+  // kitchen_size, etc.).
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('preferences')
+    .eq('id', input.accountId)
+    .maybeSingle();
+  const prev = (account?.preferences ?? {}) as Record<string, unknown>;
+  const nextPrefs = { ...prev, opening_check_groups: cleaned };
+
+  const { error } = await supabase
+    .from('accounts')
+    .update({ preferences: nextPrefs })
+    .eq('id', input.accountId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety');
+  revalidatePath('/safety/diary', 'layout');
+  return { ok: true };
+}
+
 export async function archiveCleaningTaskAction(input: {
   taskId: string;
 }): Promise<ActionResult> {
