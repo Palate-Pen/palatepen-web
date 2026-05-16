@@ -218,6 +218,18 @@ export type OpeningCheckGroup = {
   questions: OpeningCheckQuestion[];
 };
 
+export const DEPARTMENT_ORDER: OpeningCheckDepartment[] = [
+  'kitchen',
+  'bar',
+  'management',
+];
+
+export const DEPARTMENT_LABEL: Record<OpeningCheckDepartment, string> = {
+  kitchen: 'Kitchen',
+  bar: 'Bar',
+  management: 'Management',
+};
+
 export const OPENING_CHECK_GROUPS: OpeningCheckGroup[] = [
   {
     department: 'kitchen',

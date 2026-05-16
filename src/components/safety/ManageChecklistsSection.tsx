@@ -3,10 +3,10 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setOpeningCheckGroupsAction } from '@/lib/safety/actions';
-import type { OpeningCheckGroup } from '@/lib/safety/standards';
 import {
   DEPARTMENT_LABEL,
-} from '@/lib/safety/checklists';
+  type OpeningCheckGroup,
+} from '@/lib/safety/standards';
 
 /**
  * Manage Opening Checks — chef-editable checklist per department.

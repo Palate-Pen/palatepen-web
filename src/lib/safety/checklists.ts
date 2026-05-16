@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
+  DEPARTMENT_ORDER,
   OPENING_CHECK_GROUPS,
   type OpeningCheckDepartment,
   type OpeningCheckGroup,
@@ -17,19 +18,11 @@ import {
  * — the user can edit each group's blurb and questions, not add new
  * departments. Old answers stored against removed keys are not deleted;
  * the diary detail just won't surface them as missed items.
+ *
+ * Note: DEPARTMENT_ORDER + DEPARTMENT_LABEL constants live in
+ * standards.ts (client-safe) so client components can import them
+ * without dragging in this module's server-only Supabase dependency.
  */
-
-export const DEPARTMENT_ORDER: OpeningCheckDepartment[] = [
-  'kitchen',
-  'bar',
-  'management',
-];
-
-export const DEPARTMENT_LABEL: Record<OpeningCheckDepartment, string> = {
-  kitchen: 'Kitchen',
-  bar: 'Bar',
-  management: 'Management',
-};
 
 function defaultGroupFor(dept: OpeningCheckDepartment): OpeningCheckGroup {
   const found = OPENING_CHECK_GROUPS.find((g) => g.department === dept);
