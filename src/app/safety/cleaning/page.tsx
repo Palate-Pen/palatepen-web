@@ -1,5 +1,5 @@
 import { getShellContext } from '@/lib/shell/context';
-import { getCleaningSchedule } from '@/lib/safety/lib';
+import { getCleaningSchedule, type CleaningTaskRow } from '@/lib/safety/lib';
 import { resolveSafetyUsers } from '@/lib/safety/users';
 import { CLEANING_FREQ_LABEL } from '@/lib/safety/standards';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
@@ -11,6 +11,7 @@ import {
 import { SafetyLookingAhead } from '@/components/safety/SafetyLookingAhead';
 import { CleaningTickRow } from './CleaningTickRow';
 import { SeedScheduleButton } from './SeedScheduleButton';
+import { ManageScheduleSection } from './ManageScheduleSection';
 
 export const metadata = { title: 'Cleaning schedule · Safety · Palatable' };
 
@@ -19,12 +20,59 @@ export default async function CleaningPage() {
   const tasks = await getCleaningSchedule(ctx.siteId);
 
   const todayIso = new Date().toISOString().slice(0, 10);
-  const dailyTasks = tasks.filter((t) => t.frequency === 'daily');
-  const dailyDone = dailyTasks.filter(
-    (t) => t.last_completed_at?.slice(0, 10) === todayIso,
-  ).length;
-  const dailyTotal = dailyTasks.length;
-  const pct = dailyTotal === 0 ? 0 : Math.round((dailyDone / dailyTotal) * 100);
+
+  // Compute "in cycle" per frequency: a task is in cycle when its last
+  // signoff falls within its frequency window (today for daily, last 7
+  // days for weekly, etc.). Each frequency gets its own progress bar so
+  // ticking a weekly task doesn't move the daily bar and vice versa.
+  type FreqBar = {
+    key: CleaningTaskRow['frequency'];
+    label: string;
+    inCycle: number;
+    total: number;
+    pct: number;
+    tone: 'healthy' | 'attention' | 'urgent';
+  };
+  const FREQ_WINDOW_DAYS: Record<CleaningTaskRow['frequency'], number> = {
+    daily: 1,
+    weekly: 7,
+    monthly: 30,
+    quarterly: 90,
+    annually: 365,
+  };
+  function isInCycle(t: CleaningTaskRow): boolean {
+    if (!t.last_completed_at) return false;
+    const days = Math.floor(
+      (Date.now() - new Date(t.last_completed_at).getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+    return days <= FREQ_WINDOW_DAYS[t.frequency];
+  }
+  const freqBars: FreqBar[] = (
+    ['daily', 'weekly', 'monthly', 'quarterly', 'annually'] as const
+  )
+    .map((f) => {
+      const list = tasks.filter((t) => t.frequency === f);
+      const inCycle = list.filter(isInCycle).length;
+      const total = list.length;
+      const pct = total === 0 ? 0 : Math.round((inCycle / total) * 100);
+      const tone: FreqBar['tone'] =
+        total === 0
+          ? 'healthy'
+          : pct === 100
+            ? 'healthy'
+            : pct >= 60
+              ? 'attention'
+              : 'urgent';
+      return { key: f, label: CLEANING_FREQ_LABEL[f], inCycle, total, pct, tone };
+    })
+    // Drop bars where the schedule has no tasks at that frequency.
+    .filter((b) => b.total > 0);
+
+  const overallTotal = tasks.length;
+  const overallInCycle = tasks.filter(isInCycle).length;
+  const overallPct =
+    overallTotal === 0 ? 0 : Math.round((overallInCycle / overallTotal) * 100);
 
   // Overdue = weekly/monthly past their cycle, or never done
   const overdue = tasks.filter((t) => {
@@ -69,7 +117,8 @@ export default async function CleaningPage() {
       body: `<em>${overdue[0].task}</em>${overdue.length > 1 ? ` and ${overdue.length - 1} other task${overdue.length - 1 === 1 ? '' : 's'}` : ''} overdue. The diary calendar marks these red on the home page.`,
     });
   }
-  if (dailyTotal > 0 && dailyDone === dailyTotal) {
+  const dailyBar = freqBars.find((b) => b.key === 'daily');
+  if (dailyBar && dailyBar.inCycle === dailyBar.total) {
     ahead.push({
       tag: 'worth_knowing',
       body: `All daily tasks ticked off. The full SFBB record looks clean for today.`,
@@ -102,33 +151,64 @@ export default async function CleaningPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
           <div>
             <div className="bg-card border border-rule px-7 py-5 mb-6">
-              <div className="flex items-baseline justify-between gap-4 mb-3 flex-wrap">
+              <div className="flex items-baseline justify-between gap-4 mb-4 flex-wrap">
                 <div>
                   <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-1">
-                    Today
+                    In cycle
                   </div>
                   <div className="font-serif text-2xl font-medium text-ink">
-                    {dailyDone} / {dailyTotal} daily tasks done
+                    {overallInCycle} / {overallTotal} tasks within their window
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="font-mono font-medium text-3xl text-gold-dark leading-none">
-                    {pct}%
+                    {overallPct}%
                   </div>
-                  <div className="font-sans text-xs text-muted mt-1">
-                    complete
-                  </div>
+                  <div className="font-sans text-xs text-muted mt-1">overall</div>
                 </div>
               </div>
-              <div className="w-full h-2 bg-rule rounded-sm overflow-hidden">
-                <div
-                  className="h-full bg-healthy"
-                  style={{ width: pct + '%' }}
-                />
+
+              <div className="space-y-2.5">
+                {freqBars.map((b) => (
+                  <div key={b.key}>
+                    <div className="flex items-baseline justify-between mb-1">
+                      <span
+                        className={
+                          'font-display font-semibold text-[10px] tracking-[0.25em] uppercase ' +
+                          (b.tone === 'urgent'
+                            ? 'text-urgent'
+                            : b.tone === 'attention'
+                              ? 'text-attention'
+                              : 'text-healthy')
+                        }
+                      >
+                        {b.label}
+                      </span>
+                      <span className="font-mono text-xs text-ink-soft">
+                        {b.inCycle} / {b.total}
+                        <span className="text-muted-soft ml-2">{b.pct}%</span>
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-rule rounded-sm overflow-hidden">
+                      <div
+                        className={
+                          'h-full transition-all ' +
+                          (b.tone === 'urgent'
+                            ? 'bg-urgent'
+                            : b.tone === 'attention'
+                              ? 'bg-attention'
+                              : 'bg-healthy')
+                        }
+                        style={{ width: b.pct + '%' }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
+
               {overdue.length > 0 && (
-                <p className="font-serif italic text-sm text-attention mt-3">
-                  {overdue.length} task{overdue.length === 1 ? '' : 's'} overdue against frequency cycle
+                <p className="font-serif italic text-sm text-attention mt-4">
+                  {overdue.length} task{overdue.length === 1 ? '' : 's'} sitting outside their frequency window
                 </p>
               )}
             </div>
@@ -158,6 +238,8 @@ export default async function CleaningPage() {
                 </div>
               </section>
             ))}
+
+            <ManageScheduleSection siteId={ctx.siteId} tasks={tasks} />
           </div>
 
           <div>

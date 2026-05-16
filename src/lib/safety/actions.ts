@@ -364,3 +364,155 @@ export async function addTrainingAction(input: {
   revalidatePath('/safety');
   return { ok: true };
 }
+
+// ---------- Cleaning task CRUD ----------
+//
+// "Manage your schedule" — add, edit, archive rows in
+// v2.safety_cleaning_tasks. Authorisation: owner / manager / chef on
+// the task's site (matches the seed action). Archive is a soft delete
+// via archived_at so historical signoffs still resolve to a label.
+
+const VALID_FREQUENCIES = [
+  'daily',
+  'weekly',
+  'monthly',
+  'quarterly',
+  'annually',
+] as const;
+type CleaningFrequency = (typeof VALID_FREQUENCIES)[number];
+
+async function requireCleaningRole(siteId: string): Promise<
+  { ok: true; userId: string } | { ok: false; error: string }
+> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not signed in' };
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('site_id', siteId)
+    .maybeSingle();
+  if (!membership) {
+    return { ok: false, error: 'No membership on this site' };
+  }
+  if (!['owner', 'manager', 'chef'].includes(membership.role as string)) {
+    return { ok: false, error: 'Owner, manager or chef role required' };
+  }
+  return { ok: true, userId: user.id };
+}
+
+export async function createCleaningTaskAction(input: {
+  siteId: string;
+  area: string;
+  task: string;
+  frequency: string;
+  notes_md?: string | null;
+}): Promise<ActionResult<{ id: string }>> {
+  const gate = await requireCleaningRole(input.siteId);
+  if (!gate.ok) return gate;
+
+  const area = input.area.trim();
+  const task = input.task.trim();
+  if (!area || !task) {
+    return { ok: false, error: 'Area and task are required.' };
+  }
+  if (!VALID_FREQUENCIES.includes(input.frequency as CleaningFrequency)) {
+    return { ok: false, error: 'Invalid frequency.' };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from('safety_cleaning_tasks')
+    .insert({
+      site_id: input.siteId,
+      area,
+      task,
+      frequency: input.frequency,
+      notes_md: input.notes_md ?? null,
+    })
+    .select('id')
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/cleaning');
+  revalidatePath('/safety');
+  return { ok: true, data: { id: data.id as string } };
+}
+
+export async function updateCleaningTaskAction(input: {
+  taskId: string;
+  area?: string;
+  task?: string;
+  frequency?: string;
+  notes_md?: string | null;
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: existing } = await supabase
+    .from('safety_cleaning_tasks')
+    .select('site_id')
+    .eq('id', input.taskId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: 'Task not found' };
+  const gate = await requireCleaningRole(existing.site_id as string);
+  if (!gate.ok) return gate;
+
+  const patch: Record<string, unknown> = {};
+  if (input.area !== undefined) {
+    const a = input.area.trim();
+    if (!a) return { ok: false, error: 'Area cannot be empty.' };
+    patch.area = a;
+  }
+  if (input.task !== undefined) {
+    const t = input.task.trim();
+    if (!t) return { ok: false, error: 'Task cannot be empty.' };
+    patch.task = t;
+  }
+  if (input.frequency !== undefined) {
+    if (!VALID_FREQUENCIES.includes(input.frequency as CleaningFrequency)) {
+      return { ok: false, error: 'Invalid frequency.' };
+    }
+    patch.frequency = input.frequency;
+  }
+  if (input.notes_md !== undefined) patch.notes_md = input.notes_md;
+  if (Object.keys(patch).length === 0) {
+    return { ok: false, error: 'Nothing to update.' };
+  }
+
+  const { error } = await supabase
+    .from('safety_cleaning_tasks')
+    .update(patch)
+    .eq('id', input.taskId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/cleaning');
+  revalidatePath('/safety');
+  return { ok: true };
+}
+
+export async function archiveCleaningTaskAction(input: {
+  taskId: string;
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: existing } = await supabase
+    .from('safety_cleaning_tasks')
+    .select('site_id')
+    .eq('id', input.taskId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: 'Task not found' };
+  const gate = await requireCleaningRole(existing.site_id as string);
+  if (!gate.ok) return gate;
+
+  const { error } = await supabase
+    .from('safety_cleaning_tasks')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', input.taskId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/cleaning');
+  revalidatePath('/safety');
+  return { ok: true };
+}
