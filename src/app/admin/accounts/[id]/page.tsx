@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { TierSelect } from '@/components/admin/TierSelect';
+import { PopulateAccountButton } from './PopulateAccountButton';
 
 export const metadata = { title: 'Account — Admin — Palatable' };
 
@@ -35,7 +36,7 @@ export default async function AdminAccountDetailPage({
   const { data: account } = await svc
     .from('accounts')
     .select(
-      'id, name, tier, is_founder, created_at, stripe_customer_id, stripe_subscription_id',
+      'id, name, tier, is_founder, is_demo, created_at, stripe_customer_id, stripe_subscription_id',
     )
     .eq('id', id)
     .maybeSingle();
@@ -132,6 +133,11 @@ export default async function AdminAccountDetailPage({
             founder
           </span>
         )}
+        {account.is_demo && (
+          <span className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase text-gold border border-gold/40 px-2 py-0.5">
+            demo
+          </span>
+        )}
       </h1>
       <p className="font-serif italic text-lg text-muted mt-3 mb-8">
         {memberRows.length} {memberRows.length === 1 ? 'person' : 'people'}{' '}
@@ -192,6 +198,14 @@ export default async function AdminAccountDetailPage({
           />
         </div>
       </div>
+
+      {/* SEED CONTROLS — renders only for is_demo / is_founder */}
+      <PopulateAccountButton
+        accountId={accountId}
+        accountName={(account.name as string | null) ?? 'this account'}
+        isDemo={Boolean(account.is_demo)}
+        isFounder={Boolean(account.is_founder)}
+      />
 
       {/* SITES */}
       <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-3">
