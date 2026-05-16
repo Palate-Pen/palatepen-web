@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getRecentIncidents } from '@/lib/safety/lib';
+import { resolveSafetyUsers } from '@/lib/safety/users';
 import { INCIDENT_KIND_LABEL } from '@/lib/safety/standards';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
@@ -16,6 +17,9 @@ export default async function IncidentsPage() {
   const ctx = await getShellContext();
   const incidents = await getRecentIncidents(ctx.siteId);
   const open = incidents.filter((i) => !i.resolved_at);
+  const userById = await resolveSafetyUsers(
+    incidents.slice(0, 6).map((i) => i.logged_by),
+  );
 
   // Pattern detection
   const ahead: Array<{
@@ -100,9 +104,20 @@ export default async function IncidentsPage() {
                         })}
                       </span>
                     </div>
-                    <div className="font-serif text-sm text-ink leading-snug mb-2">
+                    <div className="font-serif text-sm text-ink leading-snug mb-1.5">
                       {inc.summary}
                     </div>
+                    {inc.logged_by && userById.get(inc.logged_by) && (
+                      <div className="font-sans text-xs text-muted-soft mb-2">
+                        logged by <span className="text-ink-soft">{userById.get(inc.logged_by)}</span>
+                        {' · '}
+                        {new Date(inc.occurred_at).toLocaleTimeString('en-GB', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={

@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getCleaningSchedule } from '@/lib/safety/lib';
+import { resolveSafetyUsers } from '@/lib/safety/users';
 import { CLEANING_FREQ_LABEL } from '@/lib/safety/standards';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
@@ -52,6 +53,11 @@ export default async function CleaningPage() {
     .filter((t) => t.last_completed_at?.slice(0, 10) === todayIso)
     .sort((a, b) => (b.last_completed_at ?? '').localeCompare(a.last_completed_at ?? ''))
     .slice(0, 6);
+  // Resolve user_ids → display labels across BOTH the side-feed and the
+  // main task list, so every "Last: ..." line can show who did it.
+  const userById = await resolveSafetyUsers(
+    tasks.map((t) => t.last_completed_by),
+  );
 
   const ahead: Array<{
     tag: 'worth_knowing' | 'get_ready' | 'plan_for_it';
@@ -144,6 +150,9 @@ export default async function CleaningPage() {
                       task={t}
                       freqLabel={CLEANING_FREQ_LABEL[t.frequency]}
                       isLast={i === items.length - 1}
+                      lastByLabel={
+                        t.last_completed_by ? userById.get(t.last_completed_by) ?? null : null
+                      }
                     />
                   ))}
                 </div>
@@ -160,25 +169,33 @@ export default async function CleaningPage() {
                   Nothing ticked yet today.
                 </div>
               ) : (
-                signoffs.map((s) => (
-                  <div key={s.id} className="px-6 py-3.5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-xs text-muted-soft">
-                        {new Date(s.last_completed_at!).toLocaleTimeString('en-GB', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false,
-                        })}
-                      </span>
-                      <span className="font-display font-semibold text-[10px] tracking-[0.25em] uppercase text-gold">
-                        {CLEANING_FREQ_LABEL[s.frequency]}
-                      </span>
+                signoffs.map((s) => {
+                  const who = s.last_completed_by ? userById.get(s.last_completed_by) : null;
+                  return (
+                    <div key={s.id} className="px-6 py-3.5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-mono text-xs text-muted-soft">
+                          {new Date(s.last_completed_at!).toLocaleTimeString('en-GB', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                          })}
+                        </span>
+                        <span className="font-display font-semibold text-[10px] tracking-[0.25em] uppercase text-gold">
+                          {CLEANING_FREQ_LABEL[s.frequency]}
+                        </span>
+                      </div>
+                      <div className="font-serif text-sm text-ink leading-snug">
+                        {s.task}
+                      </div>
+                      {who && (
+                        <div className="font-sans text-xs text-muted-soft mt-0.5">
+                          by <span className="text-ink-soft">{who}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="font-serif text-sm text-ink leading-snug">
-                      {s.task}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </SafetySideCard>
           </div>

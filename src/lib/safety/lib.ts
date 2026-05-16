@@ -89,6 +89,7 @@ export type IncidentRow = {
   allergens: string[] | null;
   customer_name: string | null;
   customer_contact: string | null;
+  logged_by: string | null;
 };
 
 export async function getRecentIncidents(
@@ -99,7 +100,7 @@ export async function getRecentIncidents(
   let q = supabase
     .from('safety_incidents')
     .select(
-      'id, site_id, kind, summary, body_md, occurred_at, resolved_at, resolution_md, recipe_id, menu_version_id, allergens, customer_name, customer_contact',
+      'id, site_id, kind, summary, body_md, occurred_at, resolved_at, resolution_md, recipe_id, menu_version_id, allergens, customer_name, customer_contact, logged_by',
     )
     .eq('site_id', siteId)
     .is('archived_at', null)
@@ -119,6 +120,8 @@ export type CleaningTaskRow = {
   notes_md: string | null;
   /** Most recent signoff timestamp, if any */
   last_completed_at: string | null;
+  /** Most recent signoff user_id, if any */
+  last_completed_by: string | null;
 };
 
 export async function getCleaningSchedule(
@@ -137,24 +140,36 @@ export async function getCleaningSchedule(
   const taskIds = tasks.map((t) => t.id as string);
   const { data: signoffs } = await supabase
     .from('safety_cleaning_signoffs')
-    .select('task_id, completed_at')
+    .select('task_id, completed_at, completed_by')
     .in('task_id', taskIds)
     .order('completed_at', { ascending: false });
-  const latestByTask = new Map<string, string>();
+  const latestByTask = new Map<
+    string,
+    { at: string; by: string | null }
+  >();
   for (const s of signoffs ?? []) {
     const tid = s.task_id as string;
-    if (!latestByTask.has(tid)) latestByTask.set(tid, s.completed_at as string);
+    if (!latestByTask.has(tid)) {
+      latestByTask.set(tid, {
+        at: s.completed_at as string,
+        by: (s.completed_by as string | null) ?? null,
+      });
+    }
   }
 
-  return tasks.map((t) => ({
-    id: t.id as string,
-    site_id: t.site_id as string,
-    area: t.area as string,
-    task: t.task as string,
-    frequency: t.frequency as CleaningTaskRow['frequency'],
-    notes_md: (t.notes_md as string | null) ?? null,
-    last_completed_at: latestByTask.get(t.id as string) ?? null,
-  }));
+  return tasks.map((t) => {
+    const latest = latestByTask.get(t.id as string);
+    return {
+      id: t.id as string,
+      site_id: t.site_id as string,
+      area: t.area as string,
+      task: t.task as string,
+      frequency: t.frequency as CleaningTaskRow['frequency'],
+      notes_md: (t.notes_md as string | null) ?? null,
+      last_completed_at: latest?.at ?? null,
+      last_completed_by: latest?.by ?? null,
+    };
+  });
 }
 
 export type TrainingRow = {

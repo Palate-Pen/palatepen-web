@@ -1,5 +1,6 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getRecentProbeReadings } from '@/lib/safety/lib';
+import { resolveSafetyUsers } from '@/lib/safety/users';
 import { PROBE_KIND_LABEL } from '@/lib/safety/standards';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
@@ -24,6 +25,9 @@ export default async function ProbeReadingPage() {
   const today = new Date().toISOString().slice(0, 10);
   const todaysReadings = readings.filter((r) =>
     r.logged_at.startsWith(today),
+  );
+  const userById = await resolveSafetyUsers(
+    todaysReadings.map((r) => r.logged_by),
   );
 
   // Pattern detection — surface in Looking Ahead bar at the top.
@@ -91,6 +95,12 @@ export default async function ProbeReadingPage() {
                     </div>
                     <div className="font-sans text-xs text-muted mt-0.5">
                       {PROBE_KIND_LABEL[r.kind as keyof typeof PROBE_KIND_LABEL] ?? r.kind}
+                      {r.logged_by && userById.get(r.logged_by) && (
+                        <span className="text-muted-soft">
+                          {' · by '}
+                          <span className="text-ink-soft">{userById.get(r.logged_by)}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div

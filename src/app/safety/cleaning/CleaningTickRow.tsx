@@ -9,10 +9,13 @@ export function CleaningTickRow({
   task,
   freqLabel,
   isLast,
+  lastByLabel,
 }: {
   task: CleaningTaskRow;
   freqLabel: string;
   isLast: boolean;
+  /** Display name of the user who last completed this task, if known. */
+  lastByLabel?: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -40,15 +43,25 @@ export function CleaningTickRow({
         {freqLabel}
       </div>
       <div className="font-serif italic text-xs text-muted">
-        {task.last_completed_at
-          ? 'Last: ' +
-            new Date(task.last_completed_at).toLocaleString('en-GB', {
+        {task.last_completed_at ? (
+          <>
+            Last:{' '}
+            {new Date(task.last_completed_at).toLocaleString('en-GB', {
               day: '2-digit',
               month: 'short',
               hour: '2-digit',
               minute: '2-digit',
-            })
-          : 'Not yet ticked'}
+            })}
+            {lastByLabel && (
+              <>
+                {' · '}
+                <span className="not-italic text-ink-soft">{lastByLabel}</span>
+              </>
+            )}
+          </>
+        ) : (
+          'Not yet ticked'
+        )}
       </div>
       <button
         type="button"
