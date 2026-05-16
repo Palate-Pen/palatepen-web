@@ -1,11 +1,16 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import {
+  DEPARTMENT_LABEL,
   DEPARTMENT_ORDER,
   OPENING_CHECK_GROUPS,
   type OpeningCheckDepartment,
   type OpeningCheckGroup,
   type OpeningCheckQuestion,
 } from '@/lib/safety/standards';
+
+// Re-export the client-safe constants so any historical importer of
+// `@/lib/safety/checklists` keeps working without source-level churn.
+export { DEPARTMENT_LABEL, DEPARTMENT_ORDER };
 
 /**
  * Dynamic opening-checks config, stored on accounts.preferences.opening_check_groups.
