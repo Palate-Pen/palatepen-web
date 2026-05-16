@@ -22,6 +22,9 @@ const FREQUENCIES: CleaningTaskRow['frequency'][] = [
  * Manage your cleaning schedule — chef-controlled list of every task,
  * with inline edit, archive, and an add-task form at the bottom.
  *
+ * Hidden behind a toggle at the top of the cleaning page so the
+ * default view stays clean — admin only when you ask for it.
+ *
  * Authorisation matches the seed action: owner / manager / chef on the
  * site can manage. The component itself doesn't gate access (the
  * server actions do); we render for everyone with the assumption the
@@ -36,6 +39,7 @@ export function ManageScheduleSection({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -108,16 +112,42 @@ export function ManageScheduleSection({
   }
 
   return (
-    <section className="mb-8">
-      <div className="flex items-baseline justify-between mb-3 flex-wrap gap-2">
-        <h2 className="font-display font-semibold text-[13px] tracking-[0.35em] uppercase text-gold">
-          Manage Schedule
-        </h2>
+    <section className="mb-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+        <button
+          type="button"
+          onClick={() => {
+            reset();
+            setOpen((v) => !v);
+          }}
+          aria-expanded={open}
+          className={
+            'font-display font-semibold text-[11px] tracking-[0.25em] uppercase px-4 py-2 border transition-colors inline-flex items-center gap-2 ' +
+            (open
+              ? 'bg-ink text-paper border-ink hover:bg-ink-soft hover:border-ink-soft'
+              : 'bg-paper text-ink border-rule hover:border-gold hover:text-gold')
+          }
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="w-3.5 h-3.5"
+            aria-hidden
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          {open ? 'Close manage schedule' : 'Manage schedule'}
+        </button>
         <span className="font-serif italic text-sm text-muted">
           {tasks.length} task{tasks.length === 1 ? '' : 's'} on the schedule
         </span>
       </div>
 
+      {!open ? null : (
+      <>
       {(error || info) && (
         <div
           className={
@@ -268,6 +298,8 @@ export function ManageScheduleSection({
           </div>
         </div>
       </div>
+      </>
+      )}
     </section>
   );
 }

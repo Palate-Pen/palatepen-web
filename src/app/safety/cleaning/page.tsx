@@ -148,6 +148,8 @@ export default async function CleaningPage() {
           <SeedScheduleButton siteId={ctx.siteId} />
         </div>
       ) : (
+        <>
+        <ManageScheduleSection siteId={ctx.siteId} tasks={tasks} />
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
           <div>
             <div className="bg-card border border-rule px-7 py-5 mb-6">
@@ -238,8 +240,6 @@ export default async function CleaningPage() {
                 </div>
               </section>
             ))}
-
-            <ManageScheduleSection siteId={ctx.siteId} tasks={tasks} />
           </div>
 
           <div>
@@ -282,6 +282,7 @@ export default async function CleaningPage() {
             </SafetySideCard>
           </div>
         </div>
+        </>
       )}
 
       <LiabilityFooter />
