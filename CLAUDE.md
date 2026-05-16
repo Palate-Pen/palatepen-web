@@ -48,6 +48,24 @@ Lives in docs/editing-keys.md. When the user references a key like INV.bank.scan
 
 ## Roadmap
 
+### Founder Ops Checklist
+
+Hand-curated punch list of operational items the founder owns right now — kept short and rolling. Tick off as they ship; once empty, the next batch lives in In flight / Next below.
+
+- [ ] Pricing reconciliation — landing shows Pro £49 / Kitchen £79 / Group £119; CLAUDE.md brand block + Stripe price IDs still say £25 / £59 / £129. Pick canonical and align all three. *(Memory entry [[palatable-pricing-unresolved]])*
+- [ ] Smoke-test marketing pages at 375 / 768 / 1280 widths — every CTA routes to `/coming-soon-feature`, no overflow, gold accents render, EHO mockup image loads
+- [ ] Smoke-test impersonation flow — `/admin/users` → impersonate non-founder → gold pill renders → Stop → magic link signs back in as `ADMIN_EMAIL`
+- [ ] Smoke-test owner team Danger Zone — remove-from-this-site / remove-from-all / delete-account with proper confirms, founder + self protection holds
+- [ ] Smoke-test invoice scan loop in production (deferred from earlier)
+- [ ] Seed founder demo with Safety data — 14 days of opening checks across all 3 departments, probe readings (mix pass/fail), cleaning signoffs, training mix of expiry bands, sample incidents. Wire into the `/admin/ops` Reseed button.
+- [ ] Wire safety event detectors into Looking Ahead — triggers emit into `v2.intelligence_events` already; need consumers in `src/lib/signal-detectors.ts` to convert into `v2.forward_signals` rows
+- [ ] HACCP wizard form fields, steps 1–9 (intro + step-1 stub live now)
+- [ ] EHO export PDF generation — `/safety/eho` renders a live preview; Export button disabled pending react-pdf wiring
+- [ ] Wire live dish picker on Probe / Incident / Cleaning / Training forms — currently free-form text, needs Today's Menu / Prep Items / Recipes Library tabbed picker
+- [ ] Notebook captures pt 2 — voice / photo / sketch via Supabase Storage *(task #50)*
+- [ ] Manager + Owner pending tab mockups — lock the design intent before scaffolding the data wiring
+- [ ] End-to-end signup test — new user → site/account/membership created, RLS holds, defaults seeded *(task #43)*
+
 ### Phase 1 — Foundation
 Complete. See docs/roadmap-archive.md for full checklist.
 
@@ -91,13 +109,17 @@ Complete. See docs/roadmap-archive.md for full checklist.
 
 ### Phase — Safety Module (v1 wedge piece #4)
 
-Three-week build deferred — backlog. Full spec lives in [`docs/CLAUDE-CODE-SAFETY-HANDOFF.md`](docs/CLAUDE-CODE-SAFETY-HANDOFF.md). Note: that doc is written against a legacy folder layout (`mise/app/`, `venues`, `staff`) and must be adapted to v2 conventions (`web/src/`, `v2.sites`, `auth.users`, `v2.recipes`) when the build starts.
+Substantially shipped across 2026-05-16/17. Spec lives in [`docs/CLAUDE-CODE-SAFETY-HANDOFF.md`](docs/CLAUDE-CODE-SAFETY-HANDOFF.md).
 
-- [ ] Week 1 — schema (8 `v2.safety_*` tables + `v2.menu_versions` audit trail + `accounts.safety_enabled` flag + RLS) + shared components (LiabilityFooter, FsaReferenceStrip, SafetyOnboardingModal, fsa-links lib) + sidebar route between Prep and Recipes + liability-ack onboarding gate
-- [ ] Week 2 — Safety home (opening checks grid + 12-week diary calendar) · Probe Reading (menu-version snapshot per reading) · Log an Issue (4 incident types + 14 UK allergen pills) · Cleaning Schedule (SFBB-aligned default tasks) · Training Records (cert expiry tracking + 30/14/7/0-day notifications)
-- [ ] Week 3 — HACCP Wizard (9 steps, FSA-default critical limits, react-pdf output) · EHO Visit (snapshot + live timer + 4-second 47-page export bundle)
+- [x] Week 1 — schema (10 `v2.safety_*` tables + `v2.menu_versions` audit trail + `accounts.safety_enabled` flag + RLS) + shared components (LiabilityFooter, FsaReferenceStrip, SafetyOnboardingModal, fsa-links lib) + dedicated Safety viewer between Manager and Owner + liability-ack onboarding gate
+- [x] Week 2 — Safety home (opening checks side-tab grid Kitchen/Bar/Management + 12-week diary calendar with clickable day-detail) · Probe Reading (menu-version snapshot per reading) · Log an Issue (4 incident types + 14 UK allergen pills + 3-tile severity + 7-item corrective checklist) · Cleaning Schedule (SFBB-aligned defaults + per-frequency progress bars + manage-schedule CRUD) · Training Records (cert expiry tracking + 30/14/7/0-day notifications)
+- [ ] Week 3 — HACCP Wizard (currently intro + step-1 stub only; steps 1–9 form fields pending) · EHO Visit (preview-only bundle page live; PDF export disabled pending react-pdf wiring)
+- [x] Compliance Health Card on Safety home — weighted 5-factor score (opening checks 30% · probe pass 25% · cleaning cadence 20% · training 15% · incidents 10%) with forward-looking "where it's letting you down" per factor
+- [x] Editable checklist config per account — `accounts.preferences.opening_check_groups` JSONB, hidden behind a Manage Checklists toggle at top of /safety
+- [x] User-completed stamps — every event row (opening checks, probe, incidents, cleaning, diary detail) surfaces "by Jack · 14:32" attribution via resolveSafetyUsers
+- [x] Safety event emitters — `v2.emit_safety_*_event` triggers fan opening_check / probe / incident / cleaning_signoff / training writes into v2.intelligence_events (detector consumers are the follow-on)
 - [ ] Pricing: gate via `accounts.safety_enabled` boolean. £20/site/mo uplift via Stripe upsell webhook. Kitchen + Safety = £99/site/mo; Group + Safety = £149/site/mo
-- [ ] Legal: locked liability wording on every page, stronger urgent-red treatment on HACCP, ack required before entering Safety tab. Never softened.
+- [x] Legal: locked liability wording on every page, stronger urgent-red treatment on HACCP, ack required before entering Safety tab. Never softened.
 
 ### Mobile — Responsive Web Polish
 
@@ -117,6 +139,18 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 
 ## Recent activity
 
+**Last shipped (2026-05-17 session — Safety polish + admin reach):**
+- Founder admin Users — every `auth.users` row in a People section with click-through to per-user detail (`/admin/users/[userId]`) and per-account detail (`/admin/accounts/[id]`). Inline tier dropdown on every account row. Per-user impersonation via Supabase magic link with global gold pill banner + Stop-and-return. Founder + self protections on every destructive path. Commits `c34d190`, `e012af4`, `98b6da1`.
+- Owner team grouping — `/owner/team` rows are now one-per-user (jack@ owner-on-two-sites renders once, not twice). New user-level detail at `/owner/team/u/[userId]` with per-site permissions panels + Danger Zone (remove-from-this-site / all-sites / delete-account). Commit `8ee045a`.
+- Logo unified on landing pattern — "Palatable" word + gold dot after, everywhere (sidebar / admin sidebar / signin / signup / marketing). Collapsed sidebar shows "P ·". Commit `a334290`.
+- Safety: user-completed stamps on every event row — probe readings, incidents, cleaning sign-offs, diary day detail all surface "by Jack · 14:32" via new resolveSafetyUsers helper. Opening checks already had it via `answers._meta`. Commit `3faf637`.
+- Safety: Compliance Health Card on Safety home — weighted 5-factor score (opening 30% · probe 25% · cleaning 20% · training 15% · incidents 10%) with forward-looking "where it's landing" per factor, each row deep-linking into the surface that fixes it. Commit `78ed256`.
+- Safety: clickable diary calendar days → `/safety/diary/[date]` with Missed-on-this-day card at the top, full per-section breakdown (opening check, probe, cleaning, incidents) with attribution. Same commit.
+- Cleaning: split single bar into per-frequency progress bars (daily/weekly/monthly/quarterly/annually each independent) + Manage Schedule CRUD toggle at top of page. Commits `80dc66f`, `db4d63d`.
+- Opening Checks: side tabs for Kitchen / Bar / Management — single 5-question kitchen list expanded into 14 questions across 3 departments, each with its own tab + done/total badge. Commit `1a11842`.
+- Opening Checks: editable per-account checklist config — `accounts.preferences.opening_check_groups` JSONB, Manage Checklists toggle at top of /safety, atomic full-replace save with dup-key validation. Commits `2f98224`, `89407d5`, `6dc269e`.
+- Migrations: `20260516_v2_safety_tables.sql` + `20260516_v2_safety_event_emitters.sql` applied via MCP. All 9 2026-05-16 migrations now in place (verified via information_schema).
+
 **Last shipped (2026-05-16 night session):**
 - Heading typography migration — every h1/h2 across chef / bar / manager / owner / admin / safety / marketing migrated from the v8 `font-display text-{N}xl font-semibold uppercase tracking-[0.04em]` (Cinzel — uppercase-only) pattern to `font-serif text-{N}xl font-normal text-ink leading-[1.1] tracking-[-0.015em]` (Cormorant Garamond sentence-case). 110 files touched. Cinzel now reserved exclusively for small fixed-px uppercase labels (eyebrows, badges, button text) as the brand spec always intended. Memory entry: `palatable-heading-typography.md`. If you're tempted to type `font-display text-{N}xl` again — don't, it's been eradicated.
 
@@ -129,18 +163,18 @@ Near-term tweaks to the responsive web layout (≤768px). Distinct from the nati
 - Cleaning seed-schedule fix — action now takes a `siteId` arg (was picking arbitrary first membership, wrong site for multi-site users); new `SeedScheduleButton` client component surfaces errors so silent failures stop. Commit `41df10a`.
 - Sidebar icons refreshed — settings (aperture), connections (globe), compliance/safety (shield + check) match the chef-safety-mockup-v1.html glyphs.
 
-**In flight:**
-- Pricing reconciliation — marketing landing shows Pro £49 / Kitchen £79 / Group £119; CLAUDE.md still says Pro £25 / Kitchen £59 / Group £129. Resolve before launch.
-- Apply migrations queued for Supabase SQL editor: `20260516_v2_safety_tables.sql`, `20260516_v2_accounts_stripe.sql`, `20260516_v2_intelligence_event_emitters.sql`, `20260516_v2_anthropic_usage.sql` (if not already done).
-- Vercel env vars + Stripe / inbound-email webhook configuration confirmed in place from legacy carry-over.
-- Smoke-test the new marketing pages post-deploy at mobile + tablet + desktop widths.
+**In flight (live work — see also the Founder Ops Checklist at the top of Roadmap):**
+- Pricing reconciliation — landing £49/£79/£119 vs CLAUDE.md + Stripe £25/£59/£129. Resolve before launch.
+- Migrations: all 9 dated `20260516_*` are confirmed applied in production (verified via Supabase MCP — `stripe_*` columns, `v2.anthropic_usage`, `v2.ai_cache`, `v2.feature_flags`, `v2.intelligence_events`, `emit_*` functions for both intelligence + safety domains, all 10 `v2.safety_*` tables). No queued migrations remain.
+- Vercel env vars + Stripe / inbound-email webhooks confirmed live from legacy carry-over.
 
 **Next:**
-- Probe / Incident / Cleaning / Training pages have the data primitives wired but no live menu/recipe picker — currently free-form input. Wire the dish picker tabs (Today's Menu / Prep Items / Recipes Library) from the mockup as a follow-up batch.
-- HACCP wizard form fields (steps 1–9) — currently just the intro + step-1 stub. Auto-populate from settings, menu, recipes, suppliers, training.
-- EHO export PDF generation — page is a live preview of the bundle but the actual PDF export is disabled. Next batch.
+- Wire live dish picker (Today's Menu / Prep Items / Recipes Library) on Probe / Incident / Cleaning / Training forms — currently free-form text input.
+- HACCP wizard form fields steps 1–9 (intro + step-1 stub live now). Auto-populate from settings, menu, recipes, suppliers, training.
+- EHO export PDF generation — page renders a live preview but the Export button is disabled. Needs react-pdf.
+- Wire safety event detectors — triggers now emit into `v2.intelligence_events`; need consumers in `src/lib/signal-detectors.ts` to convert into `v2.forward_signals`.
 - Photo upload + Supabase Storage bucket (recipes + branding).
-- Notebook captures pt 2 (voice/photo/sketch via Storage — task #50).
+- Notebook captures pt 2 (voice / photo / sketch via Storage — task #50).
 - Manager and Owner pending tabs need mockups locked before scaffolding the rest.
 
 Full Progress Log lives in docs/progress-log.md. Add new entries there going forward; keep this section curated and terse.

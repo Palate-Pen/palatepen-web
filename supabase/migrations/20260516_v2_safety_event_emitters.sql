@@ -1,6 +1,8 @@
 -- v2 migration: safety_event_emitters
 -- Date: 2026-05-16
--- Applied: 2026-05-16 (manual run via Supabase SQL editor)
+-- Applied: 2026-05-16 (via Supabase MCP apply_migration — the earlier
+-- "applied via SQL editor" breadcrumb was premature; verified live
+-- state had no emit_safety_* functions and ran from this session).
 --
 -- Triggers on the four daily-use safety tables that fan write events
 -- into v2.intelligence_events. The drainer picks them up and routes to
