@@ -83,14 +83,22 @@ export async function changeRoleAction(
     return { ok: false, error: 'Only owners can change roles' };
   }
 
-  const allowed = new Set([
+  // Roles accepted by the role-change action. Includes legacy keys
+  // (commis / bar_back / viewer) so historical memberships can still
+  // be re-saved without forcing a rename. The role picker only offers
+  // ASSIGNABLE_ROLES in the dropdown — see src/lib/roles.ts.
+  const allowed = new Set<string>([
     'owner',
     'manager',
-    'chef',
+    'deputy_manager',
+    'head_chef',
     'sous_chef',
-    'commis',
-    'bartender',
+    'chef',
     'head_bartender',
+    'bartender',
+    'supervisor',
+    // Legacy
+    'commis',
     'bar_back',
     'viewer',
   ]);

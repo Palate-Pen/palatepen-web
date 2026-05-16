@@ -3,18 +3,11 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { changeRoleAction } from '@/app/owner/team/actions';
-
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Owner',
-  manager: 'Manager',
-  chef: 'Head Chef',
-  sous_chef: 'Sous Chef',
-  commis: 'Commis',
-  bartender: 'Bartender',
-  head_bartender: 'Head Bartender',
-  bar_back: 'Bar Back',
-  viewer: 'Viewer',
-};
+import {
+  ASSIGNABLE_ROLES,
+  ROLE_DESCRIPTION,
+  ROLE_LABEL,
+} from '@/lib/roles';
 
 const dateFmt = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -83,21 +76,35 @@ export function MemberHeader({
             Role
           </label>
           {canChangeRole ? (
-            <select
-              value={role}
-              onChange={(e) => pickRole(e.target.value)}
-              disabled={pending}
-              className="w-full font-serif text-base text-ink bg-paper border border-rule px-3 py-2 focus:border-gold focus:outline-none"
-            >
-              {Object.keys(ROLE_LABEL).map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                value={role}
+                onChange={(e) => pickRole(e.target.value)}
+                disabled={pending}
+                className="w-full font-serif text-base text-ink bg-paper border border-rule px-3 py-2 focus:border-gold focus:outline-none"
+              >
+                {ASSIGNABLE_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABEL[r]}
+                  </option>
+                ))}
+                {/* Render the current role even if it's a legacy key
+                    (commis / bar_back / viewer) so the picker can show
+                    "no change" rather than blanking the value. */}
+                {!ASSIGNABLE_ROLES.includes(role as (typeof ASSIGNABLE_ROLES)[number]) &&
+                  ROLE_LABEL[role as keyof typeof ROLE_LABEL] && (
+                    <option key={role} value={role}>
+                      {ROLE_LABEL[role as keyof typeof ROLE_LABEL]}
+                    </option>
+                  )}
+              </select>
+              <p className="font-serif italic text-[11px] text-muted mt-1.5 leading-snug">
+                {ROLE_DESCRIPTION[role as keyof typeof ROLE_DESCRIPTION] ?? ''}
+              </p>
+            </>
           ) : (
             <div className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-gold py-2">
-              {ROLE_LABEL[role] ?? role}
+              {ROLE_LABEL[role as keyof typeof ROLE_LABEL] ?? role}
             </div>
           )}
           {saved && (

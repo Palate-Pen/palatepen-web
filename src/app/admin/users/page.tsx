@@ -41,17 +41,7 @@ type UserRow = {
   is_self: boolean;
 };
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Owner',
-  manager: 'Manager',
-  chef: 'Head Chef',
-  sous_chef: 'Sous Chef',
-  commis: 'Commis',
-  bartender: 'Bartender',
-  head_bartender: 'Head Bartender',
-  bar_back: 'Bar Back',
-  viewer: 'Viewer',
-};
+import { ROLE_LABEL } from '@/lib/roles';
 
 /**
  * Founder Admin · Users & Kitchens.

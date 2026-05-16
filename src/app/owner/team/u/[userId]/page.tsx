@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
+import { roleLabel } from '@/lib/roles';
 import { MemberHeader, type MemberHeaderData } from '@/components/team/MemberHeader';
 import {
   MemberPermissions,
@@ -291,17 +292,3 @@ export default async function OwnerUserDetailPage({
   );
 }
 
-function roleLabel(r: string): string {
-  const map: Record<string, string> = {
-    owner: 'Owner',
-    manager: 'Manager',
-    chef: 'Head Chef',
-    sous_chef: 'Sous Chef',
-    commis: 'Commis',
-    bartender: 'Bartender',
-    head_bartender: 'Head Bartender',
-    bar_back: 'Bar Back',
-    viewer: 'Viewer',
-  };
-  return map[r] ?? r;
-}

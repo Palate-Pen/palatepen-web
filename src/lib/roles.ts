@@ -52,6 +52,86 @@ export function roleRank(role: string | null | undefined): number {
 }
 
 /**
+ * Single source of truth for role display names. Replaces nine
+ * scattered ROLE_LABEL maps across team / admin / safety components.
+ * Legacy keys (commis / bar_back / viewer) map to their original
+ * labels so historical memberships still render until they're edited.
+ */
+// Typed as Record<string, string> (not Record<RoleKey, string>) so
+// callers can index with arbitrary strings without TS friction. The
+// initializer still spans every RoleKey for completeness.
+export const ROLE_LABEL: Record<string, string> = {
+  owner: 'Owner',
+  manager: 'Manager',
+  deputy_manager: 'Deputy Manager',
+  head_chef: 'Head Chef',
+  sous_chef: 'Sous Chef',
+  chef: 'Chef',
+  head_bartender: 'Head Bartender',
+  bartender: 'Bartender',
+  supervisor: 'Supervisor',
+  // Legacy — kept so historical memberships render with their original
+  // label until edited via the role picker.
+  commis: 'Commis (legacy)',
+  bar_back: 'Bar Back (legacy)',
+  viewer: 'Viewer (legacy)',
+};
+
+/**
+ * Short blurb shown under each role in the role-picker. Reflects the
+ * locked spec:
+ *   - Manager / Deputy Manager: same power, different title
+ *   - Chef / Bartender: read + prep-list changes only (junior tier)
+ *   - Supervisor: cross-domain read+write but never settings
+ */
+export const ROLE_DESCRIPTION: Record<string, string> = {
+  owner: 'Top access — whole account, every site, every team.',
+  manager: 'Site access — full controls within this site.',
+  deputy_manager: 'Site access — same powers as Manager, different title.',
+  head_chef: 'Kitchen access — full write.',
+  sous_chef: 'Kitchen access — full write.',
+  chef: 'Kitchen access — read + prep-list changes only.',
+  head_bartender: 'Bar access — full write.',
+  bartender: 'Bar access — read + prep-list changes only.',
+  supervisor: 'Kitchen + Bar read + write. No settings changes.',
+  commis: 'Legacy — mapped to Chef (read + prep-list) in code.',
+  bar_back: 'Legacy — mapped to Bartender (read + prep-list) in code.',
+  viewer: 'Legacy — read-only, retired role.',
+};
+
+/**
+ * Roles a user is allowed to assign via the role picker, in hierarchy
+ * order. Excludes legacy keys (commis / bar_back / viewer) — they're
+ * still valid in the DB enum for historical data but the UI never
+ * offers them as a new assignment.
+ */
+export const ASSIGNABLE_ROLES: RoleKey[] = [
+  'owner',
+  'manager',
+  'deputy_manager',
+  'head_chef',
+  'sous_chef',
+  'chef',
+  'head_bartender',
+  'bartender',
+  'supervisor',
+];
+
+/** Includes legacy keys — use when validating server-side input against
+ *  the full enum (so old assignments don't fail validation). */
+export const ALL_VALID_ROLES: RoleKey[] = [
+  ...ASSIGNABLE_ROLES,
+  'commis',
+  'bar_back',
+  'viewer',
+];
+
+export function roleLabel(role: string | null | undefined): string {
+  if (!role) return '—';
+  return ROLE_LABEL[role as RoleKey] ?? role;
+}
+
+/**
  * Returns true when the given user holds the highest-ranked role
  * present on the account. For multi-user accounts that's typically
  * the Owner. For Pro-tier (single user, single site) it's that

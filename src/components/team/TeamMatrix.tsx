@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { FeatureKey } from '@/lib/features';
+import { ROLE_LABEL } from '@/lib/roles';
 
 export type MatrixMember = {
   membership_id: string;
@@ -31,18 +32,6 @@ type ShellRole =
   | 'head_bartender'
   | 'bar_back'
   | 'viewer';
-
-const ROLE_LABEL: Record<ShellRole, string> = {
-  owner: 'Owner',
-  manager: 'Manager',
-  chef: 'Head Chef',
-  sous_chef: 'Sous Chef',
-  commis: 'Commis',
-  bartender: 'Bartender',
-  head_bartender: 'Head Bartender',
-  bar_back: 'Bar Back',
-  viewer: 'Viewer',
-};
 
 const GROUP_LABEL: Record<FeatureColumn['group'], string> = {
   kitchen: 'Kitchen',
