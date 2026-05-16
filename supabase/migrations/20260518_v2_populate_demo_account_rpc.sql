@@ -5,6 +5,13 @@
 --     - menu_plans.surface: 'chef'/'bartender' -> 'kitchen'/'bar' (matches CHECK constraint)
 --     - menu_plans.status: 'in_progress' -> 'draft' (matches CHECK constraint)
 --     - safety_incidents.allergens: text[] -> v2.allergen_code[] (enum array)
+--   Detector-input round (also 2026-05-18, post-smoke-test against hello@):
+--     - Set ingredients.reorder_point = par_level * 0.75 so par_breach fires
+--     - Added a delivery expected today so today_deliveries fires
+--     - Added a 2nd flagged invoice WITHOUT credit note so flagged_invoices fires
+--     - Clustered bar spillage to a single ingredient (Patrón x4) so spillage_pattern fires
+--     - Completed stock_take + set variance_total_value so stock_take_variance fires
+--     - Added an idle recipe (Game terrine, touched 45d ago) so idle_recipe fires
 --   File on disk = canonical truth; live functions match.
 --
 -- Wipe + reseed a full 30-day populate of every surface across every
@@ -265,6 +272,7 @@ begin
 
   -- ---- Ingredients (18) - mix of in-stock vs below-par ----
   -- intentionally: 4 below par (reorder fires), 14 above par
+  -- reorder_point = par_level * 0.75 (set as a single UPDATE below after the insert)
   for v_ingredient_id in
     insert into v2.ingredients (site_id, supplier_id, name, spec, unit, category, current_price, par_level, current_stock, allergens)
     values
@@ -299,6 +307,14 @@ begin
 
   v_count_ingredients := array_length(v_ingredient_ids, 1);
 
+  -- Set reorder_point on every ingredient as 75% of par. Detector
+  -- (par_breach) only fires when current_stock <= reorder_point, so
+  -- without this the Looking Ahead bar stays empty even if par is set.
+  update v2.ingredients
+     set reorder_point = par_level * 0.75
+   where site_id = p_site_id
+     and par_level is not null;
+
   -- ---- Ingredient price history (1-3 per ingredient, last 30 days) ----
   -- noisy realistic prices showing some drift
   for v_i in 1..v_count_ingredients loop
@@ -306,7 +322,7 @@ begin
     select v_ingredient_ids[v_i],
            (select current_price from v2.ingredients where id = v_ingredient_ids[v_i]) * (1.0 + (random()*0.1 - 0.05)),
            'invoice'::v2.price_source,
-           v_today - (g.day::int) * interval '1 day' - interval '8 hours'
+           p_today - (g.day::int) * interval '1 day' - interval '8 hours'
     from generate_series(28, 4, -8) as g(day);
     get diagnostics v_d = row_count;
     v_count_price_history := v_count_price_history + v_d;
@@ -328,12 +344,20 @@ begin
       (p_site_id, 'Tunworth + honey',            'Cheese',  1, 1.0, 8.00,  'food', 2.60, p_today - interval '14 days', 'With oatcakes.', '["Plate","Drizzle"]'::jsonb, '["vegetarian"]'::jsonb),
       (p_site_id, 'Pink fir potato hash',        'Side',    1, 1.0, 5.50,  'food', 1.40, p_today - interval '9 days',  'Confit then crisp.', '["Confit 1h","Cool","Crisp"]'::jsonb, '["gluten_free","vegan"]'::jsonb),
       (p_site_id, 'Sourdough + cultured butter', 'Snack',   1, 1.0, 5.00,  'food', 1.20, p_today - interval '15 days', 'Warm sourdough, salted butter.', '["Warm","Slice","Plate"]'::jsonb, '["vegetarian"]'::jsonb),
-      (p_site_id, 'Pasta of the day',            'Main',    1, 1.0, 16.00, 'food', 4.80, p_today - interval '11 days', 'Changes daily — chef discretion.', '["Roll","Cook","Sauce","Plate"]'::jsonb, '["vegetarian"]'::jsonb)
+      (p_site_id, 'Pasta of the day',            'Main',    1, 1.0, 16.00, 'food', 4.80, p_today - interval '11 days', 'Changes daily — chef discretion.', '["Roll","Cook","Sauce","Plate"]'::jsonb, '["vegetarian"]'::jsonb),
+      -- Intentionally idle: untouched > 30d, not on plan, not on prep — fires idle_recipe detector
+      (p_site_id, 'Game terrine',                'Starter', 1, 1.0, 12.00, 'food', 3.60, p_today - interval '45 days', 'Winter-only — held in the book over summer.', '["Layer","Press","Slice"]'::jsonb, '["winter"]'::jsonb)
     returning id
   loop
     v_recipe_ids := v_recipe_ids || v_recipe_id;
   end loop;
   v_count_recipes := array_length(v_recipe_ids, 1);
+
+  -- The idle recipe (last in the list) needs an old updated_at too so
+  -- the detector's `updated_at > cutoff` short-circuit doesn't save it.
+  update v2.recipes
+     set updated_at = p_today - interval '45 days'
+   where id = v_recipe_ids[v_count_recipes];
 
   -- ---- Recipe ingredients (3-5 per recipe) ----
   -- Link recipes to ingredients in a pragmatic way
@@ -429,6 +453,35 @@ begin
     v_count_lines := v_count_lines + 4;
   end loop;
 
+  -- One additional delivery expected today (no invoice yet) so the
+  -- today_deliveries detector fires + the chef sees "coming in today".
+  insert into v2.deliveries (site_id, supplier_id, expected_at, status, value_estimate, line_count_estimate, notes)
+  values (p_site_id, v_supplier_ids[1], p_today, 'expected'::v2.delivery_status, 180, 3, 'Bidfresh — fish + dairy run');
+
+  -- Second flagged invoice WITHOUT a credit note so flagged_invoices
+  -- detector fires (the first flagged one above is already claimed by
+  -- the draft credit note below, which is correct behaviour but means
+  -- nothing fires from it).
+  insert into v2.deliveries (site_id, supplier_id, expected_at, arrived_at, status, value_estimate, line_count_estimate)
+  values (p_site_id, v_supplier_ids[3], p_today - 1, p_today - 1, 'arrived', 95, 2)
+  returning id into v_delivery_id;
+  insert into v2.invoices (site_id, supplier_id, delivery_id, invoice_number, issued_at, received_at, subtotal, vat, total, status, source, delivery_confirmation, notes)
+  values (
+    p_site_id, v_supplier_ids[3], v_delivery_id,
+    'INV-' || to_char(p_today - 1, 'YYYYMMDD') || '-099',
+    p_today - 1, p_today - 1,
+    95.00, 19.00, 114.00,
+    'flagged'::v2.invoice_status, 'scanned'::v2.invoice_source, 'flagged'::v2.delivery_confirmation,
+    'Wild garlic showed bruised on arrival — needs credit'
+  )
+  returning id into v_invoice_id;
+  v_count_invoices := v_count_invoices + 1;
+  insert into v2.invoice_lines (invoice_id, ingredient_id, raw_name, qty, qty_unit, unit_price, line_total, vat_rate, discrepancy_qty, discrepancy_note, position)
+  values
+    (v_invoice_id, v_ingredient_ids[11], 'Wild garlic',     2.0, 'kg', 18.00, 36.00, 0.20, -0.5, 'Bruised batch — half unusable', 0),
+    (v_invoice_id, v_ingredient_ids[9],  'Heritage carrot', 5.0, 'kg', 3.20,  16.00, 0.20, null, null, 1);
+  v_count_lines := v_count_lines + 2;
+
   -- ---- Purchase orders ----
   insert into v2.purchase_orders (site_id, supplier_id, reference, status, total, currency, expected_at, created_by, notes)
   values (p_site_id, v_supplier_ids[2], 'PO-' || to_char(p_today, 'YYYYMMDD') || '-001', 'draft', 285.40, 'GBP', p_today + interval '2 days', p_owner_user_id, 'Weekly butcher order')
@@ -462,9 +515,12 @@ begin
   values (v_credit_id, 'Cornish Hake fillet (short)', 1.0, 'kg', 22.50, 22.50, 'short'::v2.credit_note_line_reason, 'Marked on delivery — two portions missing', 0);
   v_count_credits := 1;
 
-  -- ---- Stock take (today, in_progress) ----
-  insert into v2.stock_takes (site_id, conducted_by, conducted_at, status, notes)
-  values (p_site_id, p_owner_user_id, p_today::timestamptz, 'in_progress'::v2.stock_take_status, 'Monday weekly count')
+  -- ---- Stock take (yesterday, completed with attention-worthy variance) ----
+  -- stock_take_variance detector needs status='completed' AND
+  -- variance_total_value set, |value| > £30. We'll seed -£48 (short) so
+  -- it fires at 'attention' (urgent kicks in over £100).
+  insert into v2.stock_takes (site_id, conducted_by, conducted_at, status, variance_total_value, completed_at, notes)
+  values (p_site_id, p_owner_user_id, (p_today - 1)::timestamptz, 'completed'::v2.stock_take_status, -48.50, (p_today - 1)::timestamptz + interval '20 hours', 'Monday weekly count — variance on beef + cream')
   returning id into v_stock_take_id;
 
   for v_i in 1..6 loop
@@ -753,6 +809,14 @@ begin
     v_ingredient_ids := v_ingredient_ids || v_ingredient_id;
   end loop;
 
+  -- Set reorder_point on every bar ingredient as 75% of par. Without
+  -- this, par_breach detector finds 0 even though several bottles are
+  -- visibly below par.
+  update v2.ingredients
+     set reorder_point = par_level * 0.75
+   where site_id = p_site_id
+     and par_level is not null;
+
   -- ---- Price history ----
   for v_i in 1..array_length(v_ingredient_ids, 1) loop
     insert into v2.ingredient_price_history (ingredient_id, price, source, recorded_at)
@@ -889,17 +953,26 @@ begin
   end loop;
 
   -- ---- Waste (8: spillage / breakage) ----
+  -- First 4 entries cluster on Patrón (ingredient index 4) so the
+  -- spillage_pattern detector fires (needs 3+ same ingredient in 14d).
+  -- Remaining 4 spread across the rest as before.
   for v_i in 1..8 loop
     insert into v2.waste_entries (site_id, ingredient_id, logged_by, logged_at, name, qty, qty_unit, value, category, spillage_reason, reason_md)
     values (
       p_site_id,
-      v_ingredient_ids[((v_i - 1) % array_length(v_ingredient_ids, 1)) + 1],
+      case when v_i <= 4 then v_ingredient_ids[4]
+           else v_ingredient_ids[((v_i - 1) % array_length(v_ingredient_ids, 1)) + 1]
+      end,
       p_owner_user_id,
-      (p_today - (v_i * 3)::int)::timestamptz + interval '20 hours',
-      (select name from v2.ingredients where id = v_ingredient_ids[((v_i - 1) % array_length(v_ingredient_ids, 1)) + 1]),
+      (p_today - (v_i * 2)::int)::timestamptz + interval '20 hours',
+      case when v_i <= 4 then (select name from v2.ingredients where id = v_ingredient_ids[4])
+           else (select name from v2.ingredients where id = v_ingredient_ids[((v_i - 1) % array_length(v_ingredient_ids, 1)) + 1])
+      end,
       0.05 + (v_i * 0.02),
       'L',
-      (0.05 + (v_i * 0.02)) * (select current_price from v2.ingredients where id = v_ingredient_ids[((v_i - 1) % array_length(v_ingredient_ids, 1)) + 1]),
+      (0.05 + (v_i * 0.02)) * case when v_i <= 4 then (select current_price from v2.ingredients where id = v_ingredient_ids[4])
+                                   else (select current_price from v2.ingredients where id = v_ingredient_ids[((v_i - 1) % array_length(v_ingredient_ids, 1)) + 1])
+                              end,
       'accident'::v2.waste_category,
       (array['over_pour','breakage','spillage','comp','returned']::v2.spillage_reason[])[((v_i - 1) % 5) + 1],
       case v_i % 3 when 0 then 'Glass dropped' when 1 then 'Over-pour during rush' else 'Returned drink — wrong order' end
