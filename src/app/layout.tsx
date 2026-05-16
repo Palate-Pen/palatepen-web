@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Cinzel, Jost } from 'next/font/google';
 import './globals.css';
+import { ImpersonationBanner } from '@/components/shell/ImpersonationBanner';
 
 // Serif — Cormorant Garamond. v8 design-system canon. Weights extended
 // to 400/500/600/700 (vs original 400+600) so body weight 500 default
@@ -65,7 +66,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ImpersonationBanner />
+        {children}
+      </body>
     </html>
   );
 }
