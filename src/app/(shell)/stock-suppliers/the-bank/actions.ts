@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireFeature } from '@/lib/features';
 import type { AllergenState } from '@/lib/allergens';
 import type { NutritionState } from '@/lib/nutrition';
 
@@ -49,6 +50,9 @@ function validate(input: IngredientFormInput): string | null {
 export async function createIngredient(
   input: IngredientFormInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('bank.add_ingredients');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -112,6 +116,9 @@ export async function updateIngredient(
   ingredientId: string,
   input: Omit<IngredientFormInput, 'current_price'>,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('bank.add_ingredients');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -155,6 +162,9 @@ export async function updateIngredient(
 export async function updateIngredientPrice(
   input: PriceUpdateInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('bank.edit_prices');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -217,6 +227,9 @@ export type BulkCreateBankInput = {
 export async function bulkCreateBankFromSpecAction(
   input: BulkCreateBankInput,
 ): Promise<{ ok: true; created: number } | { ok: false; error: string }> {
+  const gate = await requireFeature('bank.add_ingredients');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -319,6 +332,9 @@ export type ParLevelInput = {
 export async function updateIngredientPar(
   input: ParLevelInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('bank.add_ingredients');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

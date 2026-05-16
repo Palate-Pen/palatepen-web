@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
+import { requireFeature } from '@/lib/features';
 
 /**
  * Confirm a scanned/flagged invoice via server action. Mirrors the
@@ -11,6 +12,9 @@ import { createSupabaseServiceClient } from '@/lib/supabase/service';
  * UI's Confirm button doesn't have to round-trip through fetch.
  */
 export async function confirmInvoiceAction(invoiceId: string): Promise<void> {
+  const gate = await requireFeature('invoices.confirm');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabaseUser = await createSupabaseServerClient();
   const {
     data: { user },
@@ -114,6 +118,9 @@ type ActionResult = { ok: true } | { ok: false; error: string };
 export async function flagInvoiceLineAction(
   input: FlagLineInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('invoices.flag');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -175,6 +182,9 @@ export async function flagInvoiceLineAction(
 }
 
 export async function rejectInvoiceAction(invoiceId: string): Promise<void> {
+  const gate = await requireFeature('invoices.confirm');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabaseUser = await createSupabaseServerClient();
   const {
     data: { user },

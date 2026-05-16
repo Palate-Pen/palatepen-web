@@ -10,6 +10,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireFeature } from '@/lib/features';
 import type { AllergenState } from '@/lib/allergens';
 import {
   DISH_TYPES,
@@ -186,6 +187,9 @@ async function syncIngredientsToBank(
 export async function createRecipe(
   input: RecipeFormInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('recipes.create');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -279,6 +283,9 @@ export async function updateRecipe(
   recipeId: string,
   input: RecipeFormInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('recipes.edit');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -361,6 +368,9 @@ export async function updateRecipe(
 }
 
 export async function archiveRecipe(recipeId: string): Promise<ActionResult> {
+  const gate = await requireFeature('recipes.archive');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

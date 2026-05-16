@@ -357,6 +357,54 @@ export async function userHasFeature(
   return isFeatureOnByDefault(feature, membership.role as ShellRole);
 }
 
+/**
+ * Server-action gate. Resolves the current user + their site context,
+ * checks if the requested feature is enabled (tier → role default →
+ * per-membership override), returns a uniform pass/fail. Call from the
+ * top of every write action — defence in depth alongside the UI hide.
+ *
+ * Returns `{ ok: true }` on pass; `{ ok: false, error, feature }` on
+ * fail so callers can return the error to the client without leaking
+ * which user / membership was checked.
+ *
+ * Owner is implicitly granted everything regardless of feature flags —
+ * an Owner should never lock themselves out of their own account.
+ */
+export type FeatureGateResult =
+  | { ok: true }
+  | { ok: false; error: 'feature_locked' | 'unauthenticated' | 'no_membership'; feature: FeatureKey };
+
+export async function requireFeature(
+  feature: FeatureKey,
+): Promise<FeatureGateResult> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'unauthenticated', feature };
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('id, role, site_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  if (!membership) return { ok: false, error: 'no_membership', feature };
+
+  // Owner short-circuit — owners always have every feature on their
+  // account. Avoids the bizarre case of an Owner toggling off their
+  // own permission and getting locked out of recovery.
+  if (membership.role === 'owner') return { ok: true };
+
+  const ok = await userHasFeature(
+    user.id,
+    membership.site_id as string,
+    feature,
+  );
+  if (!ok) return { ok: false, error: 'feature_locked', feature };
+  return { ok: true };
+}
+
 export type FeatureMatrixCell = {
   feature: FeatureKey;
   enabled: boolean;

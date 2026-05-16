@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireFeature } from '@/lib/features';
 import {
   flaggedInvoiceLinesToDrafts,
   generateCreditNoteReference,
@@ -22,6 +23,9 @@ type ActionResult<T = void> =
 export async function createCreditNoteFromInvoiceAction(
   invoiceId: string,
 ): Promise<void> {
+  const gate = await requireFeature('credit_notes.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -138,6 +142,9 @@ export type UpdateCreditNoteInput = {
 export async function updateCreditNoteAction(
   input: UpdateCreditNoteInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('credit_notes.draft');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -190,6 +197,9 @@ export async function updateCreditNoteAction(
 export async function markCreditNoteSentAction(
   creditNoteId: string,
 ): Promise<void> {
+  const gate = await requireFeature('credit_notes.send');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -208,6 +218,9 @@ export async function markCreditNoteSentAction(
 export async function markCreditNoteResolvedAction(
   creditNoteId: string,
 ): Promise<void> {
+  const gate = await requireFeature('credit_notes.send');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -229,6 +242,9 @@ export async function markCreditNoteResolvedAction(
 export async function cancelCreditNoteAction(
   creditNoteId: string,
 ): Promise<void> {
+  const gate = await requireFeature('credit_notes.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -250,6 +266,9 @@ export async function cancelCreditNoteAction(
 export async function reopenCreditNoteAction(
   creditNoteId: string,
 ): Promise<void> {
+  const gate = await requireFeature('credit_notes.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

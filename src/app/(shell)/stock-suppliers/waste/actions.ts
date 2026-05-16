@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireFeature } from '@/lib/features';
 import type { WasteCategory } from '@/lib/waste';
 
 export type WasteFormInput = {
@@ -31,6 +32,9 @@ const VALID_CATEGORIES: WasteCategory[] = [
 export async function logWaste(
   input: WasteFormInput,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('waste.log');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

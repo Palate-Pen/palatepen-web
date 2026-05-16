@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { requireFeature } from '@/lib/features';
 import {
   generatePurchaseOrderReference,
   getReorderSuggestionsBySupplier,
@@ -38,6 +39,9 @@ function sumLines(lines: LineInput[]): number {
 export async function draftPurchaseOrderFromBreaches(
   supplierId: string,
 ): Promise<ActionResult> {
+  const gate = await requireFeature('purchase_orders.draft');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const ctx = await getShellContext();
   const supabase = await createSupabaseServerClient();
 
@@ -117,6 +121,9 @@ export async function draftBlankPurchaseOrderAction(
 ): Promise<void> {
   const supplierId = String(formData.get('supplier_id') ?? '').trim();
   if (!supplierId) return;
+  const gate = await requireFeature('purchase_orders.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const ctx = await getShellContext();
   const supabase = await createSupabaseServerClient();
   const reference = generatePurchaseOrderReference();
@@ -143,6 +150,9 @@ export async function sendPurchaseOrderAction(
 ): Promise<void> {
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return;
+  const gate = await requireFeature('purchase_orders.send');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   await supabase
     .from('purchase_orders')
@@ -156,6 +166,9 @@ export async function sendPurchaseOrderAction(
 export async function markConfirmedAction(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return;
+  const gate = await requireFeature('purchase_orders.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   await supabase
     .from('purchase_orders')
@@ -168,6 +181,9 @@ export async function markConfirmedAction(formData: FormData): Promise<void> {
 export async function markReceivedAction(formData: FormData): Promise<void> {
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return;
+  const gate = await requireFeature('purchase_orders.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   await supabase
     .from('purchase_orders')
@@ -183,6 +199,9 @@ export async function cancelPurchaseOrderAction(
 ): Promise<void> {
   const id = String(formData.get('id') ?? '').trim();
   if (!id) return;
+  const gate = await requireFeature('purchase_orders.draft');
+  if (!gate.ok) throw new Error(gate.error);
+
   const supabase = await createSupabaseServerClient();
   await supabase
     .from('purchase_orders')
@@ -198,6 +217,9 @@ export async function updatePurchaseOrderLinesAction(payload: {
   expected_at: string | null;
   lines: LineInput[];
 }): Promise<ActionResult> {
+  const gate = await requireFeature('purchase_orders.draft');
+  if (!gate.ok) return { ok: false, error: gate.error };
+
   const supabase = await createSupabaseServerClient();
   // Replace lines wholesale — simpler than tracking diffs, and PO line
   // counts are small (10–30 typical max).
