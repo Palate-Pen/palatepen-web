@@ -87,7 +87,7 @@ export function ConnectionCard({
           <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-2">
             {def.category}
           </div>
-          <h3 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink">
+          <h3 className="font-serif text-xl font-normal text-ink leading-[1.2] tracking-[-0.01em]">
             {def.name}
           </h3>
           <p className="font-serif italic text-sm text-muted mt-1.5 leading-relaxed">

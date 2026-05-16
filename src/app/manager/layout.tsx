@@ -42,7 +42,7 @@ export default async function ManagerLayout({
           <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold mb-3">
             Manager Surface
           </div>
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+          <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
             Not your room
           </h1>
           <p className="font-serif italic text-lg text-muted mb-6">

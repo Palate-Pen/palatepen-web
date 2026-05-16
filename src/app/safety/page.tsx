@@ -41,7 +41,7 @@ export default async function SafetyHomePage() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-3">
         Safety {String.fromCharCode(0x00b7)} Today
       </div>
-      <h1 className="font-display text-4xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-1.5">
+      <h1 className="font-serif text-4xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-1.5">
         Today&apos;s <em className="text-gold italic font-medium">safety log</em>.
       </h1>
       <p className="font-serif italic text-base text-muted mb-2">

@@ -55,7 +55,7 @@ function Forbidden({ email }: { email: string }) {
         <div className="font-display text-xs font-semibold tracking-[0.4em] uppercase text-urgent mb-4">
           403 · Forbidden
         </div>
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-4">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-4">
           Not your room.
         </h1>
         <p className="font-serif italic text-lg text-muted mb-6">

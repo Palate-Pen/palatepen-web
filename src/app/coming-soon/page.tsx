@@ -56,7 +56,7 @@ function Hero() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-6">
         Hospitality Consulting · London
       </div>
-      <h1 className="font-display text-4xl md:text-6xl font-normal text-ink leading-[1.05] tracking-[-0.02em] mb-6 max-w-[920px]">
+      <h1 className="font-serif text-4xl md:text-6xl font-normal text-ink leading-[1.05] tracking-[-0.02em] mb-6 max-w-[920px]">
         Menu design and{' '}
         <em className="text-gold italic font-medium">kitchen operations</em>, by someone who&apos;s worked the pass.
       </h1>
@@ -91,7 +91,7 @@ function About() {
         <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
           Meet the man behind the pen
         </div>
-        <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-6">
+        <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-6">
           I&apos;m Jack <em className="text-gold italic font-medium">Harrison</em>.
         </h2>
         <div className="font-serif text-base md:text-lg text-ink-soft leading-[1.75] space-y-5">
@@ -157,7 +157,7 @@ function Services() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
         Services
       </div>
-      <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
+      <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
         Five ways I can{' '}
         <em className="text-gold italic font-medium">help your venue</em>.
       </h2>
@@ -193,7 +193,7 @@ function PalatableShowcase() {
           <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold-light mb-4">
             Our Software
           </div>
-          <h2 className="font-display text-3xl md:text-5xl font-normal text-paper leading-[1.1] tracking-[-0.015em] mb-6">
+          <h2 className="font-serif text-3xl md:text-5xl font-normal text-paper leading-[1.1] tracking-[-0.015em] mb-6">
             Meet <em className="text-gold-light italic font-medium">Palatable</em>.
           </h2>
           <p className="font-serif text-base md:text-lg text-paper/85 leading-[1.7] mb-5">
@@ -265,7 +265,7 @@ function Approach() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
         How I Work
       </div>
-      <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
+      <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
         Three ways into <em className="text-gold italic font-medium">a partnership</em>.
       </h2>
       <p className="font-serif italic text-base md:text-lg text-muted mb-12 max-w-[640px] leading-relaxed">
@@ -291,7 +291,7 @@ function Contact() {
         <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
           Let&apos;s Talk
         </div>
-        <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4">
+        <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4">
           First conversation&apos;s on <em className="text-gold italic font-medium">me</em>.
         </h2>
         <p className="font-serif italic text-base md:text-lg text-muted mb-10 leading-relaxed">

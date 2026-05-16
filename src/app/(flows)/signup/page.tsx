@@ -14,7 +14,7 @@ export default async function SignUpPage({
 
   return (
     <div className="pt-6">
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] mb-3">Welcome</h1>
+      <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] mb-3">Welcome</h1>
       <p className="font-serif italic text-sm text-muted mb-8">
         let&apos;s get you set up
       </p>

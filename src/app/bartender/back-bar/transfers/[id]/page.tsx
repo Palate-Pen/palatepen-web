@@ -93,7 +93,7 @@ export default async function BarTransferDetailPage({
       </div>
       <div className="flex items-start justify-between gap-6 flex-wrap mb-6">
         <div>
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+          <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
             <em className="text-gold font-semibold not-italic">{t.reference}</em>
           </h1>
           <p className="font-serif text-lg text-ink">

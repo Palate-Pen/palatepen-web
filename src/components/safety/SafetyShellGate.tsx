@@ -83,7 +83,7 @@ function NotEnabled({ siteName }: { siteName: string }) {
         <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-3">
           Palatable Safety
         </div>
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
           Not turned on
         </h1>
         <p className="font-serif italic text-lg text-muted mb-6">
@@ -110,7 +110,7 @@ function AwaitingOwnerAck() {
         <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-urgent mb-3">
           Liability ack required
         </div>
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
           Owner has to open this first
         </h1>
         <p className="font-serif italic text-lg text-muted">

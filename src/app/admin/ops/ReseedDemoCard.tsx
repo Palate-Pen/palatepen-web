@@ -28,7 +28,7 @@ export function ReseedDemoCard() {
           <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold mb-1.5">
             Founder Demo
           </div>
-          <h2 className="font-display text-2xl font-semibold uppercase tracking-[0.04em] text-ink">
+          <h2 className="font-serif text-2xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
             Reseed to today
           </h2>
         </div>

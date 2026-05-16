@@ -59,7 +59,7 @@ export default async function SupplierDetailPage({
         The Walk-in · Suppliers
       </div>
       <div className="flex justify-between items-start gap-4 flex-wrap mb-3">
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
           {supplier.name}
         </h1>
         <div className="flex items-center gap-3 flex-wrap print-hide">

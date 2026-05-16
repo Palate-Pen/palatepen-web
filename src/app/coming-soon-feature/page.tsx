@@ -28,7 +28,7 @@ export default function ComingSoonFeaturePage() {
         <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-5">
           Almost open
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-normal text-ink leading-[1.05] tracking-[-0.02em] mb-5">
+        <h1 className="font-serif text-4xl md:text-5xl font-normal text-ink leading-[1.05] tracking-[-0.02em] mb-5">
           Trials and sign-ins open{' '}
           <em className="text-gold italic font-medium">very soon</em>.
         </h1>

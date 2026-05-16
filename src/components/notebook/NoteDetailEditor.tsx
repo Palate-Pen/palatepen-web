@@ -102,7 +102,7 @@ export function NoteDetailEditor({
               setTitle(e.target.value);
               setSavedAt(null);
             }}
-            className="w-full font-display text-2xl font-medium tracking-[0.01em] text-ink bg-paper border border-rule px-4 py-2.5 focus:border-gold focus:outline-none"
+            className="w-full font-serif text-2xl font-medium tracking-[0.01em] text-ink bg-paper border border-rule px-4 py-2.5 focus:border-gold focus:outline-none"
           />
         </div>
         <div className="px-7 py-5">

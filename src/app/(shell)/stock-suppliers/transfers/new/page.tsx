@@ -34,7 +34,7 @@ export default async function NewTransferPage() {
       >
         ← Transfers
       </Link>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3 mt-4">
+      <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3 mt-4">
         <em className="text-gold font-semibold not-italic">New</em> Transfer
       </h1>
       <p className="font-serif italic text-lg text-muted mb-10">

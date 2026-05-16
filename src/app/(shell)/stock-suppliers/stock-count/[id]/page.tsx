@@ -38,7 +38,7 @@ export default async function ChefStockCountSessionPage({
         The Walk-in · Count Session
       </div>
       <div className="flex items-start justify-between gap-4 flex-wrap mb-2">
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
           {dateFmt.format(new Date(take.conducted_at))} ·{' '}
           <em className="text-gold font-semibold not-italic">
             {take.status === 'in_progress' ? 'In Progress' : take.status === 'completed' ? 'Completed' : 'Cancelled'}

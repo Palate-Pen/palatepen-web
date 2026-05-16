@@ -128,7 +128,7 @@ export default async function InvoiceDetailPage({
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             The Walk-in · Invoice
           </div>
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+          <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
             {supplierName ? supplierName : 'Invoice'}
             {invoice.invoice_number && (
               <span className="text-muted text-2xl ml-3 font-medium normal-case tracking-[0.02em]">

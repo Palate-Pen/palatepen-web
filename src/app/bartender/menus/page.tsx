@@ -82,7 +82,7 @@ export default async function BarMenusPage({
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             Behind The Bar Tonight
           </div>
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-2">
+          <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-2">
             The <em className="text-gold not-italic font-semibold">Drinks List</em>
           </h1>
           <p className="font-serif italic text-lg text-muted">

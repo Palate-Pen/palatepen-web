@@ -28,7 +28,7 @@ export function SafetyPageHeader({
         <span className="text-muted-soft">›</span>
         <span className="text-ink">{crumb}</span>
       </div>
-      <h1 className="font-display text-4xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-1.5">
+      <h1 className="font-serif text-4xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-1.5">
         {title}{' '}
         <em className="text-gold italic font-medium">{titleEm}</em>
         {title.endsWith('?') ? '' : '.'}

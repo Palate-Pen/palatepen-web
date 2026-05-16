@@ -98,7 +98,7 @@ export default async function BarSpillagePage() {
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             What Didn't Make It Into A Glass
           </div>
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+          <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
             Spillage &{' '}
             <em className="text-gold font-semibold not-italic">Waste</em>
           </h1>

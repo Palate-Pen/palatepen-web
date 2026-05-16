@@ -168,7 +168,7 @@ export function ComplianceCheck({
               <div className="font-display font-semibold text-xs tracking-[0.4em] uppercase text-gold mb-2">
                 UK FIR 2014 · Natasha's Law
               </div>
-              <h2 className="font-display text-2xl font-semibold uppercase tracking-[0.04em] text-ink">
+              <h2 className="font-serif text-2xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
                 Compliance check
               </h2>
               <p className="font-serif italic text-sm text-muted mt-2">

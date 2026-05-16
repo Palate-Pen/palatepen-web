@@ -14,7 +14,7 @@ export default async function BarSettingsPage() {
 
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[800px] mx-auto">
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">
+      <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-8">
         Settings
       </h1>
 

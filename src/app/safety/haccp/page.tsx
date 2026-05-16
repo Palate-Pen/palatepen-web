@@ -96,7 +96,7 @@ export default async function HaccpPage() {
                 <div className="font-display font-semibold text-[10px] tracking-[0.3em] uppercase text-gold mb-1.5">
                   Step 1
                 </div>
-                <h2 className="font-display text-2xl font-normal text-ink leading-tight">
+                <h2 className="font-serif text-2xl font-normal text-ink leading-tight">
                   Your <em className="text-gold italic font-medium">business profile</em>.
                 </h2>
               </div>

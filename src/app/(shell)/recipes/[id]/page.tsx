@@ -109,7 +109,7 @@ export default async function RecipeDetailPage({
             className="w-full md:w-[240px] aspect-square object-cover border border-rule flex-shrink-0"
           />
         )}
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
           {recipe.name}
         </h1>
       </div>

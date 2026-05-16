@@ -100,7 +100,7 @@ export function AddPlanItemDialog({
               <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-1">
                 Plan a dish
               </div>
-              <h3 className="font-display text-2xl font-semibold uppercase tracking-[0.04em] text-ink">
+              <h3 className="font-serif text-2xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
                 Add to <em className="text-gold not-italic font-semibold italic">next menu</em>
               </h3>
             </div>

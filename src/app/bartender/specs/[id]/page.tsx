@@ -104,7 +104,7 @@ export default async function SpecDetailPage({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-4 flex-wrap">
-            <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+            <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
               {spec.name}
             </h1>
             {spec.menu_section && (

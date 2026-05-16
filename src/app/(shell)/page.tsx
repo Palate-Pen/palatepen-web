@@ -42,7 +42,7 @@ export default async function HomePage() {
         <div className="font-display text-xs font-semibold tracking-[0.5em] uppercase text-gold mb-3.5">
           {tod.eyebrow}
         </div>
-        <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] md:text-4xl text-ink">
+        <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] md:text-4xl text-ink">
           {tod.greeting},{' '}
           <em className="text-gold font-medium">{ctx.firstName}</em>
           .

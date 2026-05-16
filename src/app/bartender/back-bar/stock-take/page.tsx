@@ -13,7 +13,7 @@ export default async function BarStockTakeListPage() {
       <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
         Back Bar · The Honest Count
       </div>
-      <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink mb-8">
+      <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-8">
         Stock <em className="text-gold font-semibold not-italic">Take</em>
       </h1>
 

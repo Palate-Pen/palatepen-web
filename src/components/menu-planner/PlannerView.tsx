@@ -123,7 +123,7 @@ export async function PlannerView({
         <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-3">
           Menu Engineering
         </div>
-        <h2 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink mb-2">
+        <h2 className="font-serif text-xl font-normal text-ink leading-[1.2] tracking-[-0.01em] mb-2">
           Where each dish sits
         </h2>
         <p className="font-serif italic text-sm text-muted mb-5 leading-relaxed">
@@ -136,7 +136,7 @@ export async function PlannerView({
         <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-3">
           The Plan
         </div>
-        <h2 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink mb-5">
+        <h2 className="font-serif text-xl font-normal text-ink leading-[1.2] tracking-[-0.01em] mb-5">
           Every dish, every decision
         </h2>
         {plan.items.length === 0 ? (
@@ -178,7 +178,7 @@ export async function PlannerView({
         <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-3">
           Looking Ahead
         </div>
-        <h2 className="font-display text-xl font-semibold uppercase tracking-[0.04em] text-ink mb-5">
+        <h2 className="font-serif text-xl font-normal text-ink leading-[1.2] tracking-[-0.01em] mb-5">
           What sits on the path to launch
         </h2>
         {lookingAhead.length === 0 ? (
@@ -240,7 +240,7 @@ function PlannerEmpty({
       <div className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase text-gold mb-2">
         Forward planning
       </div>
-      <h2 className="font-display text-3xl font-semibold uppercase tracking-[0.04em] text-ink mb-3">
+      <h2 className="font-serif text-3xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-3">
         Plan the <em className="text-gold not-italic font-semibold italic">next {surfaceLabel}</em>
       </h2>
       <p className="font-serif italic text-muted mb-6 leading-relaxed">

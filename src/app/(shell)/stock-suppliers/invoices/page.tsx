@@ -45,7 +45,7 @@ export default async function InvoicesListPage() {
           <div className="font-sans font-semibold text-xs tracking-[0.08em] uppercase text-gold mb-3.5">
             The Walk-in
           </div>
-          <h1 className="font-display text-4xl font-semibold uppercase tracking-[0.04em] text-ink">
+          <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink">
             <em className="text-gold font-semibold not-italic">Invoices</em>
           </h1>
           <p className="font-serif italic text-lg text-muted mt-3">

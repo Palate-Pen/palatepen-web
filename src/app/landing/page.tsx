@@ -63,7 +63,7 @@ function Hero() {
         <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-6">
           Built By A Chef · For Chefs
         </div>
-        <h1 className="font-display text-4xl md:text-[52px] font-normal text-ink leading-[1.05] tracking-[-0.02em] mb-5">
+        <h1 className="font-serif text-4xl md:text-[52px] font-normal text-ink leading-[1.05] tracking-[-0.02em] mb-5">
           Back office work{' '}
           <em className="text-gold italic font-medium">you can stomach</em>.
         </h1>
@@ -150,7 +150,7 @@ function Problem() {
         <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
           The Problem
         </div>
-        <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
+        <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
           Most kitchen software is{' '}
           <em className="text-gold italic font-medium">built for accountants</em>.
         </h2>
@@ -188,7 +188,7 @@ function Modules() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
         What&apos;s Inside
       </div>
-      <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
+      <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
         One platform.{' '}
         <em className="text-gold italic font-medium">Every kitchen workflow</em>.
       </h2>
@@ -225,7 +225,7 @@ function MarginsShowcase() {
           <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
             Margins · In Action
           </div>
-          <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-6">
+          <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-6">
             Every dish,{' '}
             <em className="text-gold italic font-medium">scored daily</em>.
           </h2>
@@ -304,7 +304,7 @@ function SafetyShowcase() {
           <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold-light mb-4">
             Safety Module · £20 / site / month
           </div>
-          <h2 className="font-display text-3xl md:text-5xl font-normal text-paper leading-[1.1] tracking-[-0.015em] mb-6">
+          <h2 className="font-serif text-3xl md:text-5xl font-normal text-paper leading-[1.1] tracking-[-0.015em] mb-6">
             When the EHO walks in,{' '}
             <em className="text-gold-light italic font-medium">you don&apos;t reach for a binder</em>.
           </h2>
@@ -432,7 +432,7 @@ function Pricing() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
         Pricing
       </div>
-      <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
+      <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4 max-w-[720px]">
         Honest pricing.{' '}
         <em className="text-gold italic font-medium">No surprises</em>.
       </h2>
@@ -508,7 +508,7 @@ function BuiltBy() {
         <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
           Built By A Chef
         </div>
-        <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4">
+        <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4">
           By the team behind <em className="text-gold italic font-medium">Palate &amp; Pen</em>.
         </h2>
         <p className="font-serif text-base md:text-[19px] text-ink-soft leading-[1.7] mb-8">
@@ -534,7 +534,7 @@ function FinalCta() {
       <div className="font-display font-semibold text-[11px] tracking-[0.4em] uppercase text-gold mb-4">
         Get Started
       </div>
-      <h2 className="font-display text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4">
+      <h2 className="font-serif text-3xl md:text-5xl font-normal text-ink leading-[1.1] tracking-[-0.015em] mb-4">
         Try Palatable Pro{' '}
         <em className="text-gold italic font-medium">free for 7 days</em>.
       </h2>
