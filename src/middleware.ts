@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import {
+  MAINTENANCE_COOKIE,
+  bypassTokenValid,
+  isMaintenanceEnabled,
+  isPassthroughPath,
+} from '@/lib/maintenance';
 
 const PUBLIC_PREFIXES = [
   '/signin',
@@ -30,6 +36,36 @@ export async function middleware(request: NextRequest) {
   const host = bareHost(request.headers.get('host'));
   const path = request.nextUrl.pathname;
   const search = request.nextUrl.search;
+
+  // -----------------------------------------------------------------
+  // MAINTENANCE MODE — first thing, runs ahead of every other route
+  // decision. Webhooks + static assets always pass through so
+  // providers don't disable our endpoints during downtime.
+  // -----------------------------------------------------------------
+  if (isMaintenanceEnabled() && !isPassthroughPath(path)) {
+    // Bypass flow: founder/tester hits ?bypass=<TOKEN> to drop a cookie
+    // and reach the app while everyone else still sees /maintenance.
+    const bypassQ = request.nextUrl.searchParams.get('bypass');
+    if (bypassQ && bypassTokenValid(bypassQ)) {
+      const cleanUrl = new URL(request.url);
+      cleanUrl.searchParams.delete('bypass');
+      const res = NextResponse.redirect(cleanUrl);
+      res.cookies.set(MAINTENANCE_COOKIE, '1', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24, // 24h
+      });
+      return res;
+    }
+    const hasBypassCookie = request.cookies.get(MAINTENANCE_COOKIE)?.value === '1';
+    if (!hasBypassCookie) {
+      // Render the maintenance page but keep the URL the user typed —
+      // less jarring than a hard redirect when the outage ends.
+      return NextResponse.rewrite(new URL('/maintenance', request.url));
+    }
+  }
 
   // CONSULTING HOST — palateandpen.co.uk (root + www). This is the
   // separate Palate & Pen consulting site, not the Palatable app.

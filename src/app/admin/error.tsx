@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { reportError } from '@/lib/error-reporter';
 
 export default function AdminShellError({
   error,
@@ -11,7 +12,7 @@ export default function AdminShellError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[admin error boundary]', error);
+    reportError(error, { route: 'admin', digest: error.digest });
   }, [error]);
 
   return (

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { reportError } from '@/lib/error-reporter';
 
 export default function OwnerShellError({
   error,
@@ -11,7 +12,7 @@ export default function OwnerShellError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[owner error boundary]', error);
+    reportError(error, { route: 'owner', digest: error.digest });
   }, [error]);
 
   return (

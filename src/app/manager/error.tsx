@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { reportError } from '@/lib/error-reporter';
 
 export default function ManagerShellError({
   error,
@@ -11,7 +12,7 @@ export default function ManagerShellError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[manager error boundary]', error);
+    reportError(error, { route: 'manager', digest: error.digest });
   }, [error]);
 
   return (

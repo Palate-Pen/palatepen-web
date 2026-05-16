@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { reportError } from '@/lib/error-reporter';
 
 /**
  * Chef-shell error boundary. Catches any server- or client-rendered
@@ -21,9 +22,8 @@ export default function ChefShellError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Mirror to the browser console so it's also visible in DevTools
-    // when chefs report a problem.
-    console.error('[(shell) error boundary]', error);
+    // Goes to console + webhook (if ERROR_WEBHOOK_URL is set).
+    reportError(error, { route: 'shell', digest: error.digest });
   }, [error]);
 
   return (

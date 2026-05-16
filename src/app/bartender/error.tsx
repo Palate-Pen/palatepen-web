@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { reportError } from '@/lib/error-reporter';
 
 export default function BartenderShellError({
   error,
@@ -11,7 +12,7 @@ export default function BartenderShellError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[bartender error boundary]', error);
+    reportError(error, { route: 'bartender', digest: error.digest });
   }, [error]);
 
   return (
