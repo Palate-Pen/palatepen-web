@@ -5,6 +5,7 @@ import { OwnerPageHeader } from '@/components/owner/OwnerScaffold';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { AccountPreferencesPanel } from '@/app/(shell)/settings/AccountPreferencesPanel';
+import { TierBillingSection } from '@/components/settings/TierBillingSection';
 
 export const metadata = { title: 'Settings — Owner — Palatable' };
 
@@ -38,7 +39,9 @@ export default async function OwnerSettingsPage() {
 
   const { data: accounts } = await supabase
     .from('accounts')
-    .select('id, name, tier, is_founder, created_at')
+    .select(
+      'id, name, tier, is_founder, created_at, stripe_customer_id',
+    )
     .in('id', accountIds.length ? accountIds : ['00000000-0000-0000-0000-000000000000']);
 
   const accountRows =
@@ -48,6 +51,7 @@ export default async function OwnerSettingsPage() {
       tier: string;
       is_founder: boolean;
       created_at: string;
+      stripe_customer_id: string | null;
     }>;
 
   const primaryAccountId = accountRows[0]?.id;
@@ -156,12 +160,28 @@ export default async function OwnerSettingsPage() {
 
       <section className="mb-10">
         <SectionHead title="Tier & Billing" meta="manage in Stripe portal" />
-        <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-6">
-          <p className="font-serif italic text-base text-ink-soft leading-relaxed">
-            Billing controls — upgrade / downgrade tier, payment method, invoices — live in the Stripe customer portal. Pre-launch this surface stays minimal; the founder account is zero-cost (
-            <code className="font-mono text-xs bg-paper-warm px-1.5 py-0.5 rounded">is_founder = true</code>) and bypasses billing entirely.
-          </p>
-        </div>
+        {accountRows.length === 0 ? (
+          <div className="bg-card border border-rule px-7 py-6 font-serif italic text-muted">
+            No accounts on file yet.
+          </div>
+        ) : (
+          accountRows.map((a) => (
+            <div key={a.id} className="mb-4">
+              {accountRows.length > 1 && (
+                <div className="font-display font-semibold text-[11px] tracking-[0.25em] uppercase text-muted mb-2">
+                  {a.name}
+                </div>
+              )}
+              <TierBillingSection
+                accountId={a.id}
+                tier={a.tier}
+                isFounder={a.is_founder}
+                hasStripeCustomer={Boolean(a.stripe_customer_id)}
+                returnPath="/owner/settings"
+              />
+            </div>
+          ))
+        )}
       </section>
 
     </div>

@@ -36,10 +36,27 @@ const CURRENCY_OPTIONS = [
 export function AccountPreferencesPanel({
   initial,
   canEdit,
+  context = 'kitchen',
 }: {
   initial: AccountPreferences;
   canEdit: boolean;
+  /** When rendered inside the Bar viewer, the "Kitchen size" / "Kitchen
+   *  location" labels show as "Bar size" / "Bar location". The
+   *  underlying account preferences columns + storage are unchanged. */
+  context?: 'kitchen' | 'bar';
 }) {
+  const isBar = context === 'bar';
+  const sizeLabel = isBar ? 'Bar size' : 'Kitchen size';
+  const locationLabel = isBar ? 'Bar location' : 'Kitchen location';
+  const locationPlaceholder = isBar
+    ? 'e.g. Shoreditch, London'
+    : 'e.g. Shoreditch, London';
+  const introBlurb = isBar
+    ? 'Bar-wide settings. Drives anything that involves money or GP percentages on the bar surface — specs, pour-cost margins, cellar cost-spike detectors.'
+    : 'Kitchen-wide settings. The chef shell uses these for everything that involves money or GP percentages — recipes, margins, the what-if slider, the cost-spike detector.';
+  const savedHint = isBar
+    ? 'Changes apply across the whole bar.'
+    : 'Changes apply across the whole site.';
   const router = useRouter();
   const [currency, setCurrency] = useState(initial.currency);
   const [gpTarget, setGpTarget] = useState(String(initial.gp_target_pct));
@@ -84,7 +101,7 @@ export function AccountPreferencesPanel({
   return (
     <div className="px-7 py-5 flex flex-col gap-4">
       <p className="font-serif italic text-xs text-muted leading-relaxed">
-        Kitchen-wide settings. The chef shell uses these for everything that involves money or GP percentages — recipes, margins, the what-if slider, the cost-spike detector.
+        {introBlurb}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -116,7 +133,7 @@ export function AccountPreferencesPanel({
         </Field>
       </div>
 
-      <Field label="Kitchen size">
+      <Field label={sizeLabel}>
         <select
           value={kitchenSize}
           onChange={(e) => setKitchenSize(e.target.value as KitchenSize | '')}
@@ -131,13 +148,13 @@ export function AccountPreferencesPanel({
         </select>
       </Field>
 
-      <Field label="Kitchen location">
+      <Field label={locationLabel}>
         <input
           type="text"
           value={kitchenLocation}
           onChange={(e) => setKitchenLocation(e.target.value)}
           disabled={!canEdit || pending}
-          placeholder="e.g. Shoreditch, London"
+          placeholder={locationPlaceholder}
           maxLength={140}
           className="w-full px-3 py-2 border border-rule bg-card font-serif text-base text-ink focus:outline-none focus:border-gold disabled:opacity-50"
         />
@@ -167,10 +184,10 @@ export function AccountPreferencesPanel({
       <div className="flex items-center justify-between gap-3 pt-2">
         <div className="font-serif italic text-xs text-muted">
           {!canEdit
-            ? 'Owner-only — ask the account owner to change these.'
+            ? 'Lead-person-only — ask the account owner to change these.'
             : savedAt
               ? '✓ Saved'
-              : 'Changes apply across the whole site.'}
+              : savedHint}
         </div>
         <button
           type="button"

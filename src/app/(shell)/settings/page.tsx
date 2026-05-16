@@ -5,11 +5,13 @@ import { getShellContext } from '@/lib/shell/context';
 import { getUserPreferences, PREFERENCE_META } from '@/lib/preferences';
 import { getAccountPreferences } from '@/lib/account-preferences';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isTopRoleOnAccount } from '@/lib/roles';
 import { PreferenceToggle } from './PreferenceToggle';
 import { InboxTokenPanel } from './InboxTokenPanel';
 import { AccountPreferencesPanel } from './AccountPreferencesPanel';
 import { DataExportPanel } from './DataExportPanel';
 import { KpiCard } from '@/components/shell/KpiCard';
+import { TierBillingSection } from '@/components/settings/TierBillingSection';
 
 export const metadata = { title: 'Settings — Palatable' };
 
@@ -19,14 +21,18 @@ export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient();
   const { data: accountRow } = await supabase
     .from('accounts')
-    .select('inbox_token')
+    .select('inbox_token, tier, is_founder, stripe_customer_id')
     .eq('id', ctx.accountId)
     .single();
   const inboxToken = (accountRow?.inbox_token as string | null) ?? null;
+  const accountTier = (accountRow?.tier as string | null) ?? 'free';
+  const accountIsFounder = Boolean(accountRow?.is_founder);
+  const hasStripeCustomer = Boolean(accountRow?.stripe_customer_id);
   const accountPrefs = await getAccountPreferences(ctx.accountId);
   const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
   const isFounder = ctx.email === 'jack@palateandpen.co.uk';
   const isOwner = ctx.role === 'owner';
+  const isTop = await isTopRoleOnAccount(supabase, ctx.userId, ctx.accountId);
 
   // Profile stats — counts across the chef's site, mirrors legacy
   // ProfileScreen dashboard ("Recipes / Ideas / In Bank / GP Calcs").
@@ -140,8 +146,18 @@ export default async function SettingsPage() {
 
       <AccessibilitySettings />
 
+      {isTop && (
+        <TierBillingSection
+          accountId={ctx.accountId}
+          tier={accountTier}
+          isFounder={accountIsFounder}
+          hasStripeCustomer={hasStripeCustomer}
+          returnPath="/settings"
+        />
+      )}
+
       <Section title="Kitchen Info">
-        <AccountPreferencesPanel initial={accountPrefs} canEdit={isOwner} />
+        <AccountPreferencesPanel initial={accountPrefs} canEdit={isTop} />
       </Section>
 
       <Section title="Preferences">
@@ -166,7 +182,7 @@ export default async function SettingsPage() {
       </Section>
 
       <Section title="Invoice Email Forwarding">
-        <InboxTokenPanel initialToken={inboxToken} canRotate={isOwner} />
+        <InboxTokenPanel initialToken={inboxToken} canRotate={isTop} />
       </Section>
 
       <Section title="Connections">
@@ -185,6 +201,9 @@ export default async function SettingsPage() {
       <Section title="Account">
         <Row label="Email" value={ctx.email} />
         <Row label="Role" value={ctx.role} capitalize />
+        {!isTop && (
+          <Row label="Tier" value={accountTier} capitalize muted />
+        )}
       </Section>
 
       <div className="bg-card border border-rule px-8 py-7">

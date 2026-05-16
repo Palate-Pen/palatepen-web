@@ -3,14 +3,25 @@ import { SignOutForm } from '@/components/shell/SignOutForm';
 import { AccessibilitySettings } from '@/components/shell/AccessibilitySettings';
 import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isTopRoleOnAccount } from '@/lib/roles';
 import { AccountPreferencesPanel } from '@/app/(shell)/settings/AccountPreferencesPanel';
+import { TierBillingSection } from '@/components/settings/TierBillingSection';
 
 export const metadata = { title: 'Settings — Bar — Palatable' };
 
 export default async function BarSettingsPage() {
   const ctx = await getShellContext();
+  const supabase = await createSupabaseServerClient();
+  const { data: accountRow } = await supabase
+    .from('accounts')
+    .select('tier, is_founder, stripe_customer_id')
+    .eq('id', ctx.accountId)
+    .maybeSingle();
   const accountPrefs = await getAccountPreferences(ctx.accountId);
-  const isOwner = ctx.role === 'owner';
+  const isTop = await isTopRoleOnAccount(supabase, ctx.userId, ctx.accountId);
+  const canSeeManager = ctx.role === 'manager' || ctx.role === 'owner';
+  const accountTier = (accountRow?.tier as string | null) ?? 'free';
 
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[800px] mx-auto">
@@ -18,32 +29,34 @@ export default async function BarSettingsPage() {
         Settings
       </h1>
 
-      <Section title="Switch Surface">
-        <SurfaceLink
-          href="/"
-          eyebrow="Chef access"
-          title="Chef surface"
-          body="The kitchen view — recipes, prep, stock & suppliers."
-        />
-        {(ctx.role === 'manager' || ctx.role === 'owner') && (
+      {isTop && (
+        <Section title="Switch Surface">
           <SurfaceLink
-            href="/manager"
-            eyebrow="Manager access"
-            title="Manager surface"
-            body="Site command — menu builder, team, deliveries oversight."
+            href="/"
+            eyebrow="Chef access"
+            title="Chef surface"
+            body="The kitchen view — recipes, prep, stock & suppliers."
           />
-        )}
-        {ctx.role === 'owner' && (
-          <SurfaceLink
-            href="/owner"
-            eyebrow="Owner access"
-            title="Owner surface"
-            body="Whole business — cross-site, revenue, cash."
-          />
-        )}
-      </Section>
+          {canSeeManager && (
+            <SurfaceLink
+              href="/manager"
+              eyebrow="Manager access"
+              title="Manager surface"
+              body="Site command — menu builder, team, deliveries oversight."
+            />
+          )}
+          {ctx.role === 'owner' && (
+            <SurfaceLink
+              href="/owner"
+              eyebrow="Owner access"
+              title="Owner surface"
+              body="Whole business — cross-site, revenue, cash."
+            />
+          )}
+        </Section>
+      )}
 
-      {(ctx.role === 'owner' || ctx.role === 'manager') && (
+      {canSeeManager && (
         <Section title="Team & Permissions">
           <Link
             href={ctx.role === 'owner' ? '/owner/team' : '/manager/team'}
@@ -69,13 +82,31 @@ export default async function BarSettingsPage() {
 
       <AccessibilitySettings />
 
+      {isTop && (
+        <TierBillingSection
+          accountId={ctx.accountId}
+          tier={accountTier}
+          isFounder={Boolean(accountRow?.is_founder)}
+          hasStripeCustomer={Boolean(accountRow?.stripe_customer_id)}
+          returnPath="/bartender/settings"
+        />
+      )}
+
+      {/* Bar viewer renames "Kitchen Info" → "Bar Info" and the field
+          labels follow via AccountPreferencesPanel's `context` prop
+          (kitchen_size → bar size, kitchen_location → bar location). */}
       <Section title="Bar Info">
-        <AccountPreferencesPanel initial={accountPrefs} canEdit={isOwner} />
+        <AccountPreferencesPanel
+          initial={accountPrefs}
+          canEdit={isTop}
+          context="bar"
+        />
       </Section>
 
       <Section title="Account">
         <Row label="Email" value={ctx.email} />
         <Row label="Role" value={ctx.role} capitalize />
+        {!isTop && <Row label="Tier" value={accountTier} capitalize />}
       </Section>
 
       <div className="bg-card border border-rule px-8 py-7">

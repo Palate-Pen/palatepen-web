@@ -3,14 +3,24 @@ import { SignOutForm } from '@/components/shell/SignOutForm';
 import { AccessibilitySettings } from '@/components/shell/AccessibilitySettings';
 import { getShellContext } from '@/lib/shell/context';
 import { getAccountPreferences } from '@/lib/account-preferences';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { isTopRoleOnAccount } from '@/lib/roles';
 import { AccountPreferencesPanel } from '@/app/(shell)/settings/AccountPreferencesPanel';
+import { TierBillingSection } from '@/components/settings/TierBillingSection';
 
 export const metadata = { title: 'Settings — Manager — Palatable' };
 
 export default async function ManagerSettingsPage() {
   const ctx = await getShellContext();
+  const supabase = await createSupabaseServerClient();
+  const { data: accountRow } = await supabase
+    .from('accounts')
+    .select('tier, is_founder, stripe_customer_id')
+    .eq('id', ctx.accountId)
+    .maybeSingle();
   const accountPrefs = await getAccountPreferences(ctx.accountId);
-  const isOwner = ctx.role === 'owner';
+  const isTop = await isTopRoleOnAccount(supabase, ctx.userId, ctx.accountId);
+  const accountTier = (accountRow?.tier as string | null) ?? 'free';
 
   return (
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[800px] mx-auto">
@@ -18,28 +28,30 @@ export default async function ManagerSettingsPage() {
         Settings
       </h1>
 
-      <Section title="Switch Surface">
-        <SurfaceLink
-          href="/"
-          eyebrow="Chef access"
-          title="Chef surface"
-          body="The kitchen view — recipes, prep, stock & suppliers."
-        />
-        <SurfaceLink
-          href="/bartender"
-          eyebrow="Bar access"
-          title="Bartender surface"
-          body="The bar view — specs, cellar, pour-cost margins."
-        />
-        {ctx.role === 'owner' && (
+      {isTop && (
+        <Section title="Switch Surface">
           <SurfaceLink
-            href="/owner"
-            eyebrow="Owner access"
-            title="Owner surface"
-            body="Whole business — cross-site, revenue, cash."
+            href="/"
+            eyebrow="Chef access"
+            title="Chef surface"
+            body="The kitchen view — recipes, prep, stock & suppliers."
           />
-        )}
-      </Section>
+          <SurfaceLink
+            href="/bartender"
+            eyebrow="Bar access"
+            title="Bartender surface"
+            body="The bar view — specs, cellar, pour-cost margins."
+          />
+          {ctx.role === 'owner' && (
+            <SurfaceLink
+              href="/owner"
+              eyebrow="Owner access"
+              title="Owner surface"
+              body="Whole business — cross-site, revenue, cash."
+            />
+          )}
+        </Section>
+      )}
 
       <Section title="Team & Permissions">
         <Link
@@ -65,13 +77,24 @@ export default async function ManagerSettingsPage() {
 
       <AccessibilitySettings />
 
+      {isTop && (
+        <TierBillingSection
+          accountId={ctx.accountId}
+          tier={accountTier}
+          isFounder={Boolean(accountRow?.is_founder)}
+          hasStripeCustomer={Boolean(accountRow?.stripe_customer_id)}
+          returnPath="/manager/settings"
+        />
+      )}
+
       <Section title="Site Info">
-        <AccountPreferencesPanel initial={accountPrefs} canEdit={isOwner} />
+        <AccountPreferencesPanel initial={accountPrefs} canEdit={isTop} />
       </Section>
 
       <Section title="Account">
         <Row label="Email" value={ctx.email} />
         <Row label="Role" value={ctx.role} capitalize />
+        {!isTop && <Row label="Tier" value={accountTier} capitalize />}
       </Section>
 
       <div className="bg-card border border-rule px-8 py-7">
