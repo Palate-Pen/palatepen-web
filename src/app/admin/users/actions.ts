@@ -5,16 +5,13 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseServiceClient } from '@/lib/supabase/service';
 import { ADMIN_EMAIL } from '@/lib/admin';
+import {
+  IMPERSONATION_FLAG_COOKIE,
+  IMPERSONATION_LABEL_COOKIE,
+} from './cookies';
 
 const VALID_TIERS = ['free', 'pro', 'kitchen', 'group', 'enterprise'] as const;
 type Tier = (typeof VALID_TIERS)[number];
-
-/** Cookie set when the founder is currently impersonating another user.
- *  Holds the impersonated user's email for display purposes only — the
- *  Stop action never trusts the cookie value; it always routes back to
- *  ADMIN_EMAIL. */
-export const IMPERSONATION_LABEL_COOKIE = 'palatable_impersonate_label';
-export const IMPERSONATION_FLAG_COOKIE = 'palatable_impersonating';
 
 type GateResult =
   | { ok: true; userEmail: string }

@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import {
   IMPERSONATION_FLAG_COOKIE,
   IMPERSONATION_LABEL_COOKIE,
-} from '@/app/admin/users/actions';
+} from '@/app/admin/users/cookies';
 import { StopImpersonationButton } from './StopImpersonationButton';
 
 /**
