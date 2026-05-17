@@ -1,15 +1,20 @@
 import Link from 'next/link';
 import { getShellContext } from '@/lib/shell/context';
-import { getComplianceRollup } from '@/lib/oversight';
+import { getAllergenMatrix, getComplianceRollup } from '@/lib/oversight';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { PrintButton } from '@/components/shell/PrintButton';
+import { AllergenMatrix } from '@/components/allergens/AllergenMatrix';
+import { ALLERGENS } from '@/lib/allergens';
 
 export const metadata = { title: 'Compliance — Manager — Palatable' };
 
 export default async function ManagerCompliancePage() {
   const ctx = await getShellContext();
-  const c = await getComplianceRollup(ctx.siteId);
+  const [c, matrix] = await Promise.all([
+    getComplianceRollup(ctx.siteId),
+    getAllergenMatrix(ctx.siteId),
+  ]);
 
   return (
     <div className="printable px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[1280px] mx-auto">
@@ -102,16 +107,39 @@ export default async function ManagerCompliancePage() {
         </div>
       )}
 
+      <section className="mt-10">
+        <SectionHead
+          title="Allergen Matrix"
+          meta={`${matrix.rows.length} dish${matrix.rows.length === 1 ? '' : 'es'} × 14 allergens`}
+        />
+        <p className="font-serif italic text-sm text-muted mb-4 max-w-[720px]">
+          Every dish against every UK FIR allergen — what an EHO will want to scan in 30 seconds. ● = contains · ○ = may contain · blank = not declared. Click any row to edit the recipe.
+        </p>
+        <AllergenMatrix matrix={matrix} />
+
+        <div className="bg-paper-warm border border-rule px-5 py-4 mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          {ALLERGENS.map((a) => (
+            <div key={a.key} className="flex items-baseline gap-2">
+              <span className="font-mono font-medium text-[11px] text-ink w-7">
+                {a.short}
+              </span>
+              <span className="font-serif text-xs text-muted">{a.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="bg-card border border-rule border-l-4 border-l-gold px-7 py-5 mt-8">
         <div className="font-display font-semibold text-xs tracking-[0.3em] uppercase text-gold mb-2">
           UK FIR 2014 reminder
         </div>
         <p className="font-serif italic text-sm text-ink-soft leading-relaxed">
           The 14 mandatory allergens must be available to customers on
-          request. Recipes flagged as "Contains nuts" must specify which
+          request. Recipes flagged as &quot;Contains nuts&quot; must specify which
           tree nuts (almond / hazelnut / walnut / cashew / pecan /
           brazil / pistachio / macadamia). Same pattern for cereals
-          containing gluten.
+          containing gluten. PPDS (Natasha&apos;s Law) items need a full
+          ingredient list with the 14 allergens emphasised.
         </p>
       </div>
     </div>

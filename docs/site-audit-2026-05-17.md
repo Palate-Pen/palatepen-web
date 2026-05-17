@@ -653,6 +653,21 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 10 — 2026-05-17 PM (allergen overview + prep + PPDS labels)
+
+The user-facing answer to "where do customers and EHO inspectors see the allergens?". Plus a real bug fix on the compliance rollup.
+
+- **Allergen matrix view on `/manager/compliance`** — every dish × 14 UK FIR allergens grid, grouped by menu section / category, with column totals + a flag column for sub-type-missing rows. Cells: ● = contains, ○ = may contain, blank = not declared. Each row click-throughs to the recipe's edit page. Print-clean.
+- **Bug fix in `getComplianceRollup`** — the chef-review check used `contains.includes('Nuts (tree nuts)')` and `contains.includes('Cereals containing gluten')` but the actual stored values are `'nuts'` and `'gluten'` (per `AllergenKey` in `src/lib/allergens.ts`). Checks never fired. Now uses the correct keys, so the **"Needs Chef Review" list now correctly catches missing nut + gluten sub-types**.
+- **Prep label PDF — DateCodeGenie-style** — `/api/recipes/[id]/prep-label?size=&copies=&shelf=&storage=`. Industry day-dot colour code (Mon=Blue, Tue=Green, Wed=Red, Thu=Brown, Fri=Black, Sat=Orange, Sun=Yellow) in a circle in the top-right corner shows the use-by day at a glance. USE BY date bold and prominent. Allergen short codes (GL CR EG FI...) along the bottom. Mirrors the UK kitchen-industry standard (DateCodeGenie / DayMark / National Checking).
+- **PPDS label PDF (Natasha's Law)** — `/api/recipes/[id]/ppds-label?size=&copies=&shelf=&storage=&qty=`. Compliant with the Food Information Regulations 2014 (Natasha's Law): name of food, FULL ingredient list in **descending order by weight** (FIR requirement), allergens **emphasised in BOLD CAPS** within the list, "Contains:" summary line, optional quantity, use-by, storage, FBO line (pulls from `accounts.preferences.fbo` if set).
+- **Label size selector** — `LabelPrintMenu` client component on the recipe detail page. 10 presets cover the common kitchen printers:
+  - **Thermal / single-label**: DYMO Multipurpose (57×32), DYMO Large Address (89×36), DYMO Shipping (102×59), Brother DK (90×29), Square 50×50, Square 70×70
+  - **A4 sheets**: Avery L7159 (24-up · 63.5×33.9), L7162 (16-up · 99.1×33.9), L7163 (14-up · 99.1×38.1), L7164 (12-up · 63.5×72)
+  - Sheet layouts repeat the same label N times across an A4 page. Single layouts produce one PDF page per label at the exact label size.
+- **`getAllergenMatrix` lib** in `src/lib/oversight.ts` — server function that returns `{ rows, totals }` for the matrix component, mapping recipe → per-allergen state (`contains` / `may` / `none`).
+- **Documented dual-taxonomy issue** — `src/lib/allergens.ts` (recipes) uses short keys (`gluten`, `nuts`, etc.); `src/lib/safety/standards.ts` (incidents) uses FSA-style keys (`cereals_with_gluten`, `tree_nuts`, etc.). Same allergens, different keys per surface. Not blocking but worth aligning eventually so cross-surface joins are trivial.
+
 ### Batch 9 — 2026-05-17 PM (FSA compliance audit)
 
 Verified the Palatable Safety module against the live FSA website (food.gov.uk) — cooking-safety guidance, chilled storage thresholds, the 14 regulated allergens, and SFBB pack scope. Findings and fixes:

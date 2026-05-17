@@ -160,6 +160,85 @@ export type ComplianceRollup = {
   needs_review: ComplianceItem[];
 };
 
+export type AllergenMatrixRow = {
+  id: string;
+  name: string;
+  category: string | null;
+  dish_type: string;
+  on_menu: boolean;
+  /** Per-allergen-key tri-state: 'contains' | 'may' | 'none'. */
+  states: Record<string, 'contains' | 'may' | 'none'>;
+  has_nuts_no_subtype: boolean;
+  has_gluten_no_subtype: boolean;
+};
+
+export type AllergenMatrix = {
+  rows: AllergenMatrixRow[];
+  /** Per-allergen-key column totals: how many dishes contain or may-contain. */
+  totals: Record<string, { contains: number; may: number }>;
+};
+
+export async function getAllergenMatrix(
+  siteId: string,
+): Promise<AllergenMatrix> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('recipes')
+    .select('id, name, category, dish_type, sell_price, allergens')
+    .eq('site_id', siteId)
+    .is('archived_at', null)
+    .order('category', { ascending: true, nullsFirst: false })
+    .order('name', { ascending: true });
+
+  type Row = {
+    id: string;
+    name: string;
+    category: string | null;
+    dish_type: string;
+    sell_price: number | null;
+    allergens: {
+      contains?: string[];
+      mayContain?: string[];
+      nutTypes?: string[];
+      glutenTypes?: string[];
+    } | null;
+  };
+  const recipes = (data ?? []) as Row[];
+
+  const totals: Record<string, { contains: number; may: number }> = {};
+  const rows: AllergenMatrixRow[] = recipes.map((r) => {
+    const a = r.allergens ?? {};
+    const contains = a.contains ?? [];
+    const may = a.mayContain ?? [];
+    const states: Record<string, 'contains' | 'may' | 'none'> = {};
+    for (const k of contains) {
+      states[k] = 'contains';
+      totals[k] ??= { contains: 0, may: 0 };
+      totals[k].contains += 1;
+    }
+    for (const k of may) {
+      if (states[k] === 'contains') continue;
+      states[k] = 'may';
+      totals[k] ??= { contains: 0, may: 0 };
+      totals[k].may += 1;
+    }
+    return {
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      dish_type: r.dish_type ?? 'food',
+      on_menu: r.sell_price != null && Number(r.sell_price) > 0,
+      states,
+      has_nuts_no_subtype:
+        contains.includes('nuts') && (a.nutTypes?.length ?? 0) === 0,
+      has_gluten_no_subtype:
+        contains.includes('gluten') && (a.glutenTypes?.length ?? 0) === 0,
+    };
+  });
+
+  return { rows, totals };
+}
+
 export async function getComplianceRollup(
   siteId: string,
 ): Promise<ComplianceRollup> {
@@ -202,8 +281,11 @@ export async function getComplianceRollup(
       }
       continue;
     }
+    // Allergen keys stored in recipes.allergens.contains are the
+    // AllergenKey enum values from src/lib/allergens.ts ('nuts',
+    // 'gluten', etc.) — not the FSA-style names. Match those.
     if (
-      contains.includes('Nuts (tree nuts)') &&
+      contains.includes('nuts') &&
       (a.nutTypes?.length ?? 0) === 0
     ) {
       reviewItems.push({
@@ -213,7 +295,7 @@ export async function getComplianceRollup(
       });
     }
     if (
-      contains.includes('Cereals containing gluten') &&
+      contains.includes('gluten') &&
       (a.glutenTypes?.length ?? 0) === 0
     ) {
       reviewItems.push({

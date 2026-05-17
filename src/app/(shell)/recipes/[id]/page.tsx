@@ -14,6 +14,7 @@ import { getAccountPreferences } from '@/lib/account-preferences';
 import { getNotesForRecipe } from '@/lib/notebook';
 import { getGPHistory } from '@/lib/gp-calculations';
 import { PrintButton } from '@/components/shell/PrintButton';
+import { LabelPrintMenu } from '@/components/labels/LabelPrintMenu';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { RecipePrintPage } from '../RecipePrintPage';
 
@@ -463,6 +464,7 @@ export default async function RecipeDetailPage({
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
           <PrintButton label="Print recipe" />
+          <LabelPrintMenu recipeId={recipe.id} />
           <CostSimulatorButton
             seed={simSeed}
             targetGpPct={gpTarget}
