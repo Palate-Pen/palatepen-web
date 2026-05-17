@@ -586,6 +586,152 @@ export async function setOpeningCheckGroupsAction(input: {
   return { ok: true };
 }
 
+// ---------- HACCP wizard ----------
+//
+// One plan per site (active). Authorisation: owner / manager /
+// deputy_manager / head_chef / sous_chef can read + write the plan
+// body. Other roles see read-only. Sign-off is reserved to owner +
+// manager only.
+
+async function requireHaccpRole(
+  siteId: string,
+  signOff: boolean = false,
+): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not signed in' };
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('site_id', siteId)
+    .maybeSingle();
+  if (!membership) return { ok: false, error: 'No membership on this site' };
+  const role = membership.role as string;
+  const allowed = signOff
+    ? ['owner', 'manager']
+    : ['owner', 'manager', 'deputy_manager', 'head_chef', 'sous_chef'];
+  if (!allowed.includes(role)) {
+    return {
+      ok: false,
+      error: signOff
+        ? 'Owner or manager required to sign off the HACCP plan.'
+        : 'Owner, manager, head chef or sous chef required to edit the HACCP plan.',
+    };
+  }
+  return { ok: true, userId: user.id };
+}
+
+/** Create or fetch the active HACCP plan for the calling user's site. */
+export async function ensureHaccpPlanAction(input: {
+  siteId: string;
+}): Promise<ActionResult<{ id: string }>> {
+  const gate = await requireHaccpRole(input.siteId);
+  if (!gate.ok) return gate;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: existing } = await supabase
+    .from('safety_haccp_plans')
+    .select('id')
+    .eq('site_id', input.siteId)
+    .neq('status', 'archived')
+    .maybeSingle();
+  if (existing) {
+    return { ok: true, data: { id: existing.id as string } };
+  }
+
+  const { data, error } = await supabase
+    .from('safety_haccp_plans')
+    .insert({
+      site_id: input.siteId,
+      status: 'draft',
+      body: {},
+      current_step: 1,
+    })
+    .select('id')
+    .single();
+  if (error || !data) return { ok: false, error: error?.message ?? 'Insert failed' };
+
+  revalidatePath('/safety/haccp');
+  return { ok: true, data: { id: data.id as string } };
+}
+
+/** Save a single step's content to the plan body. Merges with existing
+ *  body content so partial updates don't clobber other steps. */
+export async function saveHaccpStepAction(input: {
+  planId: string;
+  step: number;
+  content: Record<string, unknown>;
+  status?: 'draft' | 'in_progress' | 'review';
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: plan } = await supabase
+    .from('safety_haccp_plans')
+    .select('site_id, body, status')
+    .eq('id', input.planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: 'Plan not found' };
+  const gate = await requireHaccpRole(plan.site_id as string);
+  if (!gate.ok) return gate;
+
+  const prevBody = (plan.body as Record<string, unknown>) ?? {};
+  const nextBody = { ...prevBody, [`step_${input.step}`]: input.content };
+
+  const patch: Record<string, unknown> = {
+    body: nextBody,
+    current_step: input.step,
+  };
+  if (input.status) patch.status = input.status;
+  else if ((plan.status as string) === 'draft') patch.status = 'in_progress';
+
+  const { error } = await supabase
+    .from('safety_haccp_plans')
+    .update(patch)
+    .eq('id', input.planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/haccp');
+  revalidatePath('/safety');
+  return { ok: true };
+}
+
+/** Mark the plan as ready for review or signed off. Sign-off is restricted to owner + manager. */
+export async function setHaccpStatusAction(input: {
+  planId: string;
+  status: 'review' | 'signed';
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: plan } = await supabase
+    .from('safety_haccp_plans')
+    .select('site_id')
+    .eq('id', input.planId)
+    .maybeSingle();
+  if (!plan) return { ok: false, error: 'Plan not found' };
+  const gate = await requireHaccpRole(
+    plan.site_id as string,
+    input.status === 'signed',
+  );
+  if (!gate.ok) return gate;
+
+  const patch: Record<string, unknown> = { status: input.status };
+  if (input.status === 'signed') {
+    patch.signed_off_at = new Date().toISOString();
+    patch.signed_off_by = gate.userId;
+  }
+  const { error } = await supabase
+    .from('safety_haccp_plans')
+    .update(patch)
+    .eq('id', input.planId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/haccp');
+  revalidatePath('/safety');
+  return { ok: true };
+}
+
 export async function archiveCleaningTaskAction(input: {
   taskId: string;
 }): Promise<ActionResult> {

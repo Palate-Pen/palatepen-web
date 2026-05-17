@@ -93,7 +93,7 @@ Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
 | Compliance Health Card (weighted 5-factor) | ✅ | Safety add-on | `/safety` |
 | User attribution stamps on every event row | ✅ | Safety add-on | resolveSafetyUsers helper |
 | Locked liability wording + onboarding ack | ✅ | Safety add-on | `SafetyOnboardingModal`, `LiabilityFooter` |
-| HACCP wizard | 🔴 intro + step-1 stub | Safety add-on | `/safety/haccp` (steps 1–9 pending) |
+| HACCP wizard | 🟡 steps 1–3 live, 4–9 stub | Safety add-on | `/safety/haccp` |
 | EHO export bundle (preview) | ✅ | Safety add-on | `/safety/eho` |
 | EHO export PDF generation | 🔴 button disabled | Safety add-on | needs `react-pdf` wire-up |
 | EHO inspector visit log | 🔴 schema only | Safety add-on | `v2.safety_eho_visits` referenced, no UI |
@@ -649,6 +649,21 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 4 — 2026-05-17 PM (HACCP wizard — steps 1-3 live)
+
+The HACCP wizard at `/safety/haccp` is no longer a stub. Schema, save-as-you-go state, three live steps with auto-population, and stub forms for steps 4–9 that next batch will flesh out.
+
+- **Migration `20260517000005_v2_safety_haccp_plans.sql`** — additive: adds `body JSONB`, `current_step int`, `signed_off_at`, `signed_off_by` to the existing `safety_haccp_plans` table (skeleton landed in Batch v1 of Safety). Expands status check constraint to `{draft, in_progress, review, signed, active, archived}`. Defaults `name` so the wizard can insert without supplying one. Adds a unique index `(site_id) where status != 'archived'` so each site has at most one active plan. Drops the orphan `haccp_plan_status` enum left by a partial apply.
+- **`src/lib/safety/haccp.ts`** — types for the JSONB shape per step, `getHaccpPlan(siteId)`, `getHaccpPrefill(siteId)` (pulls site name, team size, recipe count + allergen + protein-category inference), `planCompletePct()`, status labels + tones.
+- **`src/lib/safety/actions.ts`** — `ensureHaccpPlanAction`, `saveHaccpStepAction` (merges into body), `setHaccpStatusAction` with sign-off restricted to owner + manager. Role gate accepts owner / manager / deputy_manager / head_chef / sous_chef for edits.
+- **`src/components/safety/HaccpSidebar.tsx`** — sidebar with active state + ✓ for completed steps (steps that have content in body).
+- **`src/components/safety/HaccpWizardClient.tsx`** — main client orchestrator. Plan status pill, completeness %, step 1–3 form components, stub forms for 4–9, prev/next nav, Mark for review (when ≥70% complete) and Sign off buttons.
+- **Step 1 — Business profile**: trading name, FSA reg, kitchen type (8 options), team size, services (8 chips), notes. Pre-fills trading name from `sites.name`, kitchen type from dish-mix inference, team size from membership count. Gold "pre-filled" badges flag inferred values.
+- **Step 2 — Menu & hazard analysis**: editable flow-step list (Receive → Store → Prep → Cook → Hold → Serve seeded), editable hazard list seeded from recipe allergens (→ allergen hazards) + protein categories (→ biological hazards). Hazard kinds: biological / chemical / physical / allergen.
+- **Step 3 — Critical Control Points** with DishPicker. Three FSA-default CCPs seeded (Cooking ≥75°C, Hot hold ≥63°C, Chilled storage ≤8°C). Each CCP: name, linked hazard from step 2, critical limit, justification, and **multi-dish DishPicker** so an EHO inspector can see which menu items each CCP applies to.
+- **Steps 4–9 stubs**: each renders a "more detail lands next batch" banner + a single notes textarea + Save step button. Saved notes auto-migrate when the proper form fields land.
+- **Sign-off flow**: at ≥70% complete the "Mark for review" button appears. Once at review, an owner/manager can "Sign off" → status flips to `signed`, `signed_off_at` + `signed_off_by` stamped.
+
 ### Batch 3 — 2026-05-17 PM (role-hierarchy gate alignment)
 
 Cross-checked the live implementation against the role-hierarchy spec and fixed the two mismatches found.
@@ -689,12 +704,12 @@ Cross-checked the live implementation against the role-hierarchy spec and fixed 
 
 ---
 
-## Build-order recommendation (post-Batch 2)
+## Build-order recommendation (post-Batch 4)
 
-DishPicker is now live across probe / incident / waste / cleaning / training. Highest-leverage next builds:
+HACCP wizard steps 1–3 are live with save-as-you-go + auto-population + DishPicker on CCPs. The £20/mo Safety upsell story now has a concrete demo flow. Highest-leverage next builds:
 
-1. **HACCP wizard form fields** — completes the Safety wedge and the £20/mo upsell story. DishPicker will land naturally on Step 3 (Critical Control Points) and Step 5 (Monitoring procedures) when the form scaffolding is built.
-2. **EHO PDF export** — inspector-ready output is the most concrete safety value-prop.
+1. **HACCP wizard steps 4–9** — flesh out the stub forms (critical limits, monitoring procedures, corrective actions, verification, doc generation, annual review). Auto-populate from probe rules, cleaning schedule, and training records where possible.
+2. **EHO PDF export** — `/safety/eho` renders a live preview, the Export button is disabled. Wire `react-pdf` to generate the bundle. Once the HACCP plan is signed off it's the most concrete safety value-prop for the demo.
 3. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
 4. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
 5. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
