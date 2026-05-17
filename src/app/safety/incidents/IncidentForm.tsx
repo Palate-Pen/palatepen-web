@@ -8,6 +8,8 @@ import {
   ALLERGEN_LABEL,
   type AllergenCode,
 } from '@/lib/safety/standards';
+import { DishPicker, type DishPickerValue } from '@/components/safety/DishPicker';
+import type { DishPickerBands } from '@/lib/safety/dish-picker';
 
 type Kind = 'complaint' | 'allergen' | 'near_miss' | 'illness';
 type Severity = 'low' | 'medium' | 'high';
@@ -105,12 +107,12 @@ const CORRECTIVE_ACTIONS: Array<{ key: string; label: string }> = [
   { key: 'insurer_notified', label: 'Insurer notified' },
 ];
 
-export function IncidentForm() {
+export function IncidentForm({ bands }: { bands: DishPickerBands }) {
   const router = useRouter();
   const [kind, setKind] = useState<Kind>('complaint');
   const [severity, setSeverity] = useState<Severity>('low');
   const [allergens, setAllergens] = useState<AllergenCode[]>([]);
-  const [dish, setDish] = useState('');
+  const [dish, setDish] = useState<DishPickerValue>({ recipe_id: null, text: '' });
   const [dateLabel, setDateLabel] = useState(() => formatDate(new Date()));
   const [service, setService] = useState('');
   const [narrative, setNarrative] = useState('');
@@ -146,16 +148,17 @@ export function IncidentForm() {
       return;
     }
 
+    const dishText = dish.text.trim();
     const summary = buildSummary({
       kindLabel: kindCfg.label,
-      dish: dish.trim(),
+      dish: dishText,
       narrative: narrative.trim(),
     });
 
     const body = buildBody({
       severity,
       service: service.trim(),
-      dish: dish.trim(),
+      dish: dishText,
       actions: CORRECTIVE_ACTIONS.filter((a) => actions.has(a.key)).map(
         (a) => a.label,
       ),
@@ -168,6 +171,7 @@ export function IncidentForm() {
         kind,
         summary,
         body_md: body,
+        recipe_id: dish.recipe_id,
         allergens: allergens.length > 0 ? allergens : null,
         customer_name:
           customerName.trim() === '' ? null : customerName.trim(),
@@ -183,7 +187,7 @@ export function IncidentForm() {
         setNarrative('');
         setActions(new Set());
         setAllergens([]);
-        setDish('');
+        setDish({ recipe_id: null, text: '' });
         setService('');
         setCustomerName('');
         setCustomerContact('');
@@ -313,19 +317,15 @@ export function IncidentForm() {
         </a>
       </FormSection>
 
-      <FormSection label="Dish Involved" meta="link to the menu item · or type">
-        <input
-          type="text"
+      <div className="mb-7">
+        <DishPicker
+          bands={bands}
           value={dish}
-          onChange={(e) => setDish(e.target.value)}
-          placeholder="e.g. Knafeh · Slow-cooked lamb shoulder · staff bread"
-          className="w-full px-3 py-2.5 border border-rule bg-paper font-serif text-base text-ink focus:border-gold focus:outline-none"
+          onChange={setDish}
+          label="Dish Involved"
+          meta="pick from today's menu / prep / library · staff food can be typed"
         />
-        <p className="font-serif italic text-xs text-muted mt-2">
-          Live menu + recipe library picker lands in the next batch. For
-          now type the dish — staff food and amuse bouche are fine too.
-        </p>
-      </FormSection>
+      </div>
 
       <FormSection label="When It Happened" meta="date and service">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

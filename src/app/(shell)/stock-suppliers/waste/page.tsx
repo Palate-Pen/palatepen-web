@@ -1,6 +1,7 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getWaste, wasteCategoryLabel, type WasteRow } from '@/lib/waste';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getDishPickerBands } from '@/lib/safety/dish-picker';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { PrintButton } from '@/components/shell/PrintButton';
@@ -32,13 +33,14 @@ const dateTimeFmt = new Intl.DateTimeFormat('en-GB', {
 export default async function WastePage() {
   const ctx = await getShellContext();
   const supabase = await createSupabaseServerClient();
-  const [data, ingredientsResp] = await Promise.all([
+  const [data, ingredientsResp, dishBands] = await Promise.all([
     getWaste(ctx.siteId),
     supabase
       .from('ingredients')
       .select('id, name, unit, current_price')
       .eq('site_id', ctx.siteId)
       .order('name', { ascending: true }),
+    getDishPickerBands(ctx.siteId, 'food'),
   ]);
   const bankIngredients: BankIngredientOption[] = (
     ingredientsResp.data ?? []
@@ -66,7 +68,7 @@ export default async function WastePage() {
         </div>
         <div className="flex items-center gap-3 flex-wrap print-hide">
           {data.recent.length > 0 && <PrintButton label="Print waste log" />}
-          <LogWasteDialog bankIngredients={bankIngredients} />
+          <LogWasteDialog bankIngredients={bankIngredients} dishBands={dishBands} />
         </div>
       </div>
 

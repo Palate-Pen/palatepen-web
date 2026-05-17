@@ -2,6 +2,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getRecentProbeReadings } from '@/lib/safety/lib';
 import { resolveSafetyUsers } from '@/lib/safety/users';
 import { PROBE_KIND_LABEL } from '@/lib/safety/standards';
+import { getDishPickerBands } from '@/lib/safety/dish-picker';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import {
@@ -20,7 +21,10 @@ const tempFmt = new Intl.NumberFormat('en-GB', {
 
 export default async function ProbeReadingPage() {
   const ctx = await getShellContext();
-  const readings = await getRecentProbeReadings(ctx.siteId, 30);
+  const [readings, bands] = await Promise.all([
+    getRecentProbeReadings(ctx.siteId, 30),
+    getDishPickerBands(ctx.siteId),
+  ]);
 
   const today = new Date().toISOString().slice(0, 10);
   const todaysReadings = readings.filter((r) =>
@@ -66,7 +70,7 @@ export default async function ProbeReadingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
         <div>
-          <ProbeForm />
+          <ProbeForm bands={bands} />
         </div>
         <div>
           <FsaReferenceStrip surface="probe_readings" variant="full" />

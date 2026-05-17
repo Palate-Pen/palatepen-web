@@ -2,6 +2,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getRecentIncidents } from '@/lib/safety/lib';
 import { resolveSafetyUsers } from '@/lib/safety/users';
 import { INCIDENT_KIND_LABEL } from '@/lib/safety/standards';
+import { getDishPickerBands } from '@/lib/safety/dish-picker';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import {
@@ -15,7 +16,10 @@ export const metadata = { title: 'Log an issue · Safety · Palatable' };
 
 export default async function IncidentsPage() {
   const ctx = await getShellContext();
-  const incidents = await getRecentIncidents(ctx.siteId);
+  const [incidents, bands] = await Promise.all([
+    getRecentIncidents(ctx.siteId),
+    getDishPickerBands(ctx.siteId),
+  ]);
   const open = incidents.filter((i) => !i.resolved_at);
   const userById = await resolveSafetyUsers(
     incidents.slice(0, 6).map((i) => i.logged_by),
@@ -72,7 +76,7 @@ export default async function IncidentsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
         <div>
-          <IncidentForm />
+          <IncidentForm bands={bands} />
         </div>
         <div>
           <FsaReferenceStrip surface="incidents" variant="full" />

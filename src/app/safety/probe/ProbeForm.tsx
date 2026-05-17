@@ -8,14 +8,27 @@ import {
   PROBE_RULES,
   type ProbeKind,
 } from '@/lib/safety/standards';
+import { DishPicker, type DishPickerValue } from '@/components/safety/DishPicker';
+import type { DishPickerBands } from '@/lib/safety/dish-picker';
 
 const KINDS = Object.keys(PROBE_KIND_LABEL) as ProbeKind[];
 
-export function ProbeForm() {
+/** Probe kinds where the reading is taken against a specific dish. */
+const DISH_LINKED_KINDS = new Set<ProbeKind>([
+  'cooking',
+  'reheat',
+  'cooling',
+  'core_temp',
+  'hot_hold',
+  'delivery',
+]);
+
+export function ProbeForm({ bands }: { bands: DishPickerBands }) {
   const router = useRouter();
   const [kind, setKind] = useState<ProbeKind>('fridge');
   const [location, setLocation] = useState('');
   const [temp, setTemp] = useState('');
+  const [dish, setDish] = useState<DishPickerValue>({ recipe_id: null, text: '' });
   const [notes, setNotes] = useState('');
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ passed: boolean } | null>(null);
@@ -45,6 +58,7 @@ export function ProbeForm() {
         kind,
         location: location.trim(),
         temperature_c: t,
+        recipe_id: dish.recipe_id,
         notes: notes.trim() === '' ? null : notes.trim(),
       });
       if (!res.ok) {
@@ -54,6 +68,7 @@ export function ProbeForm() {
       setResult({ passed: res.data?.passed ?? false });
       setTemp('');
       setLocation('');
+      setDish({ recipe_id: null, text: '' });
       setNotes('');
       router.refresh();
     });
@@ -104,6 +119,19 @@ export function ProbeForm() {
           />
         </div>
       </div>
+
+      {DISH_LINKED_KINDS.has(kind) && (
+        <div className="mb-5">
+          <DishPicker
+            bands={bands}
+            value={dish}
+            onChange={setDish}
+            label="Dish (optional)"
+            meta="link the reading to a recipe so the audit trail snaps to a real menu item"
+            placeholder="e.g. Slow-cooked lamb shoulder · sauce mother · staff food"
+          />
+        </div>
+      )}
 
       <label className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted mb-2 block">
         Notes

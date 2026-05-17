@@ -8,6 +8,7 @@ import type { WasteCategory } from '@/lib/waste';
 
 export type WasteFormInput = {
   ingredient_id: string | null;
+  recipe_id: string | null;
   name: string;
   qty: number;
   qty_unit: string;
@@ -89,6 +90,7 @@ export async function logWaste(
     .insert({
       site_id: membership.site_id as string,
       ingredient_id: input.ingredient_id,
+      recipe_id: input.recipe_id,
       logged_by: user.id,
       name: input.name.trim(),
       qty: input.qty,

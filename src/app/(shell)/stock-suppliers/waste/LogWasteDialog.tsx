@@ -4,6 +4,8 @@ import { useState, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logWaste } from './actions';
 import type { WasteCategory } from '@/lib/waste';
+import { DishPicker, type DishPickerValue } from '@/components/safety/DishPicker';
+import type { DishPickerBands } from '@/lib/safety/dish-picker';
 
 export type BankIngredientOption = {
   id: string;
@@ -31,13 +33,16 @@ const gbp = new Intl.NumberFormat('en-GB', {
 
 export function LogWasteDialog({
   bankIngredients,
+  dishBands,
 }: {
   bankIngredients: BankIngredientOption[];
+  dishBands: DishPickerBands;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [ingredientId, setIngredientId] = useState<string | null>(null);
+  const [dish, setDish] = useState<DishPickerValue>({ recipe_id: null, text: '' });
   const [qty, setQty] = useState('');
   const [unit, setUnit] = useState('g');
   const [category, setCategory] = useState<WasteCategory>('over_prep');
@@ -80,6 +85,7 @@ export function LogWasteDialog({
     setOpen(false);
     setName('');
     setIngredientId(null);
+    setDish({ recipe_id: null, text: '' });
     setQty('');
     setUnit('g');
     setCategory('over_prep');
@@ -114,6 +120,7 @@ export function LogWasteDialog({
     startTransition(async () => {
       const res = await logWaste({
         ingredient_id: ingredientId,
+        recipe_id: dish.recipe_id,
         name: name.trim(),
         qty: qtyNum,
         qty_unit: unit,
@@ -244,6 +251,17 @@ export function LogWasteDialog({
                   ))}
                 </div>
               </Field>
+
+              <div>
+                <DishPicker
+                  bands={dishBands}
+                  value={dish}
+                  onChange={setDish}
+                  label="Linked dish (optional)"
+                  meta="link the waste to the dish being prepped, when there is one"
+                  placeholder="e.g. trim off the slow-cooked lamb"
+                />
+              </div>
 
               <Field
                 label={
