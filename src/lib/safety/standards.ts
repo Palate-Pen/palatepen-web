@@ -45,43 +45,43 @@ type Threshold = {
 export const PROBE_RULES: Record<ProbeKind, Threshold> = {
   fridge: {
     passes: (t) => t <= 8 && t >= -4,
-    note: 'Fridge: FSA requires <= 8 degrees Celsius (8 C).',
+    note: 'Fridge: FSA recommends 0-5 C; 8 C is the legal maximum (Food Safety and Hygiene Regs 2013).',
   },
   freezer: {
     passes: (t) => t <= -18,
-    note: 'Freezer: FSA requires <= -18 degrees Celsius (-18 C).',
+    note: 'Freezer: FSA target around -18 C.',
   },
   hot_hold: {
     passes: (t) => t >= 63,
-    note: 'Hot hold: FSA requires >= 63 degrees Celsius (63 C).',
+    note: 'Hot hold: FSA requires >= 63 C. Below 63 C is permitted for up to 2 hours, then cool to 8 C or discard.',
   },
   cooking: {
     passes: (t) => t >= 75,
-    note: 'Cooking: FSA requires core temperature >= 75 degrees Celsius (75 C) for 30 seconds.',
+    note: 'Cooking: FSA-listed equivalents - 60 C/45 min, 65 C/10 min, 70 C/2 min, 75 C/30 s. Standard recommendation is 70 C for 2 minutes core.',
   },
   reheat: {
     passes: (t) => t >= 75,
-    note: 'Reheat: FSA requires core temperature >= 75 degrees Celsius (75 C).',
+    note: 'Reheat: >= 75 C core, steaming hot all the way through. Food can only be reheated once.',
   },
   cooling: {
     passes: (t) => t <= 8,
-    note: 'Cooling: must reach <= 8 degrees Celsius (8 C) within 90 minutes.',
+    note: 'Cooling: must reach 8 C within 90 minutes (industry standard) or within 1-2 hours per FSA general guidance.',
   },
   delivery: {
     passes: (t) => t <= 8,
-    note: 'Delivery (chilled): <= 8 degrees Celsius (8 C) on arrival.',
+    note: 'Delivery (chilled): <= 8 C on arrival per FSA chilled food rules.',
   },
   core_temp: {
     passes: (t) => t >= 75 || t <= 8,
-    note: 'Core temperature must pass either hot or cold thresholds.',
+    note: 'Core temperature must pass either hot (>= 75 C) or cold (<= 8 C) thresholds.',
   },
   ambient: {
     passes: () => true,
-    note: 'Ambient reading — no fixed FSA threshold.',
+    note: 'Ambient reading - no fixed FSA threshold.',
   },
   other: {
     passes: () => true,
-    note: 'Free-form reading — operator judges acceptance.',
+    note: 'Free-form reading - operator judges acceptance.',
   },
 };
 

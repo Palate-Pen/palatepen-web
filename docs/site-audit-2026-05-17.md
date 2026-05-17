@@ -653,6 +653,39 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 9 — 2026-05-17 PM (FSA compliance audit)
+
+Verified the Palatable Safety module against the live FSA website (food.gov.uk) — cooking-safety guidance, chilled storage thresholds, the 14 regulated allergens, and SFBB pack scope. Findings and fixes:
+
+#### Tier 1 — shipped this batch
+
+- **`PROBE_RULES` notes upgraded** in `src/lib/safety/standards.ts` to cite the FSA's actual published equivalents and exceptions:
+  - **Cooking**: was just "75 C / 30 s". Now lists all four FSA-published equivalents (60 C/45 min · 65 C/10 min · 70 C/2 min · 75 C/30 s) and flags that **70 C / 2 min is the FSA's standard recommendation**, not 75 C / 30 s.
+  - **Reheat**: was just ">= 75 C". Now mentions "steaming hot all the way through" wording and the **reheat-once-only** rule.
+  - **Hot hold**: was just ">= 63 C". Now mentions the FSA's **2-hour grace below 63 C** (then cool to 8 C or discard).
+  - **Fridge**: was just "<= 8 C". Now distinguishes the **0-5 C FSA recommendation** from the **8 C legal maximum** (Food Safety and Hygiene Regs 2013).
+  - **Cooling**: now cites both the 90-minute industry/SFBB standard AND the FSA's general "1-2 hour" published guidance.
+  - The check-functions still use the legal/SFBB thresholds for pass/fail. Only the human-readable notes (stored on `safety_probe_readings.threshold_note` per reading) got more precise.
+
+#### Tier 2 — verified correct (no change needed)
+
+- **14 UK FIR allergens** in `ALLERGEN_LABEL` — exact match with FSA's published list (celery / cereals containing gluten / crustaceans / eggs / fish / lupin / milk / molluscs / mustard / peanuts / sesame / soybeans / sulphites / tree nuts).
+- **HACCP 7 principles** all covered in the wizard (Step 2 hazard analysis · Step 3 CCPs · Step 4 critical limits · Step 5 monitoring · Step 6 corrective actions · Step 7 verification · Step 8 documentation — covers all 7 Codex principles).
+- **EHO 3-category mapping** — evidence tiles + posture metrics map to the FSA's three inspection areas (food hygiene practices / structural compliance / confidence in management).
+- **Probe pass/fail thresholds** all match FSA: cooking 75 C · hot hold 63 C · chilled 8 C · freezer -18 C · reheat 75 C · cooling target 8 C.
+- **Liability text** (LiabilityFooter + HaccpLiabilityFooter) — appropriate scope, doesn't claim certification or legal advice.
+
+#### Tier 3 — gaps to close (added to Founder Ops checklist)
+
+These are SFBB-required records / FSA-defined features the system doesn't yet capture:
+
+- **Closing checks** — SFBB requires end-of-day verification (everything cleaned, fridges checked, surfaces sanitised, waste out, locked up). We have Opening Checks only. Would extend `safety_opening_checks` with a kind column or add a sibling `safety_closing_checks` table.
+- **Fitness-to-work / illness register** — SFBB requires an individual staff illness log (gastrointestinal symptoms, skin conditions, etc.). The opening check has a coarse `staff_health` question but no per-person log. Could extend `safety_incidents.kind` to include 'illness_register' or stand a new table up.
+- **Pest control records** — SFBB asks for pest control contractor name, visit frequency, and any sightings. Not in the system. Would need a small `safety_pest_control` table + a tile on the EHO evidence grid.
+- **PPDS allergen labels (Natasha's Law)** — Food Information Regulations 2014 require pre-packed-for-direct-sale items to carry a full ingredient list with the 14 allergens emphasised. We track allergens at ingredient level but don't generate the label PDFs. Would be a sibling to the existing HACCP plan + Chef reference card PDF templates.
+- **Dedicated probe calibration log** — FSA recommends weekly calibration using ice slurry (0 C) and boiling water (100 C). Currently a tick-box on opening checks; FSA prefers a dated, witnessed record with calibration value captured. Could add a `safety_probe_calibrations` table or extend `safety_probe_readings.kind` with 'calibration_ice' / 'calibration_boil'.
+- **Records retention reminder** — UK guidance recommends keeping food safety records for at least 90 days (small caterers) up to 4 years (high-risk sectors). We retain indefinitely which is safer; no change but worth a settings note for accounts that want to archive.
+
 ### Batch 8 — 2026-05-17 PM (Bar spillage log dialog + menu-builder decision)
 
 - **Bar spillage dedicated `LogSpillageDialog`** at `/bartender/back-bar/spillage`. The page was read-only before — bar staff had no native way to log spillage from their own surface. Now there's a "+ Log spillage" button in the header.
@@ -767,14 +800,16 @@ Cross-checked the live implementation against the role-hierarchy spec and fixed 
 
 ---
 
-## Build-order recommendation (post-Batch 8)
+## Build-order recommendation (post-Batch 9)
 
-Safety wedge end-to-end shipped, bar surfaces gained their own spillage log, menu builder harmonisation decision made (skip — keep AddPlanItemDialog). Highest-leverage next builds:
+Safety wedge ships end-to-end and is FSA-compliance-verified at the threshold + allergen + HACCP-principle level. Two pieces of SFBB scope are still missing (closing checks, illness register) and one Natasha's-Law deliverable (PPDS labels). Highest-leverage next builds:
 
 1. **Stripe £20/site/mo Safety upsell webhook** — `accounts.safety_enabled` boolean exists, the Safety surfaces are gated. Need a Stripe price ID, checkout flow with `?addon=safety`, webhook handler that flips the flag on subscription update. Highest revenue leverage now that the wedge is shipped.
-2. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage. Currently stubbed buttons in AddNoteDialog.
-3. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
-4. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
-5. **End-to-end signup smoke test** — new user → site/account/membership/RLS/defaults round-trip.
+2. **SFBB Tier 3 completeness — closing checks + illness register + pest control records** — three small additions that finish the SFBB-aligned daily record. Each is a small table or `kind` extension; together they take Palatable from "covers most of SFBB" to "covers all of SFBB".
+3. **PPDS allergen labels (Natasha's Law)** — single-page label PDF generation, sibling to the existing HACCP plan / reference card / EHO PDFs. Triggers off recipes with `ppds: true` flag (would need a recipe migration to add it).
+4. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage.
+5. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
+6. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard).
+7. **End-to-end signup smoke test** — new user → site/account/membership/RLS/defaults round-trip.
 
 Everything else lines up behind these.
