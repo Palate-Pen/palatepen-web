@@ -649,6 +649,22 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 3 — 2026-05-17 PM (role-hierarchy gate alignment)
+
+Cross-checked the live implementation against the role-hierarchy spec and fixed the two mismatches found.
+
+- **Magic-link signin → role-aware home** — `/auth/callback/route.ts` previously honored only the `next` query param and fell back to `/`. Now uses `defaultHomeForCurrentUser()` (already used by password signin in `src/lib/actions/auth.ts`) so owners land on `/owner`, bar staff on `/bartender`, managers on `/manager`, kitchen on `/`. Explicit `next` values (e.g. `/onboarding` after signup, deep-links) still win.
+- **Settings gates tightened to `isTop`** — three sections were gated by `canSeeManager` (i.e. any manager+/owner), which on Group tier with multiple managers leaks Switch Surface / Team & Permissions to non-top users. Now:
+  - Chef `/settings` — Switch Surface gate `(canSeeManager \|\| isFounder)` → `(isTop \|\| isFounder)`.
+  - Chef `/settings` — Team & Permissions gate `canSeeManager` → `isTop`.
+  - Bartender `/bartender/settings` — Team & Permissions gate `canSeeManager` → `isTop`.
+  - Manager `/manager/settings` — Team & Permissions section had no gate; now wrapped in `{isTop && (...)}`.
+- **Already correct, verified:**
+  - `defaultHomePath` + `defaultHomeForCurrentUser` in `src/lib/role-home.ts` cover all role keys (owner / manager / bartender / head_bartender / bar_back / chef / sous_chef / commis / viewer).
+  - `isTopRoleOnAccount` correctly returns true for Pro-tier solo users (they're trivially the highest rank) and for the highest-ranked user on Kitchen / Group tier.
+  - `ROLE_LABEL` + `ROLE_DESCRIPTION` in `src/lib/roles.ts` match the spec exactly (Owner top access · Manager site · Deputy Manager site · Head/Sous Chef kitchen write · Chef read+prep only · Head Bartender bar write · Bartender read+prep only · Supervisor cross-domain read+write no settings).
+  - Chef shell `(shell)/page.tsx` deliberately does NOT redirect non-chef users (would create a Switch-Surface→Chef render loop). Only the post-signin path enforces role-aware routing — once landed, `/` stays as chef shell.
+
 ### Batch 2 — 2026-05-17 PM (DishPicker on cleaning + training)
 
 - **Cleaning signoff** — `CleaningTickRow` keeps the single-click "Tick done" UX but gains an expand caret (▾) that reveals an inline DishPicker + notes input. "Tick with details" submits a signoff with optional `recipe_id` + `notes`. `signoffCleaningTaskAction` updated to accept an options bag; page fetches bands and passes them down.

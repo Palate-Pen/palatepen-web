@@ -66,7 +66,7 @@ export default async function SettingsPage() {
     <div className="px-4 sm:px-8 lg:px-10 pt-6 lg:pt-12 pb-12 lg:pb-20 max-w-[800px] mx-auto">
       <h1 className="font-serif text-4xl font-normal leading-[1.1] tracking-[-0.015em] text-ink mb-8">Settings</h1>
 
-      {canSeeManager && (
+      {isTop && (
         <Section title="Team & Permissions">
           <Link
             href={ctx.role === 'owner' ? '/owner/team' : '/manager/team'}
@@ -90,7 +90,7 @@ export default async function SettingsPage() {
         </Section>
       )}
 
-      {(canSeeManager || isFounder) && (
+      {(isTop || isFounder) && (
         <Section title="Switch Surface">
           {canSeeManager && (
             <SurfaceLink

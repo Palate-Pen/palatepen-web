@@ -56,7 +56,7 @@ export default async function BarSettingsPage() {
         </Section>
       )}
 
-      {canSeeManager && (
+      {isTop && (
         <Section title="Team & Permissions">
           <Link
             href={ctx.role === 'owner' ? '/owner/team' : '/manager/team'}
