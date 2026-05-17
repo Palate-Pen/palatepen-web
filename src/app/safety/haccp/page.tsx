@@ -1,4 +1,4 @@
-import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
+import { HaccpLiabilityFooter } from '@/components/safety/HaccpLiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import { SafetyPageHeader } from '@/components/safety/SafetyPageHeader';
 import { HaccpWizardClient } from '@/components/safety/HaccpWizardClient';
@@ -36,7 +36,7 @@ export default async function HaccpPage() {
         <FsaReferenceStrip surface="haccp" variant="full" />
       </div>
 
-      <LiabilityFooter />
+      <HaccpLiabilityFooter />
     </div>
   );
 }

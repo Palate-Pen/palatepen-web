@@ -93,7 +93,7 @@ Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
 | Compliance Health Card (weighted 5-factor) | ✅ | Safety add-on | `/safety` |
 | User attribution stamps on every event row | ✅ | Safety add-on | resolveSafetyUsers helper |
 | Locked liability wording + onboarding ack | ✅ | Safety add-on | `SafetyOnboardingModal`, `LiabilityFooter` |
-| HACCP wizard | 🟡 steps 1–3 live, 4–9 stub | Safety add-on | `/safety/haccp` |
+| HACCP wizard | ✅ all 9 steps live (PDF export deferred) | Safety add-on | `/safety/haccp` |
 | EHO export bundle (preview) | ✅ | Safety add-on | `/safety/eho` |
 | EHO export PDF generation | 🔴 button disabled | Safety add-on | needs `react-pdf` wire-up |
 | EHO inspector visit log | 🔴 schema only | Safety add-on | `v2.safety_eho_visits` referenced, no UI |
@@ -649,6 +649,21 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 5 — 2026-05-17 PM (HACCP wizard — all 9 steps + mockup alignment)
+
+Built against `docs/strategy/mockups/palatable-safety-2026-05-15/01-mockups/chef-safety-haccp-mockup-v1.html`. Step 1 realigned to match mockup exactly, Steps 4–9 built as real forms (Step 8 PDF export still deferred until react-pdf lands).
+
+- **Step 1 realigned** — Kitchen Type is now a 6-option picker-card grid (Restaurant / Gastropub / Café / Takeaway-Delivery / Catering-Events / Food Truck-Stall). Services Offered is an 8-option 2-col check-card grid (Dine-in à la carte / Pre-booked events / Bar-cocktails / Takeaway / Delivery / PPDS / Outdoor / Vulnerable groups). Team Size is a 4-band picker (1-3 / 4-10 / 11-25 / 26+). Added Legal Entity and Person Responsible fields. Pre-fill visual changed from a badge to a gold input border + gold-bg fill, matching the mockup spec. Every field has an italic 1-line hint explaining purpose + source.
+- **getHaccpPrefill extended** — pulls Person Responsible from `safety_training` (highest-priority cert holder: haccp > L3 > L2 > L1; expiry date shown if present). team_size_band derived from membership count.
+- **Step 4 — Critical limits** — per-CCP row with FSA defaults pre-filled by name match (cook→≥75°C, hot hold→≥63°C, chilled→≤8°C, freezer→≤−18°C, cool→63°C→8°C/90min). Parameter / operator / min / max / unit / reference fields.
+- **Step 5 — Monitoring** — per CCP, with explicit "Maps to" dropdown that ties the CCP to a Safety tab source (probe / cleaning / opening_check / training / incident / manual). What / Who / How / Frequency capture the operational detail.
+- **Step 6 — Corrective actions** — built-in 11-item library covering re-cook, reject delivery, isolate stock, discard, maintenance flag, FOH brief, EHO notify, insurer notify, retrain, review HACCP, deep clean. Per CCP: library check-cards (auto-selected by name match) + custom notes + who-decides.
+- **Step 7 — Verification & review** — 4-cadence picker (monthly / quarterly / biannual / annual), who-reviews, last + next review dates, notes for trigger events.
+- **Step 8 — Document generation preview** — three artefact cards (HACCP plan PDF, chef's reference card, Safety tab cross-references) with disabled Generate buttons + "pending react-pdf wiring" hint. Acknowledge-and-ready-to-sign-off checkbox.
+- **Step 9 — Annual review reminder** — date picker defaulted to 12 months from today, surface-on-Looking-Ahead toggle, notes.
+- **Wizard footer realigned** — green dot + "Saved as draft · HH:MM" status indicator (per mockup). Buttons: Prev / Save & exit / Mark for review (when ≥70%) / Sign off (when in review) / Continue to step N.
+- **HaccpLiabilityFooter** — stronger urgent-red full-border variant of the standard LiabilityFooter, "Stronger Notice — HACCP & Legal Documents" label, locked wording from the mockup spec.
+
 ### Batch 4 — 2026-05-17 PM (HACCP wizard — steps 1-3 live)
 
 The HACCP wizard at `/safety/haccp` is no longer a stub. Schema, save-as-you-go state, three live steps with auto-population, and stub forms for steps 4–9 that next batch will flesh out.
@@ -704,14 +719,15 @@ Cross-checked the live implementation against the role-hierarchy spec and fixed 
 
 ---
 
-## Build-order recommendation (post-Batch 4)
+## Build-order recommendation (post-Batch 5)
 
-HACCP wizard steps 1–3 are live with save-as-you-go + auto-population + DishPicker on CCPs. The £20/mo Safety upsell story now has a concrete demo flow. Highest-leverage next builds:
+The HACCP wizard now ships end-to-end (Step 8 PDF generation is the one outstanding piece). Highest-leverage next builds:
 
-1. **HACCP wizard steps 4–9** — flesh out the stub forms (critical limits, monitoring procedures, corrective actions, verification, doc generation, annual review). Auto-populate from probe rules, cleaning schedule, and training records where possible.
-2. **EHO PDF export** — `/safety/eho` renders a live preview, the Export button is disabled. Wire `react-pdf` to generate the bundle. Once the HACCP plan is signed off it's the most concrete safety value-prop for the demo.
-3. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
-4. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
-5. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
+1. **PDF generation for HACCP Step 8 + EHO export** — both produce inspector-ready bundles. Single `react-pdf` wire-up covers both. Closes the safety wedge.
+2. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
+3. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
+4. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage. Currently stubbed.
+5. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
+6. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
 
 Everything else lines up behind these.

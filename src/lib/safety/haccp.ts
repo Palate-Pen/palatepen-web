@@ -72,9 +72,12 @@ export type HaccpStep3 = {
 };
 
 export type HaccpStep4 = {
+  /** Per-CCP critical limit. Pre-filled from FSA defaults where the
+   *  CCP name maps to a known PROBE_RULES entry. */
   critical_limits: Array<{
     ccp_id: string;
-    parameter: string;
+    parameter: 'temperature' | 'time' | 'ph' | 'visual' | 'other';
+    operator: '>=' | '<=' | 'between' | 'visual';
     min_value: string;
     max_value: string;
     unit: string;
@@ -82,32 +85,152 @@ export type HaccpStep4 = {
   }>;
 };
 
+/** Where in the Safety tab a CCP is actually monitored day-to-day. */
+export type HaccpMonitorSource =
+  | 'probe'
+  | 'cleaning'
+  | 'opening_check'
+  | 'training'
+  | 'incident'
+  | 'manual';
+
+export const MONITOR_SOURCE_LABEL: Record<HaccpMonitorSource, string> = {
+  probe: 'Probe reading',
+  cleaning: 'Cleaning signoff',
+  opening_check: 'Opening check',
+  training: 'Training record',
+  incident: 'Incident log',
+  manual: 'Manual record',
+};
+
 export type HaccpStep5 = {
   monitoring: Array<{
     ccp_id: string;
+    source: HaccpMonitorSource;
     what: string;
     who: string;
     how: string;
     frequency: string;
-    record_where: string;
   }>;
 };
 
+/** Pre-built corrective action templates surfaced as a picker library
+ *  on Step 6. Chef can pick one (or more) per CCP and/or add custom. */
+export type CorrectiveActionTemplate = {
+  id: string;
+  label: string;
+  body: string;
+  applies_to: string[]; // CCP name keywords this template matches
+};
+
+export const CORRECTIVE_ACTION_LIBRARY: CorrectiveActionTemplate[] = [
+  {
+    id: 'recook',
+    label: 'Re-cook to target',
+    body: 'Return the affected portion to the heat until core temperature reaches the critical limit. Verify with probe before plating.',
+    applies_to: ['cook', 'reheat', 'core'],
+  },
+  {
+    id: 'reject_delivery',
+    label: 'Reject the delivery',
+    body: 'Refuse to sign for goods, log the discrepancy with the supplier, raise a credit note. Bin nothing without the supplier seeing the temperature first.',
+    applies_to: ['delivery', 'receive'],
+  },
+  {
+    id: 'isolate_stock',
+    label: 'Isolate affected stock',
+    body: 'Move the item out of service, label it "DO NOT USE" with date and signer, and quarantine until a manager has decided whether to discard or recover.',
+    applies_to: ['chilled', 'fridge', 'freezer'],
+  },
+  {
+    id: 'discard',
+    label: 'Discard',
+    body: 'Bin the item. Log it on Waste with category "spoilage" so the cost is captured.',
+    applies_to: ['chilled', 'freezer', 'fridge', 'spoilage'],
+  },
+  {
+    id: 'maintenance_flag',
+    label: 'Raise a maintenance flag',
+    body: 'Equipment failed — flag for engineer attention. Do not use the unit until tested. Move stock to a working unit.',
+    applies_to: ['fridge', 'freezer', 'hot hold', 'equipment'],
+  },
+  {
+    id: 'foh_brief',
+    label: 'Brief FOH before next service',
+    body: 'Pull FOH together pre-service, flag the dish/issue, confirm allergen comms and 86 list. Sign off completed.',
+    applies_to: ['allergen', 'allergy', 'incident', 'complaint'],
+  },
+  {
+    id: 'eho_notify',
+    label: 'Notify the local authority',
+    body: 'Contact the council EHO team within 24 hours. Provide incident log, customer details if known, and a copy of the relevant HACCP plan section.',
+    applies_to: ['allergen', 'illness', 'serious'],
+  },
+  {
+    id: 'insurer_notify',
+    label: 'Notify the insurer',
+    body: 'Email a copy of the incident log + corrective action to the insurance broker. Retain confirmation of receipt.',
+    applies_to: ['allergen', 'illness'],
+  },
+  {
+    id: 'retrain',
+    label: 'Retrain the team member',
+    body: 'Schedule a same-shift retraining with the section head. Log it in Training Records when complete.',
+    applies_to: ['training', 'allergen', 'allergy'],
+  },
+  {
+    id: 'review_haccp',
+    label: 'Review this HACCP step',
+    body: 'If the limit was breached because the procedure itself is wrong, raise an annual-review-ahead-of-schedule entry. Adjust the CCP, monitoring, or corrective action.',
+    applies_to: ['repeat', 'pattern'],
+  },
+  {
+    id: 'deep_clean',
+    label: 'Deep clean the area',
+    body: 'Stop production in the affected area. Deep clean, sanitise, and verify before reopening. Log it on the Cleaning Schedule.',
+    applies_to: ['cleaning', 'contamination', 'pest'],
+  },
+];
+
 export type HaccpStep6 = {
+  /** Per CCP: which library templates apply + any free-form additions. */
   corrective_actions: Array<{
     ccp_id: string;
-    action_md: string;
+    template_ids: string[];
+    custom_md: string;
     who_decides: string;
   }>;
 };
 
+export type HaccpReviewCadence = 'monthly' | 'quarterly' | 'biannual' | 'annual';
+
+export const REVIEW_CADENCE_LABEL: Record<HaccpReviewCadence, string> = {
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  biannual: 'Twice a year',
+  annual: 'Annual',
+};
+
 export type HaccpStep7 = {
   verification: {
-    schedule: string;
+    cadence: HaccpReviewCadence;
     who: string;
     last_review: string | null;
     next_review: string | null;
+    notes_md: string;
   };
+};
+
+export type HaccpStep8 = {
+  doc_generated_at: string | null;
+  doc_url: string | null;
+  preview_acknowledged: boolean;
+};
+
+export type HaccpStep9 = {
+  next_review_date: string | null;
+  reminder_set: boolean;
+  notes_md: string;
 };
 
 export type HaccpBody = {
@@ -118,6 +241,8 @@ export type HaccpBody = {
   step_5?: Partial<HaccpStep5>;
   step_6?: Partial<HaccpStep6>;
   step_7?: Partial<HaccpStep7>;
+  step_8?: Partial<HaccpStep8>;
+  step_9?: Partial<HaccpStep9>;
 };
 
 export type HaccpPlan = {
@@ -168,13 +293,24 @@ export async function getHaccpPlan(siteId: string): Promise<HaccpPlan | null> {
 export type HaccpPrefill = {
   trading_name: string;
   team_size: number;
+  team_size_band: '1-3' | '4-10' | '11-25' | '26+';
   kitchen_type_hint: string;
   services_hint: string[];
   recipe_count: number;
   has_bar: boolean;
   allergens: string[];
   protein_categories: string[];
+  /** Pulled from safety_training: highest-tier food safety cert holder
+   *  on the site. Empty string if no eligible training record. */
+  person_responsible: string;
 };
+
+function bandFromTeamSize(n: number): HaccpPrefill['team_size_band'] {
+  if (n <= 3) return '1-3';
+  if (n <= 10) return '4-10';
+  if (n <= 25) return '11-25';
+  return '26+';
+}
 
 /**
  * Pull a best-effort pre-fill bundle for Step 1 + 2 from existing
@@ -185,7 +321,7 @@ export type HaccpPrefill = {
 export async function getHaccpPrefill(siteId: string): Promise<HaccpPrefill> {
   const supabase = await createSupabaseServerClient();
 
-  const [siteResp, membershipsResp, recipesResp] = await Promise.all([
+  const [siteResp, membershipsResp, recipesResp, trainingResp] = await Promise.all([
     supabase.from('sites').select('name, kind').eq('id', siteId).maybeSingle(),
     supabase
       .from('memberships')
@@ -197,6 +333,11 @@ export async function getHaccpPrefill(siteId: string): Promise<HaccpPrefill> {
       .eq('site_id', siteId)
       .is('archived_at', null)
       .limit(200),
+    supabase
+      .from('safety_training')
+      .select('staff_name, kind, certificate_name, expires_on')
+      .eq('site_id', siteId)
+      .is('archived_at', null),
   ]);
 
   const siteName = (siteResp.data?.name as string | null) ?? '';
@@ -237,17 +378,46 @@ export async function getHaccpPrefill(siteId: string): Promise<HaccpPrefill> {
 
   // Naive services inference: most kitchens serve lunch + dinner.
   // Refined later from POS / menu_plans launch windows.
-  const services = ['lunch', 'dinner'];
+  const services: string[] = ['a_la_carte'];
+  if (hasBar) services.push('bar_cocktails');
+
+  // Person Responsible: highest-tier food hygiene cert holder. Order of
+  // preference: haccp > food_hygiene_l3 > food_hygiene_l2 > first
+  // training row found.
+  type TR = { staff_name: string; kind: string; certificate_name: string | null; expires_on: string | null };
+  const trainings = (trainingResp.data ?? []) as unknown as TR[];
+  const certPriority = ['haccp', 'food_hygiene_l3', 'food_hygiene_l2', 'food_hygiene_l1'];
+  const valid = trainings.filter((t) => {
+    if (!t.expires_on) return true;
+    return new Date(t.expires_on).getTime() >= Date.now();
+  });
+  let personResponsible = '';
+  for (const kind of certPriority) {
+    const hit = valid.find((t) => t.kind === kind);
+    if (hit) {
+      const certLabel = hit.certificate_name ?? kind.replace(/_/g, ' ');
+      const expiry = hit.expires_on
+        ? ` (valid to ${new Date(hit.expires_on).toLocaleDateString('en-GB', {
+            month: 'short',
+            year: 'numeric',
+          })})`
+        : '';
+      personResponsible = `${hit.staff_name} · ${certLabel}${expiry}`;
+      break;
+    }
+  }
 
   return {
     trading_name: siteName,
     team_size: teamSize,
-    kitchen_type_hint: hasBar ? 'restaurant_with_bar' : 'restaurant',
+    team_size_band: bandFromTeamSize(teamSize),
+    kitchen_type_hint: hasBar ? 'gastropub' : 'restaurant',
     services_hint: services,
     recipe_count: recipes.length,
     has_bar: hasBar,
     allergens: Array.from(allergens).sort(),
     protein_categories: Array.from(proteinCats).sort(),
+    person_responsible: personResponsible,
   };
 }
 
@@ -272,7 +442,9 @@ export const HACCP_STEPS: Array<{
 ];
 
 /** Estimate plan completeness as a 0-100 percentage based on which steps
- *  have any user content in body. */
+ *  have any user content in body. Steps 1-7 carry the bulk of the plan;
+ *  step 8 (doc generation) and step 9 (annual review reminder) count too
+ *  but are weighted equally for now. */
 export function planCompletePct(plan: HaccpPlan | null): number {
   if (!plan) return 0;
   const stepKeys: Array<keyof HaccpBody> = [
@@ -283,6 +455,8 @@ export function planCompletePct(plan: HaccpPlan | null): number {
     'step_5',
     'step_6',
     'step_7',
+    'step_8',
+    'step_9',
   ];
   let done = 0;
   for (const k of stepKeys) {
