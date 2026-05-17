@@ -654,6 +654,30 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 12 — 2026-05-17 PM (UX foundation: toast · tooltip · onboarding · skip-link)
+
+Triggered by a UX-principles research drop (Base 44 reference, plus the 8 user-friendly-UI principles). Built the foundation pieces every other UX improvement leans on — toast notifications, info tooltips, skip-to-content link, plus completed the onboarding flow.
+
+- **Global Toast provider** at `src/components/ui/Toaster.tsx` — `ToasterProvider` mounted in root layout; `useToast()` hook works anywhere. Four tones (info / success / error / warning), auto-dismiss, sticky option, optional action button (foundation for the undo pattern). Custom-built rather than `sonner`/`react-hot-toast` because the brand v8 tokens (gold accents, urgent reds, Cormorant + Cinzel) drive the visual language and a third-party lib would drag its own.
+- **InfoTip component** at `src/components/ui/Tooltip.tsx` — small "i" trigger that reveals a bubble on hover/focus/click. Keyboard-friendly, ARIA-correct, four-sided. Drop-in anywhere we want to explain a technical concept (FSA thresholds, pour-cost bands, GP target, etc.) without cluttering the UI.
+- **Skip-to-main-content link** in `src/app/layout.tsx` — `sr-only` + `focus:not-sr-only` per the WCAG 2.1 success criterion. Keyboard users tabbing into the page can jump straight past the sidebar to `#main`.
+- **Onboarding extended from stub to 3 real steps** — was just `Step 1 of 5` with a kitchen-name input that punched out to `/`. Now:
+  - **Step 1 — Kitchen name** (existed, redirect target changed to step 2).
+  - **Step 2 — About the kitchen** — kitchen type (6 picker cards, mirrors the HACCP wizard Step 1 options) · team size band (4 picker cards) · services (6 checkbox cards, mirrors HACCP services). Saves to `accounts.preferences.kitchen_type / team_size_band / services` and stamps `onboarding_profile_complete_at`.
+  - **Step 3 — You're ready** — 5-card tour explaining Chef / Manager / Owner / Safety viewers + the three first actions ("Add a recipe", "Scan your first invoice", "Tick today's opening check"). "Open my kitchen" button stamps `onboarding_complete_at` and redirects to home.
+  - Each step has clear progress bar + Back/Next + Skip CTAs. Errors surface via the standard urgent-stripe pattern.
+  - Steps 4–5 from the original "5 of 5" indicator were trimmed: the HACCP wizard pulls the same profile fields with auto-fill anyway, and onboarding doesn't need to duplicate that work.
+- **Toast + tooltip are now plumbed everywhere** — no further work needed to start using them. `import { useToast } from '@/components/ui/Toaster'` + `import { InfoTip } from '@/components/ui/Tooltip'`.
+
+#### Tier 3 — deferred follow-ups from this batch
+
+These were scoped in the same UX push but trimmed to keep the batch shippable:
+
+- **Undo pattern on destructive actions** — Toast system supports `action: { label: 'Undo', run: ... }`. Needs inverse server actions (`unarchiveRecipeAction`, `unarchiveNoteAction`, `unarchiveCleaningTaskAction`) + a thin wrapper that pushes the toast on archive. Then archive a recipe → toast with 5-second Undo → click flips `archived_at` back to null.
+- **Empty-state CTAs** — Recipes / Bank / Notebook / Margins all have functional empty states; adding explicit first-action CTAs ("Add first recipe" / "Scan spec sheet" / "Capture first note") would help new users discover the next move. Small per-page edits.
+- **Help tooltips sprinkled on technical labels** — `InfoTip` is ready; need to drop it next to FSA threshold copy on `/safety/probe`, pour-cost bands on `/bartender/margins`, GP target on `/margins`, Looking Ahead tags on every inbox.
+- **Full WCAG audit** — skip-link + focus-visible rings (Tailwind built-in) are foundation; full aria-label sweep on icon-only buttons (`×` close buttons, sort/filter carets, etc.) + colour-contrast pass on the `muted-soft` token (#A99B85 on paper-warm fails AA in some pairings) still pending.
+
 ### Batch 11 — 2026-05-17 PM (discoverability audit — no ghost features)
 
 Walked every ✅ row in the Feature summary against the live navigation surfaces (nav-config sidebars, button components on the cited route, inline anchors). Result:

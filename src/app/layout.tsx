@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Cormorant_Garamond, Cinzel, Jost } from 'next/font/google';
 import './globals.css';
 import { ImpersonationBanner } from '@/components/shell/ImpersonationBanner';
+import { ToasterProvider } from '@/components/ui/Toaster';
 
 // Serif — Cormorant Garamond. v8 design-system canon. Weights extended
 // to 400/500/600/700 (vs original 400+600) so body weight 500 default
@@ -67,8 +68,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body>
-        <ImpersonationBanner />
-        {children}
+        <ToasterProvider>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:font-display focus:font-semibold focus:text-[11px] focus:tracking-[0.3em] focus:uppercase focus:px-4 focus:py-2 focus:bg-ink focus:text-paper focus:border focus:border-gold"
+          >
+            Skip to main content
+          </a>
+          <ImpersonationBanner />
+          {children}
+        </ToasterProvider>
       </body>
     </html>
   );
