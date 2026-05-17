@@ -21,9 +21,9 @@ const dateFmt = new Intl.DateTimeFormat('en-GB', {
 // override lands.
 const TIER_PRICE: Record<string, number> = {
   free: 0,
-  pro: 25,
-  kitchen: 59,
-  group: 129,
+  pro: 49,
+  kitchen: 79,
+  group: 119,
   enterprise: 0,
 };
 

@@ -7,9 +7,9 @@ export const ADMIN_EMAIL = 'jack@palateandpen.co.uk';
  *  treated as £0 in MRR computation until per-account override lands. */
 const TIER_PRICE: Record<string, number> = {
   free: 0,
-  pro: 25,
-  kitchen: 59,
-  group: 129,
+  pro: 49,
+  kitchen: 79,
+  group: 119,
   enterprise: 0,
 };
 
