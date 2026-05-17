@@ -96,8 +96,9 @@ Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
 | HACCP wizard | ✅ all 9 steps live + PDF export | Safety add-on | `/safety/haccp` |
 | HACCP PDF — full plan | ✅ | Safety add-on | `/api/safety/haccp/[planId]/pdf` |
 | HACCP PDF — chef's reference card | ✅ | Safety add-on | `/api/safety/haccp/[planId]/reference-card` |
-| EHO export bundle (preview) | ✅ | Safety add-on | `/safety/eho` |
+| EHO Visit Mode control desk | ✅ | Safety add-on | `/safety/eho` (live timer · 10 evidence tiles · inspector card · visit log) |
 | EHO export PDF generation | ✅ | Safety add-on | `/api/safety/eho/pdf` (4-page bundle: cover + probes + incidents + cleaning/training) |
+| EHO visit log + outcome tracking | ✅ | Safety add-on | `v2.safety_eho_visits` (visit_log JSONB · outcome · FHRS rating) |
 | EHO inspector visit log | 🔴 schema only | Safety add-on | `v2.safety_eho_visits` referenced, no UI |
 | Cleaning signoff dish link | ✅ | Safety add-on | `/safety/cleaning` → expand caret on any row |
 | Training dish/menu link | ✅ | Safety add-on | `/safety/training` → "Linked dish (optional)" |
@@ -651,6 +652,25 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 7 — 2026-05-17 PM (EHO Visit Mode — live inspection control desk)
+
+Built against `chef-safety-eho-mockup-v1.html`. `/safety/eho` flips from a preview-of-tiles to a real **inspection control desk** that takes over when an EHO walks through the door — the most strategically important Safety surface per the mockup design notes.
+
+Mapped to the FSA's three inspection categories (per food.gov.uk's Food Hygiene Rating Scheme): **(1) food handling practices**, **(2) physical premises condition**, **(3) food safety management systems**. Every evidence tile cross-references one of these.
+
+- **Migration `20260517000010_v2_safety_eho_visit_log.sql`** — extends `v2.safety_eho_visits` with `visit_log JSONB`, `inspector_id_shown`, `visit_type` (routine/follow_up/complaint/spot_check/other). RLS split: insert/end stays owner+manager+deputy, log entries open to every active role so the chef at the pass can capture observations live.
+- **`src/lib/safety/eho-visit.ts`** + **`eho-visit-server.ts`** — types, status / tag / outcome enums, `getActiveEhoVisit`, `getRecentEhoVisits`. Same client/server split pattern as `haccp.ts` to keep the client bundle off `next/headers`.
+- **Server actions** in `safety/actions.ts` — `startEhoVisitAction`, `endEhoVisitAction`, `addEhoLogEntryAction`, `updateEhoVisitInspectorAction`. Arrival auto-logged on visit start.
+- **`EhoControlDesk.tsx`** — two modes:
+  - **Pre-visit:** dark "EHO at the door?" CTA card + "Enter EHO mode" reveal-form (captures inspector name / authority / ID / visit type), then live posture row + 10 evidence tiles + recent-visits history.
+  - **Live visit:** Command Header (dark ink/gold) · Visit Status row with **pulsing healthy dot** + **live elapsed timer** (animates every second) · 5-card Compliance Posture row (honest tone — flags real gaps, no inflated dashboard) · 10-tile Evidence Grid · Inspector Details card (editable, saves to row) · Live Visit Log with timestamped tagged entries (Arrival/Note/Observed/Requested/Action) + Add-as-they-happen input · End-visit card that captures outcome (pass / improvements / failed) + FHRS rating + closing notes.
+- **Three new evidence tiles** added beyond the original 8 (per mockup):
+  - **HACCP / SFBB Plan** — live status from `v2.safety_haccp_plans`. Open plan PDF if signed, else linked to the wizard.
+  - **Allergen Records** — 14 UK FIR allergens tracked, recipe coverage count, distinct allergens declared. Tone flips to attention if recipes have no allergen info.
+  - **Registration & History** — account + last-EHO-visit date + FHRS rating from `v2.safety_eho_visits` history.
+- **Compliance Posture** — 5 metrics honest to the mockup spec: Days Logged, Probe Readings (+ failing count), Deliveries, Cleaning Gaps, Training expiry status. Tone derives from real state — urgent for expired training, attention for cleaning gaps — not a smile-mask dashboard.
+- **FSA compliance** — verified the three inspection categories via the FSA's Food Hygiene Rating Scheme guidance. Posture metrics + tile groupings align. Liability text still locked.
+
 ### Batch 6 — 2026-05-17 PM (PDF generation for HACCP + EHO)
 
 Server-side PDF generation via `@react-pdf/renderer`. Three docs, three API routes, two enabled buttons. Closes the Safety wedge end-to-end — HACCP plan → signed → PDF → inspector handover.
@@ -735,9 +755,9 @@ Cross-checked the live implementation against the role-hierarchy spec and fixed 
 
 ---
 
-## Build-order recommendation (post-Batch 6)
+## Build-order recommendation (post-Batch 7)
 
-The Safety wedge ships end-to-end now: opening checks → diary → probes → incidents → cleaning → training → HACCP plan → signed → PDF → EHO bundle PDF. £20/site/mo Safety upsell is a complete demo. Highest-leverage next builds:
+The Safety wedge ships end-to-end with the EHO Visit Mode now functioning as the live inspection control desk — "the most strategically important page" per the mockup design notes. Highest-leverage next builds:
 
 1. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
 2. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.

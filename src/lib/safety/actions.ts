@@ -732,6 +732,249 @@ export async function setHaccpStatusAction(input: {
   return { ok: true };
 }
 
+// ---------- EHO Visit Mode ----------
+//
+// One active visit per site at a time. Start/end gated to owner /
+// manager / deputy_manager (matches the RLS insert policy added by
+// 20260517000010). Log entries open to every active role so the chef
+// at the pass can capture observations during the inspection.
+
+type EhoVisitTagInternal =
+  | 'arrival' | 'note' | 'observed' | 'requested' | 'action';
+type EhoVisitTypeInternal =
+  | 'routine' | 'follow_up' | 'complaint' | 'spot_check' | 'other';
+
+async function requireEhoVisitRole(
+  siteId: string,
+  startOrEnd: boolean = false,
+): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not signed in' };
+
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('site_id', siteId)
+    .maybeSingle();
+  if (!membership) return { ok: false, error: 'No membership on this site' };
+  const role = membership.role as string;
+  const allowed = startOrEnd
+    ? ['owner', 'manager', 'deputy_manager']
+    : [
+        'owner', 'manager', 'deputy_manager',
+        'head_chef', 'sous_chef', 'chef',
+        'head_bartender', 'bartender', 'supervisor',
+      ];
+  if (!allowed.includes(role)) {
+    return {
+      ok: false,
+      error: startOrEnd
+        ? 'Owner, manager or deputy manager required to start/end the visit.'
+        : 'No permission to log visit entries.',
+    };
+  }
+  return { ok: true, userId: user.id };
+}
+
+/** Start a new EHO visit. Fails if there's already an unfinished one. */
+export async function startEhoVisitAction(input: {
+  siteId: string;
+  inspectorName?: string | null;
+  inspectorAuthority?: string | null;
+  inspectorIdShown?: string | null;
+  visitType?: EhoVisitTypeInternal | null;
+}): Promise<ActionResult<{ id: string }>> {
+  const gate = await requireEhoVisitRole(input.siteId, true);
+  if (!gate.ok) return gate;
+
+  const supabase = await createSupabaseServerClient();
+  const { data: existing } = await supabase
+    .from('safety_eho_visits')
+    .select('id')
+    .eq('site_id', input.siteId)
+    .is('visit_end_at', null)
+    .is('archived_at', null)
+    .maybeSingle();
+  if (existing) {
+    return {
+      ok: false,
+      error: 'A visit is already in progress for this site.',
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+  const initialLog = [
+    {
+      at: nowIso,
+      tag: 'arrival',
+      body: input.inspectorName
+        ? `EHO arrived — ${input.inspectorName}${
+            input.inspectorAuthority ? ' · ' + input.inspectorAuthority : ''
+          }${input.inspectorIdShown ? ' · ID ' + input.inspectorIdShown : ''}.`
+        : 'EHO arrived.',
+      by: gate.userId,
+    },
+  ];
+
+  const { data, error } = await supabase
+    .from('safety_eho_visits')
+    .insert({
+      site_id: input.siteId,
+      visit_start_at: nowIso,
+      inspector_name: input.inspectorName ?? null,
+      inspector_authority: input.inspectorAuthority ?? null,
+      inspector_id_shown: input.inspectorIdShown ?? null,
+      visit_type: input.visitType ?? null,
+      visit_log: initialLog,
+    })
+    .select('id')
+    .single();
+  if (error || !data) {
+    return { ok: false, error: error?.message ?? 'Insert failed' };
+  }
+
+  revalidatePath('/safety/eho');
+  revalidatePath('/safety');
+  return { ok: true, data: { id: data.id as string } };
+}
+
+/** End the active visit. Captures outcome, rating, and a closing note. */
+export async function endEhoVisitAction(input: {
+  visitId: string;
+  outcome?: 'pass' | 'improvements_required' | 'failed' | null;
+  ratingAfter?: number | null;
+  notesMd?: string | null;
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: visit } = await supabase
+    .from('safety_eho_visits')
+    .select('site_id, visit_log')
+    .eq('id', input.visitId)
+    .maybeSingle();
+  if (!visit) return { ok: false, error: 'Visit not found' };
+  const gate = await requireEhoVisitRole(visit.site_id as string, true);
+  if (!gate.ok) return gate;
+
+  const nowIso = new Date().toISOString();
+  const prevLog = Array.isArray(visit.visit_log)
+    ? (visit.visit_log as Array<Record<string, unknown>>)
+    : [];
+  const nextLog = [
+    ...prevLog,
+    {
+      at: nowIso,
+      tag: 'note',
+      body: `Visit ended${
+        input.outcome ? ' · ' + input.outcome.replace('_', ' ') : ''
+      }${input.ratingAfter != null ? ` · FHRS ${input.ratingAfter}` : ''}.`,
+      by: gate.userId,
+    },
+  ];
+
+  const { error } = await supabase
+    .from('safety_eho_visits')
+    .update({
+      visit_end_at: nowIso,
+      outcome: input.outcome ?? null,
+      rating_after: input.ratingAfter ?? null,
+      notes_md: input.notesMd ?? null,
+      visit_log: nextLog,
+    })
+    .eq('id', input.visitId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/eho');
+  revalidatePath('/safety');
+  return { ok: true };
+}
+
+/** Append a single log entry to the active visit. Open to chef + bar
+ *  roles so the team at the pass can capture observations live. */
+export async function addEhoLogEntryAction(input: {
+  visitId: string;
+  tag: EhoVisitTagInternal;
+  body: string;
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: visit } = await supabase
+    .from('safety_eho_visits')
+    .select('site_id, visit_end_at, visit_log')
+    .eq('id', input.visitId)
+    .maybeSingle();
+  if (!visit) return { ok: false, error: 'Visit not found' };
+  if (visit.visit_end_at) {
+    return { ok: false, error: 'This visit has already ended.' };
+  }
+  const gate = await requireEhoVisitRole(visit.site_id as string, false);
+  if (!gate.ok) return gate;
+
+  const trimmed = input.body.trim();
+  if (!trimmed) return { ok: false, error: 'Log entry cannot be empty.' };
+
+  const prev = Array.isArray(visit.visit_log)
+    ? (visit.visit_log as Array<Record<string, unknown>>)
+    : [];
+  const next = [
+    ...prev,
+    {
+      at: new Date().toISOString(),
+      tag: input.tag,
+      body: trimmed,
+      by: gate.userId,
+    },
+  ];
+
+  const { error } = await supabase
+    .from('safety_eho_visits')
+    .update({ visit_log: next })
+    .eq('id', input.visitId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/eho');
+  return { ok: true };
+}
+
+/** Update the inspector details on an in-progress visit. */
+export async function updateEhoVisitInspectorAction(input: {
+  visitId: string;
+  inspectorName?: string | null;
+  inspectorAuthority?: string | null;
+  inspectorIdShown?: string | null;
+  visitType?: EhoVisitTypeInternal | null;
+}): Promise<ActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data: visit } = await supabase
+    .from('safety_eho_visits')
+    .select('site_id')
+    .eq('id', input.visitId)
+    .maybeSingle();
+  if (!visit) return { ok: false, error: 'Visit not found' };
+  const gate = await requireEhoVisitRole(visit.site_id as string, false);
+  if (!gate.ok) return gate;
+
+  const patch: Record<string, unknown> = {};
+  if (input.inspectorName !== undefined) patch.inspector_name = input.inspectorName;
+  if (input.inspectorAuthority !== undefined) patch.inspector_authority = input.inspectorAuthority;
+  if (input.inspectorIdShown !== undefined) patch.inspector_id_shown = input.inspectorIdShown;
+  if (input.visitType !== undefined) patch.visit_type = input.visitType;
+  if (Object.keys(patch).length === 0) {
+    return { ok: false, error: 'Nothing to update.' };
+  }
+
+  const { error } = await supabase
+    .from('safety_eho_visits')
+    .update(patch)
+    .eq('id', input.visitId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath('/safety/eho');
+  return { ok: true };
+}
+
 export async function archiveCleaningTaskAction(input: {
   taskId: string;
 }): Promise<ActionResult> {
