@@ -1,8 +1,13 @@
 import { getShellContext } from '@/lib/shell/context';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getDishPickerBands } from '@/lib/safety/dish-picker';
 import { KpiCard } from '@/components/shell/KpiCard';
 import { SectionHead } from '@/components/shell/SectionHead';
 import { PrintButton } from '@/components/shell/PrintButton';
+import {
+  LogSpillageDialog,
+  type CellarIngredientOption,
+} from './LogSpillageDialog';
 
 export const metadata = { title: 'Spillage & Waste — Bar — Palatable' };
 
@@ -54,17 +59,41 @@ export default async function BarSpillagePage() {
     Date.now() - 30 * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const { data: rows } = await supabase
-    .from('waste_entries')
-    .select(
-      'id, name, qty, qty_unit, value, logged_at, spillage_reason, reason_md',
-    )
-    .eq('site_id', ctx.siteId)
-    .not('spillage_reason', 'is', null)
-    .gte('logged_at', since30)
-    .order('logged_at', { ascending: false });
+  const [spillResp, cellarResp, dishBands] = await Promise.all([
+    supabase
+      .from('waste_entries')
+      .select(
+        'id, name, qty, qty_unit, value, logged_at, spillage_reason, reason_md',
+      )
+      .eq('site_id', ctx.siteId)
+      .not('spillage_reason', 'is', null)
+      .gte('logged_at', since30)
+      .order('logged_at', { ascending: false }),
+    supabase
+      .from('ingredients')
+      .select('id, name, unit, pack_volume_ml, current_price')
+      .eq('site_id', ctx.siteId)
+      .order('name', { ascending: true }),
+    getDishPickerBands(ctx.siteId, 'bar'),
+  ]);
 
-  const items = (rows ?? []) as SpillageRow[];
+  const items = (spillResp.data ?? []) as SpillageRow[];
+  const cellar: CellarIngredientOption[] = (
+    (cellarResp.data ?? []) as Array<{
+      id: string;
+      name: string;
+      unit: string | null;
+      pack_volume_ml: number | null;
+      current_price: number | null;
+    }>
+  ).map((r) => ({
+    id: r.id,
+    name: r.name,
+    unit: r.unit,
+    pack_volume_ml: r.pack_volume_ml,
+    current_price:
+      r.current_price == null ? null : Number(r.current_price),
+  }));
 
   const totalValue = items.reduce(
     (sum, r) => sum + Number(r.value ?? 0),
@@ -106,8 +135,9 @@ export default async function BarSpillagePage() {
             {subtitleFor(items.length, totalValue, topReason, patterns)}
           </p>
         </div>
-        <div className="print-hide">
+        <div className="print-hide flex items-center gap-3 flex-wrap">
           {items.length > 0 && <PrintButton label="Print spillage log" />}
+          <LogSpillageDialog cellar={cellar} dishBands={dishBands} />
         </div>
       </div>
 

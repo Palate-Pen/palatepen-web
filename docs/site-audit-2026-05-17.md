@@ -70,7 +70,8 @@ Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
 | Stock takes + variance (£ value) | ✅ | Free+ | `/stock-suppliers/stock-count`, `/bartender/back-bar/stock-take` |
 | Inter-site stock transfers | ✅ | Group | `/stock-suppliers/transfers`, `/bartender/back-bar/transfers` |
 | Waste log + category breakdown | ✅ | Free+ | `/stock-suppliers/waste` |
-| Bar spillage tracking + pattern detection | ✅ | Free+ | `/bartender/back-bar/spillage` (read), waste dialog (write) |
+| Bar spillage tracking + pattern detection | ✅ | Free+ | `/bartender/back-bar/spillage` |
+| Bar spillage dedicated log dialog | ✅ | Free+ | LogSpillageDialog on `/bartender/back-bar/spillage` (cellar autocomplete · bar units · 6-reason picker · DishPicker bar filter · value snapshot) |
 | Live dish picker on waste (linked recipe) | ✅ | Free+ | `LogWasteDialog` |
 
 ### Safety
@@ -652,6 +653,17 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 8 — 2026-05-17 PM (Bar spillage log dialog + menu-builder decision)
+
+- **Bar spillage dedicated `LogSpillageDialog`** at `/bartender/back-bar/spillage`. The page was read-only before — bar staff had no native way to log spillage from their own surface. Now there's a "+ Log spillage" button in the header.
+  - **Cellar autocomplete** — types into a name input with `<datalist>` populated from `v2.ingredients`. Matched bottles link to the Cellar (ingredient_id captured) and value snapshots from `current_price` × volume.
+  - **Bar units** — ml / cl / glass / bottle / each (vs chef Waste's g/kg/portions). ml/cl snapshots scale by `pack_volume_ml`.
+  - **6-reason pill grid** — Over-pour (attention) · Breakage (urgent) · Spillage (attention) · Comped (muted) · Returned (muted) · Expired (attention). Mapped to the chef Waste `category` enum via a server-side lookup so the same row appears correctly on both surfaces.
+  - **DishPicker (bar filter)** — optional "linked drink" to tie a spillage to a spec.
+  - **Value snapshot or override** — same UX as chef Waste.
+  - Writes to `v2.waste_entries` with `spillage_reason` set; same table both surfaces read.
+- **Menu builder add-dish UX harmonisation — investigated and skipped.** `AddPlanItemDialog` on `/manager/menu-builder?mode=planning` already has the right shape: name-search recipe picker + Placeholder mode (for dishes not yet built) + Popularity rating + Action chips (keep/add/revise/remove). The safety DishPicker lacks Placeholder + Popularity + Action — those affordances are essential for menu planning specifically (vs. safety, where you're recording something that already happened). Harmonising would be a downgrade.
+
 ### Batch 7 — 2026-05-17 PM (EHO Visit Mode — live inspection control desk)
 
 Built against `chef-safety-eho-mockup-v1.html`. `/safety/eho` flips from a preview-of-tiles to a real **inspection control desk** that takes over when an EHO walks through the door — the most strategically important Safety surface per the mockup design notes.
@@ -755,15 +767,14 @@ Cross-checked the live implementation against the role-hierarchy spec and fixed 
 
 ---
 
-## Build-order recommendation (post-Batch 7)
+## Build-order recommendation (post-Batch 8)
 
-The Safety wedge ships end-to-end with the EHO Visit Mode now functioning as the live inspection control desk — "the most strategically important page" per the mockup design notes. Highest-leverage next builds:
+Safety wedge end-to-end shipped, bar surfaces gained their own spillage log, menu builder harmonisation decision made (skip — keep AddPlanItemDialog). Highest-leverage next builds:
 
-1. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
-2. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
-3. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage. Currently stubbed.
-4. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
-5. **Stripe £20/site/mo Safety upsell webhook** — `accounts.safety_enabled` is the boolean; needs a price ID + checkout flow + webhook handler.
-6. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
+1. **Stripe £20/site/mo Safety upsell webhook** — `accounts.safety_enabled` boolean exists, the Safety surfaces are gated. Need a Stripe price ID, checkout flow with `?addon=safety`, webhook handler that flips the flag on subscription update. Highest revenue leverage now that the wedge is shipped.
+2. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage. Currently stubbed buttons in AddNoteDialog.
+3. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
+4. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
+5. **End-to-end signup smoke test** — new user → site/account/membership/RLS/defaults round-trip.
 
 Everything else lines up behind these.
