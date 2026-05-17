@@ -97,8 +97,8 @@ Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
 | EHO export bundle (preview) | ✅ | Safety add-on | `/safety/eho` |
 | EHO export PDF generation | 🔴 button disabled | Safety add-on | needs `react-pdf` wire-up |
 | EHO inspector visit log | 🔴 schema only | Safety add-on | `v2.safety_eho_visits` referenced, no UI |
-| Cleaning signoff dish link | ⏳ migration applied, UI pending | Safety add-on | — |
-| Training dish/menu link | ⏳ migration applied, UI pending | Safety add-on | — |
+| Cleaning signoff dish link | ✅ | Safety add-on | `/safety/cleaning` → expand caret on any row |
+| Training dish/menu link | ✅ | Safety add-on | `/safety/training` → "Linked dish (optional)" |
 | Stripe £20/site/mo Safety upsell | 🔴 flag exists, billing not wired | Safety add-on | `accounts.safety_enabled` |
 
 ### Intelligence (Looking Ahead)
@@ -649,6 +649,13 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 2 — 2026-05-17 PM (DishPicker on cleaning + training)
+
+- **Cleaning signoff** — `CleaningTickRow` keeps the single-click "Tick done" UX but gains an expand caret (▾) that reveals an inline DishPicker + notes input. "Tick with details" submits a signoff with optional `recipe_id` + `notes`. `signoffCleaningTaskAction` updated to accept an options bag; page fetches bands and passes them down.
+- **Training records** — `TrainingForm` gains a "Linked dish (optional)" field below the existing inputs. `addTrainingAction` accepts `recipe_id`; page fetches bands (`dishType: 'all'` since training spans the whole brigade) and passes them to the form.
+- **Deferred — menu builder** — `/manager/menu-builder` is already a dish-management surface (PlannerView + MenuBuilderClient deal exclusively with dishes). Adding the safety-domain DishPicker would be duplicative. Skipped this batch, needs UX investigation before wiring.
+- **Deferred — HACCP wizard stubs** — wizard at `/safety/haccp` is mostly stubbed beyond Step 1 intro. Pre-wiring DishPicker on speculative form fields is premature. Will wire when steps 1–9 scaffolding lands.
+
 ### Batch 1.5 — 2026-05-17 PM (housekeeping, shipped after Batch 1)
 
 - **Supabase CLI installed as project devDep** — `npx supabase ...` now works from `web/`. Memory entry at `reference_palateandpen_supabase_cli.md`. `.gitignore` updated to exclude `supabase/.temp/`.
@@ -656,28 +663,24 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
 - **Remote `supabase_migrations.schema_migrations` reset + rewritten** — 39 orphan MCP-stamped 14-digit entries reverted, 51 new entries written via `supabase migration repair --status applied` so the tracker matches local files 1:1. `npx supabase migration list --linked` now shows clean Local↔Remote alignment.
 - **Caveat preserved for future `db reset`** — alphabetical-within-date ordering doesn't match the original dependency order (e.g. `v2_foundation` should run first on 2026-05-14 but lands at synthetic timestamp `000009`). For the tracker this is fine; if you ever run a clean `db reset` against this schema you'll need to manually reorder some 2026-05-14 files.
 
-### Deferred to follow-up batch
+### Deferred (still pending after Batch 2)
 
-These were scoped in but pushed out of Batch 1:
-
-- **Cleaning signoff dish link** — migration written but action + signoff modal UI still to-do.
-- **Training records dish link** — migration written; `addTrainingAction` + add-training form still need wiring.
 - **Bar spillage dedicated log dialog** — bar spillage page is read-only today; spillage rows come from the chef LogWasteDialog. A dedicated bar create dialog with `spillage_reason` capture is a separate piece of work.
-- **Menu builder DishPicker** — needs investigation of how `/manager/menu-builder` currently lets you add dishes to a plan / section.
+- **Menu builder DishPicker** — needs UX investigation. `/manager/menu-builder` already manages dishes (Build mode + Planning mode via PlannerView). Adding the safety-domain DishPicker would duplicate existing flows; want to look at the add-dish UX in PlannerView before deciding.
 - **HACCP wizard DishPicker stubs** — wizard steps 1–9 are mostly stubbed; pre-wiring is premature until the wizard is scaffolded.
 - **Notebook AddNoteDialog** — already has a name-search recipe picker that links via `linked_recipe_ids`. Different shape from the tabbed DishPicker but functionally equivalent. Replace only if you want UX consistency.
 - **Prep / Mise add flow** — `prep_items.recipe_id` already exists and the add-prep flow already picks recipes. No change needed.
 
 ---
 
-## Build-order recommendation (post-Batch 1.5)
+## Build-order recommendation (post-Batch 2)
 
-The waste DishPicker FK column is now live and the migration tracker is in sync. Highest-leverage next builds:
+DishPicker is now live across probe / incident / waste / cleaning / training. Highest-leverage next builds:
 
-1. **Wire DishPicker into cleaning signoff + training** — `recipe_id` columns on both `safety_cleaning_signoffs` and `safety_training` are already in place from the 20260517000002 migration. Short wire-up jobs (signoff modal + add-training form).
-2. **HACCP wizard form fields** — completes the Safety wedge and the £20/mo upsell story. DishPicker stubs can be pre-wired during this build.
-3. **EHO PDF export** — inspector-ready output is the most concrete safety value-prop.
-4. **Menu builder DishPicker** — investigate `/manager/menu-builder` add-dish UX and harmonise.
+1. **HACCP wizard form fields** — completes the Safety wedge and the £20/mo upsell story. DishPicker will land naturally on Step 3 (Critical Control Points) and Step 5 (Monitoring procedures) when the form scaffolding is built.
+2. **EHO PDF export** — inspector-ready output is the most concrete safety value-prop.
+3. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
+4. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
 5. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
 
 Everything else lines up behind these.

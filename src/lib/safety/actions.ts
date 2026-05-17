@@ -235,7 +235,7 @@ export async function logIncidentAction(input: {
 /** Tick a cleaning task as done now. */
 export async function signoffCleaningTaskAction(
   taskId: string,
-  notes?: string | null,
+  options?: { notes?: string | null; recipe_id?: string | null },
 ): Promise<ActionResult> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -254,7 +254,8 @@ export async function signoffCleaningTaskAction(
     site_id: task.site_id,
     task_id: taskId,
     completed_by: user.id,
-    notes: notes ?? null,
+    notes: options?.notes ?? null,
+    recipe_id: options?.recipe_id ?? null,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -329,6 +330,7 @@ export async function addTrainingAction(input: {
   certificate_number?: string | null;
   awarded_on: string;
   expires_on?: string | null;
+  recipe_id?: string | null;
 }): Promise<ActionResult> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -357,6 +359,7 @@ export async function addTrainingAction(input: {
     certificate_number: input.certificate_number ?? null,
     awarded_on: input.awarded_on,
     expires_on: input.expires_on ?? null,
+    recipe_id: input.recipe_id ?? null,
   });
   if (error) return { ok: false, error: error.message };
 

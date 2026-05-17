@@ -1,6 +1,7 @@
 import { getShellContext } from '@/lib/shell/context';
 import { getTrainingRecords, type TrainingRow } from '@/lib/safety/lib';
 import { TRAINING_KIND_LABEL } from '@/lib/safety/standards';
+import { getDishPickerBands } from '@/lib/safety/dish-picker';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import {
@@ -40,7 +41,10 @@ const BAND_TONE: Record<TrainingRow['expiry_band'], string> = {
 
 export default async function TrainingPage() {
   const ctx = await getShellContext();
-  const rows = await getTrainingRecords(ctx.siteId);
+  const [rows, bands] = await Promise.all([
+    getTrainingRecords(ctx.siteId),
+    getDishPickerBands(ctx.siteId, 'all'),
+  ]);
 
   // Group by staff
   const byStaff = new Map<string, TrainingRow[]>();
@@ -105,7 +109,7 @@ export default async function TrainingPage() {
                 certificate or refresher
               </span>
             </div>
-            <TrainingForm />
+            <TrainingForm bands={bands} />
           </div>
         </div>
 

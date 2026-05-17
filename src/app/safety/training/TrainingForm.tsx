@@ -4,12 +4,14 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addTrainingAction } from '@/lib/safety/actions';
 import { TRAINING_KIND_LABEL } from '@/lib/safety/standards';
+import { DishPicker, type DishPickerValue } from '@/components/safety/DishPicker';
+import type { DishPickerBands } from '@/lib/safety/dish-picker';
 
 const KINDS = Object.keys(
   TRAINING_KIND_LABEL,
 ) as Array<keyof typeof TRAINING_KIND_LABEL>;
 
-export function TrainingForm() {
+export function TrainingForm({ bands }: { bands: DishPickerBands }) {
   const router = useRouter();
   const [staffName, setStaffName] = useState('');
   const [kind, setKind] = useState<keyof typeof TRAINING_KIND_LABEL>(
@@ -21,6 +23,7 @@ export function TrainingForm() {
     new Date().toISOString().slice(0, 10),
   );
   const [expiresOn, setExpiresOn] = useState('');
+  const [dish, setDish] = useState<DishPickerValue>({ recipe_id: null, text: '' });
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,7 @@ export function TrainingForm() {
         awarding_body: awardingBody.trim() === '' ? null : awardingBody.trim(),
         awarded_on: awardedOn,
         expires_on: expiresOn === '' ? null : expiresOn,
+        recipe_id: dish.recipe_id,
       });
       if (!res.ok) {
         setError(res.error);
@@ -50,6 +54,7 @@ export function TrainingForm() {
       setCertName('');
       setAwardingBody('');
       setExpiresOn('');
+      setDish({ recipe_id: null, text: '' });
       router.refresh();
     });
   }
@@ -138,6 +143,17 @@ export function TrainingForm() {
             className="w-full px-3 py-2.5 border border-rule bg-paper font-serif text-base text-ink focus:border-gold focus:outline-none"
           />
         </div>
+      </div>
+
+      <div className="mb-5">
+        <DishPicker
+          bands={bands}
+          value={dish}
+          onChange={setDish}
+          label="Linked dish (optional)"
+          meta="link the cert to a menu item it covers — e.g. allergen training against the summer tasting"
+          placeholder="e.g. all desserts · live fire section · house bread"
+        />
       </div>
 
       <div className="flex items-center gap-3 flex-wrap pt-4 border-t border-rule">

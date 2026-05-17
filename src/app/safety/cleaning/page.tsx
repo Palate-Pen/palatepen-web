@@ -2,6 +2,7 @@ import { getShellContext } from '@/lib/shell/context';
 import { getCleaningSchedule, type CleaningTaskRow } from '@/lib/safety/lib';
 import { resolveSafetyUsers } from '@/lib/safety/users';
 import { CLEANING_FREQ_LABEL } from '@/lib/safety/standards';
+import { getDishPickerBands } from '@/lib/safety/dish-picker';
 import { LiabilityFooter } from '@/components/safety/LiabilityFooter';
 import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import {
@@ -17,7 +18,10 @@ export const metadata = { title: 'Cleaning schedule · Safety · Palatable' };
 
 export default async function CleaningPage() {
   const ctx = await getShellContext();
-  const tasks = await getCleaningSchedule(ctx.siteId);
+  const [tasks, bands] = await Promise.all([
+    getCleaningSchedule(ctx.siteId),
+    getDishPickerBands(ctx.siteId, 'all'),
+  ]);
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -235,6 +239,7 @@ export default async function CleaningPage() {
                       lastByLabel={
                         t.last_completed_by ? userById.get(t.last_completed_by) ?? null : null
                       }
+                      bands={bands}
                     />
                   ))}
                 </div>
