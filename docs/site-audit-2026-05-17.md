@@ -244,11 +244,12 @@ Footer: Settings `/manager/settings`, Connections `/manager/connections`.
 | Business | Cash | `cash` | `/owner/cash` |
 | Business | Transfers | `prep` | `/owner/transfers` |
 | Business | Team | `team` | `/owner/team` |
+| Business | Reports | `reports` | `/owner/reports` |
+| Business | Bank Comparison | `stock-suppliers` | `/owner/bank-comparison` |
 | Intelligence | Alerts | `inbox` | `/owner/alerts` |
 | Intelligence | Inbox | `inbox` | `/owner/inbox` |
 
 Footer: Settings `/owner/settings`, Connections `/owner/connections`.
-**Sidebar omissions:** `/owner/reports` and `/owner/bank-comparison` exist but aren't linked in the sidebar — reachable only from Home quick-actions / Sites breadcrumb.
 
 ### SAFETY_SECTIONS
 
@@ -652,6 +653,20 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into `/safety/incidents` (replaces the "Dish Involved" free-form input).
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
+
+### Batch 11 — 2026-05-17 PM (discoverability audit — no ghost features)
+
+Walked every ✅ row in the Feature summary against the live navigation surfaces (nav-config sidebars, button components on the cited route, inline anchors). Result:
+
+- **100% coverage** — every feature documented as live has a working UI entry point: sidebar entry, button, modal trigger, or inline anchor. No ghost features.
+- **OWNER_SECTIONS table corrected** — the snapshot in this audit doc was stale and still claimed Reports + Bank Comparison weren't sidebar entries. They've been in the sidebar since Batch 1 (commit 7af7865). Updated the table verbatim and removed the outdated "Sidebar omissions" note.
+- **Risky-link spot checks** (intentional gates that hide functionality from some users — all behaving correctly):
+  - HACCP PDF generate buttons (Step 8) — disabled until the plan has been saved at least once, by design.
+  - Admin Populate-account button — renders nothing on customer accounts (defence in depth on the `is_founder OR is_demo` gate).
+  - All `/safety/*` routes — gated on `accounts.safety_enabled`, intentional.
+  - Spec sheet scan + invoice scan — `requireFeature` Pro-tier gate.
+
+No code changes other than the doc correction.
 
 ### Batch 10 — 2026-05-17 PM (allergen overview + prep + PPDS labels)
 
