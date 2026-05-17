@@ -29,6 +29,154 @@
 
 ---
 
+## Feature summary
+
+Cross-cutting view of every capability the app exposes, grouped by domain. Use this when sales / marketing / a customer asks "does Palatable do X?" — the per-viewer route table above tells you *where* a thing lives; this table tells you *what* it does and whether it's done.
+
+Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
+
+### Recipes & costing
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Auto-costed recipes (live ingredient pricing) | ✅ | Free+ | `/recipes/[id]` |
+| GP / margin tracking per dish | ✅ | Free+ | `/margins`, `/margins/[id]` |
+| What-if cost simulator | ✅ | Free+ | `/margins/[id]` |
+| Margin drift detection (cost vs baseline) | ✅ | Free+ | detector `recipe_drift`, surfaces in `/inbox` + Looking Ahead |
+| Stale cost baseline detector (>30d old) | ✅ | Free+ | detector `stale_cost_baseline` |
+| Menu GP drag detector (section below target) | ✅ | Free+ | detector `menu_gp_drag` |
+| Sub-recipes (recipes that reference other recipes) | ✅ | Free+ | `/recipes/[id]/edit` |
+| Recipe import from URL (AI extraction) | ✅ | Free+ | `/recipes/new` → `/api/palatable/import-recipe` |
+| Supplier spec sheet bulk import (AI vision) | ✅ | Free+ | `/stock-suppliers/the-bank` → `/api/palatable/scan-spec-sheet` |
+| Forward menu planner (Kasavana matrix) | ✅ | Kitchen+ | `/manager/menu-builder?mode=planning`, chef + bar `/menus?mode=planning` |
+| Live digital menus (sell prices, dietary tags) | ✅ | Kitchen+ | `/menus`, `/bartender/menus` |
+| Public menu URLs + QR codes | ✅ | Kitchen+ | `/m/[slug]` |
+| Idle recipe detection (30d off menu/plan/prep) | ✅ | Free+ | detector `idle_recipe` |
+
+### Stock & suppliers
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| The Bank — live ingredient master + 90d price history | ✅ | Free+ | `/stock-suppliers/the-bank` |
+| Cellar view (bar-side Bank) | ✅ | Free+ | `/bartender/back-bar/cellar` |
+| Par level tracking + breach alerts | ✅ | Free+ | detector `par_breach` (food + bar variants) |
+| AI invoice scanning (Haiku 4.5 vision) | ✅ | Pro+ | `/stock-suppliers/invoices/scan` → `/api/palatable/scan-invoice` |
+| Email invoice forwarding (`invoices+{token}@`) | ✅ | Pro+ | `/api/inbound-email` (provider webhook) |
+| Delivery confirmation + line-flagging flow | ✅ | Pro+ | post-scan modal on `/stock-suppliers/invoices/[id]` |
+| Supplier reliability score (0–10) | ✅ | Free+ | `/stock-suppliers/suppliers`, `/manager/suppliers` |
+| Credit note workflow (draft → sent → received) | ✅ | Free+ | `/stock-suppliers/credit-notes` |
+| Purchase orders (lifecycle + mailto compose) | ✅ | Free+ | `/stock-suppliers/purchase-orders` |
+| Reorder suggestions (below-par grouped by supplier) | ✅ | Free+ | `/stock-suppliers/purchase-orders` panel |
+| Stock takes + variance (£ value) | ✅ | Free+ | `/stock-suppliers/stock-count`, `/bartender/back-bar/stock-take` |
+| Inter-site stock transfers | ✅ | Group | `/stock-suppliers/transfers`, `/bartender/back-bar/transfers` |
+| Waste log + category breakdown | ✅ | Free+ | `/stock-suppliers/waste` |
+| Bar spillage tracking + pattern detection | ✅ | Free+ | `/bartender/back-bar/spillage` (read), waste dialog (write) |
+| Live dish picker on waste (linked recipe) | ✅ | Free+ | `LogWasteDialog` |
+
+### Safety
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Opening checks (Kitchen/Bar/Management side tabs) | ✅ | Safety add-on | `/safety` |
+| Per-account custom checklist config | ✅ | Safety add-on | `/safety` → Manage Checklists |
+| 12-week diary calendar with per-day detail | ✅ | Safety add-on | `/safety`, `/safety/diary/[date]` |
+| Probe readings (FSA-aligned thresholds) | ✅ | Safety add-on | `/safety/probe` |
+| Live dish picker on probe + incident | ✅ | Safety add-on | `DishPicker` |
+| Incident logging (4 kinds · 14 allergens · severity) | ✅ | Safety add-on | `/safety/incidents` |
+| Cleaning schedule (SFBB-aligned defaults) | ✅ | Safety add-on | `/safety/cleaning` |
+| Per-frequency overdue detection | ✅ | Safety add-on | detector `cleaning_overdue` |
+| Training records + cert expiry ladder | ✅ | Safety add-on | `/safety/training` |
+| Expiring training detector (30/14/0 day) | ✅ | Safety add-on | detector `training_expiring` |
+| Failing probe location detector | ✅ | Safety add-on | detector `probe_failing_location` |
+| Open / aging incident detector | ✅ | Safety add-on | detector `incident_open` |
+| Missed opening check detector | ✅ | Safety add-on | detector `opening_check_missing` |
+| Compliance Health Card (weighted 5-factor) | ✅ | Safety add-on | `/safety` |
+| User attribution stamps on every event row | ✅ | Safety add-on | resolveSafetyUsers helper |
+| Locked liability wording + onboarding ack | ✅ | Safety add-on | `SafetyOnboardingModal`, `LiabilityFooter` |
+| HACCP wizard | 🔴 intro + step-1 stub | Safety add-on | `/safety/haccp` (steps 1–9 pending) |
+| EHO export bundle (preview) | ✅ | Safety add-on | `/safety/eho` |
+| EHO export PDF generation | 🔴 button disabled | Safety add-on | needs `react-pdf` wire-up |
+| EHO inspector visit log | 🔴 schema only | Safety add-on | `v2.safety_eho_visits` referenced, no UI |
+| Cleaning signoff dish link | ⏳ migration applied, UI pending | Safety add-on | — |
+| Training dish/menu link | ⏳ migration applied, UI pending | Safety add-on | — |
+| Stripe £20/site/mo Safety upsell | 🔴 flag exists, billing not wired | Safety add-on | `accounts.safety_enabled` |
+
+### Intelligence (Looking Ahead)
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Forward signal inbox per role | ✅ | Free+ | `/inbox`, `/bartender/inbox`, `/manager/inbox`, `/owner/alerts` + `/owner/inbox` |
+| Looking Ahead bar (top of every surface) | ✅ | Free+ | every Home / detail page |
+| 13 forward-signal detectors (par, drift, market, etc.) | ✅ | Free+ | `src/lib/signal-detectors.ts` |
+| Per-surface filtering of signals | ✅ | Free+ | `target_surface` filter on `v2.forward_signals` |
+| Severity stripe (urgent · attention · healthy · info) | ✅ | Free+ | signal card component |
+| Tagged signals (Plan For It · Get Ready · Worth Knowing · Market Move) | ✅ | Free+ | `tag` column |
+| Daily detector regeneration | ✅ | Free+ | cron 08:00 / 08:30 / 09:00 UTC |
+| Safety event emitters → intelligence_events | ✅ | Safety add-on | Postgres triggers (5 emitters) |
+| intelligence_events → forward_signals drain | ✅ | Free+ | `/api/cron/drain-events` 08:15 UTC |
+
+### Team & multi-site
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Per-account membership + 8-role catalogue | ✅ | Free+ | `v2.memberships` |
+| Owner / manager / chef / bartender / etc. role hierarchy | ✅ | Free+ | `src/lib/roles.ts` |
+| Per-feature flag override per member | ✅ | Kitchen+ | `v2.feature_flags`, `MemberPermissions` |
+| Tier-gated user / outlet / scan caps | ✅ | All | `src/lib/tierGate.ts`-equivalent in `src/lib/admin.ts` |
+| Multi-outlet under one account | ✅ | Group | `v2.sites` FK to `v2.accounts` |
+| Group rollup dashboard | ✅ | Group | `/owner/sites` group KPI strip |
+| Cross-site Bank Comparison (≥5% spread) | ✅ | Group | `/owner/bank-comparison` |
+| Cross-site supplier ledger | ✅ | Group | `/owner/cash`, `/owner/suppliers` |
+| Period reports (7d / 30d / 90d) per site + group | ✅ | Kitchen+ | `/manager/reports`, `/owner/reports` |
+| Per-site signals / alerts | ✅ | Group | `/owner/alerts` |
+| Team detail with per-site permissions | ✅ | Kitchen+ | `/owner/team/u/[userId]`, `/manager/team/[id]` |
+| Owner Danger Zone (remove / delete) | ✅ | Group | `/owner/team/u/[userId]` |
+| Owner add-site UI | 🔴 admin SQL only | Group | — |
+| Reports PDF / CSV export bundle | 🔴 disabled | Kitchen+ | `/manager/reports`, `/owner/reports` |
+
+### Integrations & APIs
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Stripe subscriptions + webhook | ✅ | Pro+ | `/api/stripe/webhook` |
+| Founder + demo billing skip | ✅ | n/a | `accounts.is_founder` + `accounts.is_demo` short-circuit |
+| Inbound email webhook (multi-provider) | ✅ | Pro+ | `/api/inbound-email` |
+| Anthropic Haiku 4.5 (server-side) | ✅ | varies | `src/lib/anthropic.ts` |
+| AI request cache + usage metering | ✅ | n/a | `v2.ai_cache`, `v2.anthropic_usage` |
+| Public read-only API (bearer token) | ✅ | Kitchen+ | `/settings` → API Access |
+| CSV exports (recipes/bank/stock/waste/invoices) | ✅ | Kitchen+ | `/api/export` |
+| POS / Xero / accountant integrations | 🔴 keys UI, no consumers | Kitchen+ | `ConnectionsPanel` on manager + owner |
+| Photo upload (Supabase Storage) | 🟡 notebook attachments live, recipe photos pending | Free+ | `PhotoUpload` component |
+
+### Admin & ops
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Founder admin (5 domains) | ✅ | founder only | `/admin/*` |
+| Per-account demo populate RPC | ✅ | founder + is_demo | `/admin/accounts/[id]` |
+| User impersonation via magic link + gold pill | ✅ | founder only | `/admin/users` |
+| Announcement publisher | ✅ | founder only | `/admin/content` |
+| Daily demo reseed cron (re-anchors to today) | ✅ | n/a | `/api/cron/reseed-demo` 08:45 UTC |
+| System health dashboard (19 v2 table counts) | ✅ | founder only | `/admin/system` |
+| MRR / ARR / tier breakdown | ✅ | founder only | `/admin/business` |
+| GitHub Issues integration | ✅ | founder only | `/admin/ops` |
+| Maintenance mode (env-toggled) | ✅ | n/a | `/maintenance` + middleware |
+| Error reporter | ✅ | n/a | `src/lib/error-reporter.ts` |
+| Founder Ops runbook | ✅ | n/a | `docs/runbook.md` |
+
+### Marketing & onboarding
+
+| Feature | Status | Tier | Entry point |
+|---|---|---|---|
+| Palate & Pen consulting marketing site | ✅ | public | `palateandpen.co.uk` (served from `/coming-soon`) |
+| Palatable app landing | ✅ | public | `app.palateandpen.co.uk/landing` |
+| Pre-launch CTA stub | ✅ | public | `/coming-soon-feature` |
+| Auth flows (sign in / sign up · password + magic link) | ✅ | public | `(flows)/signin`, `(flows)/signup` |
+| Kitchen-name onboarding (step 1 of 5) | 🟡 step 1 only | Free+ | `(flows)/onboarding` |
+| End-to-end signup smoke test | 🔴 manual | n/a | Founder Ops checklist |
+
+---
+
 ## Sidebar maps — canonical, verbatim from `src/components/shell/nav-config.ts`
 
 ### CHEF_SECTIONS
