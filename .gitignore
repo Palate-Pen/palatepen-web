@@ -13,3 +13,6 @@ next-env.d.ts
 .env*.local
 
 .vercel
+
+# Supabase CLI scratch state (project link cache, etc.)
+supabase/.temp/
