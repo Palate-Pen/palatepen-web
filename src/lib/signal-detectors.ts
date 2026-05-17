@@ -87,6 +87,11 @@ export async function regenerateSignalsForSite(
     { key: 'prep_pattern_lag', fn: detectPrepPatternLag },
     { key: 'menu_gp_drag', fn: detectMenuGpDrag },
     { key: 'notebook_link_drift', fn: detectNotebookLinkDrift },
+    { key: 'training_expiring', fn: detectExpiringTraining },
+    { key: 'probe_failing_location', fn: detectFailingProbes },
+    { key: 'incident_open', fn: detectOpenIncidents },
+    { key: 'cleaning_overdue', fn: detectOverdueCleaning },
+    { key: 'opening_check_missing', fn: detectMissedOpeningCheck },
   ];
 
   // Sweep prior auto signals so the regeneration is clean.
@@ -1152,6 +1157,433 @@ export async function detectNotebookLinkDrift(
       display_priority: 55,
       emitted_at: isoNow(),
       expires_at: isoIn(14),
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Detector: expiring food-safety certs
+//
+// Flags staff training certificates that are expired OR within 30 days.
+// Urgent if already past, attention if <=14 days, info if <=30 days.
+// Surfaces on the manager because rebooking + scheduling is theirs.
+// ---------------------------------------------------------------------
+export async function detectExpiringTraining(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const { data } = await svc
+    .from('safety_training')
+    .select('id, staff_name, kind, certificate_name, expires_on')
+    .eq('site_id', siteId)
+    .is('archived_at', null)
+    .not('expires_on', 'is', null);
+
+  type T = {
+    id: string;
+    staff_name: string;
+    kind: string;
+    certificate_name: string | null;
+    expires_on: string;
+  };
+  const rows = (data ?? []) as T[];
+  if (rows.length === 0) return [];
+
+  const now = Date.now();
+  const expired: T[] = [];
+  const within14: T[] = [];
+  const within30: T[] = [];
+  for (const r of rows) {
+    const days = Math.ceil(
+      (new Date(r.expires_on).getTime() - now) / (24 * 60 * 60 * 1000),
+    );
+    if (days < 0) expired.push(r);
+    else if (days <= 14) within14.push(r);
+    else if (days <= 30) within30.push(r);
+  }
+  if (expired.length + within14.length + within30.length === 0) return [];
+
+  const signals: SignalInsert[] = [];
+  const now_iso = isoNow();
+
+  if (expired.length > 0) {
+    const names = expired.slice(0, 3).map((r) => r.staff_name);
+    signals.push({
+      site_id: siteId,
+      target_surface: 'safety_training',
+      target_role: 'manager',
+      tag: 'get_ready',
+      severity: 'urgent',
+      section_label: 'Cert lapsed',
+      headline_pre: `${expired.length === 1 ? 'One cert' : `${expired.length} certs`} `,
+      headline_em: 'past expiry',
+      headline_post: '',
+      body_md: `${names.join(', ')}${expired.length > 3 ? ` + ${expired.length - 3} more` : ''}. A refresher booked today protects the brigade and the EHO file.`,
+      action_label: 'Open Training →',
+      action_target: '/safety/training',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'training_expired',
+      payload: { count: expired.length, names },
+      display_priority: 95,
+      emitted_at: now_iso,
+      expires_at: isoIn(7),
+    });
+  }
+  if (within14.length > 0) {
+    const sample = within14[0];
+    signals.push({
+      site_id: siteId,
+      target_surface: 'safety_training',
+      target_role: 'manager',
+      tag: 'plan_for_it',
+      severity: 'attention',
+      section_label: 'Cert expiring',
+      headline_pre: `${sample.staff_name}'s `,
+      headline_em: `${sample.certificate_name ?? sample.kind} expires`,
+      headline_post: ` within a fortnight${within14.length > 1 ? ` — plus ${within14.length - 1} other${within14.length === 2 ? '' : 's'}` : ''}`,
+      body_md: `Book the refresher this week. The training tab has every cert + expiry date in one place.`,
+      action_label: 'Open Training →',
+      action_target: '/safety/training',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'training_within_14',
+      payload: { count: within14.length, sample_id: sample.id },
+      display_priority: 70,
+      emitted_at: now_iso,
+      expires_at: isoIn(14),
+    });
+  }
+  if (within30.length > 0) {
+    const sample = within30[0];
+    signals.push({
+      site_id: siteId,
+      target_surface: 'safety_training',
+      target_role: 'manager',
+      tag: 'plan_for_it',
+      severity: 'info',
+      section_label: 'Cert on the horizon',
+      headline_pre: `${sample.staff_name}'s `,
+      headline_em: `${sample.certificate_name ?? sample.kind} expires`,
+      headline_post: ` in the next month${within30.length > 1 ? ` — plus ${within30.length - 1} other${within30.length === 2 ? '' : 's'}` : ''}`,
+      body_md: `Worth pencilling the refresher in before the diary fills up.`,
+      action_label: 'Open Training →',
+      action_target: '/safety/training',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'training_within_30',
+      payload: { count: within30.length, sample_id: sample.id },
+      display_priority: 30,
+      emitted_at: now_iso,
+      expires_at: isoIn(30),
+    });
+  }
+  return signals;
+}
+
+// ---------------------------------------------------------------------
+// Detector: probe location running outside spec
+//
+// A location that has failed FSA thresholds 2+ times in the last 14
+// days gets a maintenance flag. Severity scales with frequency.
+// ---------------------------------------------------------------------
+export async function detectFailingProbes(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const { data } = await svc
+    .from('safety_probe_readings')
+    .select('location, kind, passed, temperature_c, logged_at')
+    .eq('site_id', siteId)
+    .gte('logged_at', since);
+  if (!data || data.length === 0) return [];
+
+  const failing = (
+    data as Array<{
+      location: string;
+      kind: string;
+      passed: boolean;
+      temperature_c: number;
+      logged_at: string;
+    }>
+  ).filter((r) => !r.passed);
+  if (failing.length === 0) return [];
+
+  const byLoc = new Map<string, number>();
+  for (const r of failing) {
+    byLoc.set(r.location, (byLoc.get(r.location) ?? 0) + 1);
+  }
+  const recurring = Array.from(byLoc.entries())
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1]);
+  if (recurring.length === 0) return [];
+
+  const [worstLoc, worstCount] = recurring[0];
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'safety_probe',
+      target_role: 'chef',
+      tag: 'get_ready',
+      severity: worstCount >= 4 ? 'urgent' : 'attention',
+      section_label: 'Probe failures clustering',
+      headline_pre: '',
+      headline_em: worstLoc,
+      headline_post: ` read outside spec ${worstCount} times in 14 days`,
+      body_md: `Maintenance flag worth raising before the next service window${recurring.length > 1 ? ` — ${recurring.length - 1} other location${recurring.length === 2 ? '' : 's'} also stacking failures.` : '.'}`,
+      action_label: 'Open Probe →',
+      action_target: '/safety/probe',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'probe_failing_location',
+      payload: {
+        location: worstLoc,
+        count: worstCount,
+        total_locations: recurring.length,
+      },
+      display_priority: 75,
+      emitted_at: isoNow(),
+      expires_at: isoIn(7),
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Detector: open safety incidents
+//
+// Two flavours: any open high-severity incident is urgent; any incident
+// open for 3+ days nags as attention. Severity is parsed out of body_md
+// the same way the incidents page parses it.
+// ---------------------------------------------------------------------
+export async function detectOpenIncidents(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const { data } = await svc
+    .from('safety_incidents')
+    .select('id, kind, summary, body_md, occurred_at, allergens')
+    .eq('site_id', siteId)
+    .is('resolved_at', null)
+    .is('archived_at', null)
+    .order('occurred_at', { ascending: true });
+  if (!data || data.length === 0) return [];
+
+  type R = {
+    id: string;
+    kind: string;
+    summary: string;
+    body_md: string | null;
+    occurred_at: string;
+    allergens: string[] | null;
+  };
+  const rows = data as R[];
+  const now = Date.now();
+  const highSev = rows.filter((r) =>
+    /\*\*Severity:\*\*\s*high/i.test(r.body_md ?? ''),
+  );
+  const stale = rows.filter(
+    (r) =>
+      now - new Date(r.occurred_at).getTime() > 3 * 24 * 60 * 60 * 1000,
+  );
+
+  const signals: SignalInsert[] = [];
+  if (highSev.length > 0) {
+    const top = highSev[0];
+    signals.push({
+      site_id: siteId,
+      target_surface: 'safety_incidents',
+      target_role: 'manager',
+      tag: 'plan_for_it',
+      severity: 'urgent',
+      section_label: 'High-severity open',
+      headline_pre: '',
+      headline_em: top.summary.split(' — ')[0] || top.summary,
+      headline_post: ' is still open',
+      body_md: `Insurer + EHO notification should both be ticked on the corrective-actions list. ${highSev.length > 1 ? `${highSev.length - 1} other high-severity item${highSev.length === 2 ? '' : 's'} too.` : ''}`,
+      action_label: 'Open Issues →',
+      action_target: '/safety/incidents',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'incident_high_severity_open',
+      payload: { count: highSev.length, top_id: top.id },
+      display_priority: 90,
+      emitted_at: isoNow(),
+      expires_at: isoIn(7),
+    });
+  }
+  if (stale.length > 0) {
+    const oldest = stale[0];
+    const days = Math.floor(
+      (now - new Date(oldest.occurred_at).getTime()) /
+        (24 * 60 * 60 * 1000),
+    );
+    signals.push({
+      site_id: siteId,
+      target_surface: 'safety_incidents',
+      target_role: 'manager',
+      tag: 'get_ready',
+      severity: 'attention',
+      section_label: 'Issue ageing',
+      headline_pre: '',
+      headline_em: oldest.summary.split(' — ')[0] || oldest.summary,
+      headline_post: ` open for ${days} days`,
+      body_md: `${stale.length > 1 ? `${stale.length - 1} other older item${stale.length === 2 ? '' : 's'} too. ` : ''}Resolve or escalate — the EHO file expects a closing note on every entry.`,
+      action_label: 'Open Issues →',
+      action_target: '/safety/incidents',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'incident_stale',
+      payload: { count: stale.length, oldest_id: oldest.id, days },
+      display_priority: 55,
+      emitted_at: isoNow(),
+      expires_at: isoIn(7),
+    });
+  }
+  return signals;
+}
+
+// ---------------------------------------------------------------------
+// Detector: overdue cleaning tasks
+//
+// Daily / weekly / monthly / quarterly / annual tasks past their cycle
+// (measured vs. the most recent signoff). Tasks that have never been
+// signed off count as overdue immediately.
+// ---------------------------------------------------------------------
+export async function detectOverdueCleaning(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const { data: tasks } = await svc
+    .from('safety_cleaning_tasks')
+    .select('id, area, task, frequency')
+    .eq('site_id', siteId)
+    .is('archived_at', null);
+  if (!tasks || tasks.length === 0) return [];
+
+  type T = { id: string; area: string; task: string; frequency: string };
+  const taskList = tasks as T[];
+  const taskIds = taskList.map((t) => t.id);
+  const { data: signoffs } = await svc
+    .from('safety_cleaning_signoffs')
+    .select('task_id, completed_at')
+    .in('task_id', taskIds)
+    .order('completed_at', { ascending: false });
+
+  const latestByTask = new Map<string, string>();
+  for (const s of signoffs ?? []) {
+    const tid = s.task_id as string;
+    if (!latestByTask.has(tid))
+      latestByTask.set(tid, s.completed_at as string);
+  }
+
+  const CYCLE_DAYS: Record<string, number> = {
+    daily: 1,
+    weekly: 7,
+    monthly: 30,
+    quarterly: 90,
+    annually: 365,
+  };
+  const now = Date.now();
+  const overdue: Array<T & { days_late: number }> = [];
+  for (const t of taskList) {
+    const cycle = CYCLE_DAYS[t.frequency] ?? 1;
+    const latest = latestByTask.get(t.id);
+    if (!latest) {
+      overdue.push({ ...t, days_late: cycle });
+      continue;
+    }
+    const daysSince = Math.floor(
+      (now - new Date(latest).getTime()) / (24 * 60 * 60 * 1000),
+    );
+    if (daysSince > cycle) {
+      overdue.push({ ...t, days_late: daysSince - cycle });
+    }
+  }
+  if (overdue.length === 0) return [];
+
+  overdue.sort((a, b) => b.days_late - a.days_late);
+  const top = overdue[0];
+
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'safety_cleaning',
+      target_role: 'chef',
+      tag: 'get_ready',
+      severity: overdue.length >= 3 ? 'attention' : 'info',
+      section_label: 'Cleaning overdue',
+      headline_pre: `${overdue.length} ${overdue.length === 1 ? 'task' : 'tasks'} `,
+      headline_em: 'past their cycle',
+      headline_post: '',
+      body_md: `**${top.area} — ${top.task}** is ${top.days_late} day${top.days_late === 1 ? '' : 's'} late${overdue.length > 1 ? `, plus ${overdue.length - 1} more` : ''}. The cleaning tab groups them by frequency so the sweep takes ten minutes.`,
+      action_label: 'Open Cleaning →',
+      action_target: '/safety/cleaning',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'cleaning_overdue',
+      payload: {
+        count: overdue.length,
+        worst_id: top.id,
+        worst_days_late: top.days_late,
+      },
+      display_priority: 50,
+      emitted_at: isoNow(),
+      expires_at: isoIn(3),
+    },
+  ];
+}
+
+// ---------------------------------------------------------------------
+// Detector: missed opening checks
+//
+// After 11am server-time, if no opening check has any ticked answer for
+// today, flag it. The opening check is the first thing an EHO looks at,
+// so this is the most important morning sign-off.
+// ---------------------------------------------------------------------
+export async function detectMissedOpeningCheck(
+  svc: SupaClient,
+  siteId: string,
+): Promise<SignalInsert[]> {
+  const now = new Date();
+  if (now.getHours() < 11) return [];
+  const today = now.toISOString().slice(0, 10);
+  const { data } = await svc
+    .from('safety_opening_checks')
+    .select('id, answers')
+    .eq('site_id', siteId)
+    .eq('check_date', today)
+    .maybeSingle();
+
+  if (data && data.answers) {
+    const answers = data.answers as Record<string, unknown>;
+    const ticked = Object.entries(answers).filter(
+      ([k, v]) => !k.startsWith('_') && v === true,
+    ).length;
+    if (ticked > 0) return [];
+  }
+
+  return [
+    {
+      site_id: siteId,
+      target_surface: 'safety',
+      target_role: 'manager',
+      tag: 'get_ready',
+      severity: now.getHours() >= 16 ? 'urgent' : 'attention',
+      section_label: "Today's opening check",
+      headline_pre: '',
+      headline_em: 'Opening check not signed off',
+      headline_post: ' for today',
+      body_md: `An EHO inspection opens with today's diary entry. Tick what's done so the audit trail stays clean.`,
+      action_label: 'Open Safety →',
+      action_target: '/safety',
+      action_context: null,
+      detector_kind: 'auto',
+      detector_key: 'opening_check_missing',
+      payload: { date: today },
+      display_priority: 85,
+      emitted_at: isoNow(),
+      expires_at: isoIn(1),
     },
   ];
 }
