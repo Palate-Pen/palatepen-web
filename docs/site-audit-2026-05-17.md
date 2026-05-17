@@ -654,6 +654,15 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 13 — 2026-05-17 PM (Tier 3 UX follow-ups — empty states + tooltip proof)
+
+Picked up the four Tier 3 items documented at the end of Batch 12 (undo · empty-state CTAs · help tooltips · WCAG sweep). Two of them shipped cleanly; the other two turned out smaller than expected.
+
+- **Bank empty-state upgraded** — `/stock-suppliers/the-bank` was just "The Bank's empty" + a one-line italic prompt with no buttons. Now has a centred dual-CTA: primary "Scan first invoice" (links to the AI scanner) + secondary "Add ingredient by hand". Same affordances were already in the page header but new users wouldn't notice them on an otherwise blank screen.
+- **InfoTip proven in production** — first placement next to the **Kind** label on `/safety/probe`. Reveals an FSA-thresholds summary (cooking ≥75°C or 70°C/2min · hot hold ≥63°C · chilled ≤8°C with 0–5°C recommended · freezer ≤−18°C · reheat ≥75°C, once only) on hover/focus/click. Drop-in elsewhere is a one-line import + one `<InfoTip>` wrap.
+- **Aria-label sweep reassessed** — turned out smaller than feared. The major dialogs (`LogWasteDialog`, `LogSpillageDialog`) close via backdrop click + an explicit Cancel button, no `×` icon button needing a label. Real remaining gaps are minor (sidebar collapse toggle, row-remove `×` buttons in line editors). Deferred — wants a screen-reader test pass, not bug-blocking.
+- **Undo pattern deferred again** — Toast supports `action: { label, run }` so the foundation is there. Wiring needs `unarchiveRecipeAction` + a client wrapper that wraps the archive call. Cleanest as its own batch with the rest of the Tier 3 sweep so it lands as a single coherent push.
+
 ### Batch 12 — 2026-05-17 PM (UX foundation: toast · tooltip · onboarding · skip-link)
 
 Triggered by a UX-principles research drop (Base 44 reference, plus the 8 user-friendly-UI principles). Built the foundation pieces every other UX improvement leans on — toast notifications, info tooltips, skip-to-content link, plus completed the onboarding flow.

@@ -116,11 +116,25 @@ export default async function TheBankPage() {
       {rows.length === 0 ? (
         <div className="bg-card border border-rule px-10 py-16 text-center">
           <div className="font-serif text-2xl text-ink mb-2">
-            The Bank's empty.
+            The Bank&apos;s empty.
           </div>
-          <p className="font-serif italic text-muted">
-            Scan your first invoice or add an ingredient by hand. The system fills this in from there.
+          <p className="font-serif italic text-muted max-w-[440px] mx-auto mb-6">
+            Scan a delivery invoice and Palatable lifts every line into the Bank with price + supplier in one tap. Or add an ingredient by hand if you want to seed it first.
           </p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <Link
+              href="/stock-suppliers/invoices/scan"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-6 py-3 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
+            >
+              Scan first invoice
+            </Link>
+            <Link
+              href="/stock-suppliers/the-bank/new"
+              className="font-display font-semibold text-[11px] tracking-[0.18em] uppercase px-6 py-3 bg-transparent text-ink border border-rule hover:border-gold hover:text-gold transition-colors"
+            >
+              Add ingredient by hand
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="bg-card border border-rule">

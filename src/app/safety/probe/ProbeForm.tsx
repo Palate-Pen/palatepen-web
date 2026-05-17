@@ -10,6 +10,7 @@ import {
 } from '@/lib/safety/standards';
 import { DishPicker, type DishPickerValue } from '@/components/safety/DishPicker';
 import type { DishPickerBands } from '@/lib/safety/dish-picker';
+import { InfoTip } from '@/components/ui/Tooltip';
 
 const KINDS = Object.keys(PROBE_KIND_LABEL) as ProbeKind[];
 
@@ -78,8 +79,11 @@ export function ProbeForm({ bands }: { bands: DishPickerBands }) {
     <div className="bg-card border border-rule px-7 py-7 mb-10">
       <div className="grid grid-cols-1 md:grid-cols-[180px_1.2fr_140px] gap-4 mb-4">
         <div>
-          <label className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted mb-2 block">
+          <label className="font-display font-semibold text-xs tracking-[0.18em] uppercase text-muted mb-2 flex items-center gap-1.5">
             Kind
+            <InfoTip label="FSA probe thresholds">
+              <strong>FSA thresholds.</strong> Cooking ≥75°C (or 70°C/2min equivalent) · Hot hold ≥63°C · Chilled ≤8°C (legal max — recommended 0–5°C) · Freezer ≤−18°C · Reheat ≥75°C, once only.
+            </InfoTip>
           </label>
           <select
             value={kind}
