@@ -499,7 +499,14 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into `/safety/probe` (optional for cooking/reheat/cooling/core_temp/hot_hold/delivery kinds).
   - Wired into `/safety/incidents` (replaces the "Dish Involved" free-form input).
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
-- **Migration file written** — `supabase/migrations/20260517_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. **Not yet applied** — pending review and `apply_migration` call. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema, so probe + incident wiring works against the live DB today; waste wiring needs the migration applied before it persists.
+- **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
+
+### Batch 1.5 — 2026-05-17 PM (housekeeping, shipped after Batch 1)
+
+- **Supabase CLI installed as project devDep** — `npx supabase ...` now works from `web/`. Memory entry at `reference_palateandpen_supabase_cli.md`. `.gitignore` updated to exclude `supabase/.temp/`.
+- **Migration filenames normalised to 14-digit `YYYYMMDDHHMMSS` format** — all 51 local files renamed from the legacy 8-digit prefix so each has a unique CLI-tracker version. HHMMSS values are synthetic (`000001`, `000002`, ... within each date, alphabetical). Done because the old 8-digit names collide when multiple migrations share a date.
+- **Remote `supabase_migrations.schema_migrations` reset + rewritten** — 39 orphan MCP-stamped 14-digit entries reverted, 51 new entries written via `supabase migration repair --status applied` so the tracker matches local files 1:1. `npx supabase migration list --linked` now shows clean Local↔Remote alignment.
+- **Caveat preserved for future `db reset`** — alphabetical-within-date ordering doesn't match the original dependency order (e.g. `v2_foundation` should run first on 2026-05-14 but lands at synthetic timestamp `000009`). For the tracker this is fine; if you ever run a clean `db reset` against this schema you'll need to manually reorder some 2026-05-14 files.
 
 ### Deferred to follow-up batch
 
@@ -515,15 +522,14 @@ These were scoped in but pushed out of Batch 1:
 
 ---
 
-## Build-order recommendation (post-Batch 1)
+## Build-order recommendation (post-Batch 1.5)
 
-After Batch 1 shipped pricing + detectors + the safety/waste dish picker, the highest-leverage next builds are:
+The waste DishPicker FK column is now live and the migration tracker is in sync. Highest-leverage next builds:
 
-1. **Apply `20260517_v2_dish_picker_recipe_links.sql`** — unblocks the waste dish picker FK column. ~30 seconds via Supabase MCP.
-2. **Wire DishPicker into cleaning signoff + training** — once the migration is applied, these are short wire-up jobs.
-3. **HACCP wizard form fields** (#6) — completes the Safety wedge and the £20/mo upsell story. DishPicker stubs can be pre-wired during this build.
-4. **EHO PDF export** (#7) — inspector-ready output is the most concrete safety value-prop.
-5. **Menu builder DishPicker** — investigate `/manager/menu-builder` add-dish UX and harmonise.
-6. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in Stripe dashboard, not a code change).
+1. **Wire DishPicker into cleaning signoff + training** — `recipe_id` columns on both `safety_cleaning_signoffs` and `safety_training` are already in place from the 20260517000002 migration. Short wire-up jobs (signoff modal + add-training form).
+2. **HACCP wizard form fields** — completes the Safety wedge and the £20/mo upsell story. DishPicker stubs can be pre-wired during this build.
+3. **EHO PDF export** — inspector-ready output is the most concrete safety value-prop.
+4. **Menu builder DishPicker** — investigate `/manager/menu-builder` add-dish UX and harmonise.
+5. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
 
 Everything else lines up behind these.
