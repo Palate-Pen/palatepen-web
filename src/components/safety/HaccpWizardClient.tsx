@@ -396,6 +396,7 @@ export function HaccpWizardClient({
               <Step8
                 initial={body.step_8}
                 body={body}
+                planId={plan?.id ?? null}
                 onSave={(c, advance) => saveStep(8, c, advance)}
                 pending={pending}
               />
@@ -1563,11 +1564,13 @@ function Step7({
 function Step8({
   initial,
   body,
+  planId,
   onSave,
   pending,
 }: {
   initial: Partial<{ doc_generated_at: string | null; doc_url: string | null; preview_acknowledged: boolean }> | undefined;
   body: HaccpBody;
+  planId: string | null;
   onSave: (content: Record<string, unknown>, advance: boolean) => void;
   pending: boolean;
 }) {
@@ -1578,11 +1581,16 @@ function Step8({
 
   function buildContent() {
     return {
-      doc_generated_at: null,
+      doc_generated_at: new Date().toISOString(),
       doc_url: null,
       preview_acknowledged: ack,
     };
   }
+
+  const planSaved = planId != null;
+  const planMissingNote = planSaved
+    ? undefined
+    : 'Save any step first to create the plan, then come back.';
 
   return (
     <>
@@ -1595,19 +1603,18 @@ function Step8({
         <DocArtefact
           title="HACCP plan document"
           desc={`Formatted PDF — ${hazardCount} hazards · ${ccpCount} CCPs · review schedule · sign-offs. Goes in the EHO file for ${tradingName}.`}
-          disabled
-          disabledNote="PDF export pending react-pdf wiring"
+          href={planSaved ? `/api/safety/haccp/${planId}/pdf` : null}
+          disabledNote={planMissingNote}
         />
         <DocArtefact
           title="Chef's reference card"
           desc="Printable wall card — CCPs and critical limits at a glance for service."
-          disabled
-          disabledNote="PDF export pending"
+          href={planSaved ? `/api/safety/haccp/${planId}/reference-card` : null}
+          disabledNote={planMissingNote}
         />
         <DocArtefact
           title="Safety tab cross-references"
           desc="Each CCP links to its monitoring source on the Safety tab so daily checks satisfy the plan."
-          disabled
           disabledNote="Live link generation pending — the data exists in body.step_5."
         />
       </div>
@@ -1632,14 +1639,15 @@ function Step8({
 function DocArtefact({
   title,
   desc,
-  disabled,
+  href,
   disabledNote,
 }: {
   title: string;
   desc: string;
-  disabled?: boolean;
+  href?: string | null;
   disabledNote?: string;
 }) {
+  const enabled = !!href;
   return (
     <div className="bg-paper-warm border border-rule px-5 py-4 flex items-start gap-4">
       <div className="flex-1 min-w-0">
@@ -1647,15 +1655,31 @@ function DocArtefact({
           {title}
         </div>
         <div className="font-sans text-xs text-muted">{desc}</div>
+        {!enabled && disabledNote && (
+          <div className="font-serif italic text-[11px] text-muted-soft mt-1.5">
+            {disabledNote}
+          </div>
+        )}
       </div>
-      <button
-        type="button"
-        disabled={disabled}
-        className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-4 py-2 bg-paper text-ink border border-rule hover:border-gold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        title={disabledNote}
-      >
-        Generate
-      </button>
+      {enabled ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-4 py-2 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
+        >
+          Generate
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-4 py-2 bg-paper text-ink border border-rule opacity-40 cursor-not-allowed"
+          title={disabledNote}
+        >
+          Generate
+        </button>
+      )}
     </div>
   );
 }

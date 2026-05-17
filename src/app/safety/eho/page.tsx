@@ -218,16 +218,16 @@ export default async function EhoExportPage() {
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-3 min-w-[200px]">
-          <button
-            type="button"
-            className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-7 py-3.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors"
-            disabled
-            title="PDF export lands in the next Safety batch"
+          <a
+            href="/api/safety/eho/pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display font-semibold text-[11px] tracking-[0.3em] uppercase px-7 py-3.5 bg-gold text-paper border border-gold hover:bg-gold-dark transition-colors text-center"
           >
             Export 90-day PDF
-          </button>
+          </a>
           <div className="font-sans text-[10px] text-paper/50 tracking-wider uppercase text-center">
-            PDF export wires next batch
+            Streamed live · downloads instantly
           </div>
         </div>
       </div>

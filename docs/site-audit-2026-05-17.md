@@ -93,9 +93,11 @@ Legend: ✅ live · 🟡 partial · 🔴 stubbed · ⏳ pending data dependency
 | Compliance Health Card (weighted 5-factor) | ✅ | Safety add-on | `/safety` |
 | User attribution stamps on every event row | ✅ | Safety add-on | resolveSafetyUsers helper |
 | Locked liability wording + onboarding ack | ✅ | Safety add-on | `SafetyOnboardingModal`, `LiabilityFooter` |
-| HACCP wizard | ✅ all 9 steps live (PDF export deferred) | Safety add-on | `/safety/haccp` |
+| HACCP wizard | ✅ all 9 steps live + PDF export | Safety add-on | `/safety/haccp` |
+| HACCP PDF — full plan | ✅ | Safety add-on | `/api/safety/haccp/[planId]/pdf` |
+| HACCP PDF — chef's reference card | ✅ | Safety add-on | `/api/safety/haccp/[planId]/reference-card` |
 | EHO export bundle (preview) | ✅ | Safety add-on | `/safety/eho` |
-| EHO export PDF generation | 🔴 button disabled | Safety add-on | needs `react-pdf` wire-up |
+| EHO export PDF generation | ✅ | Safety add-on | `/api/safety/eho/pdf` (4-page bundle: cover + probes + incidents + cleaning/training) |
 | EHO inspector visit log | 🔴 schema only | Safety add-on | `v2.safety_eho_visits` referenced, no UI |
 | Cleaning signoff dish link | ✅ | Safety add-on | `/safety/cleaning` → expand caret on any row |
 | Training dish/menu link | ✅ | Safety add-on | `/safety/training` → "Linked dish (optional)" |
@@ -649,6 +651,20 @@ v2.accounts ──┬─→ flag is_founder + is_demo → admin populate + Strip
   - Wired into chef `/stock-suppliers/waste` LogWasteDialog as an optional "linked dish" field (food filter).
 - **Migration file written + applied** — `supabase/migrations/20260517000002_v2_dish_picker_recipe_links.sql` adds nullable `recipe_id` FK to `v2.waste_entries`, `v2.safety_cleaning_signoffs`, and `v2.safety_training`. Applied via Supabase SQL editor 2026-05-17. `safety_probe_readings.recipe_id` + `safety_incidents.recipe_id` already existed in their original schema.
 
+### Batch 6 — 2026-05-17 PM (PDF generation for HACCP + EHO)
+
+Server-side PDF generation via `@react-pdf/renderer`. Three docs, three API routes, two enabled buttons. Closes the Safety wedge end-to-end — HACCP plan → signed → PDF → inspector handover.
+
+- **`@react-pdf/renderer` added as a dep** (4.5.1). Server-side rendering via `renderToBuffer`, returned with `application/pdf` + `Content-Disposition: attachment`. Built-in Helvetica + Times-Roman fonts so the bundle stays light and renders consistently across Vercel environments.
+- **`src/lib/safety/pdf/styles.ts`** — shared stylesheet mirroring Palatable's v8 design tokens at print scale (gold accents, Cinzel→Helvetica-Bold uppercase labels, serif body, urgent-red liability boxes).
+- **`HaccpPlanDoc.tsx`** — full HACCP plan: business profile, flow steps, hazards, every CCP with its critical limit / monitoring / corrective actions / linked dishes, verification + annual review, stronger-notice liability box. Page footer carries page numbers.
+- **`HaccpReferenceCardDoc.tsx`** — A4 landscape one-page card for the kitchen wall. Every CCP + its critical limit at a glance.
+- **`EhoBundleDoc.tsx`** — 4-page EHO bundle: cover + summary + FSA citations, full probe-readings log (80-reading cap with overflow note), incident log with corrective-action body excerpts, cleaning schedule + training records.
+- **3 API routes** under `src/app/api/safety/*` — all `runtime: 'nodejs'`, all session-gated + membership-checked. The HACCP routes resolve plan + site from `[planId]`; the EHO route reads from the user's current `shell/context`.
+- **HACCP Step 8 buttons enabled** — the "HACCP plan document" and "Chef's reference card" Generate buttons now link to their respective `/api/safety/haccp/[planId]/...` endpoints. Cross-references tile stays disabled (different work).
+- **EHO Export button enabled** — `/safety/eho` "Export 90-day PDF" CTA now links to `/api/safety/eho/pdf`.
+- **`HaccpStep1` type extended** — `legal_entity`, `team_size_band`, `person_responsible` were captured by the form but not in the type. Added so the PDF doc can read them strictly-typed.
+
 ### Batch 5 — 2026-05-17 PM (HACCP wizard — all 9 steps + mockup alignment)
 
 Built against `docs/strategy/mockups/palatable-safety-2026-05-15/01-mockups/chef-safety-haccp-mockup-v1.html`. Step 1 realigned to match mockup exactly, Steps 4–9 built as real forms (Step 8 PDF export still deferred until react-pdf lands).
@@ -719,15 +735,15 @@ Cross-checked the live implementation against the role-hierarchy spec and fixed 
 
 ---
 
-## Build-order recommendation (post-Batch 5)
+## Build-order recommendation (post-Batch 6)
 
-The HACCP wizard now ships end-to-end (Step 8 PDF generation is the one outstanding piece). Highest-leverage next builds:
+The Safety wedge ships end-to-end now: opening checks → diary → probes → incidents → cleaning → training → HACCP plan → signed → PDF → EHO bundle PDF. £20/site/mo Safety upsell is a complete demo. Highest-leverage next builds:
 
-1. **PDF generation for HACCP Step 8 + EHO export** — both produce inspector-ready bundles. Single `react-pdf` wire-up covers both. Closes the safety wedge.
-2. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
-3. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
-4. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage. Currently stubbed.
-5. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
+1. **Menu builder add-dish UX harmonisation** — investigate PlannerView + MenuBuilderClient and decide whether to surface DishPicker there or leave the existing flows.
+2. **Bar spillage dedicated log dialog** — bar should have its own create path for spillage with `spillage_reason` capture, instead of relying on the chef LogWasteDialog.
+3. **Notebook captures pt 2** — voice / photo / sketch via Supabase Storage. Currently stubbed.
+4. **Manager + Owner pending tabs** — mockups need locking before scaffolding.
+5. **Stripe £20/site/mo Safety upsell webhook** — `accounts.safety_enabled` is the boolean; needs a price ID + checkout flow + webhook handler.
 6. **Update Stripe price IDs** to match £49 / £79 / £119 (manual in the Stripe dashboard, not a code change).
 
 Everything else lines up behind these.

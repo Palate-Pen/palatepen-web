@@ -34,10 +34,13 @@ export const HACCP_STATUS_TONE: Record<HaccpStatus, string> = {
 // ---------------------------------------------------------------------
 export type HaccpStep1 = {
   trading_name: string;
+  legal_entity: string;
   fsa_registration: string;
   kitchen_type: string;
   team_size: number | null;
+  team_size_band: '1-3' | '4-10' | '11-25' | '26+';
   services: string[];
+  person_responsible: string;
   notes_md: string;
 };
 
