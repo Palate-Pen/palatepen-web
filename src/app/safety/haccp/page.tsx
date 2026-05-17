@@ -3,7 +3,7 @@ import { FsaReferenceStrip } from '@/components/safety/FsaReferenceStrip';
 import { SafetyPageHeader } from '@/components/safety/SafetyPageHeader';
 import { HaccpWizardClient } from '@/components/safety/HaccpWizardClient';
 import { getShellContext } from '@/lib/shell/context';
-import { getHaccpPlan, getHaccpPrefill } from '@/lib/safety/haccp';
+import { getHaccpPlan, getHaccpPrefill } from '@/lib/safety/haccp-server';
 import { getDishPickerBands } from '@/lib/safety/dish-picker';
 
 export const metadata = { title: 'HACCP Wizard · Safety · Palatable' };
